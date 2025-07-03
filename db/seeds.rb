@@ -22,10 +22,10 @@ User.create!(
 
 30.times do |i|
   User.create!(
-    # name: "학생#{i + 1}",
+    name: "학생#{i + 1}",
     role: "student",
-    # avatar: "avatars/avatar_#{(i % 30) + 1}.png",
-    # points: 0,
+    avatar: "avatars/avatar_#{(i % 30) + 1}.png",
+    points: 0,
     email: "student#{i + 1}@school.com", # Devise 필수
     password: "password"
   )
