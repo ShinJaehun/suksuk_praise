@@ -12,6 +12,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :classrooms, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+
   # Defines the root path route ("/")
-  root "users#index"
+  root "classrooms#index"
 end

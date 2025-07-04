@@ -1,0 +1,9 @@
+<h2 class="text-xl font-bold mb-4">새 교실 만들기</h2>
+
+<%= form_with model: @classroom, local: true do |f| %>
+    <div class="mb-4">
+        <%= f.label :name, "교실 이름", class: "block font-semibold mb-1" %>
+        <%= f.text_field :name, class: "border px-2 py-1 w-full rounded" %>
+    </div>
+    <%= f.submit "교실 생성하기", class: "bg-green-500 text-white px-4 py-2 rounded" %>
+<% end %>

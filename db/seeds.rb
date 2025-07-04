@@ -30,3 +30,21 @@ User.create!(
     password: "password"
   )
 end
+
+classroom1 = Classroom.create!(name: "1반")
+
+User.where(role: "teacher").each do |teacher|
+  ClassroomMembership.create!(
+    user: teacher,
+    classroom: classroom1,
+    role: "teacher"
+  )
+end
+
+User.where(role: "student").each do |student|
+  ClassroomMembership.create!(
+    user: student,
+    classroom: classroom1,
+    role: "student"
+  )
+end

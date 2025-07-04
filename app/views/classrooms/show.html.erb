@@ -1,0 +1,13 @@
+<% if current_user.admin? || @classroom.classroom_memberships.exists?(user: current_user, role: "teacher") %>
+  <div class="mb-4">
+    <%= link_to "✏️ 수정", edit_classroom_path(@classroom), class: "text-blue-600 underline mr-4" %>
+    <%= link_to "🗑 삭제", classroom_path(@classroom), method: :delete,
+          data: { confirm: "정말 삭제할까요?" },
+          class: "text-red-600 underline" %>
+  </div>
+<% end %>
+
+<h2 class="text-xl font-bold mb-4"><%= @classroom.name %>의 학생들</h2>
+<div class="grid grid-cols-3 gap-4">
+  <%= render partial: "users/user", collection: @students %>
+</div>
