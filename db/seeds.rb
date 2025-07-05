@@ -11,16 +11,18 @@
 User.create!(
   email: "a@a",
   password: "password",
+  name: "관리자에이",
   role: "admin"
 )
 
-User.create!(
+teacher = User.create!(
   email: "t@t",
   password: "password",
+  name: "티쳐티",
   role: "teacher"
 )
 
-30.times do |i|
+students = 30.times.map do |i|
   User.create!(
     name: "학생#{i + 1}",
     role: "student",
@@ -33,15 +35,13 @@ end
 
 classroom1 = Classroom.create!(name: "1반")
 
-User.where(role: "teacher").each do |teacher|
-  ClassroomMembership.create!(
-    user: teacher,
-    classroom: classroom1,
-    role: "teacher"
-  )
-end
+ClassroomMembership.create!(
+  user: teacher,
+  classroom: classroom1,
+  role: "teacher"
+)
 
-User.where(role: "student").each do |student|
+students.each do |student|
   ClassroomMembership.create!(
     user: student,
     classroom: classroom1,

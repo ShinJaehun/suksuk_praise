@@ -2,12 +2,11 @@ class UsersController < ApplicationController
     before_action :authenticate_user!, except: [:show]
     before_action :set_user, only: [:show, :compliment]
 
-    def index
-        @students = User.student
-    end
+    #def index
+        #@students = User.student
+    #end
 
     def show
-
     end
 
     def compliment
