@@ -12,7 +12,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :classrooms, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+  resources :classrooms do
+    member do
+      post :refresh_compliment_king
+    end
+  end
 
   # Defines the root path route ("/")
   root "classrooms#index"

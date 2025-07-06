@@ -1,0 +1,19 @@
+<%= turbo_frame_tag "compliment_king_#{@classroom.id}" do %>
+  <% if @compliment_kings.present? && @compliment_king_count > 0 %>
+    <div class="mb-6 p-4 bg-yellow-100 rounded-lg text-center shadow">
+      <span class="text-2xl">오늘의 칭찬왕</span>
+      <br />
+      <% @compliment_kings.each do |king| %>
+        <span class="font-bold text-lg"><%= king.name %></span>
+        <%# if king.avatar.present? %>
+          <%#= image_tag king.avatar, class: "inline w-12 h-12 rounded-full align-middle ml-2" %>
+        <%# end %>
+      <% end %>
+      <div class="mt-2 text-sm text-gray-600">
+        <%= @compliment_king_count %>회 칭찬 받음
+      </div>
+    </div>
+  <% else %>
+    <div class="mb-6 text-gray-400 text-center">오늘 아직 칭찬 왕이 없습니다!</div>
+  <% end %>
+<% end %>

@@ -1,6 +1,6 @@
 class ClassroomsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_classroom, only: [:show, :edit, :update, :destroy]
+  before_action :set_classroom, only: [:show, :edit, :update, :destroy, :refresh_compliment_king]
   before_action :require_teacher_or_admin!, only: [:new, :create, :edit, :update, :destroy]
   before_action :authorize_classroom_owner!, only: [:edit, :update, :destroy]
 
@@ -18,6 +18,50 @@ class ClassroomsController < ApplicationController
       .includes(:user)
       .where(role: "student")
       .map(&:user)   #???
+
+    # 오늘 하루 가장 많은 칭찬을 받은 학생 찾기
+    today = Time.zone.now.beginning_of_day..Time.zone.now.end_of_day
+    #puts "################### #{today} ##################"
+    compliments_today = Compliment.where(classroom: @classroom, given_at: today)
+      .group(:receiver_id)
+      .count
+
+    if compliments_today.any?
+      max_count = compliments_today.values.max
+      @compliment_kings = @students.select { |u| compliments_today[u.id] == max_count }
+      @compliment_king_count = max_count
+    #puts "################### #{@compliment_kings} ##################"
+    #puts "################### #{@compliment_king_count} ##################"
+    else
+      @compliment_kings = []
+      @compliment_king_count = 0
+    end
+  end
+
+  def refresh_compliment_king
+    @students = @classroom.classroom_memberships
+      .includes(:user)
+      .where(role: "student")
+      .map(&:user)   #???
+
+    # 오늘 하루 가장 많은 칭찬을 받은 학생 찾기
+    today = Time.zone.now.beginning_of_day..Time.zone.now.end_of_day
+    compliments_today = Compliment.where(classroom: @classroom, given_at: today)
+      .group(:receiver_id)
+      .count
+
+    if compliments_today.any?
+      max_count = compliments_today.values.max
+      @compliment_kings = @students.select { |u| compliments_today[u.id] == max_count }
+      @compliment_king_count = max_count
+    else
+      @compliment_kings = []
+      @compliment_king_count = 0
+    end
+
+    respond_to do |format|
+      format.turbo_stream
+    end
   end
 
   def new

@@ -7,6 +7,21 @@
   </div>
 <% end %>
 
+<div class="flex items-center mb-4">
+  <%= button_to "칭찬왕 갱신", refresh_compliment_king_classroom_path(@classroom),
+    method: :post, remote: true,
+    form: { data: { turbo_stream: true }},
+    class: "ml-auto px-3 py-1 bg-blue-200 rounded hover:bg-blue-300" %>
+</div>
+
+<%= turbo_frame_tag "compliment_king_#{@classroom.id}" do %>
+  <%= render partial: "classrooms/compliment_king", locals: {
+    compliment_kings: @compliment_kings,
+    compliment_king_count: @compliment_king_count,
+    classroom: @classroom
+  } %>
+<% end %>
+
 <h2 class="text-xl font-bold mb-4"><%= @classroom.name %>의 학생들</h2>
 <div class="grid grid-cols-3 gap-4">
   <%= render partial: "users/user", collection: @students, as: :user, locals: { classroom: @classroom } %>
