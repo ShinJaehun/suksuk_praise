@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  giver_id: 1
+  receiver_id: 1
+  classroom: one
+  given_at: 2025-07-05 15:02:45
+
+two:
+  giver_id: 1
+  receiver_id: 1
+  classroom: two
+  given_at: 2025-07-05 15:02:45

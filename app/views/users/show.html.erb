@@ -1,0 +1,15 @@
+<% if params[:classroom_id] %>
+  <%= link_to "교실로 돌아가기", classroom_path(params[:classroom_id]),
+    class: "inkine-block bg-gray-200 px-4 py-2 rounded mb-4" %>
+<% end %>
+
+<h2><%= @user.name %>의 칭찬 내역</h2>
+<ul>
+  <% @compliments.each do |c| %>
+    <li>
+      <%= c.giver.name %> 선생님이
+      <%= c.classroom.name if c.classroom %>에서
+      <%= c.given_at.strftime("%Y-%m-%d %H:%M") %>에 칭찬!
+    </li>
+  <% end %>
+</ul>

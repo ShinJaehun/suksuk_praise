@@ -1,11 +1,12 @@
 <%= turbo_frame_tag dom_id(user) do %>
   <div class="p-4 border rounded-lg shadow text-center">
     <%#= image_tag(user.avatar, class: "mx-auto w-24 h-24") %>
-    <p class="mt-2 font-semibold"><%= user.name %></p>
+    <p class="mt-2 font-semibold">
+      <%= link_to user.name, user_path(user, classroom_id: classroom.id), data: { turbo: false }, class: "hover:underline text-blue-600" %></p>
     <p class="text-sm text-gray-600">칭찬: <%= user.points %></p>
 
     <% if current_user&.teacher? || current_user&.admin? %>
-      <%= button_to "칭찬하기 🥳", compliment_user_path(user), method: :post,
+      <%= button_to "칭찬하기 🥳", compliment_user_path(user, classroom_id: classroom.id), method: :post,
             data: { turbo_method: :post, turbo_stream: true },
             class: "mt-2 bg-yellow-300 px-3 py-1 rounded" %>
     <% end %>

@@ -9,8 +9,6 @@ class ClassroomsController < ApplicationController
   end
 
   def show
-    @classroom = Classroom.find(params[:id])
-
     unless @classroom.users.include?(current_user) || current_user.admin?
       redirect_to classrooms_path, alert: "접근 권한 없음!"
       return
@@ -46,7 +44,7 @@ class ClassroomsController < ApplicationController
   def update
     if @classroom.update(classroom_params)
       redirect_to @classroom, notice: "교실 이름이 수정되었습니다."
-    else 
+    else
       render :edit, status: :unprocessable_entity
     end
   end
