@@ -4,12 +4,20 @@
     <%= link_to "🗑 삭제", classroom_path(@classroom), method: :delete,
           data: { confirm: "정말 삭제할까요?" },
           class: "text-red-600 underline" %>
+    <%= button_to "학생 추가", new_student_classroom_path(@classroom),
+          method: :get,
+          form: { data: { turbo_frame: "modal" } },
+          class: "px-3 py-2 bg-green-500 text-white rounded" %>
+    <%= button_to "여러 학생 자동 생성", bulk_students_classroom_path(@classroom),
+          method: :get,
+          form: { data: { turbo_frame: "modal" } },
+          class: "px-3 py-2 bg-purple-500 text-white rounded" %>
   </div>
 <% end %>
 
 <div class="flex items-center mb-4">
   <%= button_to "칭찬왕 갱신", refresh_compliment_king_classroom_path(@classroom),
-    method: :post, remote: true,
+    method: :post,
     form: { data: { turbo_stream: true }},
     class: "ml-auto px-3 py-1 bg-blue-200 rounded hover:bg-blue-300" %>
 </div>
@@ -26,3 +34,5 @@
 <div class="grid grid-cols-3 gap-4">
   <%= render partial: "users/user", collection: @students, as: :user, locals: { classroom: @classroom } %>
 </div>
+
+<%= turbo_frame_tag :modal %>

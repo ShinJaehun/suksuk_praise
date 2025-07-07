@@ -14,6 +14,11 @@ Rails.application.routes.draw do
 
   resources :classrooms do
     member do
+      get :new_student
+      post :add_student
+      get :bulk_students
+      post :create_bulk_students
+      
       post :refresh_compliment_king
     end
   end
