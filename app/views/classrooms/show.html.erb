@@ -31,8 +31,10 @@
 <% end %>
 
 <h2 class="text-xl font-bold mb-4"><%= @classroom.name %>의 학생들</h2>
-<div class="grid grid-cols-3 gap-4">
-  <%= render partial: "users/user", collection: @students, as: :user, locals: { classroom: @classroom } %>
-</div>
+<%= turbo_frame_tag "students_list_#{@classroom.id}" do %>
+  <div class="grid grid-cols-3 gap-4">
+    <%= render partial: "users/user", collection: @students, as: :user, locals: { classroom: @classroom } %>
+  </div>
+<% end %>
 
 <%= turbo_frame_tag :modal %>

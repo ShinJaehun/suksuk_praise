@@ -5,8 +5,9 @@ export default class extends Controller {
   connect() {
   }
 
-  close(event){
-    event.preventDefault()
-    this.element.innerHTML = ""
+  close(){
+    //this.element.innerHTML = ""
+    //this.element.className = "modal-default"
+    this.element.closest("turbo-frame#modal").innerHTML="";
   }
 }

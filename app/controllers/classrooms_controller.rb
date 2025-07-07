@@ -1,6 +1,6 @@
 class ClassroomsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_classroom, only: [:show, :edit, :update, :destroy, 
+  before_action :set_classroom, only: [:show, :edit, :update, :destroy,
     :refresh_compliment_king, :new_student, :add_student, :bulk_students, :create_bulk_students]
   before_action :require_teacher_or_admin!, only: [:new, :create, :edit, :update, :destroy]
   before_action :authorize_classroom_owner!, only: [:edit, :update, :destroy]
@@ -15,10 +15,12 @@ class ClassroomsController < ApplicationController
       return
     end
 
-    @students = @classroom.classroom_memberships
-      .includes(:user)
-      .where(role: "student")
-      .map(&:user)   #???
+    #@students = @classroom.classroom_memberships
+      #.includes(:user)
+      #.where(role: "student")
+      #.map(&:user)   #???
+
+    @students = @classroom.students
 
     # 오늘 하루 가장 많은 칭찬을 받은 학생 찾기
     today = Time.zone.now.beginning_of_day..Time.zone.now.end_of_day
@@ -119,7 +121,10 @@ class ClassroomsController < ApplicationController
     @user = User.new(user_params.merge(role: "student", points: 0, avatar: random_avatar))
     if @user.save
       ClassroomMembership.create!(user: @user, classroom: @classroom, role: "student")
-      redirect_to classroom_path(@classroom), notice: "학생이 추가되었습니다."
+      respond_to do |format|
+        format.turbo_stream
+        format.html { redirect_to classroom_path(@classroom), notice: "학생이 추가되었습니다." }
+      end
     else
       respond_to do |format|
         format.html { render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user }, status: :unprocessable_entity }
@@ -136,7 +141,7 @@ class ClassroomsController < ApplicationController
   def create_bulk_students
     count = params[:count].to_i
     count = 30 if count <= 0 || count >= 30 # 기본값 및 최대값 제한
-  
+
     created_users = []
 
     rand_chars = Array('A'..'Z').sample(4).join
@@ -158,8 +163,11 @@ class ClassroomsController < ApplicationController
         created_users << user
       end
     end
-  
-    redirect_to classroom_path(@classroom), notice: "#{created_users.size}명의 학생이 자동 생성되었습니다."
+
+    respond_to do |format|
+      format.turbo_stream
+      format.html { redirect_to classroom_path(@classroom), notice: "#{created_users.size}명의 학생이 자동 생성되었습니다." }
+    end
   end
 
   def destroy
