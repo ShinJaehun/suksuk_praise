@@ -1,7 +1,8 @@
 class ClassroomsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_classroom, only: [:show, :edit, :update, :destroy,
-    :refresh_compliment_king, :new_student, :add_student, :bulk_students, :create_bulk_students]
+  # before_action :set_classroom, only: [:show, :edit, :update, :destroy,
+  #   :refresh_compliment_king, :new_student, :add_student, :bulk_students, :create_bulk_students]
+  before_action :set_classroom, only: [:show, :edit, :update, :destroy,:refresh_compliment_king]
   before_action :require_teacher_or_admin!, only: [:new, :create, :edit, :update, :destroy]
   before_action :authorize_classroom_owner!, only: [:edit, :update, :destroy]
 
@@ -96,79 +97,66 @@ class ClassroomsController < ApplicationController
     end
   end
 
-  def new_student
-    @user = User.new
+  # def new_student
+  #   @user = User.new
 
-    # respond_to do |format|
-    #   format.turbo_stream { render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user } }
-    #   format.html # 혹시 직접 url로 접근할 때도 대비 (optional)
-    # end
+  #   respond_to do |format|
+  #     format.html { render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user } }
+  #   end
+  # end
 
-    # render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user }, formats: [:turbo_stream]
+  # def add_student
+  #   @user = User.new(user_params.merge(role: "student", points: 0, avatar: random_avatar))
+  #   if @user.save
+  #     ClassroomMembership.create!(user: @user, classroom: @classroom, role: "student")
+  #     respond_to do |format|
+  #       format.turbo_stream
+  #       format.html { redirect_to classroom_path(@classroom), notice: "학생이 추가되었습니다." }
+  #     end
+  #   else
+  #     respond_to do |format|
+  #       format.html { render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user }, status: :unprocessable_entity }
+  #     end
+  #   end
+  # end
 
-    # if turbo_frame_request?
-    #   render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user }, formats: [:turbo_stream]
-    # else
-    #   head :not_found
-    # end
+  # def bulk_students
+  #   respond_to do |format|
+  #     format.html { render partial: "classrooms/modal_bulk_students_form", locals: { classroom: @classroom } }
+  #   end
+  # end
 
-    respond_to do |format|
-      format.html { render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user } }
-    end
-  end
+  # def create_bulk_students
+  #   count = params[:count].to_i
+  #   count = 30 if count <= 0 || count >= 30 # 기본값 및 최대값 제한
 
-  def add_student
-    @user = User.new(user_params.merge(role: "student", points: 0, avatar: random_avatar))
-    if @user.save
-      ClassroomMembership.create!(user: @user, classroom: @classroom, role: "student")
-      respond_to do |format|
-        format.turbo_stream
-        format.html { redirect_to classroom_path(@classroom), notice: "학생이 추가되었습니다." }
-      end
-    else
-      respond_to do |format|
-        format.html { render partial: "classrooms/modal_student_form", locals: { classroom: @classroom, user: @user }, status: :unprocessable_entity }
-      end
-    end
-  end
+  #   created_users = []
 
-  def bulk_students
-    respond_to do |format|
-      format.html { render partial: "classrooms/modal_bulk_students_form", locals: { classroom: @classroom } }
-    end
-  end
+  #   rand_chars = Array('A'..'Z').sample(4).join
 
-  def create_bulk_students
-    count = params[:count].to_i
-    count = 30 if count <= 0 || count >= 30 # 기본값 및 최대값 제한
+  #   count.times do |i|
+  #     num_str = format('%02d', i+1)
+  #     name = "#{rand_chars}#{num_str}"
+  #     email = "#{name}@suksuk"
+  #     user = User.new(
+  #       name: name,
+  #       email: email,
+  #       password: "123456", # 기본 비밀번호(원하면 랜덤 생성도 가능)
+  #       role: "student",
+  #       points: 0,
+  #       avatar: random_avatar
+  #     )
+  #     if user.save
+  #       ClassroomMembership.create!(user: user, classroom: @classroom, role: "student")
+  #       created_users << user
+  #     end
+  #   end
 
-    created_users = []
-
-    rand_chars = Array('A'..'Z').sample(4).join
-
-    count.times do |i|
-      num_str = format('%02d', i+1)
-      name = "#{rand_chars}#{num_str}"
-      email = "#{name}@suksuk"
-      user = User.new(
-        name: name,
-        email: email,
-        password: "123456", # 기본 비밀번호(원하면 랜덤 생성도 가능)
-        role: "student",
-        points: 0,
-        avatar: random_avatar
-      )
-      if user.save
-        ClassroomMembership.create!(user: user, classroom: @classroom, role: "student")
-        created_users << user
-      end
-    end
-
-    respond_to do |format|
-      format.turbo_stream
-      format.html { redirect_to classroom_path(@classroom), notice: "#{created_users.size}명의 학생이 자동 생성되었습니다." }
-    end
-  end
+  #   respond_to do |format|
+  #     format.turbo_stream
+  #     format.html { redirect_to classroom_path(@classroom), notice: "#{created_users.size}명의 학생이 자동 생성되었습니다." }
+  #   end
+  # end
 
   def destroy
     @classroom.destroy
@@ -177,9 +165,9 @@ class ClassroomsController < ApplicationController
 
   private
 
-  def user_params
-    params.require(:user).permit(:name, :email, :password)
-  end
+  # def user_params
+  #   params.require(:user).permit(:name, :email, :password)
+  # end
 
   def set_classroom
     @classroom = Classroom.find(params[:id])
@@ -202,7 +190,7 @@ class ClassroomsController < ApplicationController
     end
   end
 
-  def random_avatar
-    "avatars/avatar_#{rand(1..30)}.png"
-  end
+  # def random_avatar
+  #   "avatars/avatar_#{rand(1..30)}.png"
+  # end
 end

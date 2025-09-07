@@ -12,15 +12,25 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :classrooms do
-    member do
-      get :new_student
-      post :add_student
-      get :bulk_students
-      post :create_bulk_students
+  # resources :classrooms do
+  #   member do
+  #     get :new_student
+  #     post :add_student
+  #     get :bulk_students
+  #     post :create_bulk_students
       
-      post :refresh_compliment_king
-    end
+  #     post :refresh_compliment_king
+  #   end
+  # end
+
+  resources :classrooms do
+    member { get :refresh_compliment_king }
+    resources :students, controller: "classroom_students", only: [:new, :create] do
+      collection do
+        get :bulk_new
+        post :bulk_create
+      end
+    end 
   end
 
   # Defines the root path route ("/")

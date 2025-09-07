@@ -2,7 +2,7 @@
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50", data-controller="modal">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-8 relative">
       <h2 class="text-xl font-bold mb-4">여러 명 학생 자동생성</h2>
-      <%= form_with url: create_bulk_students_classroom_path(classroom),
+      <%= form_with url: bulk_create_classroom_students_path(classroom),
           method: :post,
           data: { turbo_frame: :modal, action: "submit->modal#showProgress" } do |f| %>
         <div class="mb-4">

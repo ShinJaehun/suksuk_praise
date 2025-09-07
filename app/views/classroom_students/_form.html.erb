@@ -1,7 +1,7 @@
 <%= turbo_frame_tag :modal  do %>
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50", data-controller="modal">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-8 relative">
-        <%= form_with model: user, url: add_student_classroom_path(classroom), local: false do |f| %>
+        <%= form_with model: user, url: classroom_students_path(classroom) do |f| %>
             <h2 class="text-xl font-bold mb-4">학생 개별 추가</h2>
             <div class="mb-2">
                 <%= f.label :name, "이름" %>
