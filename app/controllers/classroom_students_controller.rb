@@ -1,7 +1,8 @@
 class ClassroomStudentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
-  before_action :require_teacher_or_admin!
+  # before_action :require_teacher_or_admin!
+  before_action :authorize_manage!
 
   def new
     @user = User.new
@@ -78,11 +79,15 @@ class ClassroomStudentsController < ApplicationController
     params.require(:user).permit(:name, :email, :password)
   end
 
-  def require_teacher_or_admin!
-    redirect_to @classroom, alert: "권한 없음" unless current_user.admin? || current_user.teacher?
-  end
+  # def require_teacher_or_admin!
+  #   redirect_to @classroom, alert: "권한 없음" unless current_user.admin? || current_user.teacher?
+  # end
 
   def random_avatar
     "avatars/avatar_#{rand(1..30)}.png"
+  end
+
+  def authorize_manage!
+    authorize @classroom, :update?
   end
 end

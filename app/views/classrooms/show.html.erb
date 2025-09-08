@@ -1,4 +1,5 @@
-<% if current_user.admin? || @classroom.classroom_memberships.exists?(user: current_user, role: "teacher") %>
+<%# if current_user.admin? || @classroom.classroom_memberships.exists?(user: current_user, role: "teacher") %>
+<% if policy(@classroom).update? %>
   <div class="mb-4">
     <%= link_to "✏️ 수정", edit_classroom_path(@classroom), class: "text-blue-600 underline mr-4" %>
     <%= link_to "🗑 삭제", classroom_path(@classroom), method: :delete,

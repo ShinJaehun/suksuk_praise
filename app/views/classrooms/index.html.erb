@@ -1,6 +1,10 @@
 <h2 class="text-xl font-bold mb-4">내 교실</h2>
 
-<% if current_user.teacher? || current_user.admin? %>
+<%# if current_user.teacher? || current_user.admin? %>
+  <%#= link_to "교실 만들기", new_classroom_path, class: "text-green-600 underline block mb-4" %>
+<%# end %>
+
+<% if policy(Classroom).create? %>
   <%= link_to "교실 만들기", new_classroom_path, class: "text-green-600 underline block mb-4" %>
 <% end %>
 
