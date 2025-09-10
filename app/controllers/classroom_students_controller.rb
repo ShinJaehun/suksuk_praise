@@ -1,7 +1,6 @@
 class ClassroomStudentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
-  # before_action :require_teacher_or_admin!
   before_action :authorize_manage!
 
   def new
@@ -88,6 +87,6 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def authorize_manage!
-    authorize @classroom, :update?
+    authorize @classroom, :manage_members?
   end
 end

@@ -2,18 +2,36 @@ class ClassroomPolicy < ApplicationPolicy
   class Scope < Scope
     def resolve
       return scope.all if user.admin?
-      scope.joins(:classroom_memberships)
-        .where(classroom_memberships: { user_id: user.id })
-        .distinct
+
+      # Teachers can see only their classrooms
+      if teacher?
+        return scope.joins(:classroom_memberships)
+          .where(classroom_memberships: { user_id: user.id, role: "teacher" })
+          .distinct
+      end
+
+      # Students can see only their classrooms
+      if student?
+        return scope.joins(:classroom_memberships)
+          .where(classroom_memberships: { user_id: user.id })
+          .distinct
+      end
+
+      scope.none
     end
+  end
+
+  def index?
+    admin? || teacher?
   end
   
   def show?
-    user.admin? || record.classroom_memberships.exists?(user_id: user.id)
+    return true if admin?
+    member_of?(record)
   end
 
   def create?
-    user.admin? || user.teacher?
+    admin? || teacher?
   end
   
   def new?
@@ -21,7 +39,8 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def update?
-    user.admin? || record.classroom_memberships.exists?(user_id: user.id, role: "teacher")
+    return true if admin?
+    teacher_of?(record)
   end
 
   def edit?
@@ -32,4 +51,17 @@ class ClassroomPolicy < ApplicationPolicy
     update?
   end
 
+  def manage_members?
+    update?
+  end
+
+  private
+
+  def teacher_of?(classroom)
+    classroom.classroom_memberships.exists?(user_id: user.id, role: "teacher")
+  end
+
+  def member_of?(classroom)
+    classroom.classroom_memberships.exists?(user_id: user.id)
+  end
 end

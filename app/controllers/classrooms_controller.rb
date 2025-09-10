@@ -5,36 +5,11 @@ class ClassroomsController < ApplicationController
   # before_action :authorize_classroom_owner!, only: [:edit, :update, :destroy]
 
   def index
-    # @classrooms = current_user.admin? ? Classroom.all : current_user.classrooms.distinct #???
     @classrooms = policy_scope(Classroom).order(created_at: :desc)
+    authorize Classroom
   end
 
   def show
-    # unless @classroom.users.include?(current_user) || current_user.admin?
-    #   redirect_to classrooms_path, alert: "접근 권한 없음!"
-    #   return
-    # end
-
-    # @students = @classroom.students
-
-    # 오늘 하루 가장 많은 칭찬을 받은 학생 찾기
-    # today = Time.zone.now.beginning_of_day..Time.zone.now.end_of_day
-    #puts "################### #{today} ##################"
-    # compliments_today = Compliment.where(classroom: @classroom, given_at: today)
-    #   .group(:receiver_id)
-    #   .count
-
-    # if compliments_today.any?
-    #   max_count = compliments_today.values.max
-    #   @compliment_kings = @students.select { |u| compliments_today[u.id] == max_count }
-    #   @compliment_king_count = max_count
-    # #puts "################### #{@compliment_kings} ##################"
-    # #puts "################### #{@compliment_king_count} ##################"
-    # else
-    #   @compliment_kings = []
-    #   @compliment_king_count = 0
-    # end
-
     authorize @classroom
     @students = @classroom.students
         
@@ -51,30 +26,6 @@ class ClassroomsController < ApplicationController
   end
 
   def refresh_compliment_king
-    # @students = @classroom.classroom_memberships
-    #   .includes(:user)
-    #   .where(role: "student")
-    #   .map(&:user)   #???
-
-    # # 오늘 하루 가장 많은 칭찬을 받은 학생 찾기
-    # today = Time.zone.now.beginning_of_day..Time.zone.now.end_of_day
-    # compliments_today = Compliment.where(classroom: @classroom, given_at: today)
-    #   .group(:receiver_id)
-    #   .count
-
-    # if compliments_today.any?
-    #   max_count = compliments_today.values.max
-    #   @compliment_kings = @students.select { |u| compliments_today[u.id] == max_count }
-    #   @compliment_king_count = max_count
-    # else
-    #   @compliment_kings = []
-    #   @compliment_king_count = 0
-    # end
-
-    # respond_to do |format|
-    #   format.turbo_stream
-    # end
-
     authorize @classroom, :show?
     @students = @classroom.students
     today = Time.zone.today.all_day
@@ -139,17 +90,4 @@ class ClassroomsController < ApplicationController
   def classroom_params
     params.require(:classroom).permit(:name)
   end
-
-  # def require_teacher_or_admin!
-  #   unless current_user.teacher? || current_user.admin?
-  #     redirect_to classrooms_path, alert: "접근 권한 없음!"
-  #   end
-  # end
-
-  # def authorize_classroom_owner!
-  #   return if current_user.admin?
-  #   unless @classroom.classroom_memberships.exists?(user: current_user, role: "teacher")
-  #     redirect_to classrooms_path, alert: "해당 교실에 대한 수정 권한 없음!"
-  #   end
-  # end
 end
