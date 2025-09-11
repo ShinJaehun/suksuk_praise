@@ -1,17 +1,17 @@
 class ClassroomPolicy < ApplicationPolicy
   class Scope < Scope
     def resolve
-      return scope.all if user.admin?
+      return scope.all if user&.admin?
 
       # Teachers can see only their classrooms
-      if teacher?
+      if user&.teacher?
         return scope.joins(:classroom_memberships)
           .where(classroom_memberships: { user_id: user.id, role: "teacher" })
           .distinct
       end
 
       # Students can see only their classrooms
-      if student?
+      if user&.student?
         return scope.joins(:classroom_memberships)
           .where(classroom_memberships: { user_id: user.id })
           .distinct
@@ -22,7 +22,7 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def index?
-    admin? || teacher?
+    admin? || teacher? || student?
   end
   
   def show?

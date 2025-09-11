@@ -15,7 +15,14 @@ User.create!(
   role: "admin"
 )
 
-teacher = User.create!(
+teacherB = User.create!(
+  email: "b@b",
+  password: "password",
+  name: "티쳐비",
+  role: "teacher"
+)
+
+teacherT = User.create!(
   email: "t@t",
   password: "password",
   name: "티쳐티",
@@ -34,10 +41,17 @@ students = 30.times.map do |i|
 end
 
 classroom1 = Classroom.create!(name: "1반")
+classroom2 = Classroom.create!(name: "2반")
 
 ClassroomMembership.create!(
-  user: teacher,
+  user: teacherT,
   classroom: classroom1,
+  role: "teacher"
+)
+
+ClassroomMembership.create!(
+  user: teacherB,
+  classroom: classroom2,
   role: "teacher"
 )
 
