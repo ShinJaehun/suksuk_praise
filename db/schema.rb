@@ -10,18 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_07_05_060245) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_12_105208) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "classroom_memberships", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "classroom_id", null: false
-    t.string "role", null: false
+    t.string "role", default: "student", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["classroom_id", "user_id"], name: "index_classroom_memberships_on_classroom_id_and_user_id", unique: true
     t.index ["classroom_id"], name: "index_classroom_memberships_on_classroom_id"
     t.index ["user_id"], name: "index_classroom_memberships_on_user_id"
+    t.check_constraint "role::text = ANY (ARRAY['teacher'::character varying, 'student'::character varying]::text[])", name: "chk_cm_role"
   end
 
   create_table "classrooms", force: :cascade do |t|
@@ -31,24 +33,27 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_05_060245) do
   end
 
   create_table "compliments", force: :cascade do |t|
-    t.integer "giver_id"
-    t.integer "receiver_id"
+    t.bigint "giver_id"
+    t.bigint "receiver_id"
     t.bigint "classroom_id", null: false
-    t.datetime "given_at"
+    t.datetime "given_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["classroom_id", "given_at"], name: "index_compliments_on_classroom_id_and_given_at"
     t.index ["classroom_id"], name: "index_compliments_on_classroom_id"
+    t.index ["giver_id"], name: "index_compliments_on_giver_id"
+    t.index ["receiver_id"], name: "index_compliments_on_receiver_id"
   end
 
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
+    t.string "role", default: "student", null: false
     t.string "reset_password_token"
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "role", default: "student"
     t.string "name"
     t.string "avatar"
     t.integer "points", default: 0
@@ -56,7 +61,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_07_05_060245) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  add_foreign_key "classroom_memberships", "classrooms"
-  add_foreign_key "classroom_memberships", "users"
-  add_foreign_key "compliments", "classrooms"
+  add_foreign_key "classroom_memberships", "classrooms", on_delete: :cascade
+  add_foreign_key "classroom_memberships", "users", on_delete: :cascade
+  add_foreign_key "compliments", "classrooms", on_delete: :cascade
+  add_foreign_key "compliments", "users", column: "giver_id", on_delete: :nullify
+  add_foreign_key "compliments", "users", column: "receiver_id", on_delete: :nullify
 end
