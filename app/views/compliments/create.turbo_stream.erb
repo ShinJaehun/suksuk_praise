@@ -1,0 +1,3 @@
+<%= turbo_stream.replace dom_id(@receiver) do %>
+  <%= render "users/user", user: @receiver, classroom: @classroom %>
+<% end %>

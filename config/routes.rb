@@ -6,22 +6,13 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   # get "up" => "rails/health#show", as: :rails_health_check
 
-  resources :users, only: [:show] do
-    member do
-      post :compliment
-    end
-  end
-
-  # resources :classrooms do
+  # resources :users, only: [:show] do
   #   member do
-  #     get :new_student
-  #     post :add_student
-  #     get :bulk_students
-  #     post :create_bulk_students
-      
-  #     post :refresh_compliment_king
+  #     post :compliment
   #   end
   # end
+
+  resources :users, only: [:show]
 
   resources :classrooms do
     member { get :refresh_compliment_king }
@@ -31,7 +22,12 @@ Rails.application.routes.draw do
         post :bulk_create
       end
     end 
+
+    # RESTful 하게 칭찬은 교실 리소스 하위에 생성
+    resources :compliments, only: [:create]
+    
   end
+
 
   # Defines the root path route ("/")
   root "classrooms#index"
