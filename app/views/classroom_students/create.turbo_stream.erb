@@ -1,8 +1,15 @@
 <%= turbo_stream.replace "students_list_#{@classroom.id}" do %>
   <div class="grid grid-cols-3 gap-4">
-    <%= render partial: "users/user", collection: @classroom.students, as: :user, locals: { classroom: @classroom } %>
+    <%= render partial: "users/user",
+               collection: @classroom.students,
+               as: :user,
+               locals: { classroom: @classroom } %>
   </div>
 <% end %>
 
-<%= turbo_stream.update :modal do %>
+<%= turbo_stream.replace "flash" do %>
+  <%= render "layouts/alerts" %>
+<% end %>
+
+<%= turbo_stream.update "modal" do %>
 <% end %>

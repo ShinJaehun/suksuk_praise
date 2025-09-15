@@ -1,15 +1,24 @@
 class ComplimentPolicy < ApplicationPolicy
   class Scope < Scope
+    # 주체: user(current_user), 대상: scope(Compliment)
+    # 컨트롤러에서 receiver_id(@user.id)로 좁힌 뒤 이 scope를 태우면,
+    # 현재 사용자 권한에 맞는 교실/대상만 보이게 됩니다.
+    
     def resolve
       return scope.all if user&.admin?
-      if user&.teacher? #담임인 반의 칭찬만
-        return scope.joins(classroom: :classroom_memberships)
-          .where(classroom_memberships: { user_id: user.id, role: "teacher" })
-      end #자기네 반만?
       
-      scope.joins(classroom: :classroom_memberships)
-        .where(classroom_memberships: { user_id: user.id })
+      if user&.teacher? 
+        # 교사가 볼 수 있는 교실에서 발생한 칭찬만
+        teacher_classroom_ids = user.classroom_memberships.where(role: 'teacher').pluck(:classroom_id)
+        return scope.where(classroom_id: teacher_classroom_ids)
+      end
       
+      if user&.student?
+        # 학생은 자신이 받은 칭찬만
+        return scope.where(receiver_id: user.id)
+      end
+
+      scope.none
     end
   end
 

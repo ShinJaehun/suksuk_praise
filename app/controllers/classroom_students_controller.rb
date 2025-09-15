@@ -15,14 +15,16 @@ class ClassroomStudentsController < ApplicationController
     @user = User.new(user_params.merge(role: "student", points: 0, avatar: random_avatar))
     if @user.save
       @classroom.classroom_memberships.create!(user: @user, role: "student")
-      respond_to do |f|
-        f.turbo_stream
-        f.html { redirect_to @classroom, notice: "학생이 추가되었습니다." }
+      respond_to do |format|
+        flash.now[:notice] = "학생이 추가되었습니다." # ✅ Turbo 즉시 렌더
+        format.turbo_stream                         # create.turbo_stream.erb
+        format.html { redirect_to @classroom, notice: "학생이 추가되었습니다." }
       end
     else
-      respond_to do |f|
-        f.turbo_stream { render :new, status: :unprocessable_entity }
-        f.html { render :new, status: :unprocessable_entity }
+      respond_to do |format|
+        flash.now[:alert] = @user.errors.full_messages.to_sentence.presence || "이름과 이메일을 확인해주세요."
+        format.turbo_stream { render "classroom_students/create_error" }
+        format.html { redirect_to @classroom, alert: flash[:alert] }
       end
     end
   end

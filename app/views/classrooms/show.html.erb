@@ -1,17 +1,17 @@
-<%# if current_user.admin? || @classroom.classroom_memberships.exists?(user: current_user, role: "teacher") %>
 <% if policy(@classroom).update? %>
   <div class="mb-4">
     <%= link_to "✏️ 수정", edit_classroom_path(@classroom), class: "text-blue-600 underline mr-4" %>
     <%= link_to "🗑 삭제", classroom_path(@classroom), method: :delete,
           data: { confirm: "정말 삭제할까요?" },
           class: "text-red-600 underline" %>
-    <%= button_to "학생 추가", new_classroom_student_path(@classroom),
-          method: :get,
-          form: { data: { turbo_frame: "modal" } },
+    <%= link_to "학생 추가",
+          new_classroom_student_path(@classroom),
+          data: { turbo_frame: "modal" },
           class: "px-3 py-2 bg-green-500 text-white rounded" %>
-    <%= button_to "여러 학생 자동 생성", bulk_new_classroom_students_path(@classroom),
-          method: :get,
-          form: { data: { turbo_frame: "modal" } },
+
+    <%= link_to "여러 학생 자동 생성",
+          bulk_new_classroom_students_path(@classroom),
+          data: { turbo_frame: "modal" },
           class: "px-3 py-2 bg-purple-500 text-white rounded" %>
   </div>
 <% end %>

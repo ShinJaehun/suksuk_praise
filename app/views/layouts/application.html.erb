@@ -13,7 +13,11 @@
 
   <body>
     <%= render "layouts/navbar" %>
-    <%= render "layouts/alerts" %>
+
+    <div id="flash">
+      <%= render "layouts/alerts" %>
+    </div>
+
     <%= yield %>
   </body>
 </html>

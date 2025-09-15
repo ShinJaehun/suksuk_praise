@@ -7,13 +7,19 @@ class UsersController < ApplicationController
     #end
 
     def show
-      @classroom = Classroom.find_by(id: params[:classroom_id])
-      authorize @classroom, :show? if @classroom
+        @classroom = load_and_authorize_classroom!(params[:classroom_id]) if params[:classroom_id].present?
 
-      @compliments = @user.received_compliments
-                          .includes(:giver, :classroom)
-                          .order(given_at: :desc)
-      @compliments = @compliments.where(classroom_id: @classroom.id) if @classroom
+        # 1) 사용자 페이지 접근 권한
+        authorize @user, :show?
+
+        # 2) policy_scope로 권한과 쿼리 범위 정렬
+        @compliments = policy_scope(Compliment)
+                        .where(receiver_id: @user.id)
+        @compliments = @compliments.where(classroom_id: @classroom.id) if @classroom
+
+        @compliments = @compliments
+                        .includes(:giver, :classroom)
+                        .order(given_at: :desc)
     end
 
     private
@@ -21,5 +27,11 @@ class UsersController < ApplicationController
     def set_user
         @user = User.find(params[:id])
     end
-
+    
+    # classroom_id가 들어왔는데 없거나 권한이 없으면 명확히 실패시킴
+    def load_and_authorize_classroom!(cid)
+        classroom = Classroom.find(cid) # 못 찾으면 ActiveRecord::RecordNotFound
+        authorize classroom, :show?
+        classroom
+    end
 end
