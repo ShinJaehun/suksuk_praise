@@ -59,6 +59,10 @@ class ClassroomPolicy < ApplicationPolicy
     update?
   end
 
+  def refresh_compliment_king?
+    update?
+  end
+
   private
 
   def teacher_of?(classroom)

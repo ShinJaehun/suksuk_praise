@@ -15,7 +15,7 @@ Rails.application.routes.draw do
   resources :users, only: [:show]
 
   resources :classrooms do
-    member { get :refresh_compliment_king }
+    member { post :refresh_compliment_king }
     resources :students, controller: "classroom_students", only: [:new, :create] do
       collection do
         get :bulk_new

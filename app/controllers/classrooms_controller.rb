@@ -11,7 +11,7 @@ class ClassroomsController < ApplicationController
 
   def show
     authorize @classroom
-    @students = @classroom.students
+    @students = @classroom.students.order("users.created_at ASC")
         
     today = Time.zone.today.all_day
     counts = Compliment.where(classroom: @classroom, given_at: today).group(:receiver_id).count
