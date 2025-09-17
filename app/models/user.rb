@@ -25,4 +25,7 @@ class User < ApplicationRecord
            foreign_key: :receiver_id,
            dependent: :nullify,
            inverse_of: :receiver
+
+  has_many :user_coupons, dependent: :destroy
+  has_many :coupon_templates, through: :user_coupons
 end
