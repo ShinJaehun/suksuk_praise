@@ -25,9 +25,17 @@ Rails.application.routes.draw do
 
     # RESTful 하게 칭찬은 교실 리소스 하위에 생성
     resources :compliments, only: [:create]
-    
   end
 
+  # 쿠폰 발급(교실에서 실행) — ClassroomsController#draw_coupon
+  post "/classrooms/:id/draw_coupon",
+       to: "classrooms#draw_coupon",
+       as: :draw_coupon_classroom
+
+  # 쿠폰 사용(교사가 학생 상세에서 실행) — UserCouponsController#use
+  post "/users/:user_id/coupons/:id/use",
+       to: "user_coupons#use",
+       as: :use_user_coupon
 
   # Defines the root path route ("/")
   root "classrooms#index"
