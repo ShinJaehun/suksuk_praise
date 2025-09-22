@@ -3,12 +3,30 @@
     <div class="mb-6 p-4 bg-yellow-100 rounded-lg text-center shadow">
       <span class="text-2xl">오늘의 칭찬왕</span>
       <br />
+
+
       <% @compliment_kings.each do |king| %>
-        <span class="font-bold text-lg"><%= king.name %></span>
-        <%# if king.avatar.present? %>
-          <%#= image_tag king.avatar, class: "inline w-12 h-12 rounded-full align-middle ml-2" %>
-        <%# end %>
+        <div class="mt-2 flex items-center justify-center gap-3">
+
+          <span class="font-bold text-lg"><%= king.name %></span>
+          <%# if king.avatar.present? %>
+            <%#= image_tag king.avatar, class: "inline w-12 h-12 rounded-full align-middle ml-2" %>
+          <%# end %>
+
+
+          <%# 교사/관리자일 때만 발급 버튼 노출 %>
+          <% if current_user.teacher? || current_user.admin? %>
+            <%= button_to "🎟 쿠폰 발급",
+                  draw_coupon_classroom_path(@classroom, user_id: king.id),
+                  method: :post,
+                  form: { data: { turbo_stream: true } },
+                  class: "px-2 py-1 bg-amber-300 rounded hover:bg-amber-400 text-sm" %>
+          <% end %>
+        </div>
+
       <% end %>
+
+
       <div class="mt-2 text-sm text-gray-600">
         <%= @compliment_king_count %>회 칭찬 받음
       </div>

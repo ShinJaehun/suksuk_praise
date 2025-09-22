@@ -1,0 +1,13 @@
+<% if coupons.any? %>
+  <ul class="space-y-1">
+    <% coupons.each do |c| %>
+      <li class="text-sm">
+        <span class="font-semibold"><%= c.user.name %></span>
+        → <%= c.coupon_template.title %>
+        <span class="text-gray-500">(<%= l c.created_at, format: :short %>)</span>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p class="text-gray-500 text-sm">아직 발급된 쿠폰이 없습니다.</p>
+<% end %>

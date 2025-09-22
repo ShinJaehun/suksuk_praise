@@ -90,23 +90,48 @@ class ClassroomsController < ApplicationController
 
     basis = (params[:basis].presence || "daily").to_s      # "daily" | "weekly" | "manual" | "hybrid"
     mode  = (params[:mode].presence  || "daily_top").to_s  # "daily_top" | "weekly_top" | "accumulated" 등
+    now = Time.zone.now
+    period_start = UserCoupon.period_start_for(basis, now: now)
 
-    period_start = UserCoupon.period_start_for(basis, now: Time.zone.now)
+    # 1) 타깃 유저 결정: params[:user_id]가 오면 그 학생에게, 없으면 기존 자동 선정
+    target_user = if params[:user_id].present?
+      @classroom.students.find_by(id: params[:user_id])
+    end
 
-    # 1) 칭찬왕 산정 (기본: 일간/주간 최다)
-    winner = pick_winner!(@classroom, basis: basis, mode: mode)
-    return render json: { error: "선발할 학생이 없습니다." }, status: :unprocessable_entity unless winner
+    winner = target_user || pick_winner!(@classroom, basis: basis, mode: mode)
+    unless winner
+      flash.now[:alert] = "선발할 학생이 없습니다."
+      respond_to do |f|
+        f.turbo_stream { render status: :unprocessable_entity }
+        f.json  { render json: { error: "선발할 학생이 없습니다." }, status: :unprocessable_entity }
+        f.html  { redirect_to classroom_path(@classroom), alert: "선발할 학생이 없습니다." }
+      end
+      return
+    end
 
-    # 2) (선택) 학생별 주기 중복 방지: 같은 기준/기간에 이미 발급받았으면 409
-    if UserCoupon.for_basis_and_period(basis, period_start)
-                .where(user_id: winner.id).exists?
-      return render json: { error: "이미 해당 기간에 쿠폰을 발급받았습니다." }, status: :conflict
+    # 2) 기간 중복 방지(해당 기준/기간에 이미 발급받았는지)
+    if UserCoupon.for_basis_and_period(basis, period_start).where(user_id: winner.id).exists?
+      flash.now[:alert] = "이미 해당 기간에 쿠폰을 발급받았습니다."
+      respond_to do |f|
+        f.turbo_stream { render status: :conflict }
+        f.json  { render json: { error: "이미 해당 기간에 쿠폰을 발급받았습니다." }, status: :conflict }
+        f.html  { redirect_to classroom_path(@classroom), alert: "이미 해당 기간에 쿠폰을 발급받았습니다." }
+      end
+      return
     end
 
     # 3) 템플릿 가중 랜덤
     template = CouponTemplate.weighted_pick
-    return render json: { error: "활성 쿠폰 템플릿이 없습니다." }, status: :unprocessable_entity unless template
-
+    unless template
+      flash.now[:alert] = "활성 쿠폰 템플릿이 없습니다."
+      respond_to do |f|
+        f.turbo_stream { render status: :unprocessable_entity }
+        f.json  { render json: { error: "활성 쿠폰 템플릿이 없습니다." }, status: :unprocessable_entity }
+        f.html  { redirect_to classroom_path(@classroom), alert: "활성 쿠폰 템플릿이 없습니다." }
+      end
+      return
+    end
+    
     # 4) 발급
     coupon = UserCoupon.issue!(
       user: winner,
@@ -118,9 +143,11 @@ class ClassroomsController < ApplicationController
       basis_tag: mode
     )
 
+    flash.now[:notice] = "#{winner.name}에게 “#{template.title}” 쿠폰 발급"
+
     respond_to do |f|
       f.json  { render json: { coupon_id: coupon.id, title: template.title, user_id: winner.id }, status: :created }
-      f.turbo_stream
+      f.turbo_stream # → app/views/classrooms/draw_coupon.turbo_stream.erb
       f.html  { redirect_to classroom_path(@classroom), notice: "#{winner.name}에게 #{template.title} 쿠폰 발급" }
     end
   end
