@@ -1,0 +1,5 @@
+<%= turbo_stream.remove dom_id(@user.user_coupons.find(params[:id])) %>
+
+<%= turbo_stream.replace "flash" do %>
+  <%= render "layouts/alerts" %>
+<% end %>

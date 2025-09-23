@@ -26,6 +26,7 @@ class User < ApplicationRecord
            dependent: :nullify,
            inverse_of: :receiver
 
-  has_many :user_coupons, dependent: :destroy
+  has_many :user_coupons, dependent: :nullify
+
   has_many :coupon_templates, through: :user_coupons
 end

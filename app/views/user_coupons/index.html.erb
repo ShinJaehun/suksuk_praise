@@ -1,0 +1,27 @@
+<h1 class="text-xl font-bold mb-4"><%= @user.name %>의 쿠폰</h1>
+
+<div id="flash">
+  <%= render "layouts/alerts" %>
+</div>
+
+<%= turbo_frame_tag "my_coupons" do %>
+  <% if @coupons.any? %>
+    <ul class="space-y-2">
+      <% @coupons.each do |c| %>
+        <li id="<%= dom_id(c) %>" class="border rounded p-3 flex items-center justify-between">
+          <div>
+            <div class="font-semibold"><%= c.coupon_template.title %></div>
+            <div class="text-gray-500 text-sm"><%= l c.created_at, format: :short %> 발급</div>
+          </div>
+          <%= button_to "사용하기",
+                use_user_coupon_path(@user, c),
+                method: :post,
+                form: { data: { turbo_stream: true } },
+                class: "px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="text-gray-500">발급된 쿠폰이 없습니다.</p>
+  <% end %>
+<% end %>

@@ -31,6 +31,8 @@ class UserCoupon < ApplicationRecord
     where(issued_at: from..to)
   }
 
+  scope :issued, -> { where(status: "issued") }
+
   # === 기간 헬퍼 ===
   def self.period_start_for(basis, now: Time.zone.now)
     case basis.to_s

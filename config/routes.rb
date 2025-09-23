@@ -37,6 +37,9 @@ Rails.application.routes.draw do
        to: "user_coupons#use",
        as: :use_user_coupon
 
+  # 본인 쿠폰 목록
+  get  "/users/:user_id/coupons",      to: "user_coupons#index", as: :user_coupons
+
   # Defines the root path route ("/")
   root "classrooms#index"
 end
