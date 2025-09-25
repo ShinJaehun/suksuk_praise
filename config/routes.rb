@@ -21,7 +21,10 @@ Rails.application.routes.draw do
         get :bulk_new
         post :bulk_create
       end
-    end 
+    end
+
+    # /classrooms/:classroom_id/users/:id
+    resources :users, only: [:show], controller: "users"  
 
     # RESTful 하게 칭찬은 교실 리소스 하위에 생성
     resources :compliments, only: [:create]
