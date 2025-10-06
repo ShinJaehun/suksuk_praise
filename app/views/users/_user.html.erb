@@ -16,7 +16,7 @@
                     classroom_compliments_path(classroom),
                     method: :post,
                     params: { compliment: { receiver_id: user.id } },
-                    form: { data: { turbo: true } },
+                    form: { data: { turbo_submits_with: "처리중..." } },
                     class: "mt-2 bg-yellow-300 px-3 py-1 rounded" %>
     <% end %>
   </div>

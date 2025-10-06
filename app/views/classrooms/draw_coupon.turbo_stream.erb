@@ -5,6 +5,6 @@
   </div>
 <% end %>
 
-<%= turbo_stream.replace "flash" do %>
+<%= turbo_stream.update "flash" do %>
   <%= render "layouts/alerts" %>
 <% end %>

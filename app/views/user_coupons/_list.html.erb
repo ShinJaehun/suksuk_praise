@@ -12,7 +12,7 @@
           <%= button_to "사용하기",
                 use_user_coupon_path(user, c),
                 method: :post,
-                form: { data: { turbo_stream: true } },
+                form: { data: { turbo_submits_with: "처리중..." } },
                 class: "px-2 py-1 text-sm rounded bg-emerald-500 text-white hover:bg-emerald-600" %>
         </div>
       </li>

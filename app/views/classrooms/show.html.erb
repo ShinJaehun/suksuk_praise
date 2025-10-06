@@ -19,7 +19,7 @@
 <div class="flex items-center mb-4">
   <%= button_to "칭찬왕 갱신", refresh_compliment_king_classroom_path(@classroom),
     method: :post,
-    form: { data: { turbo_stream: true }},
+    form: { data: { turbo_submits_with: "처리중..." }},
     class: "ml-auto px-3 py-1 bg-blue-200 rounded hover:bg-blue-300" %>
 </div>
 
@@ -31,6 +31,8 @@
   } %>
 <% end %>
 
+<div id="issued_coupons"></div>
+
 <h2 class="text-xl font-bold mb-4"><%= @classroom.name %>의 학생들</h2>
 <%= turbo_frame_tag "students_list_#{@classroom.id}" do %>
   <div id="students_grid_<%= @classroom.id %>" class="grid grid-cols-3 gap-4">
@@ -39,3 +41,5 @@
 <% end %>
 
 <%= turbo_frame_tag :modal %>
+
+

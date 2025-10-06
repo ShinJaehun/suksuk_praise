@@ -16,7 +16,7 @@
           <%= button_to "사용하기",
                 use_user_coupon_path(@user, c),
                 method: :post,
-                form: { data: { turbo_stream: true } },
+                form: { data: { turbo_submits_with: "처리중..." } },
                 class: "px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" %>
         </li>
       <% end %>

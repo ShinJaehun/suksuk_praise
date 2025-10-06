@@ -1,4 +1,4 @@
-<%= turbo_frame_tag "compliment_king_#{@classroom.id}" do %>
+<%#= turbo_frame_tag "compliment_king_#{@classroom.id}" do %>
   <% if @compliment_kings.present? && @compliment_king_count > 0 %>
     <div class="mb-6 p-4 bg-yellow-100 rounded-lg text-center shadow">
       <span class="text-2xl">오늘의 칭찬왕</span>
@@ -19,7 +19,7 @@
             <%= button_to "🎟 쿠폰 발급",
                   draw_coupon_classroom_path(@classroom, user_id: king.id),
                   method: :post,
-                  form: { data: { turbo_stream: true } },
+                  form: { data: { turbo_submits_with: "처리중..." } },
                   class: "px-2 py-1 bg-amber-300 rounded hover:bg-amber-400 text-sm" %>
           <% end %>
         </div>
@@ -34,4 +34,4 @@
   <% else %>
     <div class="mb-6 text-gray-400 text-center">오늘 아직 칭찬 왕이 없습니다!</div>
   <% end %>
-<% end %>
+<%# end %>

@@ -90,14 +90,41 @@ class ClassroomsController < ApplicationController
     basis = (params[:basis].presence || "daily").to_s   # "daily" | "weekly" | ...
     mode  = (params[:mode].presence  || "daily_top").to_s
 
-    # target_user_id가 있으면 그 학생에게 수동 발급, 없으면 서비스 내부에서 pick 수행
-    coupon = CouponDraw::Issue.call(
-      classroom: @classroom,
-      basis: basis,
-      mode: mode,
-      issued_by: current_user,
-      target_user_id: params[:user_id]
-    )
+    # 더블클릭/중복요청 소프트 가드(2초)
+    duplicate_window = 2.seconds
+    coupon = nil
+    @classroom.with_lock do
+      scope = UserCoupon.where(
+        classroom_id:   @classroom.id,
+        issuance_basis: basis,
+        basis_tag:      mode,
+        issued_by_id:   current_user.id
+      )
+      scope = scope.where(user_id: params[:user_id]) if params[:user_id].present?
+
+      if scope.where("issued_at >= ?", Time.current - duplicate_window).exists?
+        msg = "중복 요청입니다. 잠시 후 다시 시도해주세요."
+        respond_to do |f|
+          f.turbo_stream do
+            flash.now[:alert] = msg
+            # ⚠️ Turbo는 2xx만 처리 → 상태코드 생략(=200)로 스트림 적용
+            render turbo_stream: turbo_stream.update("flash", partial: "layouts/alerts")
+          end
+          f.html { redirect_to classroom_path(@classroom), alert: msg }
+          f.json { render json: { ok: false, error: "duplicate_request" }, status: :conflict }
+        end
+        return
+      end
+
+      # 첫 요청만 여기 도달 → 발급 실행
+      coupon = CouponDraw::Issue.call(
+        classroom:     @classroom,
+        basis:         basis,
+        mode:          mode,
+        issued_by:     current_user,
+        target_user_id: params[:user_id]
+      )
+    end
 
     winner   = coupon.user
     template = coupon.coupon_template # UserCoupon.issue!(..., template: ...) 구조를 그대로 가정
