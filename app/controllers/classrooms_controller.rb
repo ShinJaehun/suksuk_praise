@@ -1,18 +1,20 @@
+# app/controllers/classrooms_controller.rb
 class ClassroomsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_classroom, only: [:show, :edit, :update, :destroy,:refresh_compliment_king]
-  # before_action :require_teacher_or_admin!, only: [:new, :create, :edit, :update, :destroy]
-  # before_action :authorize_classroom_owner!, only: [:edit, :update, :destroy]
+  before_action :set_classroom, only: [
+    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon
+  ]
 
   def index
+    # index는 policy_scope만 요구(verify_policy_scoped 훅 통과)
     @classrooms = policy_scope(Classroom).order(created_at: :desc)
-    authorize Classroom
+    # authorize Classroom  # <- 불필요 (after_action에서 index는 verify_authorized 제외)
   end
 
   def show
     authorize @classroom
     @students = @classroom.students.order("users.created_at ASC")
-        
+
     today = Time.zone.today.all_day
     counts = Compliment.where(classroom: @classroom, given_at: today).group(:receiver_id).count
     if counts.any?
@@ -64,7 +66,7 @@ class ClassroomsController < ApplicationController
     redirect_to classrooms_path, notice: "교실이 삭제되었습니다."
   end
 
-
+  # Turbo로 일간 칭찬왕 영역만 새로고침
   def refresh_compliment_king
     authorize @classroom, :show?
     @students = @classroom.students
@@ -82,103 +84,53 @@ class ClassroomsController < ApplicationController
     respond_to { |f| f.turbo_stream }
   end
 
-  # POST /classrooms/:id/draw_coupon
   def draw_coupon
-    @classroom = Classroom.find(params[:id])
-    authorize @classroom, :show?  # 보기 권한은 그대로
-    return head :forbidden unless current_user&.teacher? || current_user&.admin?
+    authorize @classroom, :draw_coupon?
 
-    basis = (params[:basis].presence || "daily").to_s      # "daily" | "weekly" | "manual" | "hybrid"
-    mode  = (params[:mode].presence  || "daily_top").to_s  # "daily_top" | "weekly_top" | "accumulated" 등
-    now = Time.zone.now
-    period_start = UserCoupon.period_start_for(basis, now: now)
+    basis = (params[:basis].presence || "daily").to_s   # "daily" | "weekly" | ...
+    mode  = (params[:mode].presence  || "daily_top").to_s
 
-    # 1) 타깃 유저 결정: params[:user_id]가 오면 그 학생에게, 없으면 기존 자동 선정
-    target_user = if params[:user_id].present?
-      @classroom.students.find_by(id: params[:user_id])
-    end
-
-    winner = target_user || pick_winner!(@classroom, basis: basis, mode: mode)
-    unless winner
-      flash.now[:alert] = "선발할 학생이 없습니다."
-      respond_to do |f|
-        f.turbo_stream { render status: :unprocessable_entity }
-        f.json  { render json: { error: "선발할 학생이 없습니다." }, status: :unprocessable_entity }
-        f.html  { redirect_to classroom_path(@classroom), alert: "선발할 학생이 없습니다." }
-      end
-      return
-    end
-
-    # 2) 기간 중복 방지(해당 기준/기간에 이미 발급받았는지)
-    if UserCoupon.for_basis_and_period(basis, period_start).where(user_id: winner.id).exists?
-      flash.now[:alert] = "이미 해당 기간에 쿠폰을 발급받았습니다."
-      respond_to do |f|
-        f.turbo_stream { render status: :conflict }
-        f.json  { render json: { error: "이미 해당 기간에 쿠폰을 발급받았습니다." }, status: :conflict }
-        f.html  { redirect_to classroom_path(@classroom), alert: "이미 해당 기간에 쿠폰을 발급받았습니다." }
-      end
-      return
-    end
-
-    # 3) 템플릿 가중 랜덤
-    template = CouponTemplate.weighted_pick
-    unless template
-      flash.now[:alert] = "활성 쿠폰 템플릿이 없습니다."
-      respond_to do |f|
-        f.turbo_stream { render status: :unprocessable_entity }
-        f.json  { render json: { error: "활성 쿠폰 템플릿이 없습니다." }, status: :unprocessable_entity }
-        f.html  { redirect_to classroom_path(@classroom), alert: "활성 쿠폰 템플릿이 없습니다." }
-      end
-      return
-    end
-    
-    # 4) 발급
-    coupon = UserCoupon.issue!(
-      user: winner,
+    # target_user_id가 있으면 그 학생에게 수동 발급, 없으면 서비스 내부에서 pick 수행
+    coupon = CouponDraw::Issue.call(
       classroom: @classroom,
-      template: template,
+      basis: basis,
+      mode: mode,
       issued_by: current_user,
-      issuance_basis: basis,
-      period_start_on: period_start,
-      basis_tag: mode
+      target_user_id: params[:user_id]
     )
 
-    flash.now[:notice] = "#{winner.name}에게 “#{template.title}” 쿠폰 발급"
+    winner   = coupon.user
+    template = coupon.coupon_template # UserCoupon.issue!(..., template: ...) 구조를 그대로 가정
+
+    flash.now[:notice] = "#{winner.name}에게 #{template.title} 쿠폰 발급"
 
     respond_to do |f|
-      f.json  { render json: { coupon_id: coupon.id, title: template.title, user_id: winner.id }, status: :created }
-      f.turbo_stream # → app/views/classrooms/draw_coupon.turbo_stream.erb
-      f.html  { redirect_to classroom_path(@classroom), notice: "#{winner.name}에게 #{template.title} 쿠폰 발급" }
+      f.turbo_stream # app/views/classrooms/draw_coupon.turbo_stream.erb
+      f.html { redirect_to classroom_path(@classroom), notice: "#{winner.name}에게 #{template.title} 쿠폰 발급" }
+      f.json { render json: { coupon_id: coupon.id, title: template.title, user_id: winner.id }, status: :created }
+    end
+  rescue ActiveRecord::RecordNotFound => e
+    respond_to do |f|
+      f.turbo_stream { flash.now[:alert] = "대상 정보를 찾을 수 없습니다." }
+      f.html { redirect_to classroom_path(@classroom), alert: "대상 정보를 찾을 수 없습니다." }
+      f.json { render json: { ok: false, error: "not_found", detail: e.message }, status: :not_found }
+    end
+  rescue ActiveRecord::RecordInvalid, ArgumentError => e
+    respond_to do |f|
+      f.turbo_stream { flash.now[:alert] = "발급에 실패했습니다: #{e.message}" }
+      f.html { redirect_to classroom_path(@classroom), alert: "발급에 실패했습니다: #{e.message}" }
+      f.json { render json: { ok: false, error: "invalid", detail: e.message }, status: :unprocessable_entity }
+    end
+  rescue StandardError => e
+    # 예: 기간 중복/템플릿 없음 등 서비스에서 커스텀 예외를 올린 경우
+    respond_to do |f|
+      f.turbo_stream { flash.now[:alert] = e.message }
+      f.html { redirect_to classroom_path(@classroom), alert: e.message }
+      f.json { render json: { ok: false, error: "failed", detail: e.message }, status: :unprocessable_entity }
     end
   end
 
   private
-
-  # basis/mode에 따라 오늘/이번주 칭찬왕 산정
-  def pick_winner!(classroom, basis:, mode:)
-    case [basis, mode]
-    when ["daily", "daily_top"]
-      range = Time.zone.today.all_day
-      top_receiver_in_range(classroom, range)
-    when ["weekly", "weekly_top"]
-      start = Time.zone.now.beginning_of_week(:monday)
-      range = start..(start.end_of_week(:monday))
-      top_receiver_in_range(classroom, range)
-    else
-      # 임시 기본: 일간 최다
-      range = Time.zone.today.all_day
-      top_receiver_in_range(classroom, range)
-    end
-  end
-
-  def top_receiver_in_range(classroom, range)
-    counts = Compliment.where(classroom: classroom, given_at: range).group(:receiver_id).count
-    return nil if counts.blank?
-
-    max = counts.values.max
-    candidate_ids = counts.select { |_, v| v == max }.keys
-    classroom.students.where(id: candidate_ids).sample
-  end
 
   def set_classroom
     @classroom = Classroom.find(params[:id])

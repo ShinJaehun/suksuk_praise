@@ -26,7 +26,9 @@ class ComplimentsController < ApplicationController
   # end
 
   def create
+    # 1) 교실 접근 가능? (admin or member) -> show?
     authorize @classroom, :show?
+    # 2) 칭찬 권한? (admin or teacher_of?) -> create_compliment?
     authorize @classroom, :create_compliment?
     
     @receiver = @classroom.classroom_memberships.find_by!(user_id: compliment_params[:receiver_id]).user
@@ -45,9 +47,19 @@ class ComplimentsController < ApplicationController
     end
     
     respond_to do |format|
-      format.turbo_stream   # → app/views/compliments/create.turbo_stream.erb 자동 렌더
+      # app/views/compliments/create.turbo_stream.erb
+      format.turbo_stream   
       format.html { redirect_to user_path(@receiver, classroom_id: @classroom.id), status: :see_other }
+      format.json { render json: { ok: true, receiver_id: @receiver.id }, status: :created }
     end
+
+  rescue ActiveRecord::RecordInvalid => e
+    respond_to do |format|
+      format.turbo_stream { flash.now[:alert] = "칭찬에 실패했습니다: #{e.message}" }
+      format.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id), alert: "칭찬에 실패했습니다: #{e.message}" }
+      format.json { render json: { ok: false, error: e.message }, status: :unprocessable_entity }
+    end
+
   end
   
   private

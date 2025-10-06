@@ -63,6 +63,10 @@ class ClassroomPolicy < ApplicationPolicy
     update?
   end
 
+  def draw_coupon?
+    update?
+  end
+
   private
 
   def teacher_of?(classroom)
