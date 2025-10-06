@@ -14,3 +14,7 @@
     </li>
   <% end %>
 </ul>
+
+<%= turbo_frame_tag dom_id(@user, :coupons) do %>
+  <%= render partial: "user_coupons/list", locals: { coupons: @coupons, user: @user } %>
+<% end %>
