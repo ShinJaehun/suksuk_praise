@@ -12,7 +12,7 @@
     </p>
 
     <% if policy(classroom).create_compliment? %>
-      <%= button_to "칭찬하기 🥳",
+      <%= button_to t("ui.buttons.compliment"),
                     classroom_compliments_path(classroom),
                     method: :post,
                     params: { compliment: { receiver_id: user.id } },

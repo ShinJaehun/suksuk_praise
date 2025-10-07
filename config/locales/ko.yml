@@ -1,0 +1,60 @@
+ko:
+  ui:
+    buttons:
+      compliment: "칭찬하기 🥳"
+      issue_coupon: "쿠폰 발급 🎟️"
+      use_coupon: "사용하기"
+      create_student: "학생 추가"
+      back_to_classroom: "⬅ %{name} 교실로 돌아가기"
+      bulk_create_students: "여러 학생 자동 생성"
+      new_classroom: "교실 생성 🏫"
+      edit_classroom: "교실 정보 수정 ✏️"
+      delete_classroom: "교실 삭제 🗑"
+      confirm_delete_classroom: "정말 이 교실을 삭제할까요? 이 작업은 되돌릴 수 없습니다."
+      refresh_king: "칭찬왕 새로고침 🔄"
+      save: "저장"
+      cancel: "취소"
+    user_labels:
+      name: "이름"
+      email: "이메일"
+      password: "비밀번호"
+    user_placeholders:
+      name: "이름을 입력하세요"
+      email: "이메일을 입력하세요"
+      password: "비밀번호를 입력하세요"
+    headings:
+      classrooms_index: "교실 목록"
+      students: "학생 목록"
+  classrooms:
+    create:
+      success: "교실이 생성되었습니다."
+    update:
+      success: "교실 이름이 수정되었습니다."
+    destroy:
+      success: "교실이 삭제되었습니다."
+    refresh:
+      title: "오늘의 칭찬왕"
+  students:
+    create:
+      success: "학생이 추가되었습니다."
+      failure_fallback: "이름과 이메일을 확인해주세요."
+    bulk_create:
+      success: "%{count}명의 학생이 자동 생성되었습니다."
+      failure: "생성 실패: %{detail}"
+  coupons:
+    draw:
+      success: "%{name}에게 %{title} 쿠폰 발급"
+      duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
+      not_found: "대상 정보를 찾을 수 없습니다."
+      invalid: "발급에 실패했습니다: %{reason}"
+    use:
+      success: "쿠폰을 사용했습니다."
+      already_used: "이미 사용된 쿠폰입니다."
+  compliments:
+    create:
+      success: "칭찬했습니다!"
+      failure: "칭찬에 실패했습니다: %{detail}"
+  errors:
+    not_authorized: "권한이 없습니다."
+  empty:
+    issued_coupons: "아직 발급된 쿠폰이 없습니다."

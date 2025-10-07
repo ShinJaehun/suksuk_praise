@@ -16,7 +16,7 @@
 
           <%# 교사/관리자일 때만 발급 버튼 노출 %>
           <% if policy(@classroom).draw_coupon? %>
-            <%= button_to "🎟 쿠폰 발급",
+            <%= button_to t('ui.buttons.issue_coupon'),
                   draw_coupon_classroom_path(@classroom, user_id: king.id),
                   method: :post,
                   form: { data: { turbo_submits_with: "처리중..." } },

@@ -9,7 +9,7 @@
           </div>
         </div>
         <div>
-          <%= button_to "사용하기",
+          <%= button_to t('ui.buttons.use_coupon'),
                 use_user_coupon_path(user, c),
                 method: :post,
                 form: { data: { turbo_submits_with: "처리중..." } },
@@ -19,5 +19,5 @@
     <% end %>
   </ul>
 <% else %>
-  <p class="text-sm text-gray-500">발급된 쿠폰이 없습니다.</p>
+  <p class="text-sm text-gray-500"><%= t("empty.issued_coupons") %></p>
 <% end %>

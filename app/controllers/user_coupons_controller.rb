@@ -15,19 +15,21 @@ class UserCouponsController < ApplicationController
     authorize @coupon, :use?
 
     if @coupon.used?
+      flash.now[:alert] = t("coupons.use.already_used") 
       respond_to do |f|
-        f.turbo_stream { flash.now[:alert] = "이미 사용된 쿠폰입니다." }
-        f.html { redirect_to user_path(@user), alert: "이미 사용된 쿠폰입니다." }
-        f.json { render json: { ok: false, error: "이미 사용된 쿠폰입니다." }, status: :conflict }
+        f.turbo_stream  { render :use, layout: "application" } 
+        f.html { redirect_to user_path(@user), alert: t("coupons.use.already_used") }
+        f.json { render json: { ok: false, error: t("coupons.use.already_used") }, status: :conflict }
       end
       return
     end
 
     @coupon.use! # 규칙상 제한 없음
 
+    flash.now[:notice] = t("coupons.use.success")
     respond_to do |f|
-      f.turbo_stream { flash.now[:notice] = "쿠폰을 사용했습니다." }
-      f.html { redirect_to user_path(@user), notice: "쿠폰을 사용했습니다." }
+      f.turbo_stream  { render :use, layout: "application" } 
+      f.html { redirect_to user_path(@user), notice: t("coupons.use.success") }
       f.json { render json: { ok: true, used_at: @coupon.used_at }, status: :ok }
     end
 

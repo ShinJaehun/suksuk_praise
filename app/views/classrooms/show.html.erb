@@ -1,15 +1,17 @@
 <% if policy(@classroom).update? %>
   <div class="mb-4">
-    <%= link_to "✏️ 수정", edit_classroom_path(@classroom), class: "text-blue-600 underline mr-4" %>
-    <%= link_to "🗑 삭제", classroom_path(@classroom), method: :delete,
-          data: { confirm: "정말 삭제할까요?" },
+    <%= link_to t('ui.buttons.edit_classroom'),
+      edit_classroom_path(@classroom), class: "text-blue-600 underline mr-4" %>
+    <%= link_to t('ui.buttons.delete_classroom'),
+      classroom_path(@classroom),
+          data: { turbo_method: :delete, turbo_confirm: t('ui.buttons.confirm_delete_classroom') },
           class: "text-red-600 underline" %>
-    <%= link_to "학생 추가",
+    <%= link_to t('ui.buttons.create_student'),
           new_classroom_student_path(@classroom),
           data: { turbo_frame: "modal" },
           class: "px-3 py-2 bg-green-500 text-white rounded" %>
 
-    <%= link_to "여러 학생 자동 생성",
+    <%= link_to t('ui.buttons.bulk_create_students'),
           bulk_new_classroom_students_path(@classroom),
           data: { turbo_frame: "modal" },
           class: "px-3 py-2 bg-purple-500 text-white rounded" %>
@@ -17,7 +19,8 @@
 <% end %>
 
 <div class="flex items-center mb-4">
-  <%= button_to "칭찬왕 갱신", refresh_compliment_king_classroom_path(@classroom),
+  <%= button_to t('ui.buttons.refresh_king'),
+    refresh_compliment_king_classroom_path(@classroom),
     method: :post,
     form: { data: { turbo_submits_with: "처리중..." }},
     class: "ml-auto px-3 py-1 bg-blue-200 rounded hover:bg-blue-300" %>

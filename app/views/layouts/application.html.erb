@@ -11,10 +11,15 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <%= render "layouts/navbar" %>
+  <body class="pt-14"> <!-- 네비바 높이만큼 여백 -->
+    <nav class="fixed inset-x-0 top-0 h-14 z-50 bg-white/90 backdrop-blur shadow">
+      <%= render "layouts/navbar" %>
+    </nav>
 
-    <div id="flash">
+    <!-- flash 컨테이너: 클릭 통과, 상단 고정 -->
+    <div id="flash"
+        class="fixed inset-x-0 top-14 z-40 flex flex-col items-center space-y-2 px-4
+                pointer-events-none transition-all duration-300">
       <%= render "layouts/alerts" %>
     </div>
 

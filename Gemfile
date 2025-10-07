@@ -72,3 +72,5 @@ end
 
 gem "devise", "~> 4.9"
 gem "pundit"
+gem 'rails-i18n', '~> 7.0'
+

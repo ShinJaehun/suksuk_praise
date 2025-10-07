@@ -1,9 +1,5 @@
 <h1 class="text-xl font-bold mb-4"><%= @user.name %>의 쿠폰</h1>
 
-<div id="flash">
-  <%= render "layouts/alerts" %>
-</div>
-
 <%= turbo_frame_tag "my_coupons" do %>
   <% if @coupons.any? %>
     <ul class="space-y-2">
@@ -13,7 +9,7 @@
             <div class="font-semibold"><%= c.coupon_template.title %></div>
             <div class="text-gray-500 text-sm"><%= l c.created_at, format: :short %> 발급</div>
           </div>
-          <%= button_to "사용하기",
+          <%= button_to t('ui.buttons.use_coupon'),
                 use_user_coupon_path(@user, c),
                 method: :post,
                 form: { data: { turbo_submits_with: "처리중..." } },
@@ -22,6 +18,6 @@
       <% end %>
     </ul>
   <% else %>
-    <p class="text-gray-500">발급된 쿠폰이 없습니다.</p>
+    <p class="text-gray-500"><%= t('empty.issued_coupons') %></p>
   <% end %>
 <% end %>

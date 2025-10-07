@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
   before_action :configure_permitted_parameters, if: :devise_controller?
 
   rescue_from Pundit::NotAuthorizedError do
-    redirect_to(request.referrer.presence || root_path, alert: "권한이 없습니다.")
+    redirect_to(request.referrer.presence || root_path, alert: t("errors.not_authorized"))
   end
 
   # 개발 시 권한 체크 누락 방지: index는 policy_scope, 그 외는 authorize 요구

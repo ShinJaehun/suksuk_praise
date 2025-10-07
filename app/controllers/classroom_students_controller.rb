@@ -15,15 +15,17 @@ class ClassroomStudentsController < ApplicationController
     @user = User.new(user_params.merge(role: "student", points: 0, avatar: random_avatar))
     if @user.save
       @classroom.classroom_memberships.create!(user: @user, role: "student")
+
+      flash.now[:notice] = t("students.create.success")
       respond_to do |format|
-        flash.now[:notice] = "학생이 추가되었습니다." # ✅ Turbo 즉시 렌더
-        format.turbo_stream                         # create.turbo_stream.erb
-        format.html { redirect_to @classroom, notice: "학생이 추가되었습니다." }
+        format.turbo_stream { render :create, layout: "application" }
+        format.html { redirect_to @classroom, notice: t("students.create.success") }
       end
     else
+      flash.now[:alert] = @user.errors.full_messages.to_sentence.presence ||
+        t("students.create.failure_fallback")
       respond_to do |format|
-        flash.now[:alert] = @user.errors.full_messages.to_sentence.presence || "이름과 이메일을 확인해주세요."
-        format.turbo_stream { render "classroom_students/create_error" }
+        format.turbo_stream { render "classroom_students/create_error", layout: "application" }
         format.html { redirect_to @classroom, alert: flash[:alert] }
       end
     end
@@ -61,13 +63,15 @@ class ClassroomStudentsController < ApplicationController
 
     @students = @classroom.students.reload
 
+    flash.now[:notice] = t("students.bulk_create.success", count: created.size)
     respond_to do |f|
-      f.turbo_stream
-      f.html { redirect_to @classroom, notice: "#{created.size}명의 학생이 자동 생성되었습니다." }
+      f.turbo_stream { render :bulk_create, layout: "application" }
+      f.html { redirect_to @classroom, notice: t("students.bulk_create.success", count: created.size) }
     end
 
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to @classroom, alert: "생성 실패: #{e.record.errors.full_messages.to_sentence}"
+    redirect_to @classroom,
+      alert: t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence)
   end
 
   private
@@ -79,10 +83,6 @@ class ClassroomStudentsController < ApplicationController
   def user_params
     params.require(:user).permit(:name, :email, :password)
   end
-
-  # def require_teacher_or_admin!
-  #   redirect_to @classroom, alert: "권한 없음" unless current_user.admin? || current_user.teacher?
-  # end
 
   def random_avatar
     "avatars/avatar_#{rand(1..30)}.png"

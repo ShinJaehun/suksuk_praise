@@ -1,6 +1,17 @@
 <% flash.each do |type, message| %>
   <% next if message.blank? %>
-  <div class="flash <%= type %>">
+
+  <% css =
+      case type.to_s
+      when "notice", "success" then "bg-green-500 text-white"
+      when "alert", "error"    then "bg-red-500 text-white"
+      else                          "bg-blue-500 text-white"
+      end
+  %>
+
+  <div data-controller="flash"
+       class="pointer-events-auto px-4 py-2 rounded shadow-lg <%= css %>"
+       data-flash-timeout-value="4000"> <!-- 4초 후 자동 사라짐 -->
     <%= message %>
   </div>
 <% end %>

@@ -1,0 +1,9 @@
+<%# if flash.present? %>
+  <%#= turbo_stream.update "flash" do %>
+    <%#= render "layouts/alerts" %>
+  <%# end %>
+<%# end %>
+<%= turbo_stream.update "flash" do %>
+    <%= render "layouts/alerts" %>
+<% end %>
+<%= yield %>

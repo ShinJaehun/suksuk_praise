@@ -1,6 +1,6 @@
-<% if coupons.any? %>
+<% if @issued_coupons&.any? %>
   <ul class="space-y-1">
-    <% coupons.each do |c| %>
+    <% @issued_coupons.each do |c| %>
       <li class="text-sm">
         <span class="font-semibold"><%= c.user.name %></span>
         → <%= c.coupon_template.title %>
@@ -9,5 +9,5 @@
     <% end %>
   </ul>
 <% else %>
-  <p class="text-gray-500 text-sm">아직 발급된 쿠폰이 없습니다.</p>
+  <p class="text-gray-500 text-sm"><%= t("empty.issued_coupons") %></p>
 <% end %>

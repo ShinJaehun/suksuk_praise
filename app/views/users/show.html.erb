@@ -1,5 +1,5 @@
 <% if @classroom %>
-  <%= link_to "⬅ #{@classroom.name} 교실로 돌아가기",
+  <%= link_to t("ui.buttons.back_to_classroom", name: @classroom.name),
               classroom_path(@classroom),
               class: "inline-block bg-gray-200 px-4 py-2 rounded mb-4" %>
 <% end %>

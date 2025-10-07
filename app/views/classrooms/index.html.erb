@@ -5,7 +5,8 @@
 <%# end %>
 
 <% if policy(Classroom).create? %>
-  <%= link_to "교실 만들기", new_classroom_path, class: "text-green-600 underline block mb-4" %>
+  <%= link_to t('ui.buttons.new_classroom'),
+    new_classroom_path, class: "text-green-600 underline block mb-4" %>
 <% end %>
 
 <ul class="space-y-2">
