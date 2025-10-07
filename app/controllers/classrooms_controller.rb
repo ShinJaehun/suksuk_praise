@@ -84,7 +84,8 @@ class ClassroomsController < ApplicationController
     end
 
     respond_to do |f|
-      f.turbo_stream { render :refresh_compliment_king, layout: "application" }
+      f.turbo_stream { render :refresh_compliment_king, layout: false }
+      f.html { redirect_to classroom_path(@classroom) }
     end
   end
 

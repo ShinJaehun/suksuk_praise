@@ -1,4 +1,4 @@
-<%= turbo_stream.replace "compliment_king_#{@classroom.id}" do %>
+<%= turbo_stream.update "compliment_king_#{@classroom.id}" do %>
   <%= render partial: "classrooms/compliment_king", locals: {
     compliment_kings: @compliment_kings,
     compliment_king_count: @compliment_king_count,
