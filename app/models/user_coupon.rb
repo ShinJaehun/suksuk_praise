@@ -2,7 +2,7 @@ class UserCoupon < ApplicationRecord
   belongs_to :classroom
   belongs_to :user
   belongs_to :coupon_template, foreign_key: :coupon_template_id
-  belongs_to :issued_by, class_name: "User"
+  belongs_to :issued_by, class_name: "User", optional: true
 
   enum status: { issued: 0, used: 1 }
 

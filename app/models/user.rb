@@ -17,16 +17,16 @@ class User < ApplicationRecord
   has_many :given_compliments,
            class_name: "Compliment",
            foreign_key: :giver_id,
-           dependent: :nullify,
+           dependent: :destroy,
            inverse_of: :giver
 
   has_many :received_compliments,
            class_name: "Compliment",
            foreign_key: :receiver_id,
-           dependent: :nullify,
+           dependent: :destroy,
            inverse_of: :receiver
 
-  has_many :user_coupons, dependent: :nullify
+  has_many :user_coupons, dependent: :destroy
 
   has_many :coupon_templates, through: :user_coupons
 end
