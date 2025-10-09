@@ -31,6 +31,18 @@ class UserCoupon < ApplicationRecord
     where(issued_at: from..to)
   }
 
+  # 같은 학생/반/기준/모드/기간에 이미 발급된(issued) 쿠폰이 있는지 찾기
+  scope :period_duplicate_of, ->(user_id:, classroom_id:, basis:, basis_tag:, period_start_on:) {
+    where(
+      user_id: user_id,
+      classroom_id: classroom_id,
+      issuance_basis: basis,
+      basis_tag: basis_tag,
+      period_start_on: period_start_on,
+      status: :issued
+    )
+  }
+
   scope :issued, -> { where(status: "issued") }
 
   # === 기간 헬퍼 ===

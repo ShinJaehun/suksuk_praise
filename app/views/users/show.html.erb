@@ -4,6 +4,21 @@
               class: "inline-block bg-gray-200 px-4 py-2 rounded mb-4" %>
 <% end %>
 
+<% if @classroom && policy(@classroom).draw_coupon? %>
+  <div class="my-4">
+    <%= button_to t("ui.buttons.issue_coupon_manual"),
+          draw_coupon_classroom_path(
+            @classroom,          # 이미 users#show에서 @classroom 세팅되어 있다면 OK
+            basis: "manual",
+            mode:  "default",
+            user_id: @user.id
+          ),
+          method: :post,
+          form: { data: { turbo_submits_with: t("ui.processing") } },
+          class: "px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm" %>
+  </div>
+<% end %>
+
 <h2><%= @user.name %>의 칭찬 내역</h2>
 <ul>
   <% @compliments.each do |c| %>

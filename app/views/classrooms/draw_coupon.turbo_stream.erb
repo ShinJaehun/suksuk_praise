@@ -5,6 +5,13 @@
   </div>
 <% end %>
 
+<% if defined?(@winner) && @winner.present? %>
+  <%= turbo_stream.update dom_id(@winner, :coupons) do %>
+    <%= render partial: "user_coupons/list",
+               locals: { coupons: @winner_coupons, user: @winner } %>
+  <% end %>
+<% end %>
+
 <%#= turbo_stream.update "flash" do %>
   <%#= render "layouts/alerts" %>
 <%# end %>

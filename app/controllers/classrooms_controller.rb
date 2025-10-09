@@ -71,7 +71,7 @@ class ClassroomsController < ApplicationController
   # Turbo로 일간 칭찬왕 영역만 새로고침
   def refresh_compliment_king
     authorize @classroom, :show?
-    @students = @classroom.students
+    @students = @classroom.students.order("users.created_at ASC")
     today = Time.zone.today.all_day
     counts = Compliment.where(classroom: @classroom, given_at: today).group(:receiver_id).count
     if counts.any?
@@ -92,18 +92,17 @@ class ClassroomsController < ApplicationController
   def draw_coupon
     authorize @classroom, :draw_coupon?
 
-    basis = (params[:basis].presence || "daily").to_s   # "daily" | "weekly" | ...
-    mode  = (params[:mode].presence  || "daily_top").to_s
+    basis, mode = normalized_basis_and_mode(params[:basis], params[:mode])
 
     # 더블클릭/중복요청 소프트 가드(2초)
     duplicate_window = 2.seconds
-    coupon = nil
+
     @classroom.with_lock do
       scope = UserCoupon.where(
         classroom_id:   @classroom.id,
         issuance_basis: basis,
         basis_tag:      mode,
-        issued_by_id:   current_user.id
+        # issued_by_id:   current_user.id # issued_by_id 조건을 빼면 다중 교사 동시 클릭도 소프트 차단
       )
       scope = scope.where(user_id: params[:user_id]) if params[:user_id].present?
 
@@ -112,34 +111,47 @@ class ClassroomsController < ApplicationController
         load_recent_issued_coupons! 
         respond_to do |f|
           f.turbo_stream { render :draw_coupon, layout: "application" } 
-          f.html { redirect_to classroom_path(@classroom), alert: msg }
+          f.html { redirect_to classroom_path(@classroom), alert: t("coupons.draw.duplicate") }
           f.json { render json: { ok: false, error: "duplicate_request" }, status: :conflict }
         end
         return
       end
 
       # 첫 요청만 여기 도달 → 발급 실행
-      coupon = CouponDraw::Issue.call(
+      issued = CouponDraw::Issue.call(
         classroom:     @classroom,
         basis:         basis,
         mode:          mode,
         issued_by:     current_user,
         target_user_id: params[:user_id]
       )
+
+      # winner   = issued.user
+      # template = issued.coupon_template # UserCoupon.issue!(..., template: ...) 구조를 그대로 가정
+
+      # flash.now[:notice] = t("coupons.draw.success", name: winner.name, title: template.title)
+      @winner   = issued.user
+      template = issued.coupon_template
+      @winner_coupons = policy_scope(UserCoupon)
+        .where(user_id: @winner.id, classroom_id: @classroom.id, status: "issued")
+        .includes(:coupon_template)
+        .order(created_at: :desc)
+        .load
+
+      flash.now[:notice] = t("coupons.draw.success", name: @winner.name, title: template.title)
+
     end
 
-    winner   = coupon.user
-    template = coupon.coupon_template # UserCoupon.issue!(..., template: ...) 구조를 그대로 가정
-
-    flash.now[:notice] = t("coupons.draw.success", name: winner.name, title: template.title)
     load_recent_issued_coupons! 
     respond_to do |f|
       f.turbo_stream { render :draw_coupon, layout: "application" }
-      f.html { redirect_to classroom_path(@classroom),
-        notice: t("coupons.draw.success", name: winner.name, title: template.title) }
-      f.json { render json: { coupon_id: coupon.id, title: template.title, user_id: winner.id },
-        status: :created }
+      f.html { redirect_to classroom_path(@classroom), notice: flash.now[:notice] }
+      f.json do
+         render json: { coupon_id: issued.id, title: template.title, user_id: @winner.id },
+          status: :created
+      end
     end
+
   rescue ActiveRecord::RecordNotFound => e
     flash.now[:alert] = t("coupons.draw.not_found")
     load_recent_issued_coupons! 
@@ -155,6 +167,22 @@ class ClassroomsController < ApplicationController
       f.turbo_stream { render layout: "application" }
       f.html { redirect_to classroom_path(@classroom), alert: t("coupons.draw.invalid", reason: e.message) }
       f.json { render json: { ok: false, error: "invalid", detail: e.message }, status: :unprocessable_entity }
+    end
+  rescue CouponDraw::Issue::DuplicatePeriodError
+    flash.now[:alert] = t("coupons.draw.already_issued_today")
+    load_recent_issued_coupons!
+    respond_to do |f|
+      f.turbo_stream { render :draw_coupon, layout: "application" }
+      f.html { redirect_to classroom_path(@classroom), alert: t("coupons.draw.already_issued_today") }
+      f.json { render json: { ok: false, error: "already_issued_today" }, status: :conflict }
+    end
+  rescue CouponDraw::Issue::NotComplimentKingToday
+    flash.now[:alert] = t("coupons.draw.not_today_king")
+    load_recent_issued_coupons!
+    respond_to do |f|
+      f.turbo_stream { render :draw_coupon, layout: "application" }
+      f.html { redirect_to classroom_path(@classroom), alert: t("coupons.draw.not_today_king") }
+      f.json { render json: { ok: false, error: "not_today_king" }, status: :forbidden }
     end
   rescue StandardError => e
     # 예: 기간 중복/템플릿 없음 등 서비스에서 커스텀 예외를 올린 경우
@@ -183,5 +211,21 @@ class ClassroomsController < ApplicationController
       .order(created_at: :desc)
       .limit(5)
       .load
+  end
+
+  def normalized_basis_and_mode(basis_param, mode_param)
+    basis = case basis_param
+            when "manual" then "manual"
+            # when "weekly" then "weekly"
+            # when "hybrid" then "hybrid"
+            else "daily"
+            end
+    mode = if mode_param.present?
+            mode_param.to_s
+          else
+            basis == "manual" ? "default" : "daily_top"
+          end
+
+    [basis, mode]
   end
 end
