@@ -16,3 +16,8 @@
                locals: { coupons: winner_coupons, show_user: false } %>
   <% end %>
 <% end %>
+
+<% if defined?(winner_coupons) && winner_coupons.present? %>
+  <div data-controller="highlight"
+       data-highlight-id-value="<%= dom_id(winner_coupons.first) %>"></div>
+<% end %>

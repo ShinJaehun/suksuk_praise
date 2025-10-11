@@ -14,7 +14,14 @@
             user_id: @user.id
           ),
           method: :post,
-          form: { data: { turbo_submits_with: t("ui.processing") } },
+          form: { 
+            data: {
+                controller: "disable-on-submit",
+                action:     "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#enable",
+                turbo_submits_with: t("ui.processing") 
+            },
+            aria: { busy: "false" }
+          },
           class: "px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm" %>
   </div>
 <% end %>

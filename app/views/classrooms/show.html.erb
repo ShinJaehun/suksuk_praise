@@ -22,7 +22,7 @@
   <%= button_to t('ui.buttons.refresh_king'),
     refresh_compliment_king_classroom_path(@classroom),
     method: :post,
-    form: { data: { turbo_submits_with: "처리중..." }},
+    form: { data: { turbo_submits_with: t("ui.processing") }},
     class: "ml-auto px-3 py-1 bg-blue-200 rounded hover:bg-blue-300" %>
 </div>
 
