@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_08_073834) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_10_110408) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -23,7 +23,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_08_073834) do
     t.index ["classroom_id", "user_id"], name: "index_classroom_memberships_on_classroom_id_and_user_id", unique: true
     t.index ["classroom_id"], name: "index_classroom_memberships_on_classroom_id"
     t.index ["user_id"], name: "index_classroom_memberships_on_user_id"
-    t.check_constraint "role::text = ANY (ARRAY['teacher'::character varying, 'student'::character varying]::text[])", name: "chk_cm_role"
+    t.check_constraint "role::text = ANY (ARRAY['teacher'::character varying::text, 'student'::character varying::text])", name: "chk_cm_role"
   end
 
   create_table "classrooms", force: :cascade do |t|
@@ -40,6 +40,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_08_073834) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["classroom_id", "given_at"], name: "index_compliments_on_classroom_id_and_given_at"
+    t.index ["classroom_id", "giver_id", "receiver_id", "given_at"], name: "idx_compliments_dup_guard"
     t.index ["classroom_id"], name: "index_compliments_on_classroom_id"
     t.index ["giver_id"], name: "index_compliments_on_giver_id"
     t.index ["receiver_id"], name: "index_compliments_on_receiver_id"
@@ -74,6 +75,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_08_073834) do
     t.index ["issued_at"], name: "index_user_coupons_on_issued_at"
     t.index ["issued_by_id"], name: "index_user_coupons_on_issued_by_id"
     t.index ["used_at"], name: "index_user_coupons_on_used_at"
+    t.index ["user_id", "classroom_id", "period_start_on"], name: "idx_user_coupons_daily_period_uniqueness", unique: true, where: "(((issuance_basis)::text = 'daily'::text) AND (status = 0))"
     t.index ["user_id", "issuance_basis", "period_start_on"], name: "idx_uc_user_basis_period"
     t.index ["user_id", "status"], name: "index_user_coupons_on_user_id_and_status"
     t.index ["user_id"], name: "index_user_coupons_on_user_id"

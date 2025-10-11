@@ -1,14 +1,14 @@
 <%= turbo_stream.replace "issued_coupons" do %>
   <div id="issued_coupons">
     <%= render partial: "user_coupons/issued_list",
-        issued_coupons: @issued_coupons %>
+        locals: { issued_coupons: @issued_coupons } %>
   </div>
 <% end %>
 
-<% if defined?(@winner) && @winner.present? %>
-  <%= turbo_stream.update dom_id(@winner, :coupons) do %>
+<% if defined?(winner) && winner.present? %>
+  <%= turbo_stream.update dom_id(winner, :coupons) do %>
     <%= render partial: "user_coupons/list",
-               locals: { coupons: @winner_coupons, user: @winner } %>
+               locals: { coupons: winner_coupons, user: winner } %>
   <% end %>
 <% end %>
 

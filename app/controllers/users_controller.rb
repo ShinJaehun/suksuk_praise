@@ -17,17 +17,18 @@ class UsersController < ApplicationController
         authorize @user, :show?
 
         # 2) policy_scope로 권한과 쿼리 범위 정렬
-        @compliments = policy_scope(Compliment)
-            .where(receiver_id: @user.id)
+        @compliments = policy_scope(Compliment).where(receiver_id: @user.id)
         @compliments = @compliments.where(classroom_id: @classroom.id) if @classroom
-        @compliments = @compliments
-            .includes(:giver, :classroom)
-            .order(given_at: :desc)
+        @compliments = @compliments.includes(:giver, :classroom).order(given_at: :desc)
         
-        @coupons = policy_scope(UserCoupon)
-            .where(user_id: @user.id, classroom_id: @classroom.id, status: "issued")
-            .includes(:coupon_template)
-            .order(created_at: :desc)
+        # @coupons = policy_scope(UserCoupon)
+        #     .where(user_id: @user.id, classroom_id: @classroom.id, status: "issued")
+        #     .includes(:coupon_template)
+        #     .order(created_at: :desc)
+
+        @coupons = policy_scope(UserCoupon).where(user_id: @user.id)
+        @coupons = @coupons.where(classroom_id: @classroom.id, status: "issued") if @classroom
+        @coupons = @coupons.includes(:coupon_template).order(created_at: :desc)
     end
 
     private

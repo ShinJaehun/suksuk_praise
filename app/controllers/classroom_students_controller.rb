@@ -6,8 +6,9 @@ class ClassroomStudentsController < ApplicationController
   def new
     @user = User.new
     respond_to do |f|
-      f.turbo_stream { render partial: "classroom_students/form", locals: { classroom: @classroom, user: @user } }
       f.html { render partial: "classroom_students/form", locals: { classroom: @classroom, user: @user } }
+      f.turbo_stream { render partial: "classroom_students/form",
+        locals: { classroom: @classroom, user: @user } }
     end
   end
 
@@ -16,25 +17,32 @@ class ClassroomStudentsController < ApplicationController
     if @user.save
       @classroom.classroom_memberships.create!(user: @user, role: "student")
 
-      flash.now[:notice] = t("students.create.success")
-      respond_to do |format|
-        format.turbo_stream { render :create, layout: "application" }
-        format.html { redirect_to @classroom, notice: t("students.create.success") }
+      respond_to do |f|
+        f.html { redirect_to @classroom, notice: t("students.create.success"), status: :see_other }
+        f.turbo_stream do
+          flash.now[:notice] = t("students.create.success")          
+          render :create, layout: "application"
+        end
       end
     else
-      flash.now[:alert] = @user.errors.full_messages.to_sentence.presence ||
+      message = @user.errors.full_messages.to_sentence.presence ||
         t("students.create.failure_fallback")
-      respond_to do |format|
-        format.turbo_stream { render "classroom_students/create_error", layout: "application" }
-        format.html { redirect_to @classroom, alert: flash[:alert] }
+
+      respond_to do |f|
+        f.html { redirect_to @classroom, alert: message, status: :see_other }
+        f.turbo_stream do
+          flash.now[:alert] = message          
+          render "classroom_students/create_error", layout: "application",
+            status: :unprocessable_entity
+        end
       end
     end
   end
 
   def bulk_new
     respond_to do |f|
-      f.turbo_stream { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom } }
       f.html { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom } }
+      f.turbo_stream { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom } }
     end
   end
 
@@ -63,15 +71,19 @@ class ClassroomStudentsController < ApplicationController
 
     @students = @classroom.students.reload
 
-    flash.now[:notice] = t("students.bulk_create.success", count: created.size)
+    message = t("students.bulk_create.success", count: created.size)
     respond_to do |f|
-      f.turbo_stream { render :bulk_create, layout: "application" }
-      f.html { redirect_to @classroom, notice: t("students.bulk_create.success", count: created.size) }
+      f.html { redirect_to @classroom, notice: message, status: :see_other }
+      f.turbo_stream do
+        flash.now[:notice] = message
+        render :bulk_create, layout: "application" 
+      end
     end
 
   rescue ActiveRecord::RecordInvalid => e
     redirect_to @classroom,
-      alert: t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence)
+      alert: t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence),
+      status: :see_other
   end
 
   private

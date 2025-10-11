@@ -57,6 +57,7 @@ ko:
     create:
       success: "칭찬했습니다!"
       failure: "칭찬에 실패했습니다: %{detail}"
+      duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
   errors:
     not_authorized: "권한이 없습니다."
   empty:
