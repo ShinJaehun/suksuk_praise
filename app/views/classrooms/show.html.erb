@@ -34,7 +34,12 @@
   } %>
 <% end %>
 
-<div id="issued_coupons"></div>
+<div id="issued_coupons">
+  <%= render partial: "user_coupons/issued_coupons",
+    locals: { coupons: @issued_coupons, show_user: true } %>
+</div>
+
+<br/>
 
 <h2 class="text-xl font-bold mb-4"><%= @classroom.name %>의 학생들</h2>
 <%= turbo_frame_tag "students_list_#{@classroom.id}" do %>

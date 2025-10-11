@@ -4,6 +4,14 @@
       <li id="<%= dom_id(c) %>" class="flex items-center justify-between rounded border px-3 py-2">
         <div>
           <div class="font-semibold"><%= c.coupon_template.title %></div>
+
+          <div class="mt-1 flex items-center gap-1">
+            <%= coupon_basis_badge(c) %>
+            <% if c.basis_tag.present? %>
+              <span class="text-[11px] text-gray-500">(<%= t("coupons.basis_tag.#{c.basis_tag}", default: c.basis_tag) %>)</span>
+            <% end %>
+          </div>
+
           <div class="text-xs text-gray-500">
             발급: <%= l(c.issued_at, format: :short) %> · 교실 #<%= c.classroom_id %>
           </div>

@@ -43,6 +43,14 @@ ko:
       success: "%{count}명의 학생이 자동 생성되었습니다."
       failure: "생성 실패: %{detail}"
   coupons:
+    basis:
+      daily: "일일"
+      weekly: "주간"
+      manual: "뽑기"
+      aria_label: "발급 기준: %{basis}"
+    basis_tag:
+      daily_top: "칭찬왕"
+      default: "기본"
     draw:
       success: "%{name}에게 %{title} 쿠폰 발급"
       duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."

@@ -19,6 +19,16 @@
   </div>
 <% end %>
 
+<h3 class="mt-6 mb-2 font-semibold">
+  <%= t("titles.recent_issued_coupons_for_user", default: "최근 발급 쿠폰") %>
+</h3>
+<%= turbo_frame_tag dom_id(@user, :recent_issued_coupons) do %>
+  <%= render partial: "user_coupons/issued_coupons",
+    locals: { coupons: @recent_issued_coupons, show_user: false } %>
+<% end %>
+
+<br/>
+
 <h2><%= @user.name %>의 칭찬 내역</h2>
 <ul>
   <% @compliments.each do |c| %>
