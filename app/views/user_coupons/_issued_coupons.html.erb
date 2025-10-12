@@ -1,0 +1,26 @@
+<% if coupons&.any? %>
+  <ul class="space-y-1">
+    <% coupons.each do |c| %>
+      <li id="<%= dom_id(c) %>" class="text-sm flex items-center gap-2">
+        <% if show_user %>
+          <span class="font-semibold"><%= c.user.name %></span>
+          <span>→</span>
+        <% end %>
+
+        <span class="font-semibold"><%= c.coupon_template.title %></span>
+
+        <!-- 발급 기준 배지(daily/manual/weekly) -->
+        <%= coupon_basis_badge(c) %>
+        <% if c.basis_tag.present? %>
+          <span class="text-[11px] text-gray-500">
+            (<%= t("coupons.basis_tag.#{c.basis_tag}", default: c.basis_tag) %>)
+          </span>
+        <% end %>
+
+        <span class="text-gray-500">(<%= l c.created_at, format: :short %>)</span>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p class="text-gray-500 text-sm"><%= t("empty.issued_coupons") %></p>
+<% end %>

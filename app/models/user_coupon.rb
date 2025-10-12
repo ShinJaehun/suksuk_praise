@@ -18,6 +18,7 @@ class UserCoupon < ApplicationRecord
   validates :status, presence: true
   validates :issuance_basis, presence: true
   validates :period_start_on, presence: true
+  validate :user_belongs_to_classroom
 
   # 주간 발급/사용 같은 범위 조회가 필요할 때 쓸 수 있는 기본 스코프들
   scope :for_basis_and_period, ->(basis, period_start) {
@@ -77,5 +78,13 @@ class UserCoupon < ApplicationRecord
 
   def use!(used_at: Time.zone.now)
     update!(status: :used, used_at: used_at)
+  end
+
+  private
+
+  def user_belongs_to_classroom
+    return if user_id.blank? || classroom_id.blank?
+    return if ClassroomMembership.exists?(user_id: user_id, classroom_id: classroom_id)
+    errors.add(:base, I18n.t("errors.user_not_in_classroom"))
   end
 end

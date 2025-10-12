@@ -62,3 +62,15 @@ students.each do |student|
     role: "student"
   )
 end
+
+templates = [
+  { title: "마이쭈 간식",                 weight: 50, active: true },
+  { title: "좋아하는 자리에서 식사하기",   weight: 30, active: true },
+  { title: "일주일간 친구와 자리 바꾸기",   weight: 20, active: true }
+]
+
+templates.each do |attrs|
+  t = CouponTemplate.find_or_initialize_by(title: attrs[:title])
+  t.assign_attributes(attrs) # weight/active 업데이트도 반영
+  t.save!
+end

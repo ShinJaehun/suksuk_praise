@@ -1,5 +1,5 @@
 class UserCouponPolicy < ApplicationPolicy
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.none unless user
 

@@ -1,5 +1,5 @@
 class ClassroomPolicy < ApplicationPolicy
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.all if user&.admin?
 

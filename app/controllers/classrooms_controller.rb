@@ -98,6 +98,26 @@ class ClassroomsController < ApplicationController
     basis, mode = normalized_basis_and_mode(params[:basis], params[:mode])
     now = Time.current
     
+    # 0) 사전 검증: target_user_id가 있으면 해당 교실 소속인지 즉시 확인 (fail fast)
+    if params[:user_id].present?
+      unless ClassroomMembership.exists?(user_id: params[:user_id], classroom_id: @classroom.id)
+        message = t("errors.user_not_in_classroom")
+        winner = nil
+        winner_coupons = nil
+        load_recent_issued_coupons!
+        respond_to do |f|
+          f.html { redirect_to classroom_path(@classroom), alert: message, status: :unprocessable_entity }
+          f.turbo_stream do
+            flash.now[:alert] = message
+            render :draw_coupon, layout: "application", status: :unprocessable_entity,
+              locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
+          end
+          f.json { render json: { ok: false, error: "user_not_in_classroom" }, status: :unprocessable_entity }
+        end
+        return
+      end
+    end
+
     issued = nil
     winner = nil
     template = nil
@@ -105,6 +125,7 @@ class ClassroomsController < ApplicationController
     notice_message = nil
 
     @classroom.with_lock do
+
       scope = UserCoupon.where(
         classroom_id:   @classroom.id,
         issuance_basis: basis,
@@ -121,7 +142,8 @@ class ClassroomsController < ApplicationController
             status: :conflict }
           f.turbo_stream do
             flash.now[:alert] = message
-            render :draw_coupon, layout: "application", status: :conflict
+            render :draw_coupon, layout: "application", status: :conflict,
+              locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
           end
           f.json { render json: { ok: false, error: "duplicate_request" }, status: :conflict }
         end
@@ -149,13 +171,27 @@ class ClassroomsController < ApplicationController
 
     end
 
+    CouponEvent.create!(
+      action: "issued",
+      actor: current_user,
+      user_coupon: issued,
+      classroom: @classroom,
+      coupon_template: issued.coupon_template,
+      metadata: {
+        basis: issued.issuance_basis,
+        mode:  issued.basis_tag,
+        target_user_id: issued.user_id,
+        target_user_name: issued.user.name
+      }
+    )
+
     load_recent_issued_coupons! 
     respond_to do |f|
       f.html { redirect_to classroom_path(@classroom), notice: notice_message, status: :see_other }
       f.turbo_stream do
           flash.now[:notice] = notice_message
-          render :draw_coupon, layout: "application", locals: { winner:, winner_coupons:}
-
+          render :draw_coupon, layout: "application",
+            locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons}
       end
       f.json do
           render json: { coupon_id: issued.id, title: template.title, user_id: winner.id },
@@ -171,7 +207,8 @@ class ClassroomsController < ApplicationController
       f.html  { redirect_to classroom_path(@classroom), alert: message, status: :conflict }
       f.turbo_stream do
         flash.now[:alert] = message
-        render :draw_coupon, layout: "application", status: :conflict 
+        render :draw_coupon, layout: "application", status: :conflict,
+          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
       f.json  { render json: { ok: false, error: "already_issued_today" }, status: :conflict }
     end
@@ -183,7 +220,8 @@ class ClassroomsController < ApplicationController
       f.html { redirect_to classroom_path(@classroom), alert: message, status: :not_found }
       f.turbo_stream do
         flash.now[:alert] = message
-        render layout: "application", status: :not_found
+        render layout: "application", status: :not_found,
+          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
       f.json { render json: { ok: false, error: "not_found", detail: e.message }, status: :not_found }
     end
@@ -195,7 +233,8 @@ class ClassroomsController < ApplicationController
       f.html { redirect_to classroom_path(@classroom), alert: message, status: :unprocessable_entity }
       f.turbo_stream do
         flash.now[:alert] = message
-        render layout: "application", status: :unprocessable_entity 
+        render layout: "application", status: :unprocessable_entity,
+          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
       f.json { render json: { ok: false, error: "invalid", detail: e.message }, status: :unprocessable_entity }
     end
@@ -207,7 +246,8 @@ class ClassroomsController < ApplicationController
       f.html { redirect_to classroom_path(@classroom), alert: message, status: :conflict }
       f.turbo_stream do
         flash.now[:alert] = message
-        render :draw_coupon, layout: "application", status: :conflict 
+        render :draw_coupon, layout: "application", status: :conflict,
+          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
       f.json { render json: { ok: false, error: "already_issued_today" }, status: :conflict }
     end
@@ -219,7 +259,8 @@ class ClassroomsController < ApplicationController
       f.html { redirect_to classroom_path(@classroom), alert: message, status: :forbidden }
       f.turbo_stream do
         flash.now[:alert] = message
-        render :draw_coupon, layout: "application", status: :forbidden 
+        render :draw_coupon, layout: "application", status: :forbidden,
+          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
       f.json { render json: { ok: false, error: "not_today_king" }, status: :forbidden }
     end
@@ -232,7 +273,8 @@ class ClassroomsController < ApplicationController
       f.html { redirect_to classroom_path(@classroom), alert: message, status: :unprocessable_entity }
       f.turbo_stream do
         flash.now[:alert] = message
-        render layout: "application", status: :unprocessable_entity 
+        render layout: "application", status: :unprocessable_entity,
+          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
       f.json { render json: { ok: false, error: "failed", detail: e.message }, status: :unprocessable_entity }
     end
