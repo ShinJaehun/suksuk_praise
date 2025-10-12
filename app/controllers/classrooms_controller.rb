@@ -159,20 +159,6 @@ class ClassroomsController < ApplicationController
         target_user_id: params[:user_id]
       )
 
-      CouponEvent.create!(
-        action: "issued",
-        actor: current_user,
-        user_coupon: issued,
-        classroom: @classroom,
-        coupon_template: issued.coupon_template,
-        metadata: {
-          basis: issued.issuance_basis,
-          mode:  issued.basis_tag,
-          target_user_id: issued.user_id,
-          target_user_name: issued.user.name
-        }
-      )
-
       winner = issued.user
       template = issued.coupon_template
       winner_coupons = policy_scope(UserCoupon)
@@ -184,6 +170,20 @@ class ClassroomsController < ApplicationController
       notice_message = t("coupons.draw.success", name: winner.name, title: template.title)
 
     end
+
+    CouponEvent.create!(
+      action: "issued",
+      actor: current_user,
+      user_coupon: issued,
+      classroom: @classroom,
+      coupon_template: issued.coupon_template,
+      metadata: {
+        basis: issued.issuance_basis,
+        mode:  issued.basis_tag,
+        target_user_id: issued.user_id,
+        target_user_name: issued.user.name
+      }
+    )
 
     load_recent_issued_coupons! 
     respond_to do |f|
