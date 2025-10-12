@@ -1,5 +1,5 @@
 class ComplimentPolicy < ApplicationPolicy
-  class Scope < Scope
+  class Scope < ApplicationPolicy::Scope
     # 주체: user(current_user), 대상: scope(Compliment)
     # 컨트롤러에서 receiver_id(@user.id)로 좁힌 뒤 이 scope를 태우면,
     # 현재 사용자 권한에 맞는 교실/대상만 보이게 됩니다.

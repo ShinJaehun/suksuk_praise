@@ -61,6 +61,18 @@ ko:
     use:
       success: "쿠폰을 사용했습니다."
       already_used: "이미 사용된 쿠폰입니다."
+  time:
+    formats:
+      short: "%m/%d %H:%M"
+  date:
+    formats:
+      short: "%m/%d"  
+  coupon_events:
+    action:
+      issued: "발급"
+      used: "사용"
+    index:
+      title: "쿠폰 이벤트 로그"
   compliments:
     create:
       success: "칭찬했습니다!"
@@ -68,6 +80,8 @@ ko:
       duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
   errors:
     not_authorized: "권한이 없습니다."
+    user_not_in_classroom: "학생이 해당 교실 소속이 아닙니다."
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."
     today_king: "아직 오늘의 칭찬왕이 없습니다."
+    coupon_events: "표시할 쿠폰 이벤트가 없습니다."

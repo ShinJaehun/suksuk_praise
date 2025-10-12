@@ -42,7 +42,7 @@
     <li>
       <%= c.giver.name %> 선생님이
       <%= c.classroom.name if c.classroom %>에서
-      <%= c.given_at.strftime("%Y-%m-%d %H:%M") %>에 칭찬!
+      <%= l c.given_at, format: :short %>에 칭찬!
     </li>
   <% end %>
 </ul>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_10_110408) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_12_033203) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -44,6 +44,23 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_10_110408) do
     t.index ["classroom_id"], name: "index_compliments_on_classroom_id"
     t.index ["giver_id"], name: "index_compliments_on_giver_id"
     t.index ["receiver_id"], name: "index_compliments_on_receiver_id"
+  end
+
+  create_table "coupon_events", force: :cascade do |t|
+    t.string "action", null: false
+    t.bigint "actor_id", null: false
+    t.bigint "user_coupon_id", null: false
+    t.bigint "classroom_id", null: false
+    t.bigint "coupon_template_id", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["action"], name: "index_coupon_events_on_action"
+    t.index ["actor_id"], name: "index_coupon_events_on_actor_id"
+    t.index ["classroom_id"], name: "index_coupon_events_on_classroom_id"
+    t.index ["coupon_template_id"], name: "index_coupon_events_on_coupon_template_id"
+    t.index ["created_at"], name: "index_coupon_events_on_created_at"
+    t.index ["user_coupon_id"], name: "index_coupon_events_on_user_coupon_id"
   end
 
   create_table "coupon_templates", force: :cascade do |t|
@@ -102,6 +119,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_10_110408) do
   add_foreign_key "compliments", "classrooms"
   add_foreign_key "compliments", "users", column: "giver_id"
   add_foreign_key "compliments", "users", column: "receiver_id"
+  add_foreign_key "coupon_events", "classrooms"
+  add_foreign_key "coupon_events", "coupon_templates"
+  add_foreign_key "coupon_events", "user_coupons"
+  add_foreign_key "coupon_events", "users", column: "actor_id"
   add_foreign_key "user_coupons", "classrooms"
   add_foreign_key "user_coupons", "coupon_templates"
   add_foreign_key "user_coupons", "users"

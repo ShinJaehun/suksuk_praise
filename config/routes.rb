@@ -45,4 +45,9 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root "classrooms#index"
+
+  namespace :admin do
+    resources :coupon_events, only: :index
+  end
+
 end

@@ -23,7 +23,8 @@ module SuksukPraise
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
-
+    config.time_zone = "Seoul" 
+    
     config.i18n.available_locales = %i[ko en]
     config.i18n.default_locale    = :ko
     config.i18n.fallbacks         = { ko: :en }  # ko에서 누락되면 en으로

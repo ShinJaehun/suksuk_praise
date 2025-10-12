@@ -29,6 +29,18 @@ class UserCouponsController < ApplicationController
 
     @coupon.use! # 규칙상 제한 없음
 
+    CouponEvent.create!(
+      action: "used",
+      actor: current_user,
+      user_coupon: @coupon,
+      classroom: @coupon.classroom,
+      coupon_template: @coupon.coupon_template,
+      metadata: {
+        target_user_id: @coupon.user_id,
+        target_user_name: @coupon.user.name
+      }
+    )
+
     message = t("coupons.use.success")
     respond_to do |f|
       f.html { redirect_to user_path(@user), notice: message, status: :see_other }
