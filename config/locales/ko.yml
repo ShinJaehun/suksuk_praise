@@ -85,3 +85,50 @@ ko:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."
     today_king: "아직 오늘의 칭찬왕이 없습니다."
     coupon_events: "표시할 쿠폰 이벤트가 없습니다."
+  reports:
+    title: "리포트"
+    defaults:
+      all_classrooms: "전체 교실"
+      all_templates: "전체 쿠폰"
+    filters:
+      classroom: "교실"
+      template: "쿠폰 템플릿"
+      student: "학생"
+      user: "사용자"        # 학생/교사 혼용 화면 대비용(필요 시)
+      status: "상태"
+      basis: "발급 기준"
+      date_range: "기간"
+      start_date: "시작일"
+      end_date: "종료일"
+      apply: "필터 적용"
+      reset: "필터 초기화"
+    periods:
+      all_time: "전체 기간"
+      last_30_days: "최근 30일"
+      last_7_days: "최근 7일"
+      this_month: "이번 달"
+      this_week: "이번 주"
+      today: "오늘"
+      custom: "직접 지정"
+    sort:
+      issued_at_desc: "발급시각 ↓ 최신순"
+      issued_at_asc:  "발급시각 ↑ 오래된순"
+      used_at_desc:   "사용시각 ↓ 최신순"
+      used_at_asc:    "사용시각 ↑ 오래된순"
+      created_at_desc: "생성시각 ↓ 최신순"
+      created_at_asc: "생성시각 ↑ 오래된순"
+    columns:
+      classroom: "교실"
+      student: "학생"
+      template: "쿠폰 템플릿"
+      basis: "발급 기준"
+      issued_at: "발급 시각"
+      used_at: "사용 시각"
+      status: "상태"
+    placeholders:
+      select_classroom: "교실을 선택하세요"
+      select_template: "템플릿을 선택하세요"
+      select_student: "학생을 선택하세요"
+    
+    
+    

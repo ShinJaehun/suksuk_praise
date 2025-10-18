@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_12_033203) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_18_075241) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -93,7 +93,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_12_033203) do
     t.index ["issued_by_id"], name: "index_user_coupons_on_issued_by_id"
     t.index ["used_at"], name: "index_user_coupons_on_used_at"
     t.index ["user_id", "classroom_id", "period_start_on"], name: "idx_user_coupons_daily_period_uniqueness", unique: true, where: "(((issuance_basis)::text = 'daily'::text) AND (status = 0))"
+    t.index ["user_id", "classroom_id", "status", "issued_at"], name: "idx_uc_user_classroom_status_issued_at_desc", order: { issued_at: :desc }
     t.index ["user_id", "issuance_basis", "period_start_on"], name: "idx_uc_user_basis_period"
+    t.index ["user_id", "issued_at"], name: "idx_uc_user_issued_at_desc", order: { issued_at: :desc }
+    t.index ["user_id", "status", "issued_at"], name: "idx_uc_user_status_issued_at_desc", order: { issued_at: :desc }
     t.index ["user_id", "status"], name: "index_user_coupons_on_user_id_and_status"
     t.index ["user_id"], name: "index_user_coupons_on_user_id"
   end

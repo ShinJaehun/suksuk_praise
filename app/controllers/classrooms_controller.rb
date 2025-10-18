@@ -88,7 +88,7 @@ class ClassroomsController < ApplicationController
 
     respond_to do |f|
       f.html { redirect_to classroom_path(@classroom) }
-      f.turbo_stream { render :refresh_compliment_king, layout: false }
+      f.turbo_stream { render :refresh_compliment_king, layout: false } # flash 응답 없음
     end
   end
 

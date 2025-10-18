@@ -13,7 +13,7 @@ class User < ApplicationRecord
   has_many :classrooms, through: :classroom_memberships
 
 
-  # 칭찬 기록은 남기되 당사자 삭제 시 참조만 끊기(선호안)
+  # 받았던 칭찬도 유저 삭제 시 함께 삭제
   has_many :given_compliments,
            class_name: "Compliment",
            foreign_key: :giver_id,

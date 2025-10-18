@@ -1,3 +1,4 @@
+<%# locals: (coupons:, user:) %>
 <% if coupons.present? %>
   <ul class="space-y-2">
     <% coupons.each do |c| %>
@@ -8,7 +9,9 @@
           <div class="mt-1 flex items-center gap-1">
             <%= coupon_basis_badge(c) %>
             <% if c.basis_tag.present? %>
-              <span class="text-[11px] text-gray-500">(<%= t("coupons.basis_tag.#{c.basis_tag}", default: c.basis_tag) %>)</span>
+              <span class="text-[11px] text-gray-500">
+                (<%= t("coupons.basis_tag.#{c.basis_tag}", default: c.basis_tag) %>)
+              </span>
             <% end %>
           </div>
 
@@ -16,6 +19,7 @@
             발급: <%= l(c.issued_at, format: :short) %> · 교실 #<%= c.classroom_id %>
           </div>
         </div>
+
         <div>
           <%= button_to t('ui.buttons.use_coupon'),
                 use_user_coupon_path(user, c),

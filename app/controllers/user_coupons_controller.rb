@@ -6,7 +6,7 @@ class UserCouponsController < ApplicationController
     @coupons = policy_scope(UserCoupon)
       .where(user_id: @user.id, status: "issued")
       .includes(:coupon_template)
-      .order(created_at: :desc)
+      .order(issued_at: :desc)
   end
 
   # POST /users/:user_id/coupons/:id/use
@@ -16,6 +16,7 @@ class UserCouponsController < ApplicationController
 
     if @coupon.used?
       message = t("coupons.use.already_used") 
+
       respond_to do |f|
         f.html { redirect_to user_path(@user), alert: message, status: :conflict }
         f.turbo_stream  do
@@ -42,6 +43,8 @@ class UserCouponsController < ApplicationController
     )
 
     message = t("coupons.use.success")
+    load_recent_issued_coupons!(user: @user, classroom_id: @coupon.classroom_id)
+
     respond_to do |f|
       f.html { redirect_to user_path(@user), notice: message, status: :see_other }
       f.turbo_stream  do
@@ -58,5 +61,11 @@ class UserCouponsController < ApplicationController
   def set_user
     @user = User.find(params[:user_id])
     authorize @user, :show?  # 학생 상세/자원 접근 권한
+  end
+
+  def load_recent_issued_coupons!(user:, classroom_id:)
+    @issued_coupons = UserCoupon.where(user_id: user.id, classroom_id: classroom_id, status: "issued")
+      .includes(:coupon_template)
+      .order(issued_at: :desc)
   end
 end

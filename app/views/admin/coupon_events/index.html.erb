@@ -1,18 +1,52 @@
-<h1 class="text-xl font-bold mb-3">Coupon Events</h1>
-<ul class="divide-y">
-  <% @events.each do |e| %>
-    <li class="py-2 text-sm">
-      · <%= e.classroom.name %>
-      · <%= (e.metadata["target_user_name"].presence || e.user_coupon&.user&.name) %>
-      · <%= e.coupon_template.title %>
-      · <span class="font-semibold">
-          <%= t("coupon_events.action.#{e.action}", default: e.action) %>
-        </span>
-      · by <%= e.actor.name || e.actor.email %>
-      · <%= l e.created_at, format: :short %>
-    </li>
-  <% end %>
-  <% if @events.blank? %>
-    <p class="text-gray-500 text-sm"><%= t("empty.coupon_events") %></p>
-  <% end %>
-</ul>
+<h1 class="text-xl font-bold mb-3"><%= t("coupon_events.index.title") %></h1>
+
+<%= form_with url: admin_coupon_events_path, method: :get, local: true, class: "mb-4 flex flex-wrap gap-2 items-end" do %>
+  <%= select_tag :classroom_id,
+        options_for_select(@classroom_options, params[:classroom_id]),
+        class: "border rounded px-2 py-1" %>
+
+  <%= select_tag :template_id,
+        options_for_select(@template_options, params[:template_id]),
+        class: "border rounded px-2 py-1" %>
+
+  <div>
+    <label class="block text-sm font-semibold mb-1"><%= t("reports.filters.period") %></label>
+    <%= select_tag :period,
+          options_for_select(@period_options, params[:period].presence || "last_7_days"),
+          class: "border rounded px-2 py-1" %>
+  </div>
+
+  <div>
+    <label class="block text-sm font-semibold mb-1"><%= t("reports.sort.label", default: "정렬") %></label>
+    <%= select_tag :sort,
+          options_for_select([
+            [t("reports.sort.issued_at_desc"), "issued_at_desc"],
+            [t("reports.sort.issued_at_asc"),  "issued_at_asc"]
+          ], params[:sort]),
+          class: "border rounded px-2 py-1" %>
+  </div>
+
+  <%= submit_tag t("reports.filters.apply", default: "적용"), class: "bg-blue-500 text-white px-3 py-1 rounded" %>
+<% end %>
+
+<hr class="my-3" />
+
+<%# 리스트 영역 %>
+<% if @events.present? %>
+  <ul class="divide-y mt-3">
+    <% @events.each do |e| %>
+      <li class="py-2 text-sm">
+        · <%= e.classroom&.name || "-" %>
+        · <%= (e.metadata["target_user_name"].presence || e.user_coupon&.user&.name || "-") %>
+        · <%= e.coupon_template&.title || "-" %>
+        · <span class="font-semibold">
+            <%= t("coupon_events.action.#{e.action}", default: e.action) %>
+          </span>
+        · by <%= e.actor&.name || e.actor&.email || "-" %>
+        · <%= l e.created_at, format: :short %>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p class="text-gray-500 text-sm mt-3"><%= t("empty.coupon_events") %></p>
+<% end %>

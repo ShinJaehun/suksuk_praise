@@ -1,5 +1,10 @@
 <%= turbo_frame_tag :modal do %>
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50", data-controller="modal">
+  <!-- 오버레이 -->
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" 
+    data-controller="modal"
+    role="dialog" aria-modal="true">
+   
+    <!-- 모달 컨테이너 -->
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-8 relative">
       <h2 class="text-xl font-bold mb-4">여러 명 학생 자동생성</h2>
       <%= form_with url: bulk_create_classroom_students_path(classroom),

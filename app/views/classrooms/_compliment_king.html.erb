@@ -1,18 +1,19 @@
-<% if @compliment_kings.present? && @compliment_king_count > 0 %>
+<%# locals: (compliment_kings:, compliment_king_count:, classroom:) %>
+<% if compliment_kings.present? && compliment_king_count.to_i.positive? %>
   <div class="mb-6 p-4 bg-yellow-100 rounded-lg text-center shadow">
     <span class="text-2xl">오늘의 칭찬왕</span>
     <br />
 
-    <% @compliment_kings.each do |king| %>
+    <% compliment_kings.each do |king| %>
       <div class="mt-2 flex items-center justify-center gap-3">
 
         <span class="font-bold text-lg"><%= king.name %></span>
 
         <%# 교사/관리자일 때만 발급 버튼 노출 %>
-        <% if policy(@classroom).draw_coupon? %>
+        <% if policy(classroom).draw_coupon? %>
           <%= button_to t('ui.buttons.issue_coupon'),
                 draw_coupon_classroom_path(
-                  @classroom,
+                  classroom,
                   basis: "daily",
                   mode: "daily_top",
                   user_id: king.id
@@ -34,7 +35,7 @@
 
 
     <div class="mt-2 text-sm text-gray-600">
-      <%= @compliment_king_count %>회 칭찬 받음
+      <%= compliment_king_count %>회 칭찬 받음
     </div>
   </div>
 <% else %>

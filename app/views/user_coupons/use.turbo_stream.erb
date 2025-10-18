@@ -2,13 +2,7 @@
 
 <%= turbo_stream.update dom_id(@user, :coupons) do %>
   <%= render partial: "user_coupons/list",
-    locals: {
-      coupons: UserCoupon
-                .where(user_id: @user.id, classroom_id: @coupon.classroom_id, status: "issued")
-                .includes(:coupon_template)
-                .order(created_at: :desc),
-      user: @user
-    } %>
+    locals: { coupons: @issued_coupons, user: @user } %>
 <% end %>
 
 <%#= turbo_stream.update "flash" do %>

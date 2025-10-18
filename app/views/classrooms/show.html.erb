@@ -26,7 +26,8 @@
     class: "ml-auto px-3 py-1 bg-blue-200 rounded hover:bg-blue-300" %>
 </div>
 
-<%= turbo_frame_tag "compliment_king_#{@classroom.id}" do %>
+<%#= turbo_frame_tag "compliment_king_#{@classroom.id}" do %>
+<%= turbo_frame_tag dom_id(@classroom, :compliment_king) do %>
   <%= render partial: "classrooms/compliment_king", locals: {
     compliment_kings: @compliment_kings,
     compliment_king_count: @compliment_king_count,
