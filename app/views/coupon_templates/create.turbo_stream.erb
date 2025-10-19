@@ -1,0 +1,5 @@
+<%= turbo_stream.update "mine" do %>
+  <%= render partial: "mine", locals: { templates: policy_scope(CouponTemplate).order(:title) } %>
+<% end %>
+
+<%= turbo_stream.update "modal", "" %> <!-- modal 닫기 -->

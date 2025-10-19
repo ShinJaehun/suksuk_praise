@@ -42,8 +42,10 @@ module CouponDraw
         end
       end
 
-      # 4) 템플릿 가중 랜덤
-      template = CouponTemplate.weighted_pick
+      # 4) 템플릿 가중 랜덤 (P2.5 개인 스코프)
+      # -> 교사(issued_by) 소유 + 활성 템플릿만 후보로 사용
+      personal_scope = CouponTemplate.where(created_by_id: issued_by.id, active: true)
+      template = weighted_pick_from_scope(personal_scope)
       raise NoActiveTemplateError, "활성 쿠폰 템플릿이 없습니다." unless template
 
       # 5) 발급
@@ -74,5 +76,29 @@ module CouponDraw
       basis == "manual" ? "default" : "daily_top"
     end
 
+    # 주어진 스코프에서 weight 기반 가중 랜덤 선택
+    def self.weighted_pick_from_scope(scope)
+      # 안전장치: DB 집계 1회, N+1 방지 위해 id/weight만 우선 읽고, 필요 시 1건만 다시 로드
+      rows = scope.select(:id, :weight).load
+      return nil if rows.empty?
+
+      total = rows.sum(&:weight).to_i
+      return nil if total <= 0
+
+      pivot = rand(total)
+      acc = 0
+      picked_id = nil
+
+      rows.each do |r|
+        acc += r.weight.to_i
+        if pivot < acc
+          picked_id = r.id
+          break
+        end
+      end
+
+      # 최종 한 건만 전체 컬럼으로 로드
+      scope.find_by(id: picked_id)
+    end
   end
 end

@@ -1,4 +1,11 @@
 ko:
+  activerecord:
+    errors:
+      models:
+        coupon_template:
+          attributes:
+            title:
+              already_in_bucket: "은(는) 이미 해당 버킷에 있습니다."
   ui:
     buttons:
       compliment: "칭찬하기 🥳"

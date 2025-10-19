@@ -1,0 +1,33 @@
+# config/locales/ko.coupon_templates.yml
+ko:
+  coupon_templates:
+    index:
+      title: "쿠폰 관리"
+    tabs:
+      mine: "내 쿠폰"
+      library: "라이브러리"
+    columns:
+      title: "쿠폰명"
+      weight: "가중치"
+      active: "상태"
+    actions:
+      new: "새로 만들기"
+      adopt: "가져오기"
+      toggle: "토글"
+    form:
+      title: "쿠폰명"
+      weight: "가중치(1~100)"
+      active: "활성"
+    flash:
+      created: "쿠폰을 만들었습니다."
+      updated: "쿠폰을 수정했습니다."
+      toggled: "상태를 변경했습니다."
+      adopted: "라이브러리에서 가져왔습니다."
+      adopt_duplicate: "잠시 후 다시 시도해 주세요."
+  ui:
+    on: "활성"
+    off: "비활성"
+    save: "저장"
+    cancel: "취소"
+    edit: "수정"
+    processing: "처리 중…"

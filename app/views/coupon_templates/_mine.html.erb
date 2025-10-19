@@ -1,0 +1,65 @@
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left text-gray-600">
+      <th class="py-2"><%= t("coupon_templates.columns.title", default: "쿠폰명") %></th>
+      <th><%= t("coupon_templates.columns.weight", default: "가중치") %></th>
+      <th><%= t("coupon_templates.columns.active", default: "상태") %></th>
+      <th class="text-right"><%= t("ui.actions", default: "작업") %></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% templates.each do |tpl| %>
+      <%= turbo_frame_tag dom_id(tpl) do %>
+        <tr class="border-t">
+          <td class="py-2"><%= tpl.title %></td>
+
+          <td>
+            <%# NOTE: 가중치-활성 연동은 이후 자동화 시 반영. 지금은 표시만 유지 %>
+            <%= tpl.weight %>
+          </td>
+
+          <td>
+            <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
+              <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
+            </span>
+          </td>
+
+          <td class="py-2">
+            <div class="flex items-center justify-end gap-3">
+              <%# 🔁 활성/비활성 토글 %>
+              <%= button_to(
+                    (tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") :
+                                   t("coupon_templates.actions.activate",   default: "활성")),
+                    toggle_active_coupon_template_path(tpl),
+                    method: :patch,
+                    form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+                    class: "underline"
+                  ) %>
+
+              <%# ✏️ 수정(모달) %>
+              <%= link_to t("ui.edit", default: "수정"),
+                    edit_coupon_template_path(tpl),
+                    data: { turbo_frame: "modal" },
+                    class: "underline" %>
+
+              <%# 🗑 삭제: 권한 허용될 때만 노출 (정책 destroy?는 기본 admin-only) %>
+              <% if policy(tpl).destroy? %>
+                <%= button_to t("ui.delete", default: "삭제"),
+                      coupon_template_path(tpl),
+                      method: :delete,
+                      form: {
+                        data: {
+                          turbo_confirm: t("coupon_templates.confirm.delete",
+                                           default: "정말 삭제할까요? 복구할 수 없습니다.")
+                        }
+                      },
+                      class: "text-red-600 underline" %>
+              <% end %>
+            </div>
+          </td>
+        </tr>
+      <% end %>
+    <% end %>
+  </tbody>
+</table>

@@ -46,8 +46,19 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "classrooms#index"
 
+  resources :coupon_templates do
+    member do
+      post :adopt   # 라이브러리(=admin 소유) → 교사 개인 복제
+      patch :toggle_active
+    end
+    collection do
+      get :library # 탭 분리 없이 index에서 파라미터로 토글한다면 생략 가능
+    end
+  end
+
   namespace :admin do
     resources :coupon_events, only: :index
+    resources :coupon_templates, except: [:show]
   end
 
 end
