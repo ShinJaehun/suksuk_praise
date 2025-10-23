@@ -15,8 +15,10 @@ class CouponTemplatesController < ApplicationController
       @library_admin = true
     else
       # 교사의 읽기전용 라이브러리
-      @library = CouponTemplatePolicy.library_scope(current_user, CouponTemplate)
-                   .where(active: true).order(:title)
+      @library = CouponTemplatePolicy
+        .library_scope(current_user, CouponTemplate)
+        .order(:title)
+                   
       @library_admin = false
     end
   end
@@ -122,6 +124,7 @@ class CouponTemplatesController < ApplicationController
   def adopt
     # 라이브러리 대상만 허용(=admin 소유)
     library_scope = CouponTemplatePolicy.library_scope(current_user, CouponTemplate)
+
     source = library_scope.find(@coupon_template.id)
     authorize source, :adopt?
 

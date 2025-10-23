@@ -5,13 +5,6 @@ class CouponTemplatePolicy < ApplicationPolicy
     def resolve
       scope.personal_for(user)
     end
-
-    # 라이브러리: 관리자 소유 + bucket=library (+ 교사는 읽기 전용)
-    def self.library_scope(user, scope)
-      scope.joins(:created_by)
-           .merge(User.where(role: "admin"))
-           .where(bucket: "library")
-    end
   end
 
   def index?
@@ -42,9 +35,12 @@ class CouponTemplatePolicy < ApplicationPolicy
     user.admin? || owner?
   end
 
-  # 라이브러리: 관리자(=admin) 소유만
+  # 라이브러리(교사 노출/채택 대상):
+  # 관리자(=admin) 소유 + bucket=library + active
   def self.library_scope(user, scope)
-    scope.joins(:created_by).merge(User.where(role: "admin"))
+    scope.joins(:created_by)
+         .merge(User.where(role: "admin"))
+         .where(bucket: "library", active: true)
   end
 
   private
