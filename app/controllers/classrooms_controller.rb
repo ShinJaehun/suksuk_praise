@@ -291,7 +291,7 @@ class ClassroomsController < ApplicationController
   end
   
   def load_recent_issued_coupons!
-    @issued_coupons = @classroom.user_coupons
+    @issued_coupons = policy_scope(UserCoupon).where(classroom_id: @classroom.id)
       .includes(:user, :coupon_template)
       .order(created_at: :desc)
       .limit(5)

@@ -16,7 +16,6 @@ class CouponTemplate < ApplicationRecord
 
   scope :active, -> { where(active: true) }
   scope :personal_for, ->(user) { where(created_by_id: user.id, bucket: "personal") }
-  scope :library_for_admin, ->(user) { where(created_by_id: user.id, bucket: "library") }
   scope :library_public, -> { 
     joins(:created_by)
       .merge(User.where(role: "admin"))

@@ -8,17 +8,12 @@ class CouponTemplatesController < ApplicationController
   def index
     authorize CouponTemplate
     @mine = policy_scope(CouponTemplate).order(:title)
-
+    scope = CouponTemplatePolicy::Scope.new(current_user, CouponTemplate)
     if current_user.admin?
-      # admin의 라이브러리 영역
-      @library = CouponTemplate.library_for_admin(current_user).order(:title)
+      @library = scope.library_for_admin.order(:title)
       @library_admin = true
     else
-      # 교사의 읽기전용 라이브러리
-      @library = CouponTemplatePolicy
-        .library_scope(current_user, CouponTemplate)
-        .order(:title)
-                   
+      @library = scope.library_for_teacher.order(:title)
       @library_admin = false
     end
   end
@@ -41,11 +36,13 @@ class CouponTemplatesController < ApplicationController
       coupon_template_params.merge(created_by_id: current_user.id, bucket: bucket))
     
     if @coupon_template.save
+      @mine = policy_scope(CouponTemplate).order(:title)
       message = t("coupon_templates.flash.created")
       
       if bucket == "library"
-        @library = CouponTemplate.library_for_admin(current_user).order(:title)
-        
+        scope = CouponTemplatePolicy::Scope.new(current_user, CouponTemplate)
+        @library = scope.library_for_admin.order(:title)        
+
         respond_to do |f|
           f.html { redirect_to coupon_templates_path, notice: message }
           f.turbo_stream do
@@ -80,10 +77,12 @@ class CouponTemplatesController < ApplicationController
     authorize @coupon_template
     
     if @coupon_template.update(coupon_template_params)
+      @mine = policy_scope(CouponTemplate).order(:title)
       message = t("coupon_templates.flash.updated")
 
       if current_user.admin? && @coupon_template.bucket == "library"
-        @library = CouponTemplate.library_for_admin(current_user).order(:title)
+        scope = CouponTemplatePolicy::Scope.new(current_user, CouponTemplate)
+        @library = scope.library_for_admin.order(:title)
       end
 
       respond_to do |f|
@@ -107,8 +106,10 @@ class CouponTemplatesController < ApplicationController
     @coupon_template.update!(active: !@coupon_template.active)
     @mine = policy_scope(CouponTemplate).order(:title)
     message = t("coupon_templates.flash.toggled")
+
     if current_user.admin? && @coupon_template.bucket == "library"
-      @library = CouponTemplate.library_for_admin(current_user).order(:title)
+      scope = CouponTemplatePolicy::Scope.new(current_user, CouponTemplate)
+      @library = scope.library_for_admin.order(:title)
     end
 
     respond_to do |f|
@@ -123,7 +124,8 @@ class CouponTemplatesController < ApplicationController
   # 라이브러리 → 내 세트로 복제
   def adopt
     # 라이브러리 대상만 허용(=admin 소유)
-    library_scope = CouponTemplatePolicy.library_scope(current_user, CouponTemplate)
+    scope = CouponTemplatePolicy::Scope.new(current_user, CouponTemplate)
+    library_scope = current_user.admin? ? scope.library_for_admin : scope.library_for_teacher
 
     source = library_scope.find(@coupon_template.id)
     authorize source, :adopt?
@@ -202,8 +204,11 @@ class CouponTemplatesController < ApplicationController
 
     # 프레임 갱신에 쓸 데이터 준비
     @mine = policy_scope(CouponTemplate).order(:title)
-    @library = CouponTemplate.library_for_admin(current_user)
-      .order(:title) if current_user.admin? && was_library
+
+    if current_user.admin? && was_library
+      scope = CouponTemplatePolicy::Scope.new(current_user, CouponTemplate)
+      @library = scope.library_for_admin.order(:title)
+    end
 
     respond_to do |f|
       f.html { redirect_to coupon_templates_path, notice: message }

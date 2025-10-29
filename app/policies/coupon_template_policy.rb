@@ -5,6 +5,18 @@ class CouponTemplatePolicy < ApplicationPolicy
     def resolve
       scope.personal_for(user)
     end
+
+    # 교사 라이브러리: 관리자 소유 + library + active
+    def library_for_teacher
+      scope.joins(:created_by)
+           .merge(User.where(role: "admin"))
+           .where(bucket: "library", active: true)
+    end
+
+    # 관리자 라이브러리: 본인 소유 + library
+    def library_for_admin
+      scope.where(created_by_id: user.id, bucket: "library")
+    end
   end
 
   def index?

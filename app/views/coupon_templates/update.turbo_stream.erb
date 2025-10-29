@@ -1,5 +1,5 @@
 <%= turbo_stream.update "mine" do %>
-  <%= render partial: "mine", locals: { templates: policy_scope(CouponTemplate).order(:title) } %>
+  <%= render partial: "mine", locals: { templates: @mine } %>
 <% end %>
 
 <%# ✅ admin이 라이브러리 항목을 수정/토글한 경우 library도 갱신 %>
