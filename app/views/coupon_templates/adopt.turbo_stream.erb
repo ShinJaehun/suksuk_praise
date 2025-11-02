@@ -1,3 +1,3 @@
 <%= turbo_stream.update "mine" do %>
-  <%= render partial: "mine", locals: { templates: @mine } %>
+  <%= render partial: "mine", locals: { items: @mine_rows } %>
 <% end %>

@@ -1,0 +1,418 @@
+diff --git a/app/controllers/coupon_templates_controller.rb b/app/controllers/coupon_templates_controller.rb
+index 14f37e0..d01de89 100644
+--- a/app/controllers/coupon_templates_controller.rb
++++ b/app/controllers/coupon_templates_controller.rb
+@@ -7,18 +7,14 @@ class CouponTemplatesController < ApplicationController
+ 
+   def index
+     authorize CouponTemplate
++
+     @mine = policy_scope(CouponTemplate).order(:title)
++    @mine_rows = build_rows(@mine)
++
++    # 역할별 가시성(관리자=전체, 교사=active만) + 정렬은 정책 스코프에서 처리
++    load_library!
++    @library_admin = current_user.admin?
+ 
+-    if current_user.admin?
+-      # admin의 라이브러리 영역
+-      @library = CouponTemplate.library_for_admin(current_user).order(:title)
+-      @library_admin = true
+-    else
+-      # 교사의 읽기전용 라이브러리
+-      @library = CouponTemplatePolicy.library_scope(current_user, CouponTemplate)
+-                   .where(active: true).order(:title)
+-      @library_admin = false
+-    end
+   end
+ 
+   def new
+@@ -42,7 +38,7 @@ class CouponTemplatesController < ApplicationController
+       message = t("coupon_templates.flash.created")
+       
+       if bucket == "library"
+-        @library = CouponTemplate.library_for_admin(current_user).order(:title)
++        load_library!
+         
+         respond_to do |f|
+           f.html { redirect_to coupon_templates_path, notice: message }
+@@ -52,6 +48,10 @@ class CouponTemplatesController < ApplicationController
+           end
+         end
+       else
++
++        @mine = policy_scope(CouponTemplate).order(:title)
++        @mine_rows = build_rows(@mine)
++
+         respond_to do |f|
+           f.html { redirect_to coupon_templates_path, notice: message }
+           f.turbo_stream do
+@@ -80,9 +80,10 @@ class CouponTemplatesController < ApplicationController
+     if @coupon_template.update(coupon_template_params)
+       message = t("coupon_templates.flash.updated")
+ 
+-      if current_user.admin? && @coupon_template.bucket == "library"
+-        @library = CouponTemplate.library_for_admin(current_user).order(:title)
+-      end
++      @mine = policy_scope(CouponTemplate).order(:title)
++      @mine_rows = build_rows(@mine)
++
++      load_library! if current_user.admin? && @coupon_template.bucket == "library"
+ 
+       respond_to do |f|
+         f.html { redirect_to coupon_templates_path, notice: message }
+@@ -103,11 +104,13 @@ class CouponTemplatesController < ApplicationController
+   def toggle_active
+     authorize @coupon_template
+     @coupon_template.update!(active: !@coupon_template.active)
++
+     @mine = policy_scope(CouponTemplate).order(:title)
++    @mine_rows = build_rows(@mine)
++
+     message = t("coupon_templates.flash.toggled")
+-    if current_user.admin? && @coupon_template.bucket == "library"
+-      @library = CouponTemplate.library_for_admin(current_user).order(:title)
+-    end
++
++    load_library! if current_user.admin? && @coupon_template.bucket == "library"
+ 
+     respond_to do |f|
+       f.html { redirect_to coupon_templates_path, notice: message }
+@@ -121,7 +124,7 @@ class CouponTemplatesController < ApplicationController
+   # 라이브러리 → 내 세트로 복제
+   def adopt
+     # 라이브러리 대상만 허용(=admin 소유)
+-    library_scope = CouponTemplatePolicy.library_scope(current_user, CouponTemplate)
++    library_scope = CouponTemplatePolicy::Scope.library_scope(current_user, CouponTemplate)
+     source = library_scope.find(@coupon_template.id)
+     authorize source, :adopt?
+ 
+@@ -130,12 +133,17 @@ class CouponTemplatesController < ApplicationController
+                      .where("created_at >= ?", Time.current - DUP_WINDOW).exists?
+                      
+       @mine = policy_scope(CouponTemplate).order(:title)
++      @mine_rows = build_rows(@mine)
++
+       message = t("coupon_templates.flash.adopt_duplicate")
+ 
+       respond_to do |f|
+         f.html  { redirect_to coupon_templates_path, alert: message }
+         f.turbo_stream do
++
+           @mine = policy_scope(CouponTemplate).order(:title)
++          @mine_rows = build_rows(@mine)
++
+           flash.now[:alert] = message
+           render :adopt, status: :conflict, layout: "application"
+         end
+@@ -152,6 +160,8 @@ class CouponTemplatesController < ApplicationController
+     
+     if existing
+       @mine   = policy_scope(CouponTemplate).order(:title)
++      @mine_rows = build_rows(@mine)
++
+       message = t("coupon_templates.flash.already_in_mine", default: "이미 내 쿠폰에 있습니다.")
+       respond_to do |f|
+         f.html        { redirect_to coupon_templates_path, notice: message }
+@@ -172,6 +182,8 @@ class CouponTemplatesController < ApplicationController
+     )
+ 
+     @mine = policy_scope(CouponTemplate).order(:title)
++    @mine_rows = build_rows(@mine)
++
+     message = t("coupon_templates.flash.adopted")
+     respond_to do |f|
+       f.html { redirect_to coupon_templates_path, notice: message }
+@@ -199,8 +211,9 @@ class CouponTemplatesController < ApplicationController
+ 
+     # 프레임 갱신에 쓸 데이터 준비
+     @mine = policy_scope(CouponTemplate).order(:title)
+-    @library = CouponTemplate.library_for_admin(current_user)
+-      .order(:title) if current_user.admin? && was_library
++    @mine_rows = build_rows(@mine)
++
++    load_library! if current_user.admin? && was_library
+ 
+     respond_to do |f|
+       f.html { redirect_to coupon_templates_path, notice: message }
+@@ -219,4 +232,24 @@ class CouponTemplatesController < ApplicationController
+   def coupon_template_params
+     params.require(:coupon_template).permit(:title, :weight, :active)
+   end
++
++  # 프레젠테이션 행 데이터(권한 포함)를 구성
++  Row = Struct.new(:tpl, :can_destroy, keyword_init: true)
++  def build_rows(relation)
++    # N회 policy 호출은 여기서만 수행; 뷰는 데이터만 사용
++    relation.map do |tpl|
++      pol = Pundit.policy!(current_user, tpl)
++      Row.new(
++        tpl: tpl,
++        can_destroy: pol.destroy?
++      )
++    end
++  end
++
++
++  # 라이브러리 스코프 로딩 + 물리화(뷰에서 SELECT 라벨 안 찍히도록)
++  def load_library!
++    @library = CouponTemplatePolicy::Scope.library_scope(current_user, CouponTemplate)
++    @library = @library.to_a
++  end
+ end
+diff --git a/app/models/coupon_template.rb b/app/models/coupon_template.rb
+index 6d7226b..ebe08eb 100644
+--- a/app/models/coupon_template.rb
++++ b/app/models/coupon_template.rb
+@@ -13,14 +13,11 @@ class CouponTemplate < ApplicationRecord
+   }
+ 
+   scope :active, -> { where(active: true) }
+-  scope :personal_for, ->(user) { where(created_by_id: user.id, bucket: "personal") }
+-  scope :library_for_admin, ->(user) { where(created_by_id: user.id, bucket: "library") }
+-  scope :library_public, -> { 
+-    joins(:created_by)
+-      .merge(User.where(role: "admin"))
+-      .where(bucket: "library", active: true)
+-      .order(:title)
+-  }
++  scope :by_bucket, ->(bucket) { where(bucket: bucket) }
++  scope :owned_by, ->(user_id) { where(created_by_id: user_id) }
++  scope :ordered_by_title, -> { order(:title) }
++
++  scope :personal_for, ->(user) { owned_by(user.id).by_bucket("personal") }
+ 
+   def self.weighted_pick(relation = active)
+     total = relation.sum(:weight)
+diff --git a/app/models/user_coupon.rb b/app/models/user_coupon.rb
+index a0999c9..6c45e42 100644
+--- a/app/models/user_coupon.rb
++++ b/app/models/user_coupon.rb
+@@ -6,7 +6,7 @@ class UserCoupon < ApplicationRecord
+ 
+   enum status: { issued: 0, used: 1 }
+ 
+-  # ✅ 발급 컨텍스트 (문자열 enum)
++  # 발급 컨텍스트 (문자열 enum)
+   enum issuance_basis: {
+     daily:  "daily",
+     weekly: "weekly",
+@@ -77,6 +77,8 @@ class UserCoupon < ApplicationRecord
+   end
+ 
+   def use!(used_at: Time.zone.now)
++    # 중복사용 가드 & 전이 제약(issued → used만 허용)
++    raise ActiveRecord::RecordInvalid, self unless issued?
+     update!(status: :used, used_at: used_at)
+   end
+ 
+diff --git a/app/policies/coupon_template_policy.rb b/app/policies/coupon_template_policy.rb
+index 91ebf4b..39216d1 100644
+--- a/app/policies/coupon_template_policy.rb
++++ b/app/policies/coupon_template_policy.rb
+@@ -1,16 +1,21 @@
+ # app/policies/coupon_template_policy.rb
+ class CouponTemplatePolicy < ApplicationPolicy
+   class Scope < ApplicationPolicy::Scope
+-    # 교사용 index: "내 쿠폰" = 내가 만든 것만
++    # 교사용 index: "내 쿠폰" = 내가 만든 persoanl만
+     def resolve
+       scope.personal_for(user)
+     end
+ 
+-    # 라이브러리: 관리자 소유 + bucket=library (+ 교사는 읽기 전용)
++    # 교사: admin 소유 + bucket=library + active=true 만 읽기 전용
++    # 관리자: admin 소유 + bucket=library (active 여부 무관) 조회/수정 가능
+     def self.library_scope(user, scope)
+-      scope.joins(:created_by)
+-           .merge(User.where(role: "admin"))
+-           .where(bucket: "library")
++      base = scope.joins(:created_by)
++                  .merge(User.where(role: "admin"))
++                  .where(bucket: "library")
++      base = base.where(active: true) unless user&.admin?
++      base
++        .select(:id, :title, :weight, :active, :created_by_id, :bucket)
++        .order(:title)
+     end
+   end
+ 
+@@ -19,7 +24,7 @@ class CouponTemplatePolicy < ApplicationPolicy
+   end
+ 
+   def library?
+-    user.admin? || user.teacher? # 읽기 전용
++    user.admin? || user.teacher?
+   end
+ 
+   def create?
+@@ -30,10 +35,6 @@ class CouponTemplatePolicy < ApplicationPolicy
+     user.admin? || owner?
+   end
+ 
+-  def adopt?
+-    user.admin? || user.teacher?
+-  end
+-
+   def toggle_active?
+     user.admin? || owner?
+   end
+@@ -42,9 +43,8 @@ class CouponTemplatePolicy < ApplicationPolicy
+     user.admin? || owner?
+   end
+ 
+-  # 라이브러리: 관리자(=admin) 소유만
+-  def self.library_scope(user, scope)
+-    scope.joins(:created_by).merge(User.where(role: "admin"))
++  def adopt?
++    user.admin? || user.teacher?
+   end
+ 
+   private
+diff --git a/app/views/coupon_templates/_form_fields.html.erb b/app/views/coupon_templates/_form_fields.html.erb
+index 8b4c5ef..02aabda 100644
+--- a/app/views/coupon_templates/_form_fields.html.erb
++++ b/app/views/coupon_templates/_form_fields.html.erb
+@@ -4,7 +4,7 @@
+ </div>
+ <div class="mb-3">
+   <%= f.label :weight, t("coupon_templates.form.weight") %>
+-  <%= f.number_field :weight, in: 1..100, class: "w-full border p-2 rounded" %>
++  <%= f.number_field :weight, in: 0..100, class: "w-full border p-2 rounded" %>
+ </div>
+ <div class="mb-3">
+   <%= f.label :active, t("coupon_templates.form.active") %>
+diff --git a/app/views/coupon_templates/_library_admin.html.erb b/app/views/coupon_templates/_library_admin.html.erb
+index 76ad7a1..54995fc 100644
+--- a/app/views/coupon_templates/_library_admin.html.erb
++++ b/app/views/coupon_templates/_library_admin.html.erb
+@@ -49,7 +49,6 @@
+                                  t("coupon_templates.actions.activate",   default: "활성")),
+                   toggle_active_coupon_template_path(tpl), # ← 라우트 이름 프로젝트에 맞게 조정
+                   method: :patch,
+-                  params: { active: (!tpl.active?).to_s },
+                   form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+                   class: "underline"
+                 ) %>
+diff --git a/app/views/coupon_templates/_mine.html.erb b/app/views/coupon_templates/_mine.html.erb
+index f8a4bbe..070ff99 100644
+--- a/app/views/coupon_templates/_mine.html.erb
++++ b/app/views/coupon_templates/_mine.html.erb
+@@ -9,7 +9,8 @@
+   </thead>
+ 
+   <tbody>
+-    <% templates.each do |tpl| %>
++    <% items.each do |row| %>
++      <% tpl = row.tpl %>
+       <%= turbo_frame_tag dom_id(tpl) do %>
+         <tr class="border-t">
+           <td class="py-2"><%= tpl.title %></td>
+@@ -30,7 +31,7 @@
+               <%# 🔁 활성/비활성 토글 %>
+               <%= button_to(
+                     (tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") :
+-                                   t("coupon_templates.actions.activate",   default: "활성")),
++                                  t("coupon_templates.actions.activate",   default: "활성")),
+                     toggle_active_coupon_template_path(tpl),
+                     method: :patch,
+                     form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+@@ -44,14 +45,14 @@
+                     class: "underline" %>
+ 
+               <%# 🗑 삭제: 권한 허용될 때만 노출 (정책 destroy?는 기본 admin-only) %>
+-              <% if policy(tpl).destroy? %>
++              <% if row.can_destroy %>
+                 <%= button_to t("ui.delete", default: "삭제"),
+                       coupon_template_path(tpl),
+                       method: :delete,
+                       form: {
+                         data: {
+                           turbo_confirm: t("coupon_templates.confirm.delete",
+-                                           default: "정말 삭제할까요? 복구할 수 없습니다.")
++                                          default: "정말 삭제할까요? 복구할 수 없습니다.")
+                         }
+                       },
+                       class: "text-red-600 underline" %>
+diff --git a/app/views/coupon_templates/adopt.turbo_stream.erb b/app/views/coupon_templates/adopt.turbo_stream.erb
+index 9041e42..2e6193e 100644
+--- a/app/views/coupon_templates/adopt.turbo_stream.erb
++++ b/app/views/coupon_templates/adopt.turbo_stream.erb
+@@ -1,3 +1,3 @@
+ <%= turbo_stream.update "mine" do %>
+-  <%= render partial: "mine", locals: { templates: @mine } %>
++  <%= render partial: "mine", locals: { items: @mine_rows } %>
+ <% end %>
+diff --git a/app/views/coupon_templates/create.turbo_stream.erb b/app/views/coupon_templates/create.turbo_stream.erb
+index 7141522..b1445d6 100644
+--- a/app/views/coupon_templates/create.turbo_stream.erb
++++ b/app/views/coupon_templates/create.turbo_stream.erb
+@@ -1,5 +1,5 @@
+ <%= turbo_stream.update "mine" do %>
+-  <%= render partial: "mine", locals: { templates: policy_scope(CouponTemplate).order(:title) } %>
++  <%= render partial: "mine", locals: { items: @mine_rows } %>
+ <% end %>
+ 
+ <%= turbo_stream.update "modal", "" %> <!-- modal 닫기 -->
+\ No newline at end of file
+diff --git a/app/views/coupon_templates/destroy.turbo_stream.erb b/app/views/coupon_templates/destroy.turbo_stream.erb
+index fcf4d3f..1d0e5b5 100644
+--- a/app/views/coupon_templates/destroy.turbo_stream.erb
++++ b/app/views/coupon_templates/destroy.turbo_stream.erb
+@@ -1,5 +1,5 @@
+ <%= turbo_stream.update "mine" do %>
+-  <%= render partial: "mine", locals: { templates: @mine } %>
++  <%= render partial: "mine", locals: { items: @mine_rows } %>
+ <% end %>
+ 
+ <%# 관리자이고 방금 라이브러리를 삭제했다면 라이브러리도 새로 그림 %>
+diff --git a/app/views/coupon_templates/index.html.erb b/app/views/coupon_templates/index.html.erb
+index 03871ac..d69405d 100644
+--- a/app/views/coupon_templates/index.html.erb
++++ b/app/views/coupon_templates/index.html.erb
+@@ -12,14 +12,14 @@
+   <div>
+     <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.mine") %></h2>
+     <%= turbo_frame_tag "mine" do %>
+-      <%= render partial: "mine", locals: { templates: @mine } %>
++      <%= render partial: "mine", locals: { items: @mine_rows } %>
+     <% end %>
+   </div>
+ 
+     <div>
+     <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.library") %></h2>
+     <%= turbo_frame_tag "library" do %>
+-        <% if current_user.admin? %>
++        <% if @library_admin %>
+             <%= render partial: "library_admin", locals: { templates: @library } %>
+         <% else %>
+             <%= render partial: "library", locals: { templates: @library } %>
+diff --git a/app/views/coupon_templates/update.turbo_stream.erb b/app/views/coupon_templates/update.turbo_stream.erb
+index 949d655..0fa2433 100644
+--- a/app/views/coupon_templates/update.turbo_stream.erb
++++ b/app/views/coupon_templates/update.turbo_stream.erb
+@@ -1,9 +1,9 @@
+ <%= turbo_stream.update "mine" do %>
+-  <%= render partial: "mine", locals: { templates: policy_scope(CouponTemplate).order(:title) } %>
++  <%= render partial: "mine", locals: { items: @mine_rows } %>
+ <% end %>
+ 
+-<%# ✅ admin이 라이브러리 항목을 수정/토글한 경우 library도 갱신 %>
+-<% if current_user.admin? && defined?(@library) && @library.present? %>
++<%# 라이브러리 갱신 데이터가 준비된 경우에만 갱신 %>
++<% if defined?(@library) && @library.present? %>
+   <%= turbo_stream.update "library" do %>
+     <%= render partial: "library_admin", locals: { templates: @library } %>
+   <% end %>
+diff --git a/app/views/layouts/_navbar.html.erb b/app/views/layouts/_navbar.html.erb
+index 4e71542..c926bbd 100644
+--- a/app/views/layouts/_navbar.html.erb
++++ b/app/views/layouts/_navbar.html.erb
+@@ -1,6 +1,6 @@
+ <div class="h-16 w-full flex justify-between py-4 px-4 sticky top-0">
+   <a href="/">Home</a>
+-  <% if current_user&.admin? %>
++  <% if can_view_coupon_events? %>
+     <%= link_to t("coupon_events.index.title"), admin_coupon_events_path, class: "ml-4" %>
+   <% end %>
+   <% if current_user %>

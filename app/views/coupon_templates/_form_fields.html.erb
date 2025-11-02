@@ -4,7 +4,7 @@
 </div>
 <div class="mb-3">
   <%= f.label :weight, t("coupon_templates.form.weight") %>
-  <%= f.number_field :weight, in: 1..100, class: "w-full border p-2 rounded" %>
+  <%= f.number_field :weight, in: 0..100, class: "w-full border p-2 rounded" %>
 </div>
 <div class="mb-3">
   <%= f.label :active, t("coupon_templates.form.active") %>

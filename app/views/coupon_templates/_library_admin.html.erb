@@ -49,7 +49,6 @@
                                  t("coupon_templates.actions.activate",   default: "활성")),
                   toggle_active_coupon_template_path(tpl), # ← 라우트 이름 프로젝트에 맞게 조정
                   method: :patch,
-                  params: { active: (!tpl.active?).to_s },
                   form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
                   class: "underline"
                 ) %>

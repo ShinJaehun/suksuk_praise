@@ -12,14 +12,14 @@
   <div>
     <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.mine") %></h2>
     <%= turbo_frame_tag "mine" do %>
-      <%= render partial: "mine", locals: { templates: @mine } %>
+      <%= render partial: "mine", locals: { items: @mine_rows } %>
     <% end %>
   </div>
 
     <div>
     <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.library") %></h2>
     <%= turbo_frame_tag "library" do %>
-        <% if current_user.admin? %>
+        <% if @library_admin %>
             <%= render partial: "library_admin", locals: { templates: @library } %>
         <% else %>
             <%= render partial: "library", locals: { templates: @library } %>

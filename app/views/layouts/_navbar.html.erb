@@ -1,6 +1,6 @@
 <div class="h-16 w-full flex justify-between py-4 px-4 sticky top-0">
   <a href="/">Home</a>
-  <% if current_user&.admin? %>
+  <% if can_view_coupon_events? %>
     <%= link_to t("coupon_events.index.title"), admin_coupon_events_path, class: "ml-4" %>
   <% end %>
   <% if current_user %>
