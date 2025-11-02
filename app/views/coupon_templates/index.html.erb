@@ -6,11 +6,21 @@
       data: { turbo_frame: "modal" },
       class: "px-3 py-1 rounded bg-blue-600 text-white" %>
 
+    <%= button_to "균등 분배", rebalance_equal_coupon_templates_path,
+          method: :post, form: { data: { disable_with: "…" } },
+          class: "px-3 py-1 rounded border" %>
+
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <div>
     <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.mine") %></h2>
+
+    <p class="text-xs text-gray-500 mb-2">
+      <%= t(".auto_norm_notice", 
+        default: "활성화된 쿠폰의 가중치는 저장 후 자동으로 합계 100이 되도록 조정됩니다.") %>
+    </p>
+
     <%= turbo_frame_tag "mine" do %>
       <%= render partial: "mine", locals: { items: @mine_rows } %>
     <% end %>

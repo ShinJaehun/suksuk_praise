@@ -9,58 +9,19 @@
   </thead>
 
   <tbody>
-    <% items.each do |row| %>
-      <% tpl = row.tpl %>
-      <%= turbo_frame_tag dom_id(tpl) do %>
-        <tr class="border-t">
-          <td class="py-2"><%= tpl.title %></td>
-
-          <td>
-            <%# NOTE: 가중치-활성 연동은 이후 자동화 시 반영. 지금은 표시만 유지 %>
-            <%= tpl.weight %>
-          </td>
-
-          <td>
-            <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
-              <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
-            </span>
-          </td>
-
-          <td class="py-2">
-            <div class="flex items-center justify-end gap-3">
-              <%# 🔁 활성/비활성 토글 %>
-              <%= button_to(
-                    (tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") :
-                                  t("coupon_templates.actions.activate",   default: "활성")),
-                    toggle_active_coupon_template_path(tpl),
-                    method: :patch,
-                    form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
-                    class: "underline"
-                  ) %>
-
-              <%# ✏️ 수정(모달) %>
-              <%= link_to t("ui.edit", default: "수정"),
-                    edit_coupon_template_path(tpl),
-                    data: { turbo_frame: "modal" },
-                    class: "underline" %>
-
-              <%# 🗑 삭제: 권한 허용될 때만 노출 (정책 destroy?는 기본 admin-only) %>
-              <% if row.can_destroy %>
-                <%= button_to t("ui.delete", default: "삭제"),
-                      coupon_template_path(tpl),
-                      method: :delete,
-                      form: {
-                        data: {
-                          turbo_confirm: t("coupon_templates.confirm.delete",
-                                          default: "정말 삭제할까요? 복구할 수 없습니다.")
-                        }
-                      },
-                      class: "text-red-600 underline" %>
-              <% end %>
-            </div>
-          </td>
-        </tr>
-      <% end %>
-    <% end %>
+    <%= render partial: "coupon_templates/mine_row", collection: items, as: :row %>
   </tbody>
+
+  <%# (선택) 합계 표시: 활성 가중치 합이 100이 아니면 안내 %>
+  <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
+  <tfoot>
+    <tr>
+      <td colspan="4" class="pt-2 text-xs text-right">
+        활성 가중치 합계: <span class="font-mono"><%= total %></span>
+        <% if total != 100 %>
+          <span class="ml-2 text-amber-700">※ 합계가 100이 아닙니다. “균등 분배”를 눌러 정규화하세요.</span>
+        <% end %>
+      </td>
+    </tr>
+  </tfoot>
 </table>

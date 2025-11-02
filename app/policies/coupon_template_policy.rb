@@ -47,6 +47,14 @@ class CouponTemplatePolicy < ApplicationPolicy
     user.admin? || user.teacher?
   end
 
+  def bump_weight?
+    user.admin? || owner?
+  end
+
+  def rebalance_equal?
+    user.admin? || user.teacher?
+  end
+
   private
   def owner? 
     record.created_by_id == user.id

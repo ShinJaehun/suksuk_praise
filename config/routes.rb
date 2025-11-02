@@ -50,9 +50,10 @@ Rails.application.routes.draw do
     member do
       post :adopt   # 라이브러리(=admin 소유) → 교사 개인 복제
       patch :toggle_active
+      patch :bump_weight   # +10 / -10 같은 증감
     end
     collection do
-      get :library # 탭 분리 없이 index에서 파라미터로 토글한다면 생략 가능
+      post :rebalance_equal
     end
   end
 
