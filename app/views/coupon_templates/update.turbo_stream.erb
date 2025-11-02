@@ -1,9 +1,9 @@
 <%= turbo_stream.update "mine" do %>
-  <%= render partial: "mine", locals: { templates: @mine } %>
+  <%= render partial: "mine", locals: { items: @mine_rows } %>
 <% end %>
 
-<%# ✅ admin이 라이브러리 항목을 수정/토글한 경우 library도 갱신 %>
-<% if current_user.admin? && defined?(@library) && @library.present? %>
+<%# 라이브러리 갱신 데이터가 준비된 경우에만 갱신 %>
+<% if defined?(@library) && @library.present? %>
   <%= turbo_stream.update "library" do %>
     <%= render partial: "library_admin", locals: { templates: @library } %>
   <% end %>
