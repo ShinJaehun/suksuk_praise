@@ -9,7 +9,11 @@
   </thead>
 
   <tbody>
-    <%= render partial: "coupon_templates/mine_row", collection: items, as: :row %>
+    <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
+    <%= render partial: "coupon_templates/mine_row",
+               collection: items,
+               as: :row,
+               locals: { active_total: total } %>
   </tbody>
 
   <%# (선택) 합계 표시: 활성 가중치 합이 100이 아니면 안내 %>
@@ -17,8 +21,10 @@
   <tfoot>
     <tr>
       <td colspan="4" class="pt-2 text-xs text-right">
-        활성 가중치 합계: <span class="font-mono"><%= total %></span>
-        <% if total != 100 %>
+        <% if total == 100 %>
+          <span class="text-green-700">활성 가중치 합계: <span class="font-mono">100</span> / 100 ✅</span>
+        <% else %>
+          <span>활성 가중치 합계: <span class="font-mono"><%= total %></span> / 100</span>
           <span class="ml-2 text-amber-700">※ 합계가 100이 아닙니다. “균등 분배”를 눌러 정규화하세요.</span>
         <% end %>
       </td>

@@ -253,10 +253,13 @@ class CouponTemplatesController < ApplicationController
 
     # 서버 가드: 합계 100 초과면 no-op
     over_limit = false
+    auto_deactivated = false
+    auto_activated   = false
 
     CouponTemplate.transaction do
       all = CouponTemplate.lock.where(created_by_id: current_user.id, bucket: "personal").to_a
       actives = all.select(&:active)
+      active_sum = actives.sum { _1.weight.to_i }
 
       if @coupon_template.active?
         other_sum = actives.reject { |t| t.id == @coupon_template.id }.sum { _1.weight.to_i }
@@ -265,7 +268,26 @@ class CouponTemplatesController < ApplicationController
         break if over_limit
       end
 
-      @coupon_template.update!(weight: snapped)
+      if snapped == 0
+        # 불변식: active=true & weight=0 금지 → weight 0으로 내릴 때는 함께 비활성 처리
+        if @coupon_template.active?
+          @coupon_template.update!(weight: 0, active: false)
+          auto_deactivated = true
+        else
+          @coupon_template.update!(weight: 0)
+        end
+      else
+        if @coupon_template.active?
+          @coupon_template.update!(weight: snapped)
+        else
+          # 비활성 → 양수로 올릴 때, 합계가 허용하면 자동 활성화
+          can_turn_on = (active_sum + snapped) <= 100
+          attrs = { weight: snapped }
+          attrs[:active] = true if can_turn_on
+          @coupon_template.update!(**attrs)
+          auto_activated = can_turn_on
+        end        
+      end
     end
 
     # mine 전체 다시 그림(합계/버튼 disabled 반영)
@@ -273,8 +295,15 @@ class CouponTemplatesController < ApplicationController
     @mine_rows  = build_rows(@mine)
 
     flash.now[ over_limit ? :alert : :notice ] =
-      over_limit ? "합계가 100을 넘어 더 늘릴 수 없어요. 다른 쿠폰을 줄여 주세요." :
-                  "가중치를 #{snapped}으로 변경했어요."
+      if over_limit
+        "합계가 100을 넘어 더 늘릴 수 없어요. 다른 쿠폰을 줄여 주세요."
+      elsif auto_deactivated
+        "가중치를 0으로 내려 비활성화했습니다."
+      elsif auto_activated
+        "가중치를 #{snapped}으로 올리고 활성화했습니다."        
+      else
+        "가중치를 #{snapped}으로 변경했어요."
+      end
 
     render :update, layout: "application"  # (= mine 프레임 replace)
   end

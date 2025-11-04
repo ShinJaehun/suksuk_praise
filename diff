@@ -1,0 +1,301 @@
+diff --git a/app/controllers/coupon_templates_controller.rb b/app/controllers/coupon_templates_controller.rb
+index 373b6d8..b339f0f 100644
+--- a/app/controllers/coupon_templates_controller.rb
++++ b/app/controllers/coupon_templates_controller.rb
+@@ -253,10 +253,13 @@ class CouponTemplatesController < ApplicationController
+ 
+     # 서버 가드: 합계 100 초과면 no-op
+     over_limit = false
++    auto_deactivated = false
++    auto_activated   = false
+ 
+     CouponTemplate.transaction do
+       all = CouponTemplate.lock.where(created_by_id: current_user.id, bucket: "personal").to_a
+       actives = all.select(&:active)
++      active_sum = actives.sum { _1.weight.to_i }
+ 
+       if @coupon_template.active?
+         other_sum = actives.reject { |t| t.id == @coupon_template.id }.sum { _1.weight.to_i }
+@@ -265,7 +268,26 @@ class CouponTemplatesController < ApplicationController
+         break if over_limit
+       end
+ 
+-      @coupon_template.update!(weight: snapped)
++      if snapped == 0
++        # 불변식: active=true & weight=0 금지 → weight 0으로 내릴 때는 함께 비활성 처리
++        if @coupon_template.active?
++          @coupon_template.update!(weight: 0, active: false)
++          auto_deactivated = true
++        else
++          @coupon_template.update!(weight: 0)
++        end
++      else
++        if @coupon_template.active?
++          @coupon_template.update!(weight: snapped)
++        else
++          # 비활성 → 양수로 올릴 때, 합계가 허용하면 자동 활성화
++          can_turn_on = (active_sum + snapped) <= 100
++          attrs = { weight: snapped }
++          attrs[:active] = true if can_turn_on
++          @coupon_template.update!(**attrs)
++          auto_activated = can_turn_on
++        end        
++      end
+     end
+ 
+     # mine 전체 다시 그림(합계/버튼 disabled 반영)
+@@ -273,8 +295,15 @@ class CouponTemplatesController < ApplicationController
+     @mine_rows  = build_rows(@mine)
+ 
+     flash.now[ over_limit ? :alert : :notice ] =
+-      over_limit ? "합계가 100을 넘어 더 늘릴 수 없어요. 다른 쿠폰을 줄여 주세요." :
+-                  "가중치를 #{snapped}으로 변경했어요."
++      if over_limit
++        "합계가 100을 넘어 더 늘릴 수 없어요. 다른 쿠폰을 줄여 주세요."
++      elsif auto_deactivated
++        "가중치를 0으로 내려 비활성화했습니다."
++      elsif auto_activated
++        "가중치를 #{snapped}으로 올리고 활성화했습니다."        
++      else
++        "가중치를 #{snapped}으로 변경했어요."
++      end
+ 
+     render :update, layout: "application"  # (= mine 프레임 replace)
+   end
+diff --git a/app/models/coupon_template.rb b/app/models/coupon_template.rb
+index ca38e84..d3edf3d 100644
+--- a/app/models/coupon_template.rb
++++ b/app/models/coupon_template.rb
+@@ -18,11 +18,28 @@ class CouponTemplate < ApplicationRecord
+   scope :ordered_by_title, -> { order(:title) }
+   scope :personal_for, ->(user) { owned_by(user.id).by_bucket("personal") }
+ 
+-  before_validation :zero_weight_if_inactive
++  before_validation :zero_weight_if_turned_off
++  validate :enforce_personal_invariants
+ 
+   private
+ 
+-  def zero_weight_if_inactive
+-    self.weight = 0 if active == false
++  def zero_weight_if_turned_off
++    # personal에서 active가 false로 "변경될 때"만 weight를 0으로 만든다.
++    return unless bucket == "personal"
++    # Rails 7.1: will_save_change_to_active? 사용
++    if will_save_change_to_active? && active == false
++      self.weight = 0
++    end
+   end
++
++  def enforce_personal_invariants
++    # personal 세트에만 강한 불변식 적용
++    return unless bucket == "personal"
++    # 활성인데 가중치 0은 금지(UX에서도 버튼 비활성/토스트로 보조)
++    if active && weight.to_i == 0
++      errors.add(:base, I18n.t("errors.coupons.active_requires_weight",
++                               default: "활성화하려면 가중치가 0보다 커야 합니다."))
++    end
++    # 비활성화면 zero_weight_if_inactive 훅으로 항상 0으로 둔다(추가 에러는 불필요)
++  end  
+ end
+diff --git a/app/services/coupon_templates/weight_balancer.rb b/app/services/coupon_templates/weight_balancer.rb
+index 2b8f7e2..e7c321e 100644
+--- a/app/services/coupon_templates/weight_balancer.rb
++++ b/app/services/coupon_templates/weight_balancer.rb
+@@ -3,33 +3,79 @@ module CouponTemplates
+     TOTAL = 100
+     UNIT  = 10  # 🔸 십의 자리로 고정
+ 
++    # 개인 버킷(현재 사용자) 세트만 정규화
+     def self.normalize!(user)
+       CouponTemplate.transaction do
+-        all = CouponTemplate.lock.where(created_by_id: user.id, bucket: "personal").order(:id)
+-        actives = all.select(&:active)
+-        inactives = all.reject(&:active)
+-        inactives.each { |tpl| tpl.update_columns(weight: 0) unless tpl.weight.to_i == 0 }
++        all = CouponTemplate.lock.where(created_by_id: user.id, bucket: "personal").order(:id).to_a
++        actives   = all.select(&:active)
++        inactives = all - actives
++
++        # 비활성은 항상 0으로 고정(모델 훅과 중복이지만 여기서도 보정)
++        inactives.each do |tpl|
++          w = tpl.weight.to_i
++          tpl.update_columns(weight: 0) unless w == 0
++        end
++
+         return if actives.empty?
++        return actives.first.update_columns(weight: TOTAL) if actives.size == 1
+ 
+-        weights = actives.map { _1.weight.to_i }
+-        sum = weights.sum
++        current = actives.map { _1.weight.to_i }
++        sum     = current.sum
+ 
+-        strategy =
+-          case strategy
+-          when :equal, :proportional then strategy
+-          else # :auto (기존 규칙)
+-            (sum == 0 || weights.any?(&:zero?)) ? :equal : :proportional
+-          end
++        # 자동 전략: 전체합 0이거나 0이 포함되어 있으면 균등, 아니면 비례
++        use_equal = (sum == 0 || current.any?(&:zero?))
+ 
+-        new_weights =
+-          if strategy == :equal
+-            equal_split_units_then_scale(actives.size, TOTAL, UNIT)
++        target =
++          if use_equal
++            equal_split_units(actives.size, TOTAL, UNIT)
+           else
+-            proportional_split_units_then_scale(weights, TOTAL, UNIT)
++            proportional_split_units(current, TOTAL, UNIT)
+           end
+ 
+-        actives.zip(new_weights).each { |tpl, w| tpl.update_columns(weight: w) if tpl.weight.to_i != w }
++        actives.zip(target).each do |tpl, w|
++          tpl.update_columns(weight: w) if tpl.weight.to_i != w
++        end
++      end
++    end
++
++    # n개 항목을 UNIT 단위로 균등 분배(최대잔여)
++    def self.equal_split_units(n, total, unit)
++      base      = (total / n / unit) * unit
++      remainder = total - base * n
++      # remainder를 UNIT씩 앞에서부터 분배
++      arr = Array.new(n, base)
++      i = 0
++      while remainder > 0
++        arr[i] += unit
++        remainder -= unit
++        i = (i + 1) % n
+       end
++      arr
+     end
++
++    # 현재 비중에 비례하여 UNIT 단위로 분배(최대잔여)
++    def self.proportional_split_units(weights, total, unit)
++      sum = weights.sum.to_f
++      # 이상치 방어
++      return equal_split_units(weights.size, total, unit) if sum <= 0.0
++
++      raw   = weights.map { |w| total * (w.to_f / sum) }
++      floor = raw.map { |x| ((x / unit).floor * unit) }
++      used  = floor.sum
++      left  = total - used
++
++      # 소수부 큰 순서대로 remainder를 UNIT씩 배분
++      remainders = raw.each_with_index.map { |x, i| [i, x - floor[i]] }
++      remainders.sort_by! { |(_i, frac)| -frac }
++      idx = 0
++      while left > 0
++        i, = remainders[idx]
++        floor[i] += unit
++        left -= unit
++        idx = (idx + 1) % remainders.size
++      end
++      floor
++    end   
++
+   end
+ end
+\ No newline at end of file
+diff --git a/app/views/coupon_templates/_mine.html.erb b/app/views/coupon_templates/_mine.html.erb
+index 3ec1ed8..c57fb8b 100644
+--- a/app/views/coupon_templates/_mine.html.erb
++++ b/app/views/coupon_templates/_mine.html.erb
+@@ -9,7 +9,11 @@
+   </thead>
+ 
+   <tbody>
+-    <%= render partial: "coupon_templates/mine_row", collection: items, as: :row %>
++    <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
++    <%= render partial: "coupon_templates/mine_row",
++               collection: items,
++               as: :row,
++               locals: { active_total: total } %>
+   </tbody>
+ 
+   <%# (선택) 합계 표시: 활성 가중치 합이 100이 아니면 안내 %>
+@@ -17,8 +21,10 @@
+   <tfoot>
+     <tr>
+       <td colspan="4" class="pt-2 text-xs text-right">
+-        활성 가중치 합계: <span class="font-mono"><%= total %></span>
+-        <% if total != 100 %>
++        <% if total == 100 %>
++          <span class="text-green-700">활성 가중치 합계: <span class="font-mono">100</span> / 100 ✅</span>
++        <% else %>
++          <span>활성 가중치 합계: <span class="font-mono"><%= total %></span> / 100</span>
+           <span class="ml-2 text-amber-700">※ 합계가 100이 아닙니다. “균등 분배”를 눌러 정규화하세요.</span>
+         <% end %>
+       </td>
+diff --git a/app/views/coupon_templates/_mine_row.html.erb b/app/views/coupon_templates/_mine_row.html.erb
+index 49d2d6f..ac9d742 100644
+--- a/app/views/coupon_templates/_mine_row.html.erb
++++ b/app/views/coupon_templates/_mine_row.html.erb
+@@ -1,4 +1,4 @@
+-<%# locals: (row:) %>
++<%# locals: (row:, active_total:) %>
+ <% tpl = row.tpl %>
+ 
+ <tr id="<%= dom_id(tpl) %>" class="border-t">
+@@ -13,14 +13,17 @@
+               bump_weight_coupon_template_path(tpl, amount: -10),
+               method: :patch,
+               form: { data: { disable_with: "…" } },
+-              class: "px-2 py-0.5 text-xs border rounded" %>
++              class: "px-2 py-0.5 text-xs border rounded",
++              disabled: (tpl.weight.to_i <= 0),
++              title: (tpl.weight.to_i <= 0) ? "이미 0입니다" : nil %>
+ 
+         <%= button_to "→",
+               bump_weight_coupon_template_path(tpl, amount: 10),
+               method: :patch,
+               form: { data: { disable_with: "…" } },
+               class: "px-2 py-0.5 text-xs border rounded",
+-              disabled: (tpl.active? && (@active_total || 0) >= 100) %>
++              disabled: (tpl.active? && (active_total || 0) >= 100),
++              title: (tpl.active? && (active_total || 0) >= 100) ? "합계가 100을 넘을 수 없어요" : nil %>              
+       </div>
+     </div>
+   </td>
+@@ -39,7 +42,9 @@
+             toggle_active_coupon_template_path(tpl),
+             method: :patch,
+             form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+-            class: "underline"
++            class: "underline",
++            disabled: (!tpl.active? && tpl.weight.to_i == 0),
++            title: (!tpl.active? && tpl.weight.to_i == 0) ? "가중치가 0이면 활성화할 수 없어요" : nil            
+           ) %>
+ 
+       <%= link_to t("ui.edit", default: "수정"),
+diff --git a/app/views/coupon_templates/index.html.erb b/app/views/coupon_templates/index.html.erb
+index 4d2cb5f..901032b 100644
+--- a/app/views/coupon_templates/index.html.erb
++++ b/app/views/coupon_templates/index.html.erb
+@@ -17,8 +17,8 @@
+     <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.mine") %></h2>
+ 
+     <p class="text-xs text-gray-500 mb-2">
+-      <%= t(".auto_norm_notice", 
+-        default: "활성화된 쿠폰의 가중치는 저장 후 자동으로 합계 100이 되도록 조정됩니다.") %>
++      활성 쿠폰 가중치의 합은 100이어야 해요.
++      필요하면 우측 상단의 “균등 분배” 버튼으로 자동 조정할 수 있습니다.
+     </p>
+ 
+     <%= turbo_frame_tag "mine" do %>
+diff --git a/config/locales/ko.yml b/config/locales/ko.yml
+index 1df2901..596f95b 100644
+--- a/config/locales/ko.yml
++++ b/config/locales/ko.yml
+@@ -88,6 +88,8 @@ ko:
+   errors:
+     not_authorized: "권한이 없습니다."
+     user_not_in_classroom: "학생이 해당 교실 소속이 아닙니다."
++    coupons:
++      active_requires_weight: "활성화하려면 가중치가 0보다 커야 합니다."
+   empty:
+     issued_coupons: "아직 발급된 쿠폰이 없습니다."
+     today_king: "아직 오늘의 칭찬왕이 없습니다."

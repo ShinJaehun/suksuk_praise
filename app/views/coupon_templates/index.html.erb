@@ -17,8 +17,8 @@
     <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.mine") %></h2>
 
     <p class="text-xs text-gray-500 mb-2">
-      <%= t(".auto_norm_notice", 
-        default: "활성화된 쿠폰의 가중치는 저장 후 자동으로 합계 100이 되도록 조정됩니다.") %>
+      활성 쿠폰 가중치의 합은 100이어야 해요.
+      필요하면 우측 상단의 “균등 분배” 버튼으로 자동 조정할 수 있습니다.
     </p>
 
     <%= turbo_frame_tag "mine" do %>

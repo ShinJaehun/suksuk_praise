@@ -88,6 +88,8 @@ ko:
   errors:
     not_authorized: "권한이 없습니다."
     user_not_in_classroom: "학생이 해당 교실 소속이 아닙니다."
+    coupons:
+      active_requires_weight: "활성화하려면 가중치가 0보다 커야 합니다."
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."
     today_king: "아직 오늘의 칭찬왕이 없습니다."
