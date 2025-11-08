@@ -23,7 +23,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_18_075241) do
     t.index ["classroom_id", "user_id"], name: "index_classroom_memberships_on_classroom_id_and_user_id", unique: true
     t.index ["classroom_id"], name: "index_classroom_memberships_on_classroom_id"
     t.index ["user_id"], name: "index_classroom_memberships_on_user_id"
-    t.check_constraint "role::text = ANY (ARRAY['teacher'::character varying::text, 'student'::character varying::text])", name: "chk_cm_role"
+    t.check_constraint "role::text = ANY (ARRAY['teacher'::character varying, 'student'::character varying]::text[])", name: "chk_cm_role"
   end
 
   create_table "classrooms", force: :cascade do |t|
@@ -67,10 +67,14 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_18_075241) do
     t.string "title", null: false
     t.integer "weight", default: 0, null: false
     t.boolean "active", default: true, null: false
+    t.bigint "created_by_id", null: false
+    t.string "bucket", default: "personal", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["active"], name: "index_coupon_templates_on_active"
-    t.index ["title"], name: "index_coupon_templates_on_title", unique: true
+    t.index ["created_by_id", "bucket", "title"], name: "idx_coupon_templates_owner_bucket_title_uniqueness", unique: true
+    t.index ["created_by_id", "bucket"], name: "index_coupon_templates_on_created_by_and_bucket"
+    t.index ["created_by_id"], name: "index_coupon_templates_on_created_by_id"
   end
 
   create_table "user_coupons", force: :cascade do |t|
@@ -126,6 +130,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_18_075241) do
   add_foreign_key "coupon_events", "coupon_templates"
   add_foreign_key "coupon_events", "user_coupons"
   add_foreign_key "coupon_events", "users", column: "actor_id"
+  add_foreign_key "coupon_templates", "users", column: "created_by_id"
   add_foreign_key "user_coupons", "classrooms"
   add_foreign_key "user_coupons", "coupon_templates"
   add_foreign_key "user_coupons", "users"

@@ -1,0 +1,12 @@
+<%= turbo_stream.update "mine" do %>
+  <%= render partial: "mine", locals: { items: @mine_rows } %>
+<% end %>
+
+<%# 라이브러리 갱신 데이터가 준비된 경우에만 갱신 %>
+<% if defined?(@library) && @library.present? %>
+  <%= turbo_stream.update "library" do %>
+    <%= render partial: "library_admin", locals: { templates: @library } %>
+  <% end %>
+<% end %>
+
+<%= turbo_stream.update "modal", "" %> <!-- modal 닫기 -->

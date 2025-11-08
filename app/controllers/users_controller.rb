@@ -26,12 +26,14 @@ class UsersController < ApplicationController
         #     .includes(:coupon_template)
         #     .order(created_at: :desc)
 
-        @coupons = policy_scope(UserCoupon).where(user_id: @user.id)
-        @coupons = @coupons.where(classroom_id: @classroom.id, status: "issued") if @classroom
+        @coupons = policy_scope(UserCoupon)
+            .where(user_id: @user.id, status: "issued")
+        @coupons = @coupons.where(classroom_id: @classroom.id) if @classroom
         @coupons = @coupons.includes(:coupon_template).order(issued_at: :desc)
 
-        @recent_issued_coupons = UserCoupon.includes(:coupon_template, :user)
+        @recent_issued_coupons = policy_scope(UserCoupon)
             .where(user_id: @user.id)
+            .includes(:coupon_template, :user)
             .order(issued_at: :desc)
             .limit(10)
     end

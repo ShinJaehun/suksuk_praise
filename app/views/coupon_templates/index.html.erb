@@ -1,0 +1,57 @@
+<h1 class="text-xl font-bold mb-4"><%= t("coupon_templates.index.title") %></h1>
+
+<div class="mb-4 flex gap-2">
+    <%= link_to t("coupon_templates.actions.new"),
+      new_coupon_template_path,
+      data: { turbo_frame: "modal" },
+      class: "px-3 py-1 rounded bg-blue-600 text-white" %>
+
+    <%= button_to "균등 분배", rebalance_personal_coupon_templates_path,
+          method: :post,
+          form: {
+            data: {
+              controller: "disable-on-submit"
+            }
+          },
+          class: "px-3 py-1 rounded border" %>
+
+    <%= button_to t("coupon_templates.actions.adopt_all_from_library",
+                  default: "라이브러리 기본 세트 가져오기"),
+        adopt_all_from_library_coupon_templates_path,
+        method: :post,
+        form: {
+          data: {
+            turbo_confirm: t("coupon_templates.confirm.adopt_all",
+                             default: "라이브러리의 활성 쿠폰을 모두 내 쿠폰으로 가져올까요? 이미 있는 제목은 건너뜁니다.")
+          }
+        },
+        class: "px-3 py-1 rounded border" %>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div>
+    <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.mine") %></h2>
+
+    <p class="text-xs text-gray-500 mb-2">
+      활성 쿠폰 가중치의 합은 100이어야 해요.
+      필요하면 우측 상단의 “균등 분배” 버튼으로 자동 조정할 수 있습니다.
+    </p>
+
+    <%= turbo_frame_tag "mine" do %>
+      <%= render partial: "mine", locals: { items: @mine_rows } %>
+    <% end %>
+  </div>
+
+    <div>
+    <h2 class="font-semibold mb-2"><%= t("coupon_templates.tabs.library") %></h2>
+    <%= turbo_frame_tag "library" do %>
+        <% if @library_admin %>
+            <%= render partial: "library_admin", locals: { templates: @library } %>
+        <% else %>
+            <%= render partial: "library", locals: { templates: @library } %>
+        <% end %>
+    <% end %>
+    </div>
+</div>
+
+<%= turbo_frame_tag :modal %>

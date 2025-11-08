@@ -46,8 +46,22 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "classrooms#index"
 
+  resources :coupon_templates do
+    member do
+      post :adopt   # 라이브러리(=admin 소유) → 교사 개인 복제
+      patch :toggle_active
+      patch :bump_weight
+    end
+    collection do
+      post :rebalance_personal
+      post :rebalance_library
+      post :adopt_all_from_library
+    end
+  end
+
   namespace :admin do
     resources :coupon_events, only: :index
+    resources :coupon_templates, except: [:show]
   end
 
 end

@@ -6,17 +6,23 @@ export default class extends Controller {
   connect() {
   }
 
-  close(){
+  close() {
     //this.element.innerHTML = ""
     //this.element.className = "modal-default"
-    this.element.closest("turbo-frame#modal").innerHTML="";
+    this.element.closest("turbo-frame#modal").innerHTML = "";
+  }
+
+  clear(event) {
+    event.preventDefault()
+    const frame = document.getElementById("modal")
+    if (frame) frame.innerHTML = ""
   }
 
   //showProgress(event){
-    //if(this.hasProgressTarget){
-      //this.progressTarget.classList.remove("hidden");
-      //this.progressTarget.querySelector(".bar").style.width="70%";
-    //}
+  //if(this.hasProgressTarget){
+  //this.progressTarget.classList.remove("hidden");
+  //this.progressTarget.querySelector(".bar").style.width="70%";
+  //}
   //}
   showProgress(event) {
     if (this.hasProgressTarget) {

@@ -1,0 +1,39 @@
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left text-gray-600">
+      <th class="py-2"><%= t("coupon_templates.columns.title", default: "쿠폰명") %></th>
+      <th><%= t("coupon_templates.columns.weight", default: "가중치") %></th>
+      <th><%= t("coupon_templates.columns.active", default: "상태") %></th>
+      <th class="text-right"><%= t("ui.actions", default: "작업") %></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
+    <%= render partial: "coupon_templates/mine_row",
+               collection: items,
+               as: :row,
+               locals: { active_total: total } %>
+  </tbody>
+
+  <tfoot>
+    <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
+    <tr>
+      <td colspan="4" class="pt-2 text-xs text-right">
+        <% if total == 100 %>
+          <span class="text-green-700">
+            활성 가중치 합계: <span class="font-mono">100</span> / 100 ✅
+          </span>
+        <% else %>
+          <span>
+            활성 가중치 합계:
+            <span class="font-mono"><%= total %></span> / 100
+          </span>
+          <span class="ml-2 text-amber-700">
+            ※ 합계가 100이 아닙니다. “균등 분배”를 눌러 정규화하세요.
+          </span>
+        <% end %>
+      </td>
+    </tr>
+  </tfoot>
+</table>

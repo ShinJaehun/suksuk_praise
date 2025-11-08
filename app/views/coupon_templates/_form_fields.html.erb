@@ -1,0 +1,32 @@
+<%# app/views/coupon_templates/_form_fields.html.erb %>
+<%# locals: f / uses @is_library %>
+
+<div class="mb-3">
+  <%= f.label :title, t("coupon_templates.form.title") %>
+  <%= f.text_field :title, class: "w-full border p-2 rounded" %>
+</div>
+
+<% if @is_library %>
+  <div class="mb-3">
+    <%= f.label :weight, t("coupon_templates.form.weight") %>
+    <%= f.number_field :weight,
+          in: 0..100,
+          step: 10,
+          class: "w-full border p-2 rounded" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :active, t("coupon_templates.form.active") %>
+    <%= f.check_box :active %>
+  </div>
+<% else %>
+  <%= f.hidden_field :weight,
+        value: (f.object.weight.presence || 10) %>
+
+  <%= f.hidden_field :active,
+        value: (f.object.active.nil? ? true : f.object.active) %>
+
+  <p class="text-xs text-gray-500">
+    가중치와 활성/비활성은 저장 후 목록에서 ← / → 버튼과 토글로 조정할 수 있습니다.
+  </p>
+<% end %>

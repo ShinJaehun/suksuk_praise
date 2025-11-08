@@ -1,0 +1,32 @@
+<turbo-frame id="modal">
+  <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50" data-controller="modal">
+    <div class="relative bg-white p-6 rounded shadow-lg w-full max-w-md">
+      <button type="button"
+              data-action="modal#clear"
+              class="absolute top-2 right-3 text-gray-500 hover:text-gray-700">✕</button>
+
+      <% if @is_library && current_user.admin? %>
+        <h1 class="text-xl font-bold mb-4">
+          <%= t("coupon_templates.new.library_title", default: "라이브러리에 추가") %>
+        </h1>
+      <% else %>
+        <h1 class="text-xl font-bold mb-4">
+          <%= t("coupon_templates.new.title", default: "새 쿠폰") %>
+        </h1>
+      <% end %>
+
+      <%= form_with model: @coupon_template do |f| %>
+        <% if @is_library && current_user.admin? %>
+          <%= hidden_field_tag :bucket, "library" %>
+        <% end %>
+
+        <%= render partial: "form_fields", locals: { f: f } %>
+
+        <div>
+          <%= f.submit t("ui.save"), class: "px-3 py-1 bg-blue-600 text-white rounded" %>
+          <%= link_to t("ui.cancel"), "#", data: { action: "modal#clear" }, class: "ml-2 underline" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</turbo-frame>

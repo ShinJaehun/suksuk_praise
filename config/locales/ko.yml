@@ -1,5 +1,24 @@
 ko:
+  activerecord:
+    errors:
+      models:
+        coupon_template:
+          attributes:
+            title:
+              already_in_bucket: "은(는) 이미 해당 버킷에 있습니다."
+
   ui:
+    # 공통 액션 라벨
+    actions: "작업"
+    on: "활성"
+    off: "비활성"
+    save: "저장"
+    cancel: "취소"
+    edit: "수정"
+    delete: "삭제"
+    processing: "처리중..."
+
+    # 버튼 텍스트 (세부용)
     buttons:
       compliment: "칭찬하기 🥳"
       issue_coupon: "쿠폰 발급 🎟️"
@@ -12,20 +31,21 @@ ko:
       delete_classroom: "교실 삭제 🗑"
       confirm_delete_classroom: "정말 이 교실을 삭제할까요? 이 작업은 되돌릴 수 없습니다."
       refresh_king: "칭찬왕 새로고침 🔄"
-      save: "저장"
-      cancel: "취소"
+
     user_labels:
       name: "이름"
       email: "이메일"
       password: "비밀번호"
+
     user_placeholders:
       name: "이름을 입력하세요"
       email: "이메일을 입력하세요"
       password: "비밀번호를 입력하세요"
+
     headings:
       classrooms_index: "교실 목록"
       students: "학생 목록"
-    processing: "처리중..."
+
   classrooms:
     create:
       success: "교실이 생성되었습니다."
@@ -35,6 +55,7 @@ ko:
       success: "교실이 삭제되었습니다."
     refresh:
       title: "오늘의 칭찬왕"
+
   students:
     create:
       success: "학생이 추가되었습니다."
@@ -42,6 +63,7 @@ ko:
     bulk_create:
       success: "%{count}명의 학생이 자동 생성되었습니다."
       failure: "생성 실패: %{detail}"
+
   coupons:
     basis:
       daily: "일일"
@@ -61,30 +83,39 @@ ko:
     use:
       success: "쿠폰을 사용했습니다."
       already_used: "이미 사용된 쿠폰입니다."
+
   time:
     formats:
       short: "%m/%d %H:%M"
+
   date:
     formats:
-      short: "%m/%d"  
+      short: "%m/%d"
+
   coupon_events:
     action:
       issued: "발급"
       used: "사용"
     index:
       title: "쿠폰 이벤트 로그"
+
   compliments:
     create:
       success: "칭찬했습니다!"
       failure: "칭찬에 실패했습니다: %{detail}"
       duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
+
   errors:
     not_authorized: "권한이 없습니다."
     user_not_in_classroom: "학생이 해당 교실 소속이 아닙니다."
+    coupons:
+      active_requires_weight: "활성화하려면 가중치가 0보다 커야 합니다."
+
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."
     today_king: "아직 오늘의 칭찬왕이 없습니다."
     coupon_events: "표시할 쿠폰 이벤트가 없습니다."
+
   reports:
     title: "리포트"
     defaults:
@@ -94,7 +125,7 @@ ko:
       classroom: "교실"
       template: "쿠폰 템플릿"
       student: "학생"
-      user: "사용자"        # 학생/교사 혼용 화면 대비용(필요 시)
+      user: "사용자"
       status: "상태"
       basis: "발급 기준"
       date_range: "기간"
@@ -112,9 +143,9 @@ ko:
       custom: "직접 지정"
     sort:
       issued_at_desc: "발급시각 ↓ 최신순"
-      issued_at_asc:  "발급시각 ↑ 오래된순"
-      used_at_desc:   "사용시각 ↓ 최신순"
-      used_at_asc:    "사용시각 ↑ 오래된순"
+      issued_at_asc: "발급시각 ↑ 오래된순"
+      used_at_desc: "사용시각 ↓ 최신순"
+      used_at_asc: "사용시각 ↑ 오래된순"
       created_at_desc: "생성시각 ↓ 최신순"
       created_at_asc: "생성시각 ↑ 오래된순"
     columns:
@@ -129,6 +160,3 @@ ko:
       select_classroom: "교실을 선택하세요"
       select_template: "템플릿을 선택하세요"
       select_student: "학생을 선택하세요"
-    
-    
-    

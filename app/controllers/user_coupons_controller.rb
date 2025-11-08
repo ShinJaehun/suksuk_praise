@@ -64,7 +64,8 @@ class UserCouponsController < ApplicationController
   end
 
   def load_recent_issued_coupons!(user:, classroom_id:)
-    @issued_coupons = UserCoupon.where(user_id: user.id, classroom_id: classroom_id, status: "issued")
+    @issued_coupons = policy_scope(UserCoupon)
+      .where(user_id: user.id, classroom_id: classroom_id, status: "issued")
       .includes(:coupon_template)
       .order(issued_at: :desc)
   end

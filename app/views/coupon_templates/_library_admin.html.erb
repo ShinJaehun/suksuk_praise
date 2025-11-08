@@ -1,0 +1,82 @@
+<div class="mb-3 flex items-center justify-between">
+  <h2 class="text-lg font-semibold">
+    <%= t("coupon_templates.library.admin_title", default: "라이브러리(관리자)") %>
+  </h2>
+
+  <%= link_to t("coupon_templates.actions.new_in_library", default: "라이브러리에 새로 만들기"),
+      new_coupon_template_path(bucket: "library"),
+      data: { turbo_frame: "modal" },
+      class: "px-3 py-1 bg-blue-600 text-white rounded" %>
+
+    <%= button_to t("coupon_templates.actions.rebalance_library", default: "가중치 균등 분배"),
+      rebalance_library_coupon_templates_path,
+      method: :post,
+      form: { data: { turbo_confirm: t("coupon_templates.confirm.rebalance_library",
+                                        default: "활성 라이브러리 쿠폰의 가중치를 균등 분배할까요?") } },
+      class: "px-3 py-1 bg-gray-100 rounded border text-xs" %>      
+</div>
+
+<table class="w-full text-sm">
+  <thead>
+    <tr class="text-left text-gray-600">
+      <th class="py-2"><%= t("coupon_templates.columns.title", default: "제목") %></th>
+      <th><%= t("coupon_templates.columns.weight", default: "가중치") %></th>
+      <th><%= t("coupon_templates.columns.active", default: "사용") %></th>
+      <th class="text-right"><%= t("ui.actions", default: "작업") %></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% templates.each do |tpl| %>
+      <tr class="border-t">
+        <td class="py-2">
+          <div class="font-medium"><%= tpl.title %></div>
+        </td>
+
+        <td><%= tpl.weight %></td>
+
+        <td>
+          <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
+            <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
+          </span>
+        </td>
+
+        <td class="py-2">
+          <div class="flex items-center justify-end gap-3">
+            <%= button_to t("coupon_templates.actions.adopt", default: "가져오기"),
+                adopt_coupon_template_path(tpl),
+                method: :post,
+                form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+                class: "underline" %>
+
+            <%= button_to(
+                  (tpl.active? ?
+                    t("coupon_templates.actions.deactivate", default: "비활성") :
+                    t("coupon_templates.actions.activate",   default: "활성")),
+                  toggle_active_coupon_template_path(tpl),
+                  method: :patch,
+                  form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+                  class: "underline"
+                ) %>
+
+            <%= link_to t("ui.edit", default: "편집"),
+                edit_coupon_template_path(tpl),
+                data: { turbo_frame: "modal" },
+                class: "underline" %>
+
+            <%= button_to t("ui.delete", default: "삭제"),
+                coupon_template_path(tpl),
+                method: :delete,
+                form: {
+                  data: {
+                    turbo_confirm: t("coupon_templates.confirm.delete",
+                                     default: "정말 삭제할까요? 복구할 수 없습니다.")
+                  }
+                },
+                class: "text-red-600 underline" %>
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

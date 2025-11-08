@@ -6,7 +6,7 @@ class UserCoupon < ApplicationRecord
 
   enum status: { issued: 0, used: 1 }
 
-  # ✅ 발급 컨텍스트 (문자열 enum)
+  # 발급 컨텍스트 (문자열 enum)
   enum issuance_basis: {
     daily:  "daily",
     weekly: "weekly",
@@ -77,6 +77,8 @@ class UserCoupon < ApplicationRecord
   end
 
   def use!(used_at: Time.zone.now)
+    # 중복사용 가드 & 전이 제약(issued → used만 허용)
+    raise ActiveRecord::RecordInvalid, self unless issued?
     update!(status: :used, used_at: used_at)
   end
 

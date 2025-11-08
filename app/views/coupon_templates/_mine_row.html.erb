@@ -1,0 +1,70 @@
+<%# locals: (row:, active_total:) %>
+<% tpl = row.tpl %>
+
+<tr id="<%= dom_id(tpl) %>" class="border-t">
+  <td class="py-2"><%= tpl.title %></td>
+
+  <td class="align-top">
+    <div class="flex items-center gap-2">
+      <span class="font-mono"><%= tpl.weight %></span>
+
+      <div class="flex items-center gap-1">
+        <%= button_to "←",
+              bump_weight_coupon_template_path(tpl, amount: -10),
+              method: :patch,
+              form: { data: { controller: "disable-on-submit" } },
+              class: "px-2 py-0.5 text-xs border rounded",
+              disabled: (tpl.weight.to_i <= 0),
+              title: (tpl.weight.to_i <= 0) ? "이미 0입니다" : nil %>
+
+        <%= button_to "→",
+              bump_weight_coupon_template_path(tpl, amount: 10),
+              method: :patch,
+              form: { data: { controller: "disable-on-submit" } },
+              class: "px-2 py-0.5 text-xs border rounded",
+              disabled: (tpl.active? && (active_total || 0) >= 100),
+              title: (tpl.active? && (active_total || 0) >= 100) ? "합계가 100을 넘을 수 없어요" : nil %>
+      </div>
+    </div>
+  </td>
+
+  <td>
+    <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
+      <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
+    </span>
+  </td>
+
+  <td class="py-2">
+    <div class="flex items-center justify-end gap-3">
+      <%= button_to(
+            (tpl.active? ?
+              t("coupon_templates.actions.deactivate", default: "비활성") :
+              t("coupon_templates.actions.activate",   default: "활성")),
+            toggle_active_coupon_template_path(tpl),
+            method: :patch,
+            form: { data: { controller: "disable-on-submit" } },
+            class: "underline",
+            disabled: (!tpl.active? && tpl.weight.to_i == 0),
+            title: (!tpl.active? && tpl.weight.to_i == 0) ? "가중치가 0이면 활성화할 수 없어요" : nil
+          ) %>
+
+      <%= link_to t("ui.edit", default: "수정"),
+            edit_coupon_template_path(tpl),
+            data: { turbo_frame: "modal" },
+            class: "underline" %>
+
+      <% if row.can_destroy %>
+        <%= button_to t("ui.delete", default: "삭제"),
+              coupon_template_path(tpl),
+              method: :delete,
+              form: {
+                data: {
+                  turbo_confirm: t("coupon_templates.confirm.delete",
+                                   default: "정말 삭제할까요? 복구할 수 없습니다.")
+                }
+              },
+              class: "text-red-600 underline" %>
+      <% end %>
+    </div>
+  </td>
+</tr>
