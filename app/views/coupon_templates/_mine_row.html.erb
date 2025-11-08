@@ -12,7 +12,7 @@
         <%= button_to "←",
               bump_weight_coupon_template_path(tpl, amount: -10),
               method: :patch,
-              form: { data: { disable_with: "…" } },
+              form: { data: { controller: "disable-on-submit" } },
               class: "px-2 py-0.5 text-xs border rounded",
               disabled: (tpl.weight.to_i <= 0),
               title: (tpl.weight.to_i <= 0) ? "이미 0입니다" : nil %>
@@ -20,10 +20,10 @@
         <%= button_to "→",
               bump_weight_coupon_template_path(tpl, amount: 10),
               method: :patch,
-              form: { data: { disable_with: "…" } },
+              form: { data: { controller: "disable-on-submit" } },
               class: "px-2 py-0.5 text-xs border rounded",
               disabled: (tpl.active? && (active_total || 0) >= 100),
-              title: (tpl.active? && (active_total || 0) >= 100) ? "합계가 100을 넘을 수 없어요" : nil %>              
+              title: (tpl.active? && (active_total || 0) >= 100) ? "합계가 100을 넘을 수 없어요" : nil %>
       </div>
     </div>
   </td>
@@ -37,14 +37,15 @@
   <td class="py-2">
     <div class="flex items-center justify-end gap-3">
       <%= button_to(
-            (tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") :
-                          t("coupon_templates.actions.activate",   default: "활성")),
+            (tpl.active? ?
+              t("coupon_templates.actions.deactivate", default: "비활성") :
+              t("coupon_templates.actions.activate",   default: "활성")),
             toggle_active_coupon_template_path(tpl),
             method: :patch,
-            form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+            form: { data: { controller: "disable-on-submit" } },
             class: "underline",
             disabled: (!tpl.active? && tpl.weight.to_i == 0),
-            title: (!tpl.active? && tpl.weight.to_i == 0) ? "가중치가 0이면 활성화할 수 없어요" : nil            
+            title: (!tpl.active? && tpl.weight.to_i == 0) ? "가중치가 0이면 활성화할 수 없어요" : nil
           ) %>
 
       <%= link_to t("ui.edit", default: "수정"),
@@ -59,7 +60,7 @@
               form: {
                 data: {
                   turbo_confirm: t("coupon_templates.confirm.delete",
-                                  default: "정말 삭제할까요? 복구할 수 없습니다.")
+                                   default: "정말 삭제할까요? 복구할 수 없습니다.")
                 }
               },
               class: "text-red-600 underline" %>

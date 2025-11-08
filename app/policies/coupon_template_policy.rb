@@ -3,6 +3,7 @@ class CouponTemplatePolicy < ApplicationPolicy
   class Scope < ApplicationPolicy::Scope
     # 교사용 index: "내 쿠폰" = 내가 만든 persoanl만
     def resolve
+      return scope.none unless user
       scope.personal_for(user)
     end
 

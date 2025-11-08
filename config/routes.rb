@@ -50,10 +50,12 @@ Rails.application.routes.draw do
     member do
       post :adopt   # 라이브러리(=admin 소유) → 교사 개인 복제
       patch :toggle_active
-      patch :bump_weight   # +10 / -10 같은 증감
+      patch :bump_weight
     end
     collection do
-      post :rebalance_equal
+      post :rebalance_personal
+      post :rebalance_library
+      post :adopt_all_from_library
     end
   end
 

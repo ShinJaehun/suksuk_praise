@@ -1,9 +1,77 @@
-<div class="h-16 w-full flex justify-between py-4 px-4 sticky top-0">
-  <a href="/">Home</a>
-  <% if can_view_coupon_events? %>
-    <%= link_to t("coupon_events.index.title"), admin_coupon_events_path, class: "ml-4" %>
-  <% end %>
-  <% if current_user %>
-    <%= link_to "Sign out", destroy_user_session_path, data: { turbo_method: :delete } %>
-  <% end %>
+<div class="h-16 w-full flex items-center justify-between px-4 sticky top-0 bg-white border-b z-40">
+  <!-- Left: Brand / Primary links -->
+  <div class="flex items-center gap-4">
+    <%= link_to "Home", root_path, class: "font-semibold text-gray-800" %>
+
+    <% if can_manage_coupon_templates? %>
+      <%= link_to t("coupon_templates.index.title", default: "쿠폰 관리"),
+            coupon_templates_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+    <% end %>
+
+    <% if can_view_coupon_events? %>
+      <%= link_to t("coupon_events.index.title", default: "쿠폰 이벤트 로그"),
+            admin_coupon_events_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+    <% end %>
+  </div>
+
+  <!-- Right: User / Hamburger -->
+  <div class="flex items-center gap-3">
+    <% if current_user %>
+      <!-- Desktop: 유저 정보 간단 표시 -->
+      <div class="hidden md:flex flex-col items-end text-xs text-gray-600">
+        <span><%= current_user.name.presence || current_user.email %></span>
+        <span class="text-[10px] text-gray-400">
+          <%= current_user.role %>
+        </span>
+      </div>
+
+      <!-- Desktop: Sign out -->
+      <%= link_to "Sign out",
+            destroy_user_session_path,
+            data: { turbo_method: :delete },
+            class: "hidden md:inline-block text-sm text-gray-500 hover:text-red-600" %>
+
+      <!-- Mobile: Hamburger + Dropdown -->
+      <details class="md:hidden relative">
+        <summary class="list-none flex items-center gap-2 cursor-pointer select-none">
+          <div class="flex flex-col items-end text-xs text-gray-600">
+            <span><%= current_user.name.presence || current_user.email %></span>
+            <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
+          </div>
+          <div class="w-6 h-6 flex flex-col justify-between">
+            <span class="block h-[2px] bg-gray-700"></span>
+            <span class="block h-[2px] bg-gray-700"></span>
+            <span class="block h-[2px] bg-gray-700"></span>
+          </div>
+        </summary>
+
+        <div class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md py-2 text-sm z-50">
+          <% if can_manage_coupon_templates? %>
+            <%= link_to t("coupon_templates.index.title", default: "쿠폰 관리"),
+                  coupon_templates_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% end %>
+
+          <% if can_view_coupon_events? %>
+            <%= link_to t("coupon_events.index.title", default: "쿠폰 이벤트 로그"),
+                  admin_coupon_events_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% end %>
+
+          <%# TODO: 나중에 '내 정보 수정' 같은 계정 설정 링크 추가 예정 %>
+          <%= link_to "Sign out",
+                destroy_user_session_path,
+                data: { turbo_method: :delete },
+                class: "block px-3 py-1 text-red-600 hover:bg-red-50 mt-1 border-t" %>
+        </div>
+      </details>
+    <% else %>
+      <!-- 로그인 안 된 상태 -->
+      <%= link_to "Sign in",
+            new_user_session_path,
+            class: "text-sm text-blue-600 hover:text-blue-800" %>
+    <% end %>
+  </div>
 </div>

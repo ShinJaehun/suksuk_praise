@@ -5,24 +5,29 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
 
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="pt-14"> <!-- 네비바 높이만큼 여백 -->
-    <nav class="fixed inset-x-0 top-0 h-14 z-50 bg-white/90 backdrop-blur shadow">
+  <!-- 네비 높이(56px = h-14) 만큼만 전체를 아래로 밀기 -->
+  <body class="pt-14 bg-gray-50">
+    <!-- 상단 고정 네비게이션 -->
+    <nav class="fixed inset-x-0 top-0 h-14 z-40 bg-white/90 backdrop-blur shadow">
       <%= render "layouts/navbar" %>
     </nav>
 
-    <!-- flash 컨테이너: 클릭 통과, 상단 고정 -->
+    <!-- 플래시: 네비 바로 아래, 네비보다 위에 보이도록 z-50 -->
     <div id="flash"
-        class="fixed inset-x-0 top-14 z-40 flex flex-col items-center space-y-2 px-4
+         class="fixed inset-x-0 top-14 z-50 flex flex-col items-center space-y-2 px-4
                 pointer-events-none transition-all duration-300">
       <%= render "layouts/alerts" %>
     </div>
 
-    <%= yield %>
+    <!-- 본문: 살짝만 여백 주고, 네비/플래시는 body pt-14가 처리 -->
+    <main class="px-4 pt-4">
+      <%= yield %>
+    </main>
   </body>
 </html>

@@ -4,22 +4,12 @@
       <button type="button" data-action="modal#clear"
               class="absolute top-2 right-3 text-gray-500 hover:text-gray-700">✕</button>
 
-      <% if @coupon_template.persisted? %>
-        <h1 class="text-xl font-bold mb-4"><%= t("coupon_templates.edit.title", default: "쿠폰 수정") %></h1>
-      <% elsif current_user.admin? && @bucket == "library" %>
-        <h1 class="text-xl font-bold mb-4"><%= t("coupon_templates.new.library_title", default: "라이브러리에 추가") %></h1>
-      <% else %>
-        <h1 class="text-xl font-bold mb-4"><%= t("coupon_templates.new.title", default: "새 쿠폰") %></h1>
-      <% end %>
+      <h1 class="text-xl font-bold mb-4">
+        <%= t("coupon_templates.edit.title", default: "쿠폰 수정") %>
+      </h1>
 
       <%= form_with model: @coupon_template do |f| %>
-        <% unless @coupon_template.persisted? %>
-          <% if current_user.admin? && @bucket == "library" %>
-            <%= hidden_field_tag :bucket, "library" %>
-          <% end %>
-        <% end %>
-
-        <%= render "form_fields", f: f %>
+        <%= render partial: "form_fields", locals: { f: f } %>
 
         <div>
           <%= f.submit t("ui.save"), class: "px-3 py-1 bg-blue-600 text-white rounded" %>

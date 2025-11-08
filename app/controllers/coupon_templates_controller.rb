@@ -4,6 +4,7 @@ class CouponTemplatesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_coupon_template, 
     only: [:edit, :update, :toggle_active, :adopt, :destroy, :bump_weight ]
+  before_action :set_form_mode, only: [:new, :edit]
 
   # 더블클릭/중복요청 소프트 가드(2초)
   DUP_WINDOW = 2.seconds
@@ -23,7 +24,12 @@ class CouponTemplatesController < ApplicationController
   def new
     authorize CouponTemplate
     @bucket = (current_user.admin? && params[:bucket] == "library") ? "library" : "personal"
-    @coupon_template = CouponTemplate.new(active: true, weight: 50)
+    @coupon_template = CouponTemplate.new(
+      active: true,
+      weight: 50,
+      bucket: @bucket,
+      created_by_id: current_user.id
+    )
     render layout: false if turbo_frame_request?  
   end
 
@@ -308,10 +314,81 @@ class CouponTemplatesController < ApplicationController
     render :update, layout: "application"  # (= mine 프레임 replace)
   end
 
-  def rebalance_equal
+  def rebalance_personal
     authorize CouponTemplate, :rebalance_equal?
     CouponTemplates::WeightBalancer.normalize!(current_user)
     reload_mine_and_flash!("활성 쿠폰을 균등 분배했습니다.")
+  end
+
+  def rebalance_library
+    authorize CouponTemplate, :rebalance_equal?
+    raise Pundit::NotAuthorizedError unless current_user.admin?
+
+    CouponTemplates::WeightBalancer.normalize_library!
+
+    load_library!
+    reload_mine_and_flash!(
+      t("coupon_templates.flash.library_rebalanced",
+        default: "라이브러리 활성 쿠폰의 가중치를 균등 분배했습니다.")
+    )
+  end
+
+  def adopt_all_from_library
+    authorize CouponTemplate, :adopt?
+
+    source_scope = CouponTemplatePolicy::Scope.library_scope(current_user, CouponTemplate)
+    templates = source_scope.where(active: true)
+
+    created = []
+    skipped = []
+
+    CouponTemplate.transaction do
+      templates.each do |src|
+        existing = CouponTemplate.find_by(
+          created_by_id: current_user.id,
+          bucket:        "personal",
+          title:         src.title
+        )
+
+        if existing
+          skipped << existing
+          next
+        end
+
+        created << CouponTemplate.create!(
+          title:         src.title,
+          weight:        src.weight,
+          active:        src.active,
+          bucket:        "personal",
+          created_by_id: current_user.id
+        )
+      end
+
+      CouponTemplates::WeightBalancer.normalize!(current_user) if created.any?
+    end
+
+    @mine      = policy_scope(CouponTemplate).order(:title)
+    @mine_rows = build_rows(@mine)
+    load_library! if current_user.admin?
+
+    message =
+      if created.any?
+        t("coupon_templates.flash.adopt_all",
+          default: "라이브러리의 활성 쿠폰 %{created_count}개를 내 쿠폰으로 가져왔습니다. (중복 %{skipped_count}개 제외)",
+          created_count: created.size,
+          skipped_count: skipped.size)
+      else
+        t("coupon_templates.flash.adopt_all_nothing",
+          default: "가져올 새 활성 쿠폰이 없습니다.")
+      end
+
+    respond_to do |f|
+      f.html { redirect_to coupon_templates_path, notice: message }
+      f.turbo_stream do
+        flash.now[:notice] = message
+        render :adopt_all_from_library, layout: "application"
+      end
+    end
   end
 
   private
@@ -322,6 +399,15 @@ class CouponTemplatesController < ApplicationController
 
   def coupon_template_params
     params.require(:coupon_template).permit(:title, :weight, :active)
+  end
+
+  def set_form_mode
+    @is_library =
+      if action_name == "new"
+        current_user.admin? && params[:bucket] == "library"
+      else
+        @coupon_template&.bucket == "library"
+      end
   end
 
   # 프레젠테이션 행 데이터(권한 포함)를 구성
