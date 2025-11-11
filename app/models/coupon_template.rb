@@ -18,6 +18,13 @@ class CouponTemplate < ApplicationRecord
   scope :ordered_by_title, -> { order(:title) }
   scope :personal_for, ->(user) { owned_by(user.id).by_bucket("personal") }
 
+  # 새 교사 계정이 만들어질 때 개인 세트로 복제할 수 있는 라이브러리 쿠폰 목록
+  scope :library_onboarding_candidates, -> {
+    joins(:created_by)
+      .merge(User.where(role: "admin"))
+      .where(bucket: "library", active: true)
+  }
+
   before_validation :zero_weight_if_turned_off
   validate :enforce_personal_invariants
 

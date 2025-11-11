@@ -12,7 +12,6 @@ class User < ApplicationRecord
   has_many :classroom_memberships, dependent: :destroy
   has_many :classrooms, through: :classroom_memberships
 
-
   # 받았던 칭찬도 유저 삭제 시 함께 삭제
   has_many :given_compliments,
            class_name: "Compliment",
@@ -27,6 +26,14 @@ class User < ApplicationRecord
            inverse_of: :receiver
 
   has_many :user_coupons, dependent: :destroy
-
   has_many :coupon_templates, through: :user_coupons
+
+  after_commit :setup_default_coupons_for_teacher, on: :create
+
+  private
+
+  def setup_default_coupons_for_teacher
+    return unless teacher?
+    CouponTemplates::AutoAdopter.setup_for_teacher!(self)
+  end
 end

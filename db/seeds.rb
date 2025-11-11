@@ -66,7 +66,7 @@ end
 admin = User.find_by(role: "admin") # 이미 위에서 생성됨
 
 templates = [
-  { title: "마이쭈 간식",               weight: 50, active: true },
+  { title: "마이쭈 간식", weight: 50, active: true },
   { title: "좋아하는 자리에서 식사하기", weight: 30, active: true },
   { title: "일주일간 친구와 자리 바꾸기", weight: 20, active: true }
 ]
