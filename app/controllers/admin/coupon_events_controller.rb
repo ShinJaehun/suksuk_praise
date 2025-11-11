@@ -1,5 +1,4 @@
-class Admin::CouponEventsController < ApplicationController
-  before_action :authenticate_user!
+class Admin::CouponEventsController < Admin::BaseController
 
   def index
     authorize CouponEvent

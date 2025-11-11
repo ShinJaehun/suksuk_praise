@@ -1,0 +1,27 @@
+<h1 class="text-xl font-semibold mb-4">교사 관리</h1>
+
+<div class="mb-4">
+  <%= link_to "새 교사 추가", new_admin_teacher_path,
+              class: "px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" %>
+</div>
+
+<table class="min-w-full bg-white rounded shadow text-sm">
+  <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+    <tr>
+      <th class="px-4 py-2 text-left">이름</th>
+      <th class="px-4 py-2 text-left">이메일</th>
+      <th class="px-4 py-2 text-left">생성일</th>
+      <th class="px-4 py-2 text-right">담당 교실 수</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @teachers.each do |t| %>
+      <tr class="border-t">
+        <td class="px-4 py-2"><%= t.name %></td>
+        <td class="px-4 py-2"><%= t.email %></td>
+        <td class="px-4 py-2"><%= l(t.created_at, format: :short) %></td>
+        <td class="px-4 py-2 text-right"><%= t.classrooms.count %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

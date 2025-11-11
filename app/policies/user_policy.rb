@@ -1,4 +1,23 @@
 class UserPolicy < ApplicationPolicy
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      if user.admin?
+        scope.all
+      else
+        # 안전한 기본값: 자기 자신만
+        scope.where(id: user.id)
+      end
+    end
+  end
+  
+  def index?
+    user.admin?
+  end
+
+  def create?
+    user.admin?
+  end
+
   def show?
     return true if user&.admin?
 

@@ -19,6 +19,9 @@ class CouponTemplatesController < ApplicationController
     load_library!
     @library_admin = current_user.admin?
 
+    if @library_admin
+      @library_active_weight_sum = @library.select(&:active).sum { _1.weight.to_i }
+    end
   end
 
   def new
@@ -119,7 +122,7 @@ class CouponTemplatesController < ApplicationController
     authorize @coupon_template
     @coupon_template.update!(active: !@coupon_template.active)
 
-    # inactive면 모델 훅으로 weight=0, 이후 개인 버킷만 정규화
+    # personal(내 것)일 때만 가중치 정규화
     normalize_personal_for_current_user_if_needed!(@coupon_template)
 
     @mine = policy_scope(CouponTemplate).order(:title)
@@ -230,7 +233,7 @@ class CouponTemplatesController < ApplicationController
                   default: "이미 발급한 쿠폰이 있어 삭제할 수 없어 비활성화했습니다.")
     end
 
-    # 개인 버킷(내 것)인 경우만 가중치 정규화
+    # personal(내 것)인 경우만 가중치 정규화
     normalize_personal_for_current_user_if_needed!(
       bucket: was_library ? "library" : "personal",
       owner_id: owner_id
@@ -256,6 +259,18 @@ class CouponTemplatesController < ApplicationController
 
     amount  = params[:amount].to_i
     snapped = (((@coupon_template.weight.to_i + amount).clamp(0, 100)) / 10.0).round * 10
+
+    # --- 라이브러리: admin이 개별 템플릿 weight만 조정 (합 100 강제 안 함) ---
+    if @coupon_template.bucket == "library" && current_user.admin?
+      @coupon_template.update!(weight: snapped)
+    
+      @mine      = policy_scope(CouponTemplate).order(:title)
+      @mine_rows = build_rows(@mine)
+      load_library! # => @library + @library_active_weight_sum 갱신
+    
+      flash.now[:notice] = "라이브러리 가중치를 #{snapped}으로 변경했습니다."
+      return render :update, layout: "application"
+    end
 
     # 서버 가드: 합계 100 초과면 no-op
     over_limit = false
@@ -425,8 +440,14 @@ class CouponTemplatesController < ApplicationController
 
   # 라이브러리 스코프 로딩 + 물리화(뷰에서 SELECT 라벨 안 찍히도록)
   def load_library!
-    @library = CouponTemplatePolicy::Scope.library_scope(current_user, CouponTemplate)
-    @library = @library.to_a
+    @library = CouponTemplatePolicy::Scope
+                 .library_scope(current_user, CouponTemplate)
+                 .to_a
+
+    if current_user.admin?
+      @library_active_weight_sum =
+        @library.select(&:active).sum { _1.weight.to_i }
+    end
   end
 
   # 개인 버킷(=current_user 소유)일 때만 WeightBalancer 실행

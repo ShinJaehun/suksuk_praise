@@ -24,7 +24,7 @@ class CouponTemplate < ApplicationRecord
       .merge(User.where(role: "admin"))
       .where(bucket: "library", active: true)
   }
-
+  
   before_validation :zero_weight_if_turned_off
   validate :enforce_personal_invariants
 

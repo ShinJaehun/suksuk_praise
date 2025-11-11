@@ -1,0 +1,20 @@
+<%= form_with model: teacher, url: admin_teachers_path, class: "space-y-4 max-w-md" do |f| %>
+  <div>
+    <%= f.label :name, "이름", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.text_field :name, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :email, "이메일", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.email_field :email, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :password, "초기 비밀번호", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.password_field :password, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.submit "저장", class: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" %>
+  </div>
+<% end %>
