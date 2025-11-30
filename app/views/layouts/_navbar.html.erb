@@ -4,7 +4,15 @@
     <%= link_to "Home", root_path, class: "font-semibold text-gray-800" %>
 
     <% if current_user&.admin? %>
-      <%= link_to "관리자", admin_teachers_path, class: "px-3 py-2 hover:underline" %>
+      <%= link_to "관리자",
+            admin_teachers_path,
+            class: "px-3 py-2 hover:underline" %>
+    <% end %>
+
+    <% if can_manage_teachers? %>
+      <%= link_to "교사 관리",
+            admin_teachers_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
 
     <% if can_manage_coupon_templates? %>
@@ -52,6 +60,13 @@
         </summary>
 
         <div class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md py-2 text-sm z-50">
+
+          <% if can_manage_teachers? %>
+            <%= link_to "교사 관리",
+                  admin_teachers_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% end %>
+          
           <% if can_manage_coupon_templates? %>
             <%= link_to t("coupon_templates.index.title", default: "쿠폰 관리"),
                   coupon_templates_path,

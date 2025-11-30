@@ -29,4 +29,14 @@ class UserPolicy < ApplicationPolicy
     # 학생은 본인만
     user&.student? && user.id == record.id
   end
+
+  # Admin 영역에서 교사 계정 수정 권한
+  def edit?
+    update?
+  end
+
+  def update?
+    # 관리자이면서, 대상이 교사 계정일 때만 허용
+    user&.admin? && record.teacher?
+  end
 end

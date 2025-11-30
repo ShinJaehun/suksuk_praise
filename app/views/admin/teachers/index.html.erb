@@ -11,16 +11,34 @@
       <th class="px-4 py-2 text-left">이름</th>
       <th class="px-4 py-2 text-left">이메일</th>
       <th class="px-4 py-2 text-left">생성일</th>
-      <th class="px-4 py-2 text-right">담당 교실 수</th>
+      <th class="px-4 py-2 text-left">담임 교실</th>
+      <th class="px-4 py-2 text-right">교실 수</th>
+      <th class="px-4 py-2 text-right"></th>
     </tr>
   </thead>
   <tbody>
-    <% @teachers.each do |t| %>
+    <% @rows.each do |row| %>
+      <% t = row.teacher %>
       <tr class="border-t">
         <td class="px-4 py-2"><%= t.name %></td>
         <td class="px-4 py-2"><%= t.email %></td>
         <td class="px-4 py-2"><%= l(t.created_at, format: :short) %></td>
-        <td class="px-4 py-2 text-right"><%= t.classrooms.count %></td>
+        
+        <td class="px-4 py-2">
+          <% if row.homeroom_names.any? %>
+            <%= row.homeroom_names.join(", ") %>
+          <% else %>
+            <span class="text-gray-500 text-xs">지정 없음</span>
+          <% end %>
+        </td>
+        
+        <td class="px-4 py-2 text-right"><%= row.classroom_count %></td>
+
+        <td class="px-4 py-2 text-right">
+          <%= link_to "수정",
+                edit_admin_teacher_path(t),
+                class: "text-blue-700 underline hover:text-blue-900" %>
+        </td>        
       </tr>
     <% end %>
   </tbody>
