@@ -14,16 +14,16 @@
               method: :patch,
               form: { data: { controller: "disable-on-submit" } },
               class: "px-2 py-0.5 text-xs border rounded",
-              disabled: (tpl.weight.to_i <= 0),
-              title: (tpl.weight.to_i <= 0) ? "이미 0입니다" : nil %>
+              disabled: !row.can_decrease_weight,
+              title: row.decrease_title %>
 
         <%= button_to "→",
               bump_weight_coupon_template_path(tpl, amount: 10),
               method: :patch,
               form: { data: { controller: "disable-on-submit" } },
               class: "px-2 py-0.5 text-xs border rounded",
-              disabled: (tpl.active? && (active_total || 0) >= 100),
-              title: (tpl.active? && (active_total || 0) >= 100) ? "합계가 100을 넘을 수 없어요" : nil %>
+              disabled: !row.can_increase_weight,
+              title: row.increase_title %>
       </div>
     </div>
   </td>
@@ -44,8 +44,8 @@
             method: :patch,
             form: { data: { controller: "disable-on-submit" } },
             class: "underline",
-            disabled: (!tpl.active? && tpl.weight.to_i == 0),
-            title: (!tpl.active? && tpl.weight.to_i == 0) ? "가중치가 0이면 활성화할 수 없어요" : nil
+            disabled: !row.can_toggle_active,
+            title: row.toggle_title            
           ) %>
 
       <%= link_to t("ui.edit", default: "수정"),

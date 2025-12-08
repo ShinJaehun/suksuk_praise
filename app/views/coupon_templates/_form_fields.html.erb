@@ -20,11 +20,14 @@
     <%= f.check_box :active %>
   </div>
 <% else %>
+
+  <%# personal 세트는 기본적으로 비활성/가중치 0에서 시작하고, %>
+  <%# 이후 목록 화면에서 ← / → 버튼과 토글로만 조정한다. %>
   <%= f.hidden_field :weight,
-        value: (f.object.weight.presence || 10) %>
+        value: (f.object.weight.presence || 0) %>
 
   <%= f.hidden_field :active,
-        value: (f.object.active.nil? ? true : f.object.active) %>
+        value: (f.object.active.nil? ? false : f.object.active) %>
 
   <p class="text-xs text-gray-500">
     가중치와 활성/비활성은 저장 후 목록에서 ← / → 버튼과 토글로 조정할 수 있습니다.

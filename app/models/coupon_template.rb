@@ -24,18 +24,35 @@ class CouponTemplate < ApplicationRecord
       .merge(User.where(role: "admin"))
       .where(bucket: "library", active: true)
   }
-  
-  before_validation :zero_weight_if_turned_off
+
+  # personal 세트에서는 항상 두 상태만 허용한다.
+  # - (active: true,  weight > 0)
+  # - (active: false, weight = 0)
+  # library는 이 불변식의 대상이 아니며, 관리자가 자유롭게 weight/active를 조절할 수 있다.
+  before_validation :sync_weight_and_active  
   validate :enforce_personal_invariants
 
   private
 
-  def zero_weight_if_turned_off
-    # personal에서 active가 false로 "변경될 때"만 weight를 0으로 만든다.
+  def sync_weight_and_active
+    # personal 세트에만 강한 불변식 적용
     return unless bucket == "personal"
-    # Rails 7.1: will_save_change_to_active? 사용
-    if will_save_change_to_active? && active == false
+
+    w = weight.to_i
+    a = !!active
+
+    if w <= 0
+      # 가중치가 0 이하라면 무조건 "꺼진" 상태로 정규화
       self.weight = 0
+      self.active = false
+    elsif !a
+      # active=false 인 상태에서는 항상 weight=0 으로 유지
+      self.weight = 0
+      self.active = false
+    else
+      # 정상 케이스: active=true && weight>0
+      self.weight = w
+      self.active = true
     end
   end
 
@@ -47,6 +64,6 @@ class CouponTemplate < ApplicationRecord
       errors.add(:base, I18n.t("errors.coupons.active_requires_weight",
                                default: "활성화하려면 가중치가 0보다 커야 합니다."))
     end
-    # 비활성화면 zero_weight_if_inactive 훅으로 항상 0으로 둔다(추가 에러는 불필요)
+    # 비활성화면 sync_weight_and_active 훅으로 항상 0으로 둔다(추가 에러는 불필요)
   end  
 end
