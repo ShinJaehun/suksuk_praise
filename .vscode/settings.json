@@ -1,4 +1,30 @@
 {
-  "ruby.interpreter.commandPath": "/home/shinjaehun/.asdf/shims/ruby"
+  // "ruby.interpreter.commandPath": "/home/shinjaehun/.asdf/shims/ruby"
+  // Ruby / Rails formatting (project policy)
+  "[ruby]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // ERB도 Ruby LSP로 포맷(원하면 유지)
+  "[erb]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
+    "editor.formatOnSave": true
+  },
+
+  // JS는 이 레포에서 저장 포맷을 원할 때만 켜기
+  "[javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": false
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": false
+  },
+
+  // 안전 기본값: 붙여넣기 포맷은 끔(원하면 true로)
+  "editor.formatOnPaste": false
 }
 
