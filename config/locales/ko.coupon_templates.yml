@@ -37,7 +37,7 @@ ko:
       adopt_duplicate: "잠시 후 다시 시도해 주세요."
       deleted: "삭제했습니다."
       deactivated_instead: "이미 발급한 쿠폰이 있어 삭제할 수 없어 비활성화했습니다."
-      adopt_all: "라이브러리의 활성 쿠폰 %{created_count}개를 내 쿠폰으로 가져왔습니다. (중복 %{skipped_count}개 제외)"
+      adopt_all: "라이브러리 기본 세트를 내 쿠폰에 적용했습니다. (신규 %{created_count}개, 갱신 %{upserted_count}개)"
       adopt_all_nothing: "가져올 새 활성 쿠폰이 없습니다."
       library_rebalanced: "라이브러리 활성 쿠폰 가중치를 균등 분배했습니다."
     confirm:

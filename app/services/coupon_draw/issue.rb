@@ -44,7 +44,7 @@ module CouponDraw
 
       # 4) 템플릿 가중 랜덤 (P2.5 개인 스코프)
       # -> 교사(issued_by) 소유 + 활성 템플릿만 후보로 사용
-      personal_scope = CouponTemplate.where(created_by_id: issued_by.id, active: true)
+      personal_scope = CouponTemplate.where(created_by_id: issued_by.id, bucket: "personal", active: true)
       template = weighted_pick_from_scope(personal_scope)
       raise NoActiveTemplateError, "활성 쿠폰 템플릿이 없습니다." unless template
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_18_075241) do
+ActiveRecord::Schema[7.1].define(version: 2026_01_13_074100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -71,9 +71,11 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_18_075241) do
     t.string "bucket", default: "personal", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "source_template_id"
     t.index ["active"], name: "index_coupon_templates_on_active"
     t.index ["created_by_id", "bucket", "title"], name: "idx_coupon_templates_owner_bucket_title_uniqueness", unique: true
     t.index ["created_by_id", "bucket"], name: "index_coupon_templates_on_created_by_and_bucket"
+    t.index ["created_by_id", "source_template_id"], name: "index_coupon_templates_on_creator_and_source", unique: true, where: "(source_template_id IS NOT NULL)"
     t.index ["created_by_id"], name: "index_coupon_templates_on_created_by_id"
   end
 
@@ -130,6 +132,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_18_075241) do
   add_foreign_key "coupon_events", "coupon_templates"
   add_foreign_key "coupon_events", "user_coupons"
   add_foreign_key "coupon_events", "users", column: "actor_id"
+  add_foreign_key "coupon_templates", "coupon_templates", column: "source_template_id"
   add_foreign_key "coupon_templates", "users", column: "created_by_id"
   add_foreign_key "user_coupons", "classrooms"
   add_foreign_key "user_coupons", "coupon_templates"

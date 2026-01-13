@@ -1,6 +1,7 @@
 class CouponTemplate < ApplicationRecord
   has_many :user_coupons, dependent: :restrict_with_exception
   belongs_to :created_by, class_name: "User"
+  belongs_to :source_template, class_name: "CouponTemplate", optional: true
 
   validates :title, presence: true
   validates :weight, presence: true,
@@ -25,45 +26,4 @@ class CouponTemplate < ApplicationRecord
       .where(bucket: "library", active: true)
   }
 
-  # personal 세트에서는 항상 두 상태만 허용한다.
-  # - (active: true,  weight > 0)
-  # - (active: false, weight = 0)
-  # library는 이 불변식의 대상이 아니며, 관리자가 자유롭게 weight/active를 조절할 수 있다.
-  before_validation :sync_weight_and_active  
-  validate :enforce_personal_invariants
-
-  private
-
-  def sync_weight_and_active
-    # personal 세트에만 강한 불변식 적용
-    return unless bucket == "personal"
-
-    w = weight.to_i
-    a = !!active
-
-    if w <= 0
-      # 가중치가 0 이하라면 무조건 "꺼진" 상태로 정규화
-      self.weight = 0
-      self.active = false
-    elsif !a
-      # active=false 인 상태에서는 항상 weight=0 으로 유지
-      self.weight = 0
-      self.active = false
-    else
-      # 정상 케이스: active=true && weight>0
-      self.weight = w
-      self.active = true
-    end
-  end
-
-  def enforce_personal_invariants
-    # personal 세트에만 강한 불변식 적용
-    return unless bucket == "personal"
-    # 활성인데 가중치 0은 금지(UX에서도 버튼 비활성/토스트로 보조)
-    if active && weight.to_i == 0
-      errors.add(:base, I18n.t("errors.coupons.active_requires_weight",
-                               default: "활성화하려면 가중치가 0보다 커야 합니다."))
-    end
-    # 비활성화면 sync_weight_and_active 훅으로 항상 0으로 둔다(추가 에러는 불필요)
-  end  
 end

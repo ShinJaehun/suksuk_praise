@@ -65,6 +65,14 @@ module CouponTemplates
     #
     def self.normalize_library!
       CouponTemplate.transaction do
+
+        # 안전장치: weight<=0 인데 active=true로 남아있는 항목이 있으면 꺼버린다.
+        # (모델 훅과 중복일 수 있으나, update_columns로 우회된 케이스 방어)
+        bad = CouponTemplate.lock.where(bucket: "library", active: true).where("weight <= 0").to_a
+        bad.each do |tpl|
+          tpl.update_columns(active: false, weight: 0)
+        end
+
         actives = CouponTemplate.lock
                                 .where(bucket: "library", active: true)
                                 .order(:id)

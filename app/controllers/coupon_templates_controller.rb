@@ -6,9 +6,6 @@ class CouponTemplatesController < ApplicationController
     only: [:edit, :update, :toggle_active, :adopt, :destroy, :bump_weight ]
   before_action :set_form_mode, only: [:new, :edit]
 
-  # 더블클릭/중복요청 소프트 가드(2초)
-  DUP_WINDOW = 2.seconds
-
   def index
     authorize CouponTemplate
 
@@ -82,8 +79,6 @@ class CouponTemplatesController < ApplicationController
           end
         end
       else
-        # 개인 버킷만 가중치 정규화
-        normalize_personal_for_current_user_if_needed!(@coupon_template)
 
         @mine = policy_scope(CouponTemplate).order(:title)
         @mine_rows = build_rows(@mine)
@@ -127,13 +122,12 @@ class CouponTemplatesController < ApplicationController
     if @coupon_template.update(attrs)    
       message = t("coupon_templates.flash.updated")
 
-      # 개인 버킷만 가중치 정규화
-      normalize_personal_for_current_user_if_needed!(@coupon_template)
-
       @mine = policy_scope(CouponTemplate).order(:title)
       @mine_rows = build_rows(@mine)
 
-      load_library! if current_user.admin? && @coupon_template.bucket == "library"
+      if current_user.admin? && @coupon_template.bucket == "library"
+        load_library!
+      end
 
       respond_to do |f|
         f.html { redirect_to coupon_templates_path, notice: message }
@@ -154,38 +148,16 @@ class CouponTemplatesController < ApplicationController
   def toggle_active
     authorize @coupon_template
 
-    # personal에서 weight=0 인 상태에서는 활성화할 수 없다(서버 가드)
-    if @coupon_template.bucket == "personal" &&
-       !@coupon_template.active? &&
-       @coupon_template.weight.to_i == 0
-
-      @mine      = policy_scope(CouponTemplate).order(:title)
-      @mine_rows = build_rows(@mine)
-
-      message = t("errors.coupons.active_requires_weight",
-                  default: "활성화하려면 가중치가 0보다 커야 합니다.")
-
-      respond_to do |f|
-        f.html { redirect_to coupon_templates_path, alert: message, status: :unprocessable_entity }
-        f.turbo_stream do
-          flash.now[:alert] = message
-          render :update, layout: "application", status: :unprocessable_entity
-        end
-      end
-      return
-    end
-
     @coupon_template.update!(active: !@coupon_template.active)
-
-    # personal(내 것)일 때만 가중치 정규화
-    normalize_personal_for_current_user_if_needed!(@coupon_template)
 
     @mine = policy_scope(CouponTemplate).order(:title)
     @mine_rows = build_rows(@mine)
 
     message = t("coupon_templates.flash.toggled")
 
-    load_library! if current_user.admin? && @coupon_template.bucket == "library"
+    if current_user.admin? && @coupon_template.bucket == "library"
+      load_library!
+    end
 
     respond_to do |f|
       f.html { redirect_to coupon_templates_path, notice: message }
@@ -203,43 +175,14 @@ class CouponTemplatesController < ApplicationController
     source = library_scope.find(@coupon_template.id)
     authorize source, :adopt?
 
-    # 소프트 가드(2초 내 중복 가져오기 방지)
-    if CouponTemplate.where(created_by_id: current_user.id, title: source.title, bucket: "personal")
-                     .where("created_at >= ?", Time.current - DUP_WINDOW).exists?
-                     
+    # 이미 source_template_id로 가져온 적 있으면 멱등 처리
+    existing_by_source = CouponTemplate.find_by(created_by_id: current_user.id, bucket: "personal", source_template_id: source.id)
+    if existing_by_source
       @mine = policy_scope(CouponTemplate).order(:title)
       @mine_rows = build_rows(@mine)
-
-      message = t("coupon_templates.flash.adopt_duplicate")
-
-      respond_to do |f|
-        f.html  { redirect_to coupon_templates_path, alert: message }
-        f.turbo_stream do
-
-          @mine = policy_scope(CouponTemplate).order(:title)
-          @mine_rows = build_rows(@mine)
-
-          flash.now[:alert] = message
-          render :adopt, status: :conflict, layout: "application"
-        end
-      end
-      return
-    end
-
-    # 멱등 처리: 이미 내(personal) 버킷에 같은 제목이 있으면 생성하지 않음
-    existing = CouponTemplate.find_by(
-      created_by_id: current_user.id,
-      bucket:        "personal",
-      title:         source.title
-    )
-    
-    if existing
-      @mine   = policy_scope(CouponTemplate).order(:title)
-      @mine_rows = build_rows(@mine)
-
       message = t("coupon_templates.flash.already_in_mine", default: "이미 내 쿠폰에 있습니다.")
       respond_to do |f|
-        f.html        { redirect_to coupon_templates_path, notice: message }
+        f.html { redirect_to coupon_templates_path, notice: message }
         f.turbo_stream do
           flash.now[:notice] = message
           render :adopt, layout: "application"
@@ -254,11 +197,9 @@ class CouponTemplatesController < ApplicationController
       weight:        0,
       active:        false,
       bucket:        "personal",
-      created_by_id: current_user.id
+      created_by_id: current_user.id,
+      source_template_id: source.id
     )
-
-    # 개인 버킷만 가중치 정규화
-    normalize_personal_for_current_user_if_needed!(@adopted)
     
     @mine = policy_scope(CouponTemplate).order(:title)
     @mine_rows = build_rows(@mine)
@@ -276,8 +217,7 @@ class CouponTemplatesController < ApplicationController
   def destroy
     authorize @coupon_template
     was_library = (@coupon_template.bucket == "library")
-    owner_id = @coupon_template.created_by_id   # 파괴 전 캡처
-
+    
     begin
       # 발급 이력이 없으면 정상 삭제
       @coupon_template.destroy!  
@@ -288,12 +228,6 @@ class CouponTemplatesController < ApplicationController
       message = t("coupon_templates.flash.deactivated_instead",
                   default: "이미 발급한 쿠폰이 있어 삭제할 수 없어 비활성화했습니다.")
     end
-
-    # personal(내 것)인 경우만 가중치 정규화
-    normalize_personal_for_current_user_if_needed!(
-      bucket: was_library ? "library" : "personal",
-      owner_id: owner_id
-    )
 
     # 프레임 갱신에 쓸 데이터 준비
     @mine = policy_scope(CouponTemplate).order(:title)
@@ -319,7 +253,7 @@ class CouponTemplatesController < ApplicationController
     # --- 라이브러리: admin이 개별 템플릿 weight만 조정 (합 100 강제 안 함) ---
     if @coupon_template.bucket == "library" && current_user.admin?
       @coupon_template.update!(weight: snapped)
-    
+
       @mine      = policy_scope(CouponTemplate).order(:title)
       @mine_rows = build_rows(@mine)
       load_library! # => @library + @library_active_weight_sum 갱신
@@ -328,59 +262,19 @@ class CouponTemplatesController < ApplicationController
       return render :update, layout: "application"
     end
 
-    # 서버 가드: 합계 100 초과면 no-op
-    over_limit = false
-    auto_deactivated = false
-    auto_activated   = false
-
-    CouponTemplate.transaction do
-      all = CouponTemplate.lock.where(created_by_id: current_user.id, bucket: "personal").to_a
-      actives = all.select(&:active)
-      active_sum = actives.sum { _1.weight.to_i }
-
-      if @coupon_template.active?
-        other_sum = actives.reject { |t| t.id == @coupon_template.id }.sum { _1.weight.to_i }
-        proposed  = other_sum + snapped
-        over_limit = (proposed > 100)
-        break if over_limit
-      end
-
-      if snapped == 0
-        # 불변식: active=true & weight=0 금지 → weight 0으로 내릴 때는 함께 비활성 처리
-        if @coupon_template.active?
-          @coupon_template.update!(weight: 0, active: false)
-          auto_deactivated = true
-        else
-          @coupon_template.update!(weight: 0)
-        end
-      else
-        if @coupon_template.active?
-          @coupon_template.update!(weight: snapped)
-        else
-          # 비활성 → 양수로 올릴 때, 합계가 허용하면 자동 활성화
-          can_turn_on = (active_sum + snapped) <= 100
-          attrs = { weight: snapped }
-          attrs[:active] = true if can_turn_on
-          @coupon_template.update!(**attrs)
-          auto_activated = can_turn_on
-        end        
-      end
+    # --- personal: 합계/정규화 신경 쓰지 않고 단순히 weight만 조정 ---
+    if snapped == 0
+      # weight=0이면 자동으로 비활성화(이것만 유지)
+      @coupon_template.update!(weight: 0, active: false)
+      flash.now[:notice] = "가중치를 0으로 내려 비활성화했습니다."
+    else
+      @coupon_template.update!(weight: snapped)
+      flash.now[:notice] = "가중치를 #{snapped}으로 변경했어요."
     end
 
     # mine 전체 다시 그림(합계/버튼 disabled 반영)
     @mine       = policy_scope(CouponTemplate).order(:title)
     @mine_rows  = build_rows(@mine)
-
-    flash.now[ over_limit ? :alert : :notice ] =
-      if over_limit
-        "합계가 100을 넘어 더 늘릴 수 없어요. 다른 쿠폰을 줄여 주세요."
-      elsif auto_deactivated
-        "가중치를 0으로 내려 비활성화했습니다."
-      elsif auto_activated
-        "가중치를 #{snapped}으로 올리고 활성화했습니다."        
-      else
-        "가중치를 #{snapped}으로 변경했어요."
-      end
 
     render :update, layout: "application"  # (= mine 프레임 replace)
   end
@@ -410,33 +304,37 @@ class CouponTemplatesController < ApplicationController
     source_scope = CouponTemplatePolicy::Scope.library_scope(current_user, CouponTemplate)
     templates = source_scope.where(active: true)
 
-    created = []
-    skipped = []
+    upserted = 0
+    created  = 0
 
     CouponTemplate.transaction do
       templates.each do |src|
+
         existing = CouponTemplate.find_by(
-          created_by_id: current_user.id,
-          bucket:        "personal",
-          title:         src.title
+          created_by_id:      current_user.id,
+          bucket:             "personal",
+          source_template_id: src.id
         )
 
         if existing
-          skipped << existing
-          next
+          existing.update!(
+            title:             src.title,
+            active:            src.active,
+            weight:            src.weight
+          )
+          upserted += 1
+        else
+          CouponTemplate.create!(
+            title:             src.title,
+            active:            src.active,
+            weight:            src.weight,
+            bucket:            "personal",
+            created_by_id:      current_user.id,
+            source_template_id: src.id
+          )
+          created += 1
         end
-
-        created << CouponTemplate.create!(
-          title:         src.title,
-          # personal 세트의 시작점은 항상 비활성/가중치 0
-          weight:        0,
-          active:        false,
-          bucket:        "personal",
-          created_by_id: current_user.id
-        )
       end
-
-      CouponTemplates::WeightBalancer.normalize!(current_user) if created.any?
     end
 
     @mine      = policy_scope(CouponTemplate).order(:title)
@@ -444,11 +342,11 @@ class CouponTemplatesController < ApplicationController
     load_library! if current_user.admin?
 
     message =
-      if created.any?
+      if (created + upserted) > 0
         t("coupon_templates.flash.adopt_all",
-          default: "라이브러리의 활성 쿠폰 %{created_count}개를 내 쿠폰으로 가져왔습니다. (중복 %{skipped_count}개 제외)",
-          created_count: created.size,
-          skipped_count: skipped.size)
+          default: "라이브러리 기본 세트를 내 쿠폰에 적용했습니다. (신규 %{created_count}개, 갱신 %{upserted_count}개)",
+          created_count: created,
+          upserted_count: upserted)
       else
         t("coupon_templates.flash.adopt_all_nothing",
           default: "가져올 새 활성 쿠폰이 없습니다.")
@@ -551,17 +449,6 @@ class CouponTemplatesController < ApplicationController
       @library_active_weight_sum =
         @library.select(&:active).sum { _1.weight.to_i }
     end
-  end
-
-  # 개인 버킷(=current_user 소유)일 때만 WeightBalancer 실행
-  def normalize_personal_for_current_user_if_needed!(resource = nil, bucket: nil, owner_id: nil)
-    bkt = bucket || resource&.bucket
-    oid = owner_id || resource&.created_by_id
-
-    return unless bkt == "personal"
-    return unless oid == current_user.id
-
-    CouponTemplates::WeightBalancer.normalize!(current_user)
   end
 
   def reload_mine_and_flash!(message)
