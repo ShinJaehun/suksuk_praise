@@ -1,4 +1,4 @@
-<% if policy(@classroom).update? %>
+<% if @can_manage_classroom %>
   <div class="mb-4">
     <%= link_to t('ui.buttons.edit_classroom'),
       edit_classroom_path(@classroom), class: "text-blue-600 underline mr-4" %>

@@ -78,6 +78,9 @@ ko:
       duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
       not_found: "대상을 찾을 수 없습니다."
       invalid: "발급에 실패했습니다: %{reason}"
+      user_id_required: "대상이 지정되지 않았습니다."
+      no_candidate: "선발할 학생이 없습니다."
+      no_active_template: "활성 쿠폰 템플릿이 없습니다."      
       already_issued_today: "이미 오늘 발급되었습니다."
       not_today_king: "오늘의 칭찬왕이 아닙니다."
     use:
@@ -107,9 +110,18 @@ ko:
 
   errors:
     not_authorized: "권한이 없습니다."
+    admin_only: "관리자만 접근할 수 있습니다."
     user_not_in_classroom: "학생이 해당 교실 소속이 아닙니다."
     coupons:
       active_requires_weight: "활성화하려면 가중치가 0보다 커야 합니다."
+
+  admin:
+    teachers:
+      create:
+        success: "새 교사 계정이 생성되었습니다."
+        failure: "교사 계정 생성에 실패했습니다."
+      update:
+        success: "담임 교실 설정을 저장했습니다."
 
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."
@@ -121,6 +133,9 @@ ko:
     defaults:
       all_classrooms: "전체 교실"
       all_templates: "전체 쿠폰"
+      all_actions: "전체 액션"
+    summary:
+      total: "총"
     filters:
       classroom: "교실"
       template: "쿠폰 템플릿"

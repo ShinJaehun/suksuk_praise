@@ -35,9 +35,9 @@ class Admin::TeachersController < Admin::BaseController
     authorize @teacher
 
     if @teacher.save
-      redirect_to admin_teachers_path, notice: "새 교사 계정이 생성되었습니다."
+      redirect_to admin_teachers_path, notice: t("admin.teachers.create.success")
     else
-      flash.now[:alert] = "교사 계정 생성에 실패했습니다."
+      flash.now[:alert] = t("admin.teachers.create.failure")
       render :new, status: :unprocessable_entity
     end
   end
@@ -54,7 +54,8 @@ class Admin::TeachersController < Admin::BaseController
     # 개인 정보(name/email/password)는 Devise에서 각 교사가 직접 수정.
     # 여기서는 담임 교실 매핑만 관리한다.
     update_homeroom_memberships!
-    redirect_to admin_teachers_path, notice: "담임 교실 설정을 저장했습니다."
+    redirect_to admin_teachers_path, notice: t("admin.teachers.update.success")
+
   end
 
   private

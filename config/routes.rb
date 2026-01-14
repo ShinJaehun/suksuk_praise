@@ -59,10 +59,12 @@ Rails.application.routes.draw do
     end
   end
 
+  # CouponEvent logs (teacher/admin unified)
+  resources :coupon_events, only: [:index]
+
   namespace :admin do
     root to: "teachers#index"  # /admin 접속 시 교사 목록으로 바로 이동
     resources :teachers, only: [:index, :new, :create, :edit, :update]
-    resources :coupon_events, only: :index
     resources :coupon_templates, except: [:show]
   end
 

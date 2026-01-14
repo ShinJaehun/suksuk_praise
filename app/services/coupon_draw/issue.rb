@@ -1,9 +1,20 @@
 module CouponDraw
   class Issue
-    class NoCandidateError < StandardError; end
-    class DuplicatePeriodError < StandardError; end
-    class NoActiveTemplateError < StandardError; end
-    class NotComplimentKingToday < StandardError; end
+    class Error < StandardError
+      attr_reader :i18n_key
+      attr_reader :http_status
+      def initialize(i18n_key, http_status: :unprocessable_entity)
+        @i18n_key = i18n_key
+        @http_status = http_status
+        super(i18n_key.to_s)
+      end
+    end
+
+    class MissingUserIdError       < Error; end                     # 422
+    class NoCandidateError         < Error; end                     # 422
+    class DuplicatePeriodError     < Error; end                     # 409
+    class NoActiveTemplateError    < Error; end                     # 422
+    class NotComplimentKingToday   < Error; end                     # 403
 
     # 반환: UserCoupon
     def self.call(classroom:, basis:, mode:, issued_by:, target_user_id: nil)
@@ -13,7 +24,8 @@ module CouponDraw
       mode  = normalize_mode(basis, mode)
 
       # 1) 대상(버튼 UX: user_id 필수) + 교실 소속 보장
-      raise ArgumentError, "user_id required" if target_user_id.blank?
+      raise MissingUserIdError.new("coupons.draw.user_id_required") if target_user_id.blank?
+
       user = classroom.students.find(target_user_id)
 
       # 2) 정책 검증: daily_top → 반드시 '오늘의 칭찬왕(동률 포함)'이어야 함
@@ -21,11 +33,12 @@ module CouponDraw
         today_range = now.beginning_of_day..now.end_of_day
         counts = Compliment.where(classroom: classroom, given_at: today_range)
                            .group(:receiver_id).count
-        raise NoCandidateError, "선발할 학생이 없습니다." if counts.blank?
+        raise NoCandidateError.new("coupons.draw.no_candidate") if counts.blank?
 
         max = counts.values.max
         king_ids = counts.select { |_, c| c == max }.keys
-        raise NotComplimentKingToday, "오늘의 칭찬왕이 아닙니다." unless king_ids.include?(user.id)
+        raise NotComplimentKingToday.new("coupons.draw.not_today_king", http_status: :forbidden) unless king_ids.include?(user.id)
+
       end
 
       # 3) 기간 시작 계산 & 중복 가드(daily만 1일 1회)
@@ -38,7 +51,8 @@ module CouponDraw
              basis_tag:       mode,
              period_start_on: period_start
            ).exists?
-          raise DuplicatePeriodError, "이미 오늘 발급되었습니다."
+          raise DuplicatePeriodError.new("coupons.draw.already_issued_today", http_status: :conflict)
+
         end
       end
 
@@ -46,18 +60,36 @@ module CouponDraw
       # -> 교사(issued_by) 소유 + 활성 템플릿만 후보로 사용
       personal_scope = CouponTemplate.where(created_by_id: issued_by.id, bucket: "personal", active: true)
       template = weighted_pick_from_scope(personal_scope)
-      raise NoActiveTemplateError, "활성 쿠폰 템플릿이 없습니다." unless template
+      raise NoActiveTemplateError.new("coupons.draw.no_active_template") unless template
 
-      # 5) 발급
-      UserCoupon.issue!(
-        user:             user,
-        classroom:        classroom,
-        template:         template,
-        issued_by:        issued_by,
-        issuance_basis:   basis,
-        period_start_on:  period_start,
-        basis_tag:        mode
-      )
+      # 5) 발급 + 이벤트 로그 (원자성 보장)
+      ApplicationRecord.transaction do
+        issued = UserCoupon.issue!(
+          user:             user,
+          classroom:        classroom,
+          template:         template,
+          issued_by:        issued_by,
+          issuance_basis:   basis,
+          period_start_on:  period_start,
+          basis_tag:        mode
+        )
+
+        CouponEvent.create!(
+          action: "issued",
+          actor: issued_by,
+          user_coupon: issued,
+          classroom: classroom,
+          coupon_template: template,
+          metadata: {
+            basis: issued.issuance_basis,
+            mode:  issued.basis_tag,
+            target_user_id: issued.user_id,
+            target_user_name: user.name
+          }
+        )
+
+        issued
+      end
     end
 
     # --- helpers ---

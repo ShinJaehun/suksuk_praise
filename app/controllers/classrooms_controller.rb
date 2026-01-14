@@ -16,6 +16,7 @@ class ClassroomsController < ApplicationController
 
   def show
     authorize @classroom
+    @can_manage_classroom = policy(@classroom).update?
     @students = @classroom.students.order(created_at: :asc)
 
     today = Time.zone.today.all_day
@@ -171,20 +172,6 @@ class ClassroomsController < ApplicationController
 
     end
 
-    CouponEvent.create!(
-      action: "issued",
-      actor: current_user,
-      user_coupon: issued,
-      classroom: @classroom,
-      coupon_template: issued.coupon_template,
-      metadata: {
-        basis: issued.issuance_basis,
-        mode:  issued.basis_tag,
-        target_user_id: issued.user_id,
-        target_user_name: issued.user.name
-      }
-    )
-
     load_recent_issued_coupons! 
     respond_to do |f|
       f.html { redirect_to classroom_path(@classroom), notice: notice_message, status: :see_other }
@@ -226,6 +213,20 @@ class ClassroomsController < ApplicationController
       f.json { render json: { ok: false, error: "not_found", detail: e.message }, status: :not_found }
     end
 
+  rescue CouponDraw::Issue::Error => e
+    message = t(e.i18n_key)
+    load_recent_issued_coupons!
+    respond_to do |f|
+      f.html { redirect_to classroom_path(@classroom), alert: message, status: e.http_status }
+
+      f.turbo_stream do
+        flash.now[:alert] = message
+        render :draw_coupon, layout: "application", status: e.http_status,
+          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
+      end
+      f.json { render json: { ok: false, error: "invalid", detail: e.i18n_key }, status: e.http_status }
+    end
+
   rescue ActiveRecord::RecordInvalid, ArgumentError => e
     message = t("coupons.draw.invalid", reason: e.message)
     load_recent_issued_coupons! 
@@ -237,32 +238,6 @@ class ClassroomsController < ApplicationController
           locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
       f.json { render json: { ok: false, error: "invalid", detail: e.message }, status: :unprocessable_entity }
-    end
-
-  rescue CouponDraw::Issue::DuplicatePeriodError
-    message = t("coupons.draw.already_issued_today")
-    load_recent_issued_coupons!
-    respond_to do |f|
-      f.html { redirect_to classroom_path(@classroom), alert: message, status: :conflict }
-      f.turbo_stream do
-        flash.now[:alert] = message
-        render :draw_coupon, layout: "application", status: :conflict,
-          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
-      end
-      f.json { render json: { ok: false, error: "already_issued_today" }, status: :conflict }
-    end
-
-  rescue CouponDraw::Issue::NotComplimentKingToday
-    message = t("coupons.draw.not_today_king")
-    load_recent_issued_coupons!
-    respond_to do |f|
-      f.html { redirect_to classroom_path(@classroom), alert: message, status: :forbidden }
-      f.turbo_stream do
-        flash.now[:alert] = message
-        render :draw_coupon, layout: "application", status: :forbidden,
-          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
-      end
-      f.json { render json: { ok: false, error: "not_today_king" }, status: :forbidden }
     end
     
   rescue StandardError => e

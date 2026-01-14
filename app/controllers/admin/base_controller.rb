@@ -8,7 +8,7 @@ class Admin::BaseController < ApplicationController
 
   def require_admin!
     unless current_user&.admin?
-      redirect_to root_path, alert: "관리자만 접근할 수 있습니다."
+      redirect_to root_path, alert: t("errors.admin_only")
     end
   end
 end

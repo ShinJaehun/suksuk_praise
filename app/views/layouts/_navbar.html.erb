@@ -23,7 +23,7 @@
 
     <% if can_view_coupon_events? %>
       <%= link_to t("coupon_events.index.title", default: "쿠폰 이벤트 로그"),
-            admin_coupon_events_path,
+            coupon_events_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
   </div>
@@ -75,7 +75,7 @@
 
           <% if can_view_coupon_events? %>
             <%= link_to t("coupon_events.index.title", default: "쿠폰 이벤트 로그"),
-                  admin_coupon_events_path,
+                  coupon_events_path,
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% end %>
 
