@@ -1,10 +1,11 @@
 <%# locals: (coupons:, user:) %>
 <% if coupons.present? %>
-  <ul class="space-y-2">
+
+  <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
     <% coupons.each do |c| %>
       <li id="<%= dom_id(c) %>" class="flex items-center justify-between rounded border px-3 py-2">
         <div>
-          <div class="font-semibold"><%= c.coupon_template.title %></div>
+          <div class="font-semibold truncate"><%= c.coupon_template.title %></div>
 
           <div class="mt-1 flex items-center gap-1">
             <%= coupon_basis_badge(c) %>

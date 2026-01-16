@@ -57,6 +57,8 @@ group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
 
+  gem "rubocop", require: false
+  gem "htmlbeautifier"
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
   # gem "rack-mini-profiler"
 
@@ -76,4 +78,7 @@ gem 'rails-i18n', '~> 7.0'
 
 # pagination
 gem "pagy"
+
+
+
 

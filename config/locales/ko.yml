@@ -31,6 +31,7 @@ ko:
       delete_classroom: "교실 삭제 🗑"
       confirm_delete_classroom: "정말 이 교실을 삭제할까요? 이 작업은 되돌릴 수 없습니다."
       refresh_king: "칭찬왕 새로고침 🔄"
+      issue_coupon_manual: "쿠폰 직접 뽑기"
 
     user_labels:
       name: "이름"

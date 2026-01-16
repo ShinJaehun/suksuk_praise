@@ -1,16 +1,16 @@
-<%# locals: (user:, classroom:) %>
 <%= turbo_frame_tag dom_id(user) do %>
-  <div class="p-4 border rounded-lg shadow text-center">
-    <p class="mt-2 font-semibold">
+  <div class="p-4 rounded-xl border bg-white shadow-sm text-center">
+    <p class="mt-1 font-semibold">
       <%= link_to display_name(user),
                   classroom_user_path(classroom, user),
                   data: { turbo: false },
-                  class: "hover:underline text-blue-600" %>
+                  class: "hover:underline text-blue-700" %>
     </p>
 
-    <p class="text-sm text-gray-600">
-      칭찬: <%= user.points %>
-    </p>
+    <div class="mt-2">
+      <div class="text-xs text-gray-500">칭찬(포인트)</div>
+      <div class="text-2xl font-bold text-gray-900"><%= user.points %></div>
+    </div>
 
     <% if policy(classroom).create_compliment? %>
       <%= button_to t("ui.buttons.compliment"),
@@ -18,7 +18,7 @@
                     method: :post,
                     params: { compliment: { receiver_id: user.id } },
                     form: { data: { turbo_submits_with: "처리중..." } },
-                    class: "mt-2 bg-yellow-300 px-3 py-1 rounded" %>
+                    class: "mt-3 inline-flex items-center justify-center rounded bg-yellow-300 px-3 py-2 text-sm font-semibold hover:bg-yellow-400" %>
     <% end %>
   </div>
 <% end %>

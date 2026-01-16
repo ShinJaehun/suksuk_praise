@@ -1,52 +1,112 @@
-<% if @classroom %>
-  <%= link_to t("ui.buttons.back_to_classroom", name: @classroom.name),
-              classroom_path(@classroom),
-              class: "inline-block bg-gray-200 px-4 py-2 rounded mb-4" %>
-<% end %>
-
-<% if @classroom && policy(@classroom).draw_coupon? %>
-  <div class="my-4">
-    <%= button_to t("ui.buttons.issue_coupon_manual"),
-          draw_coupon_classroom_path(
-            @classroom,          # 이미 users#show에서 @classroom 세팅되어 있다면 OK
-            basis: "manual",
-            mode:  "default",
-            user_id: @user.id
-          ),
-          method: :post,
-          form: { 
-            data: {
-                controller: "disable-on-submit",
-                action:     "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#enable",
-                turbo_submits_with: t("ui.processing") 
-            },
-            aria: { busy: "false" }
-          },
-          class: "px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm" %>
+<%# ===== Top actions ===== %>
+<div class="mb-4 flex items-center justify-between gap-3">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">
+      <%= @user.name %>
+      <span class="ml-2 text-sm font-normal text-gray-500">
+        <% if @classroom %><%= @classroom.name %><% end %>
+      </span>
+    </h1>
+    <%# KPI 칩 %>
+    <div class="mt-2 flex flex-wrap gap-2 text-sm">
+      <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-gray-800">
+        칭찬 <span class="ml-1 font-semibold"><%= @user.points %></span>
+      </span>
+      <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-gray-800">
+        보유 쿠폰 <span class="ml-1 font-semibold"><%= @coupons.size %></span>
+      </span>
+      <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-gray-800">
+        최근 발급 <span class="ml-1 font-semibold"><%= @recent_issued_coupons.size %></span>
+      </span>
+      <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-gray-800">
+        칭찬 기록 <span class="ml-1 font-semibold"><%= @compliments.size %></span>
+      </span>
+    </div>
   </div>
-<% end %>
-
-<h3 class="mt-6 mb-2 font-semibold">
-  <%= t("titles.recent_issued_coupons_for_user", default: "최근 발급 쿠폰") %>
-</h3>
-<%= turbo_frame_tag dom_id(@user, :recent_issued_coupons) do %>
-  <%= render partial: "user_coupons/issued_coupons",
-    locals: { coupons: @recent_issued_coupons, show_user: false } %>
-<% end %>
-
-<br/>
-
-<h2><%= @user.name %>의 칭찬 내역</h2>
-<ul>
-  <% @compliments.each do |c| %>
-    <li>
-      <%= c.giver.name %> 선생님이
-      <%= c.classroom.name if c.classroom %>에서
-      <%= l c.given_at, format: :short %>에 칭찬!
-    </li>
-  <% end %>
-</ul>
-
-<%= turbo_frame_tag dom_id(@user, :coupons) do %>
-  <%= render partial: "user_coupons/list", locals: { coupons: @coupons, user: @user } %>
-<% end %>
+  <div class="flex items-center gap-2">
+    <% if @classroom %>
+      <%= link_to t("ui.buttons.back_to_classroom", name: @classroom.name),
+                  classroom_path(@classroom),
+                  class: "inline-flex items-center rounded bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200" %>
+    <% end %>
+    <% if @classroom && policy(@classroom).draw_coupon? %>
+      <%= button_to t("ui.buttons.issue_coupon_manual"),
+            draw_coupon_classroom_path(
+              @classroom,
+              basis: "manual",
+              mode:  "default",
+              user_id: @user.id
+            ),
+            method: :post,
+            form: {
+              data: {
+                controller: "disable-on-submit",
+                action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#enable",
+                turbo_submits_with: t("ui.processing")
+              },
+              aria: { busy: "false" }
+            },
+            class: "inline-flex items-center rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" %>
+    <% end %>
+  </div>
+</div>
+<%# ===== Main layout: 2 columns on desktop ===== %>
+<div class="space-y-6">
+  <%# 보유 쿠폰: 먼저 전체 폭으로 %>
+  <section class="rounded-xl border bg-white p-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-semibold text-gray-900">보유 쿠폰 (사용하기)</h2>
+      <span class="text-xs text-gray-500">issued 기준</span>
+    </div>
+    <div class="mt-3">
+      <%= turbo_frame_tag dom_id(@user, :coupons) do %>
+        <%= render partial: "user_coupons/list", locals: { coupons: @coupons, user: @user } %>
+      <% end %>
+    </div>
+  </section>
+  <%# 아래: 최근 발급(좌) + 칭찬 타임라인(우) — PC 2열 / 모바일 1열 %>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <section class="rounded-xl border bg-white p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-gray-900">
+          <%= t("titles.recent_issued_coupons_for_user", default: "최근 발급 쿠폰") %>
+        </h2>
+        <span class="text-xs text-gray-500">최신 순</span>
+      </div>
+      <div class="mt-3">
+        <%= turbo_frame_tag dom_id(@user, :recent_issued_coupons) do %>
+          <%= render partial: "user_coupons/issued_coupons",
+            locals: { coupons: @recent_issued_coupons, show_user: false } %>
+        <% end %>
+      </div>
+    </section>
+    <section class="rounded-xl border bg-white p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-gray-900">칭찬 타임라인</h2>
+        <span class="text-xs text-gray-500">최근순</span>
+      </div>
+      <div class="mt-3 space-y-3 max-h-[60vh] overflow-auto pr-1">
+        <% if @compliments.empty? %>
+          <div class="text-sm text-gray-500">아직 칭찬 기록이 없어요.</div>
+        <% else %>
+          <% @compliments.each do |c| %>
+            <div class="rounded-lg bg-gray-50 px-3 py-2">
+              <div class="text-sm text-gray-800">
+                <span class="font-semibold"><%= c.giver.name %></span>
+                <span class="text-gray-500">선생님</span>
+                <% if c.classroom %>
+                  <span class="text-gray-400 mx-1">·</span>
+                  <span class="text-gray-600"><%= c.classroom.name %></span>
+                <% end %>
+                <span class="text-gray-400 mx-1">·</span>
+                <span class="text-xs text-gray-500">
+                  <%= l c.given_at, format: :short %>
+                </span>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </section>
+  </div>
+</div>
