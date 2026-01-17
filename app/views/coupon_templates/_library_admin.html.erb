@@ -1,40 +1,3 @@
-<div class="mb-3 flex items-center justify-between">
-  <h2 class="text-lg font-semibold">
-    <%= t("coupon_templates.library.admin_title", default: "라이브러리(관리자)") %>
-  </h2>
-
-  <div class="flex items-center gap-2">
-    <%# 활성 가중치 합계 표시 (관리자 전용) - personal과 톤 맞춤 %>
-    <% total = (@library_active_weight_sum || templates.select(&:active).sum { _1.weight.to_i }) %>
-    <span class="text-[11px] text-gray-600">
-      활성 가중치 합계:
-      <% if total == 100 %>
-        <span class="font-mono text-green-700"><%= total %></span> / 100 ✅
-      <% else %>
-        <span class="font-mono <%= total > 100 ? 'text-red-600' : 'text-amber-700' %>">
-          <%= total %>
-        </span> / 100
-      <% end %>
-    </span>
-
-    <%= button_to t("coupon_templates.actions.rebalance_library", default: "균등 분배"),
-          rebalance_library_coupon_templates_path,
-          method: :post,
-          form: {
-            data: {
-              turbo_confirm: t("coupon_templates.confirm.rebalance_library",
-                               default: "활성 라이브러리 쿠폰의 가중치를 균등 분배할까요?")
-            }
-          },
-          class: "px-2 py-1 bg-gray-100 rounded border text-[11px]" %>
-
-    <%= link_to t("coupon_templates.actions.new_in_library", default: "새 쿠폰"),
-          new_coupon_template_path(bucket: "library"),
-          data: { turbo_frame: "modal" },
-          class: "px-3 py-1 bg-blue-600 text-white rounded text-xs" %>
-  </div>
-</div>
-
 <table class="w-full text-sm">
   <thead>
     <tr class="text-left text-gray-600">
@@ -44,17 +7,20 @@
       <th class="text-right"><%= t("ui.actions", default: "작업") %></th>
     </tr>
   </thead>
-
   <tbody>
     <% templates.each do |tpl| %>
       <tr class="border-t" id="<%= dom_id(tpl) %>">
         <td class="py-2">
           <div class="font-medium"><%= tpl.title %></div>
         </td>
-
-        <td class="align-top">
+        <td class="align-middle">
           <div class="flex items-center gap-2">
-            <span class="font-mono"><%= tpl.weight %></span>
+            
+            <% s = tpl.weight.to_s %>
+            <span class="font-mono tabular-nums inline-block w-8 text-right">
+              <%= ("&nbsp;" * (3 - s.length)).html_safe %><%= s %>
+            </span>
+
             <div class="flex items-center gap-1">
               <%= button_to "←",
                     bump_weight_coupon_template_path(tpl, amount: -10),
@@ -63,7 +29,6 @@
                     class: "px-2 py-0.5 text-xs border rounded",
                     disabled: tpl.weight.to_i <= 0,
                     title: (tpl.weight.to_i <= 0) ? "이미 0입니다" : nil %>
-
               <%= button_to "→",
                     bump_weight_coupon_template_path(tpl, amount: 10),
                     method: :patch,
@@ -74,13 +39,11 @@
             </div>
           </div>
         </td>
-
         <td>
           <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
             <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
           </span>
         </td>
-
         <td class="py-2">
           <div class="flex items-center justify-end gap-3">
             <%= button_to t("coupon_templates.actions.adopt", default: "가져오기"),
@@ -88,7 +51,6 @@
                   method: :post,
                   form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
                   class: "underline" %>
-
             <%= button_to(
                   (tpl.active? ?
                     t("coupon_templates.actions.deactivate", default: "비활성") :
@@ -98,12 +60,10 @@
                   form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
                   class: "underline"
                 ) %>
-
             <%= link_to t("ui.edit", default: "편집"),
                   edit_coupon_template_path(tpl),
                   data: { turbo_frame: "modal" },
                   class: "underline" %>
-
             <%= button_to t("ui.delete", default: "삭제"),
                   coupon_template_path(tpl),
                   method: :delete,

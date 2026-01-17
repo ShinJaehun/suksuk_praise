@@ -1,0 +1,39 @@
+<%# locals: items: (@mine_rows) %>
+<% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
+<p class="text-xs text-gray-500 mb-3">
+  이 쿠폰 세트로 실제 쿠폰이 발급됩니다. 필요하면 상단의 "균등 분배"로 활성 가중치를 100으로 맞추세요.
+  "라이브러리 기본 세트 가져오기"는 추천 쿠폰을 내 쿠폰에 한 번에 추가합니다(이미 같은 이름이 있으면 건너뜁니다).
+</p>
+<div class="mb-3 flex items-center justify-between gap-3">
+  <span class="text-[11px] text-gray-600">
+    활성 가중치 합계:
+    <% if total == 100 %>
+      <span class="font-mono text-green-700"><%= total %></span> / 100 ✅
+    <% else %>
+      <span class="font-mono <%= total > 100 ? 'text-red-600' : 'text-amber-700' %>"><%= total %></span> / 100
+    <% end %>
+  </span>
+  <div class="flex items-center justify-end flex-wrap gap-2">
+    <%= button_to "가중치 균등 분배",
+          rebalance_personal_coupon_templates_path,
+          method: :post,
+          form: { data: { controller: "disable-on-submit" } },
+          class: "px-2 py-1 bg-gray-100 rounded border text-[11px]" %>
+    <%= button_to t("coupon_templates.actions.adopt_all_from_library",
+                    default: "라이브러리 기본 세트 가져오기"),
+          adopt_all_from_library_coupon_templates_path,
+          method: :post,
+          form: {
+            data: {
+              turbo_confirm: t("coupon_templates.confirm.adopt_all",
+                               default: "라이브러리의 활성 쿠폰을 모두 내 쿠폰으로 가져올까요? 이미 있는 제목은 건너뜁니다.")
+            }
+          },
+          class: "px-2 py-1 bg-gray-100 rounded border text-[11px]" %>
+    <%= link_to t("coupon_templates.actions.new", default: "새로 만들기"),
+          new_coupon_template_path,
+          data: { turbo_frame: "modal" },
+          class: "px-3 py-1 bg-blue-600 text-white rounded text-xs" %>
+  </div>
+</div>
+<%= render partial: "mine", locals: { items: items } %>

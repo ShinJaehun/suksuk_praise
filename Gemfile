@@ -58,7 +58,6 @@ group :development do
   gem "web-console"
 
   gem "rubocop", require: false
-  gem "htmlbeautifier"
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
   # gem "rack-mini-profiler"
 

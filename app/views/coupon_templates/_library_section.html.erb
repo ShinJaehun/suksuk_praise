@@ -1,0 +1,38 @@
+<%# locals: templates:, library_admin: %>
+<%# templates = @library %>
+<p class="text-xs text-gray-500 mb-3">
+  라이브러리는 추천 쿠폰 모음입니다. 여기에서 쿠폰을 만들거나 가중치를 조정해두면,
+  교사들은 "가져오기"로 내 쿠폰 세트에 추가할 수 있습니다.
+</p>
+<% if library_admin %>
+  <% total = templates.select(&:active).sum { _1.weight.to_i } %>
+  <div class="mb-3 flex items-center justify-between gap-3">
+    <span class="text-[11px] text-gray-600">
+      활성 가중치 합계:
+      <% if total == 100 %>
+        <span class="font-mono text-green-700"><%= total %></span> / 100 ✅
+      <% else %>
+        <span class="font-mono <%= total > 100 ? 'text-red-600' : 'text-amber-700' %>"><%= total %></span> / 100
+      <% end %>
+    </span>
+    <div class="flex items-center justify-end flex-wrap gap-2">
+      <%= button_to t("coupon_templates.actions.rebalance_library", default: "가중치 균등 분배"),
+            rebalance_library_coupon_templates_path,
+            method: :post,
+            form: {
+              data: {
+                turbo_confirm: t("coupon_templates.confirm.rebalance_library",
+                                 default: "활성 라이브러리 쿠폰의 가중치를 균등 분배할까요?")
+              }
+            },
+            class: "px-2 py-1 bg-gray-100 rounded border text-[11px]" %>
+      <%= link_to t("coupon_templates.actions.new_in_library", default: "라이브러리에 새로 만들기"),
+            new_coupon_template_path(bucket: "library"),
+            data: { turbo_frame: "modal" },
+            class: "px-3 py-1 bg-blue-600 text-white rounded text-xs" %>
+    </div>
+  </div>
+  <%= render partial: "library_admin", locals: { templates: templates } %>
+<% else %>
+  <%= render partial: "library", locals: { templates: templates } %>
+<% end %>

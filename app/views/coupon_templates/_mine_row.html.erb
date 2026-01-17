@@ -4,11 +4,18 @@
 <tr id="<%= dom_id(tpl) %>" class="border-t">
   <td class="py-2"><%= tpl.title %></td>
 
-  <td class="align-top">
+  <td class="align-middle">
     <div class="flex items-center gap-2">
-      <span class="font-mono"><%= tpl.weight %></span>
+      <% s = tpl.weight.to_s %>
+      <span class="font-mono tabular-nums inline-block w-8 text-right">
+        <%= ("&nbsp;" * (3 - s.length)).html_safe %><%= s %>
+      </span>
+
+
+
 
       <div class="flex items-center gap-1">
+
         <%= button_to "←",
               bump_weight_coupon_template_path(tpl, amount: -10),
               method: :patch,
@@ -22,8 +29,8 @@
               method: :patch,
               form: { data: { controller: "disable-on-submit" } },
               class: "px-2 py-0.5 text-xs border rounded",
-              disabled: !row.can_increase_weight,
-              title: row.increase_title %>
+              disabled: tpl.weight.to_i >= 100,
+              title: (tpl.weight.to_i >= 100) ? "최대 100까지 가능합니다" : nil %>
       </div>
     </div>
   </td>

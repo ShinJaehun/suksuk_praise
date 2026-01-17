@@ -1,9 +1,8 @@
 <%= turbo_stream.update "mine" do %>
-  <%= render partial: "mine", locals: { items: @mine_rows } %>
+  <%= render partial: "mine_section", locals: { items: @mine_rows } %>
 <% end %>
-
 <% if defined?(@library) && @library.present? && current_user.admin? %>
   <%= turbo_stream.update "library" do %>
-    <%= render partial: "library_admin", locals: { templates: @library } %>
+    <%= render partial: "library_section", locals: { templates: @library, library_admin: true } %>
   <% end %>
 <% end %>

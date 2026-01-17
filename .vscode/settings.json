@@ -12,19 +12,6 @@
     "editor.tabSize": 2,
     "editor.insertSpaces": true
   },
-
-  // ERB: Ruby LSP로 포맷하지 말고(무반응 케이스), ERB formatter 확장으로 분리
-  // (확장 설치 후 적용)
-  "files.associations": {
-    "*.html.erb": "erb"
-  },
-  "[erb]": {
-    "editor.defaultFormatter": "aliariff.vscode-erb-beautify",
-    "editor.formatOnSave": true
-  },
-
-  // ERB Beautify를 Bundler로 실행(프로젝트 Gemfile의 htmlbeautifier 사용)
-  "vscode-erb-beautify.useBundler": true,
   
   // JS는 이 레포에서 저장 포맷을 원할 때만 켜기
   "[javascript]": {
