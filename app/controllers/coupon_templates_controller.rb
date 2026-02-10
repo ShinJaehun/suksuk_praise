@@ -197,6 +197,7 @@ class CouponTemplatesController < ApplicationController
       # personal 세트의 시작점은 항상 비활성/가중치 0
       weight: 0,
       active: false,
+      default_image_key: source.default_image_key,
       bucket: 'personal',
       created_by_id: current_user.id,
       source_template_id: source.id
@@ -320,7 +321,8 @@ class CouponTemplatesController < ApplicationController
           existing.update!(
             title: src.title,
             active: src.active,
-            weight: src.weight
+            weight: src.weight,
+            default_image_key: src.default_image_key
           )
           upserted += 1
         else
@@ -328,6 +330,7 @@ class CouponTemplatesController < ApplicationController
             title: src.title,
             active: src.active,
             weight: src.weight,
+            default_image_key: src.default_image_key,
             bucket: 'personal',
             created_by_id: current_user.id,
             source_template_id: src.id
@@ -368,7 +371,7 @@ class CouponTemplatesController < ApplicationController
   end
 
   def coupon_template_params
-    params.require(:coupon_template).permit(:title, :weight, :active)
+    params.require(:coupon_template).permit(:title, :weight, :active, :image)
   end
 
   def set_form_mode
