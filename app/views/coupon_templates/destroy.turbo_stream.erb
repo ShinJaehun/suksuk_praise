@@ -7,3 +7,5 @@
     <%= render partial: "library_section", locals: { templates: @library, library_admin: true } %>
   <% end %>
 <% end %>
+
+<%= turbo_stream.update "modal", "" %>

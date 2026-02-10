@@ -2,46 +2,50 @@
 <% tpl = row.tpl %>
 
 <tr id="<%= dom_id(tpl) %>" class="border-t">
-  <td class="py-2"><%= tpl.title %></td>
-
-  <td class="align-middle">
-    <div class="flex items-center gap-2">
-      <% s = tpl.weight.to_s %>
-      <span class="font-mono tabular-nums inline-block w-8 text-right">
-        <%= ("&nbsp;" * (3 - s.length)).html_safe %><%= s %>
-      </span>
-
-
-
-
-      <div class="flex items-center gap-1">
-
-        <%= button_to "←",
-              bump_weight_coupon_template_path(tpl, amount: -10),
-              method: :patch,
-              form: { data: { controller: "disable-on-submit" } },
-              class: "px-2 py-0.5 text-xs border rounded",
-              disabled: !row.can_decrease_weight,
-              title: row.decrease_title %>
-
-        <%= button_to "→",
-              bump_weight_coupon_template_path(tpl, amount: 10),
-              method: :patch,
-              form: { data: { controller: "disable-on-submit" } },
-              class: "px-2 py-0.5 text-xs border rounded",
-              disabled: tpl.weight.to_i >= 100,
-              title: (tpl.weight.to_i >= 100) ? "최대 100까지 가능합니다" : nil %>
+  <td class="py-2 text-center">
+    <div class="flex items-center gap-3">
+      <%= coupon_thumbnail(tpl) %>
+      <div>
+        <div class="font-medium truncate max-w-[14rem]"><%= tpl.title %></div>
       </div>
     </div>
   </td>
 
-  <td>
+  <td class="align-middle">
+    <div class="mx-auto w-20">
+      <div class="grid justify-items-center gap-y-0.5">
+        <span class="font-mono tabular-nums text-center leading-none">
+          <%= tpl.weight %>
+        </span>
+
+        <div class="flex items-center justify-center gap-1">
+          <%= button_to "←",
+                bump_weight_coupon_template_path(tpl, amount: -10),
+                method: :patch,
+                form: { class: "contents", data: { controller: "disable-on-submit" } },
+                class: "px-2 py-0.5 text-xs border rounded",
+                disabled: !row.can_decrease_weight,
+                title: row.decrease_title %>
+
+          <%= button_to "→",
+                bump_weight_coupon_template_path(tpl, amount: 10),
+                method: :patch,
+                form: { class: "contents", data: { controller: "disable-on-submit" } },
+                class: "px-2 py-0.5 text-xs border rounded",
+                disabled: tpl.weight.to_i >= 100,
+                title: (tpl.weight.to_i >= 100) ? "최대 100까지 가능합니다" : nil %>
+        </div>
+      </div>
+    </div>
+  </td>
+
+  <td class="text-center">
     <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
       <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
     </span>
   </td>
 
-  <td class="py-2">
+  <td class="py-2 text-center">
     <div class="flex items-center justify-end gap-3">
       <%= button_to(
             (tpl.active? ?
@@ -60,18 +64,6 @@
             data: { turbo_frame: "modal" },
             class: "underline" %>
 
-      <% if row.can_destroy %>
-        <%= button_to t("ui.delete", default: "삭제"),
-              coupon_template_path(tpl),
-              method: :delete,
-              form: {
-                data: {
-                  turbo_confirm: t("coupon_templates.confirm.delete",
-                                   default: "정말 삭제할까요? 복구할 수 없습니다.")
-                }
-              },
-              class: "text-red-600 underline" %>
-      <% end %>
     </div>
   </td>
 </tr>

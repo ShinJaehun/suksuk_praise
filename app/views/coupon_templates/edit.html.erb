@@ -10,12 +10,34 @@
 
       <%= form_with model: @coupon_template do |f| %>
         <%= render partial: "form_fields", locals: { f: f } %>
-
-        <div>
-          <%= f.submit t("ui.save"), class: "px-3 py-1 bg-blue-600 text-white rounded" %>
-          <%= link_to t("ui.cancel"), "#", data: { action: "modal#clear" }, class: "ml-2 underline" %>
+        <div class="mt-4 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <%= f.submit t("ui.save"), class: "px-3 py-1 bg-blue-600 text-white rounded" %>
+            <%= link_to t("ui.cancel"), "#",
+                  data: { action: "modal#clear" },
+                  class: "px-3 py-1 rounded border text-sm" %>
+          </div>
+          <span class="text-xs text-gray-400"> </span>
         </div>
       <% end %>
+
+      <hr class="my-4">
+
+      <div class="flex items-center justify-between">
+        <div class="text-xs text-gray-500">
+          삭제는 되돌릴 수 없어요.
+        </div>
+        <%= button_to t("ui.delete"),
+              coupon_template_path(@coupon_template),
+              method: :delete,
+              form: {
+                data: {
+                  turbo_confirm: t("coupon_templates.confirm.delete",
+                                   default: "정말 삭제할까요? 복구할 수 없습니다.")
+                }
+              },
+              class: "text-red-600 underline text-sm" %>
+      </div>      
     </div>
   </div>
 </turbo-frame>
