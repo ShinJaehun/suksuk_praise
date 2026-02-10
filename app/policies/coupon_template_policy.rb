@@ -4,6 +4,7 @@ class CouponTemplatePolicy < ApplicationPolicy
     # 교사용 index: "내 쿠폰" = 내가 만든 persoanl만
     def resolve
       return scope.none unless user
+
       scope.personal_for(user)
     end
 
@@ -11,11 +12,11 @@ class CouponTemplatePolicy < ApplicationPolicy
     # 관리자: admin 소유 + bucket=library (active 여부 무관) 조회/수정 가능
     def self.library_scope(user, scope)
       base = scope.joins(:created_by)
-                  .merge(User.where(role: "admin"))
-                  .where(bucket: "library")
+                  .merge(User.where(role: 'admin'))
+                  .where(bucket: 'library')
       base = base.where(active: true) unless user&.admin?
       base
-        .select(:id, :title, :weight, :active, :created_by_id, :bucket)
+        .select(:id, :title, :weight, :active, :default_image_key, :created_by_id, :bucket)
         .order(:title)
     end
   end
@@ -57,7 +58,8 @@ class CouponTemplatePolicy < ApplicationPolicy
   end
 
   private
-  def owner? 
+
+  def owner?
     record.created_by_id == user.id
   end
 end
