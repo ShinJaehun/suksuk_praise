@@ -9,74 +9,75 @@
 #   end
 
 User.create!(
-  email: "a@a",
-  password: "password",
-  name: "관리자에이",
-  role: "admin"
+  email: 'a@a',
+  password: 'password',
+  name: '관리자에이',
+  role: 'admin'
 )
 
 teacherB = User.create!(
-  email: "b@b",
-  password: "password",
-  name: "티쳐비",
-  role: "teacher"
+  email: 'b@b',
+  password: 'password',
+  name: '티쳐비',
+  role: 'teacher'
 )
 
 teacherT = User.create!(
-  email: "t@t",
-  password: "password",
-  name: "티쳐티",
-  role: "teacher"
+  email: 't@t',
+  password: 'password',
+  name: '티쳐티',
+  role: 'teacher'
 )
 
 students = 30.times.map do |i|
   User.create!(
     name: "학생#{i + 1}",
-    role: "student",
+    role: 'student',
     avatar: "avatars/avatar_#{(i % 30) + 1}.png",
     points: 0,
     email: "student#{i + 1}@school.com", # Devise 필수
-    password: "password"
+    password: 'password'
   )
 end
 
-classroom1 = Classroom.create!(name: "1반")
-classroom2 = Classroom.create!(name: "2반")
+classroom1 = Classroom.create!(name: '1반')
+classroom2 = Classroom.create!(name: '2반')
 
 ClassroomMembership.create!(
   user: teacherT,
   classroom: classroom1,
-  role: "teacher"
+  role: 'teacher'
 )
 
 ClassroomMembership.create!(
   user: teacherB,
   classroom: classroom2,
-  role: "teacher"
+  role: 'teacher'
 )
 
 students.each do |student|
   ClassroomMembership.create!(
     user: student,
     classroom: classroom1,
-    role: "student"
+    role: 'student'
   )
 end
 
-admin = User.find_by(role: "admin") # 이미 위에서 생성됨
+admin = User.find_by(role: 'admin') # 이미 위에서 생성됨
 
 templates = [
-  { title: "마이쭈 간식", weight: 50, active: true },
-  { title: "좋아하는 자리에서 식사하기", weight: 30, active: true },
-  { title: "일주일간 친구와 자리 바꾸기", weight: 20, active: true }
+  { title: '쫀득 마이쭈', weight: 30, active: true, default_image_key: 'coupon_templates/mychew.png' },
+  { title: '달콤 초콜릿', weight: 30, active: true, default_image_key: 'coupon_templates/chocolate.png' },
+  { title: '좋아하는 자리에서 식사하기', weight: 30, active: true, default_image_key: 'coupon_templates/lunch_seat.png' },
+  { title: '일주일간 자리 바꾸기', weight: 10, active: true, default_image_key: 'coupon_templates/swap.png' }
 ]
 
 templates.each do |attrs|
   t = CouponTemplate.find_or_initialize_by(
-        title: attrs[:title],
-        created_by_id: admin.id,
-        bucket: "library"
-      )
-  t.assign_attributes(attrs.merge(bucket: "library"))
+    title: attrs[:title],
+    created_by_id: admin.id,
+    bucket: 'library'
+  )
+  t.assign_attributes(attrs.merge(bucket: 'library'))
   t.save!
 end
