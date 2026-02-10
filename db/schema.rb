@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_01_25_123856) do
+ActiveRecord::Schema[7.1].define(version: 2026_02_10_060722) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -163,7 +163,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_01_25_123856) do
   add_foreign_key "coupon_events", "coupon_templates"
   add_foreign_key "coupon_events", "user_coupons"
   add_foreign_key "coupon_events", "users", column: "actor_id"
-  add_foreign_key "coupon_templates", "coupon_templates", column: "source_template_id"
+  add_foreign_key "coupon_templates", "coupon_templates", column: "source_template_id", on_delete: :nullify
   add_foreign_key "coupon_templates", "users", column: "created_by_id"
   add_foreign_key "user_coupons", "classrooms"
   add_foreign_key "user_coupons", "coupon_templates"

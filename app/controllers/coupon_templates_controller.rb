@@ -202,6 +202,7 @@ class CouponTemplatesController < ApplicationController
       created_by_id: current_user.id,
       source_template_id: source.id
     )
+    @adopted.image.attach(source.image.blob) if source.image.attached?
 
     @mine = policy_scope(CouponTemplate).order(:title)
     @mine_rows = build_rows(@mine)
@@ -324,9 +325,13 @@ class CouponTemplatesController < ApplicationController
             weight: src.weight,
             default_image_key: src.default_image_key
           )
+          if src.image.attached? && (!existing.image.attached? || existing.image.blob_id != src.image.blob_id)
+            existing.image.attach(src.image.blob)
+          end
+
           upserted += 1
         else
-          CouponTemplate.create!(
+          created_template = CouponTemplate.create!(
             title: src.title,
             active: src.active,
             weight: src.weight,
@@ -335,6 +340,7 @@ class CouponTemplatesController < ApplicationController
             created_by_id: current_user.id,
             source_template_id: src.id
           )
+          created_template.image.attach(src.image.blob) if src.image.attached?
           created += 1
         end
       end
