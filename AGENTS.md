@@ -1,28 +1,86 @@
 # AGENTS.md — suksuk_praise (쑥쑥칭찬통장) Codex 작업 규칙
 
-## 작업 원칙 (중요)
-- Rails way를 최우선으로 따른다. 비표준 접근이 필요하면: (1) 왜 필요한지 (2) Rails way 대안 (3) 트레이드오프를 함께 제시한다.
-- "기존 동작 동일"이 최우선이다. 리팩토링은 동작/테스트 유지가 목표다.
-- 변경은 항상 git diff로 작고 안전하게 쪼갠다. 한 번에 대규모 변경 금지.
-- 먼저 읽고(탐색) → 설계/변경 제안 → 승인 후 수정한다. (바로 수정하지 말 것)
-- 테스트/시드/마이그레이션이 얽히면, 먼저 영향 범위를 정리하고 순서를 제안한다.
+---
 
-## 권한/정책 (Pundit)
-- 컨트롤러만 authorize/policy_scope를 호출한다.
-- 뷰에서는 policy(...) 직접 호출을 피한다.
-  - 전역 체크는 helper (예: can_view_coupon_events?)로.
-  - 리스트의 per-item 권한은 컨트롤러에서 계산한 ID 목록(@destroyable_ids 등)을 locals로 내려받아 렌더한다.
+## 1. 작업 원칙 (Engineering Principles)
 
-## 도메인 핵심 규칙 (쿠폰 템플릿)
-- personal(bucket=personal): title만 직접 편집 가능.
-- personal의 active/weight는 인바리언트로 동기화: weight=0 ⇄ active=false 를 항상 유지.
-- library(bucket=library): admin만 생성/수정/비활성/weight 편집 가능.
-- personal 세트는 adopt/create/update/toggle_active/destroy 이후 active인 항목들의 weight 합이 100이 되도록 자동 정규화(가장 큰 나머지 방식).
+- Rails way를 최우선으로 따른다.
+  비표준 접근이 필요하면 반드시:
+  (1) 왜 필요한지
+  (2) Rails way 대안
+  (3) 트레이드오프
+  를 함께 제시한다.
 
-## 커뮤니케이션
-- 긴 사전 계획/선언은 쓰지 말고, 필요한 확인/결정 포인트만 간단히 나열한다.
-- 코드 변경이 필요하면 반드시:
-  1) 바꿀 파일 목록
-  2) 위험 포인트
-  3) 최소 diff
-  4) 검증 방법(rails test/spec/console)을 함께 제시한다.
+- "기존 동작 동일"이 최우선이다.
+  리팩토링은 동작/테스트 유지가 목표다.
+  Public interface(라우트, 파라미터, 응답 구조)를 변경하지 않는다.
+
+- 변경은 항상 작고 안전한 단위로 나눈다.
+  대규모 일괄 변경 금지.
+
+- 새로운 패치가 기존 동작을 대체하는 경우,
+  이전 구현은 반드시 제거한다.
+  Do not introduce parallel implementations.
+  조건부 공존(if flag 등)으로 병렬 유지하지 않는다.
+
+- Service 객체는 비즈니스 로직 전용이다.
+  컨트롤러는 orchestration(흐름 제어)만 담당한다.
+
+- Turbo Stream 응답은 항상 `layout: "application"`을 유지한다.
+  기존 Turbo frame id 명명 규칙을 깨지 않는다.
+
+- N+1 쿼리를 방지한다.
+  목록/최근 발급 등은 includes/preload를 고려한다.
+
+- 먼저 읽고(탐색) → 설계/변경 제안 → 승인 후 수정한다.
+  바로 수정하지 말고 diff로 제시한다.
+
+- 테스트/시드/마이그레이션이 얽히는 경우,
+  영향 범위와 적용 순서를 먼저 제안한다.
+
+---
+
+## 2. 권한/정책 (Pundit Rules)
+
+- authorize / policy_scope 호출은 컨트롤러에서만 수행한다.
+- 뷰에서 policy(...) 직접 호출을 피한다.
+
+  - 전역 체크는 helper 사용 (예: can_view_coupon_events?)
+  - 리스트의 per-item 권한은
+    컨트롤러에서 ID 목록(@destroyable_ids 등)을 계산하여
+    locals로 내려받아 렌더링한다.
+
+- policy_scope는 항상 명시적으로 호출한다.
+  암묵적 접근 금지.
+
+---
+
+## 3. 도메인 핵심 규칙 (Domain Invariants)
+
+### CouponTemplate
+
+- personal(bucket=personal)의 active/weight는 인바리언트로 동기화한다.
+  `weight = 0 ⇄ active = false` 를 항상 유지한다.
+
+- library(bucket=library):
+  - admin만 생성/수정/비활성화/weight 편집 가능
+  - teacher는 adopt만 가능
+
+- 병렬 정책(legacy 규칙 + 신규 규칙 동시 유지)을 만들지 않는다.
+  도메인 규칙 변경 시 기존 규칙을 제거한다.
+
+---
+
+## 4. 커뮤니케이션 규칙 (Codex Output Style)
+
+- 긴 사전 선언문은 쓰지 않는다.
+- 필요한 확인/결정 포인트만 간단히 제시한다.
+
+코드 변경이 필요한 경우 반드시 다음을 포함한다:
+
+1. 바꿀 파일 목록
+2. 위험 포인트
+3. 최소 diff
+4. 검증 방법 (rails test/spec/console)
+
+불필요한 설명은 생략한다.
