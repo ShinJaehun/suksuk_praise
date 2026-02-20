@@ -16,20 +16,31 @@ class UsersController < ApplicationController
         # 1) 사용자 페이지 접근 권한
         authorize @user, :show?
 
-        # 2) policy_scope로 권한과 쿼리 범위 정렬
-        @compliments = policy_scope(Compliment).where(receiver_id: @user.id)
-        @compliments = @compliments.where(classroom_id: @classroom.id) if @classroom
-        @compliments = @compliments.includes(:giver, :classroom).order(given_at: :desc)
-        
-        # @coupons = policy_scope(UserCoupon)
-        #     .where(user_id: @user.id, classroom_id: @classroom.id, status: "issued")
-        #     .includes(:coupon_template)
-        #     .order(created_at: :desc)
+        # 2) 칭찬 쿼리(공통 scope) + KPI
+        compliments_scope = policy_scope(Compliment).where(receiver_id: @user.id)
+        compliments_scope = compliments_scope.where(classroom_id: @classroom.id) if @classroom
 
-        @coupons = policy_scope(UserCoupon)
-            .where(user_id: @user.id, status: "issued")
-        @coupons = @coupons.where(classroom_id: @classroom.id) if @classroom
-        @coupons = @coupons.includes(:coupon_template).order(issued_at: :desc)
+        @today_compliments_count = compliments_scope.where(given_at: Time.zone.today.all_day).count
+        @compliments = compliments_scope.includes(:giver, :classroom).order(given_at: :desc)
+
+        # 3) 쿠폰 쿼리(공통 scope) + KPI
+        coupons_scope = policy_scope(UserCoupon).where(user_id: @user.id)
+        coupons_scope = coupons_scope.where(classroom_id: @classroom.id) if @classroom
+
+        @coupons = coupons_scope
+            .where(status: "issued")
+            .includes(:coupon_template)
+            .order(issued_at: :desc)
+
+        @today_issued_coupons_count = coupons_scope.where(issued_at: Time.zone.today.all_day).count
+        @used_coupons_count = coupons_scope.where(status: "used").count
+        @kpi_counts = {
+            points: @user.points,
+            today_compliments: @today_compliments_count,
+            issued_count: @coupons.size,
+            today_issued_coupons: @today_issued_coupons_count,
+            used_coupons: @used_coupons_count
+        }
 
         @recent_issued_coupons = policy_scope(UserCoupon)
             .where(user_id: @user.id)

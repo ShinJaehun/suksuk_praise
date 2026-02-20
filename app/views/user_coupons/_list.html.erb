@@ -3,25 +3,38 @@
 
   <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
     <% coupons.each do |c| %>
-      <li id="<%= dom_id(c) %>" class="flex items-center justify-between rounded border px-3 py-2">
-        <div>
-          <div class="font-semibold truncate"><%= c.coupon_template.title %></div>
-
-          <div class="mt-1 flex items-center gap-1">
-            <%= coupon_basis_badge(c) %>
-            <% if c.basis_tag.present? %>
-              <span class="text-[11px] text-gray-500">
-                (<%= t("coupons.basis_tag.#{c.basis_tag}", default: c.basis_tag) %>)
-              </span>
+      <li id="<%= dom_id(c) %>" class="flex items-center justify-between gap-3 rounded border px-3 py-2">
+        <div class="flex min-w-0 items-center gap-3">
+          <div>
+            <% tpl = c.coupon_template %>
+            <% if tpl.image.attached? %>
+              <%= image_tag(tpl.image, class: "h-14 w-14 rounded object-cover shrink-0") %>
+            <% elsif tpl.default_image_key.present? %>
+              <%= image_tag(tpl.default_image_key, class: "h-14 w-14 rounded object-cover shrink-0") %>
+            <% else %>
+              <div class="h-14 w-14 rounded bg-slate-100 shrink-0"></div>
             <% end %>
           </div>
 
-          <div class="text-xs text-gray-500">
-            발급: <%= l(c.issued_at, format: :short) %> · 교실 #<%= c.classroom_id %>
+          <div class="min-w-0">
+            <div class="font-semibold truncate"><%= c.coupon_template.title %></div>
+
+            <div class="mt-1 flex items-center gap-1">
+              <%= coupon_basis_badge(c) %>
+              <% if c.basis_tag.present? %>
+                <span class="text-[11px] text-gray-500">
+                  (<%= t("coupons.basis_tag.#{c.basis_tag}", default: c.basis_tag) %>)
+                </span>
+              <% end %>
+            </div>
+
+            <div class="mt-2 text-xs text-gray-500">
+              발급: <%= l(c.issued_at, format: :short) %> · 교실 #<%= c.classroom_id %>
+            </div>
           </div>
         </div>
 
-        <div>
+        <div class="shrink-0">
           <%= button_to t('ui.buttons.use_coupon'),
                 use_user_coupon_path(user, c),
                 method: :post,

@@ -5,6 +5,11 @@
     locals: { coupons: @issued_coupons, user: @user } %>
 <% end %>
 
+<%= turbo_stream.update dom_id(@user, :kpis) do %>
+  <%= render partial: "users/kpi_chips",
+    locals: { user: @user, kpi_counts: @kpi_counts } %>
+<% end %>
+
 <%#= turbo_stream.update "flash" do %>
   <%#= render "layouts/alerts" %>
 <%# end %>

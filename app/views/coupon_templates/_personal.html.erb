@@ -9,7 +9,7 @@
   </thead>
   <tbody>
     <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
-    <%= render partial: "coupon_templates/mine_row",
+    <%= render partial: "coupon_templates/personal_row",
                collection: items,
                as: :row,
                locals: { active_total: total } %>

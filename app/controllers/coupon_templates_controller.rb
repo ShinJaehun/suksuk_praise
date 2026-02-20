@@ -9,8 +9,8 @@ class CouponTemplatesController < ApplicationController
   def index
     authorize CouponTemplate
 
-    @mine = policy_scope(CouponTemplate).order(:title)
-    @mine_rows = build_rows(@mine)
+    @personal = policy_scope(CouponTemplate).order(:title)
+    @personal_rows = build_rows(@personal)
 
     # 역할별 가시성(관리자=전체, 교사=active만) + 정렬은 정책 스코프에서 처리
     load_library!
@@ -84,8 +84,8 @@ class CouponTemplatesController < ApplicationController
         end
       else
 
-        @mine = policy_scope(CouponTemplate).order(:title)
-        @mine_rows = build_rows(@mine)
+        @personal = policy_scope(CouponTemplate).order(:title)
+        @personal_rows = build_rows(@personal)
 
         respond_to do |f|
           f.html { redirect_to coupon_templates_path, notice: message }
@@ -126,8 +126,8 @@ class CouponTemplatesController < ApplicationController
     if @coupon_template.update(attrs)
       message = t('coupon_templates.flash.updated')
 
-      @mine = policy_scope(CouponTemplate).order(:title)
-      @mine_rows = build_rows(@mine)
+      @personal = policy_scope(CouponTemplate).order(:title)
+      @personal_rows = build_rows(@personal)
 
       load_library! if current_user.admin? && @coupon_template.bucket == 'library'
 
@@ -152,8 +152,8 @@ class CouponTemplatesController < ApplicationController
 
     @coupon_template.update!(active: !@coupon_template.active)
 
-    @mine = policy_scope(CouponTemplate).order(:title)
-    @mine_rows = build_rows(@mine)
+    @personal = policy_scope(CouponTemplate).order(:title)
+    @personal_rows = build_rows(@personal)
 
     message = t('coupon_templates.flash.toggled')
 
@@ -179,9 +179,9 @@ class CouponTemplatesController < ApplicationController
     existing_by_source = CouponTemplate.find_by(created_by_id: current_user.id, bucket: 'personal',
                                                 source_template_id: source.id)
     if existing_by_source
-      @mine = policy_scope(CouponTemplate).order(:title)
-      @mine_rows = build_rows(@mine)
-      message = t('coupon_templates.flash.already_in_mine', default: '이미 내 쿠폰에 있습니다.')
+      @personal = policy_scope(CouponTemplate).order(:title)
+      @personal_rows = build_rows(@personal)
+      message = t('coupon_templates.flash.already_in_personal', default: '이미 내 쿠폰에 있습니다.')
       respond_to do |f|
         f.html { redirect_to coupon_templates_path, notice: message }
         f.turbo_stream do
@@ -204,8 +204,8 @@ class CouponTemplatesController < ApplicationController
     )
     @adopted.image.attach(source.image.blob) if source.image.attached?
 
-    @mine = policy_scope(CouponTemplate).order(:title)
-    @mine_rows = build_rows(@mine)
+    @personal = policy_scope(CouponTemplate).order(:title)
+    @personal_rows = build_rows(@personal)
 
     message = t('coupon_templates.flash.adopted')
     respond_to do |f|
@@ -233,8 +233,8 @@ class CouponTemplatesController < ApplicationController
     end
 
     # 프레임 갱신에 쓸 데이터 준비
-    @mine = policy_scope(CouponTemplate).order(:title)
-    @mine_rows = build_rows(@mine)
+    @personal = policy_scope(CouponTemplate).order(:title)
+    @personal_rows = build_rows(@personal)
 
     load_library! if current_user.admin? && was_library
 
@@ -257,8 +257,8 @@ class CouponTemplatesController < ApplicationController
     if @coupon_template.bucket == 'library' && current_user.admin?
       @coupon_template.update!(weight: snapped)
 
-      @mine      = policy_scope(CouponTemplate).order(:title)
-      @mine_rows = build_rows(@mine)
+      @personal      = policy_scope(CouponTemplate).order(:title)
+      @personal_rows = build_rows(@personal)
       load_library! # => @library + @library_active_weight_sum 갱신
 
       flash.now[:notice] = "라이브러리 가중치를 #{snapped}으로 변경했습니다."
@@ -275,17 +275,17 @@ class CouponTemplatesController < ApplicationController
       flash.now[:notice] = "가중치를 #{snapped}으로 변경했어요."
     end
 
-    # mine 전체 다시 그림(합계/버튼 disabled 반영)
-    @mine       = policy_scope(CouponTemplate).order(:title)
-    @mine_rows  = build_rows(@mine)
+    # personal 전체 다시 그림(합계/버튼 disabled 반영)
+    @personal       = policy_scope(CouponTemplate).order(:title)
+    @personal_rows  = build_rows(@personal)
 
-    render :update, layout: 'application' # (= mine 프레임 replace)
+    render :update, layout: 'application' # (= personal 프레임 replace)
   end
 
   def rebalance_personal
     authorize CouponTemplate, :rebalance_equal?
     CouponTemplates::WeightBalancer.normalize!(current_user)
-    reload_mine_and_flash!('활성 쿠폰을 균등 분배했습니다.')
+    reload_personal_and_flash!('활성 쿠폰을 균등 분배했습니다.')
   end
 
   def rebalance_library
@@ -295,7 +295,7 @@ class CouponTemplatesController < ApplicationController
     CouponTemplates::WeightBalancer.normalize_library!
 
     load_library!
-    reload_mine_and_flash!(
+    reload_personal_and_flash!(
       t('coupon_templates.flash.library_rebalanced',
         default: '라이브러리 활성 쿠폰의 가중치를 균등 분배했습니다.')
     )
@@ -346,8 +346,8 @@ class CouponTemplatesController < ApplicationController
       end
     end
 
-    @mine      = policy_scope(CouponTemplate).order(:title)
-    @mine_rows = build_rows(@mine)
+    @personal      = policy_scope(CouponTemplate).order(:title)
+    @personal_rows = build_rows(@personal)
     load_library! if current_user.admin?
 
     message =
@@ -459,9 +459,9 @@ class CouponTemplatesController < ApplicationController
       @library.select(&:active).sum { _1.weight.to_i }
   end
 
-  def reload_mine_and_flash!(message)
-    @mine = policy_scope(CouponTemplate).order(:title)
-    @mine_rows = build_rows(@mine)
+  def reload_personal_and_flash!(message)
+    @personal = policy_scope(CouponTemplate).order(:title)
+    @personal_rows = build_rows(@personal)
     respond_to do |f|
       f.html { redirect_to coupon_templates_path, notice: message }
       f.turbo_stream do

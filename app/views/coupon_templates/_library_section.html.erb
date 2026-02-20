@@ -7,12 +7,12 @@
 <% if library_admin %>
   <% total = templates.select(&:active).sum { _1.weight.to_i } %>
   <div class="mb-3 flex items-center justify-between gap-3">
-    <span class="text-[11px] text-gray-600">
+    <span class="text-xs text-gray-600">
       활성 가중치 합계:
       <% if total == 100 %>
-        <span class="font-mono text-green-700"><%= total %></span> / 100 ✅
+        <span class="font-mono text-green-700"><%= total %></span> / <span class="font-mono">100</span> ✅
       <% else %>
-        <span class="font-mono <%= total > 100 ? 'text-red-600' : 'text-amber-700' %>"><%= total %></span> / 100
+        <span class="font-mono <%= total > 100 ? 'text-red-600' : 'text-amber-700' %>"><%= total %></span> / <span class="font-mono">100</span>
       <% end %>
     </span>
     <div class="flex items-center justify-end flex-wrap gap-2">

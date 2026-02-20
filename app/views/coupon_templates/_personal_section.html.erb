@@ -1,16 +1,16 @@
-<%# locals: items: (@mine_rows) %>
+<%# locals: items: (@personal_rows) %>
 <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
 <p class="text-xs text-gray-500 mb-3">
   이 쿠폰 세트로 실제 쿠폰이 발급됩니다. 필요하면 "균등 분배"로 활성 가중치를 100으로 맞추세요.
   "라이브러리 기본 세트 가져오기"는 추천 쿠폰을 내 쿠폰에 한 번에 추가합니다(이미 같은 이름이 있으면 건너뜁니다).
 </p>
 <div class="mb-3 flex items-center justify-between gap-3">
-  <span class="text-[11px] text-gray-600">
+  <span class="text-xs text-gray-600">
     활성 가중치 합계:
     <% if total == 100 %>
-      <span class="font-mono text-green-700"><%= total %></span> / 100 ✅
+      <span class="font-mono text-green-700"><%= total %></span> / <span class="font-mono">100</span> ✅
     <% else %>
-      <span class="font-mono <%= total > 100 ? 'text-red-600' : 'text-amber-700' %>"><%= total %></span> / 100
+      <span class="font-mono <%= total > 100 ? 'text-red-600' : 'text-amber-700' %>"><%= total %></span> / <span class="font-mono">100</span>
     <% end %>
   </span>
   <div class="flex items-center justify-end flex-wrap gap-2">
@@ -36,4 +36,4 @@
           class: "px-3 py-1 bg-blue-600 text-white rounded text-xs" %>
   </div>
 </div>
-<%= render partial: "mine", locals: { items: items } %>
+<%= render partial: "personal", locals: { items: items } %>

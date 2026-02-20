@@ -17,6 +17,7 @@ class UserCouponsController < ApplicationController
     UserCoupons::Use.call!(coupon: @coupon, actor: current_user)
 
     load_recent_issued_coupons!(user: @user, classroom_id: @coupon.classroom_id)
+    @kpi_counts = build_kpi_counts_for(user: @user, classroom_id: @coupon.classroom_id)
 
     respond_to do |f|
       f.html { redirect_to user_path(@user), notice: t("coupons.use.success"), status: :see_other }
@@ -29,6 +30,7 @@ class UserCouponsController < ApplicationController
     end
 
   rescue ActiveRecord::RecordInvalid
+    @kpi_counts = build_kpi_counts_for(user: @user, classroom_id: @coupon.classroom_id)
     message = t("coupons.use.already_used")
     respond_to do |f|
       f.html { redirect_to user_path(@user), alert: message, status: :conflict }
@@ -53,5 +55,18 @@ class UserCouponsController < ApplicationController
       .where(user_id: user.id, classroom_id: classroom_id, status: "issued")
       .includes(:coupon_template)
       .order(issued_at: :desc)
+  end
+
+  def build_kpi_counts_for(user:, classroom_id:)
+    compliments_scope = policy_scope(Compliment).where(receiver_id: user.id, classroom_id: classroom_id)
+    coupons_scope = policy_scope(UserCoupon).where(user_id: user.id, classroom_id: classroom_id)
+
+    {
+      points: user.points,
+      today_compliments: compliments_scope.where(given_at: Time.zone.today.all_day).count,
+      issued_count: coupons_scope.where(status: "issued").count,
+      today_issued_coupons: coupons_scope.where(issued_at: Time.zone.today.all_day).count,
+      used_coupons: coupons_scope.where(status: "used").count
+    }
   end
 end

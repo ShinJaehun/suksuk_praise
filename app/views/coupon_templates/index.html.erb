@@ -1,24 +1,25 @@
-<h1 class="text-xl font-bold mb-4"><%= t("coupon_templates.index.title") %></h1>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <!-- Personal (항상 위) -->
-  <section class="bg-white rounded-lg border shadow-sm p-4">
-    <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.mine") %></h2>
+<section class="mx-auto w-full max-w-7xl pt-4 space-y-4">
+  <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("coupon_templates.index.title") %></h1>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Personal (항상 위) -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.personal") %></h2>
 
-    <%= turbo_frame_tag "mine" do %>
-      <%= render partial: "mine_section", locals: { items: @mine_rows } %>
-    <% end %>
-  </section>
-  <!-- Library -->
-  <section class="bg-white rounded-lg border shadow-sm p-4">
-    <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.library") %></h2>
-    
-    <%= turbo_frame_tag "library" do %>
-      <%= render partial: "library_section",
-            locals: { templates: @library, library_admin: @library_admin } %>      
-    <% end %>
-  </section>
-</div>
-<%= turbo_frame_tag :modal %>
+      <%= turbo_frame_tag "personal" do %>
+        <%= render partial: "personal_section", locals: { items: @personal_rows } %>
+      <% end %>
+    </section>
+    <!-- Library -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.library") %></h2>
+      <%= turbo_frame_tag "library" do %>
+        <%= render partial: "library_section",
+              locals: { templates: @library, library_admin: @library_admin } %>
+      <% end %>
+    </section>
+  </div>
+  <%= turbo_frame_tag :modal %>
+</section>
 
 <%# Tailwind v4: helper.rb 안의 클래스는 스캔되지 않아 purge될 수 있음 %>
 <%# (이미지 썸네일에 쓰는 유틸 safelist) %>

@@ -1,19 +1,33 @@
-<h2 class="text-xl font-bold mb-4">내 교실</h2>
+<section class="mx-auto w-full max-w-5xl pt-4">
+  <div class="mb-6 flex items-center justify-between gap-3">
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">내 교실</h1>
 
-<%# if current_user.teacher? || current_user.admin? %>
-  <%#= link_to "교실 만들기", new_classroom_path, class: "text-green-600 underline block mb-4" %>
-<%# end %>
+    <% if policy(Classroom).create? %>
+      <%= link_to t('ui.buttons.new_classroom'),
+            new_classroom_path,
+            class: "inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700" %>
+    <% end %>
+  </div>
 
-<% if policy(Classroom).create? %>
-  <%= link_to t('ui.buttons.new_classroom'),
-    new_classroom_path, class: "text-green-600 underline block mb-4" %>
-<% end %>
-
-<ul class="space-y-2">
-  <% @classrooms.each do |classroom| %>
-    <li>
-      <%= link_to classroom.name, classroom_path(classroom), class: "text-blue-600 underline" %>
-    </li>
-  <% end %>
-</ul>
-
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <% if @classrooms.any? %>
+      <ul class="divide-y divide-slate-100">
+        <% @classrooms.each do |classroom| %>
+          <li class="group">
+            <%= link_to classroom_path(classroom),
+                  class: "flex items-center justify-between px-5 py-4 transition hover:bg-slate-50" do %>
+              <span class="font-semibold text-slate-800 group-hover:text-sky-700">
+                <%= classroom.name %>
+              </span>
+              <span class="text-sm text-slate-400 group-hover:text-sky-600">열기</span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="px-5 py-10 text-center text-sm text-slate-500">
+        아직 교실이 없습니다.
+      </div>
+    <% end %>
+  </div>
+</section>

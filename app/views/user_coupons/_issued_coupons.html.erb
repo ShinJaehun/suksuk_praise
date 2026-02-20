@@ -1,27 +1,27 @@
 <%# locals: (coupons:, show_user:) %>
 <% if coupons&.any? %>
-  <ul class="space-y-1">
+  <ul class="space-y-2">
     <% coupons.each do |coupon| %>
-      <li id="<%= dom_id(coupon) %>" class="text-sm flex items-center gap-2">
+      <li id="<%= dom_id(coupon) %>" class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
         <% if show_user %>
-          <span class="font-semibold"><%= coupon.user.name %></span>
-          <span>→</span>
+          <span class="font-semibold text-slate-800"><%= coupon.user.name %></span>
+          <span class="text-slate-400">→</span>
         <% end %>
 
-        <span class="font-semibold"><%= coupon.coupon_template.title %></span>
+        <span class="font-semibold text-slate-900"><%= coupon.coupon_template.title %></span>
 
         <!-- 발급 기준 배지(daily/manual/weekly) -->
         <%= coupon_basis_badge(coupon) %>
         <% if coupon.basis_tag.present? %>
-          <span class="text-[11px] text-gray-500">
+          <span class="text-[11px] text-slate-500">
             (<%= t("coupons.basis_tag.#{coupon.basis_tag}", default: coupon.basis_tag) %>)
           </span>
         <% end %>
 
-        <span class="text-gray-500">(<%= l coupon.issued_at, format: :short %>)</span>
+        <span class="text-slate-500">(<%= l coupon.issued_at, format: :short %>)</span>
       </li>
     <% end %>
   </ul>
 <% else %>
-  <p class="text-gray-500 text-sm"><%= t("empty.issued_coupons") %></p>
+  <p class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm text-slate-500"><%= t("empty.issued_coupons") %></p>
 <% end %>

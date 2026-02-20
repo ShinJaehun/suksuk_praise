@@ -3,7 +3,7 @@ ko:
     index:
       title: "쿠폰 관리"
     tabs:
-      mine: "내 쿠폰"
+      personal: "내 쿠폰"
       library: "라이브러리"
     library:
       admin_title: "라이브러리(관리자)"

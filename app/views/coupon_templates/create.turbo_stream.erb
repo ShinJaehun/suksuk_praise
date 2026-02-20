@@ -1,4 +1,4 @@
-<%= turbo_stream.update "mine" do %>
-  <%= render partial: "mine_section", locals: { items: @mine_rows } %>
+<%= turbo_stream.update "personal" do %>
+  <%= render partial: "personal_section", locals: { items: @personal_rows } %>
 <% end %>
 <%= turbo_stream.update "modal", "" %> <!-- modal 닫기 -->

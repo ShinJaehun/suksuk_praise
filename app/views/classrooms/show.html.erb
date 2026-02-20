@@ -1,54 +1,55 @@
-<% if @can_manage_classroom %>
-  <div class="mb-4">
-    <%= link_to t('ui.buttons.edit_classroom'),
-      edit_classroom_path(@classroom), class: "text-blue-600 underline mr-4" %>
-    <%= link_to t('ui.buttons.delete_classroom'),
-      classroom_path(@classroom),
-          data: { turbo_method: :delete, turbo_confirm: t('ui.buttons.confirm_delete_classroom') },
-          class: "text-red-600 underline" %>
-    <%= link_to t('ui.buttons.create_student'),
-          new_classroom_student_path(@classroom),
-          data: { turbo_frame: "modal" },
-          class: "px-3 py-2 bg-green-500 text-white rounded" %>
+<section class="mx-auto w-full max-w-6xl space-y-5 pt-4">
+  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= @classroom.name %></h1>
 
-    <%= link_to t('ui.buttons.bulk_create_students'),
-          bulk_new_classroom_students_path(@classroom),
-          data: { turbo_frame: "modal" },
-          class: "px-3 py-2 bg-purple-500 text-white rounded" %>
+      <div class="flex flex-wrap items-center gap-2">
+        <%= button_to t('ui.buttons.refresh_king'),
+              refresh_compliment_king_classroom_path(@classroom),
+              method: :post,
+              form: { data: { turbo_submits_with: t("ui.processing") } },
+              class: "rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200" %>
+
+        <% if @can_manage_classroom %>
+          <%= link_to t('ui.buttons.create_student'),
+                new_classroom_student_path(@classroom),
+                data: { turbo_frame: "modal" },
+                class: "rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700" %>
+
+          <%= link_to t('ui.buttons.bulk_create_students'),
+                bulk_new_classroom_students_path(@classroom),
+                data: { turbo_frame: "modal" },
+                class: "rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700" %>
+
+          <%= link_to t('ui.buttons.edit_classroom'),
+                edit_classroom_path(@classroom),
+                class: "rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
+
+          <%= link_to t('ui.buttons.delete_classroom'),
+                classroom_path(@classroom),
+                data: { turbo_method: :delete, turbo_confirm: t('ui.buttons.confirm_delete_classroom') },
+                class: "rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100" %>
+        <% end %>
+      </div>
+    </div>
   </div>
-<% end %>
 
-<div class="flex items-center mb-4">
-  <%= button_to t('ui.buttons.refresh_king'),
-    refresh_compliment_king_classroom_path(@classroom),
-    method: :post,
-    form: { data: { turbo_submits_with: t("ui.processing") }},
-    class: "ml-auto px-3 py-1 bg-blue-200 rounded hover:bg-blue-300" %>
-</div>
+  <%= turbo_frame_tag dom_id(@classroom, :compliment_king), class: "block" do %>
+    <%= render partial: "classrooms/compliment_king", locals: {
+      compliment_kings: @compliment_kings,
+      compliment_king_count: @compliment_king_count,
+      classroom: @classroom
+    } %>
+  <% end %>
 
-<%#= turbo_frame_tag "compliment_king_#{@classroom.id}" do %>
-<%= turbo_frame_tag dom_id(@classroom, :compliment_king) do %>
-  <%= render partial: "classrooms/compliment_king", locals: {
-    compliment_kings: @compliment_kings,
-    compliment_king_count: @compliment_king_count,
-    classroom: @classroom
-  } %>
-<% end %>
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <h2 class="mb-4 text-lg font-bold text-slate-900"><%= @classroom.name %>의 학생들</h2>
+    <%= turbo_frame_tag "students_list_#{@classroom.id}" do %>
+      <div id="students_grid_<%= @classroom.id %>" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <%= render partial: "users/user", collection: @students, as: :user, locals: { classroom: @classroom } %>
+      </div>
+    <% end %>
+  </section>
 
-<div id="issued_coupons">
-  <%= render partial: "user_coupons/issued_coupons",
-    locals: { coupons: @issued_coupons, show_user: true } %>
-</div>
-
-<br/>
-
-<h2 class="text-xl font-bold mb-4"><%= @classroom.name %>의 학생들</h2>
-<%= turbo_frame_tag "students_list_#{@classroom.id}" do %>
-  <div id="students_grid_<%= @classroom.id %>" class="grid grid-cols-3 gap-4">
-    <%= render partial: "users/user", collection: @students, as: :user, locals: { classroom: @classroom } %>
-  </div>
-<% end %>
-
-<%= turbo_frame_tag :modal %>
-
-
+  <%= turbo_frame_tag :modal %>
+</section>

@@ -1,10 +1,3 @@
-<%= turbo_stream.replace "issued_coupons" do %>
-  <div id="issued_coupons">
-    <%= render partial: "user_coupons/issued_coupons",
-        locals: { coupons: issued_coupons, show_user: true } %>
-  </div>
-<% end %>
-
 <% if winner.present? %>
   <%= turbo_stream.update dom_id(winner, :coupons) do %>
     <%= render partial: "user_coupons/list",
@@ -14,6 +7,11 @@
   <%= turbo_stream.update dom_id(winner, :recent_issued_coupons) do %>
     <%= render partial: "user_coupons/issued_coupons",
                locals: { coupons: winner_coupons, show_user: false } %>
+  <% end %>
+
+  <%= turbo_stream.update dom_id(winner, :kpis) do %>
+    <%= render partial: "users/kpi_chips",
+               locals: { user: winner, kpi_counts: winner_kpi_counts } %>
   <% end %>
 <% end %>
 

@@ -1,0 +1,18 @@
+<%# locals: (user:, kpi_counts:) %>
+<div class="mt-2 flex flex-wrap gap-2 text-sm">
+  <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-800">
+    칭찬 <span class="ml-1 font-semibold"><%= kpi_counts[:points] %></span>
+  </span>
+  <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-800">
+    오늘 받은 칭찬 <span class="ml-1 font-semibold"><%= kpi_counts[:today_compliments] %></span>
+  </span>
+  <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-800">
+    보유 쿠폰 <span class="ml-1 font-semibold"><%= kpi_counts[:issued_count] %></span>
+  </span>
+  <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-800">
+    오늘 발급 받은 쿠폰 <span class="ml-1 font-semibold"><%= kpi_counts[:today_issued_coupons] %></span>
+  </span>
+  <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-slate-800">
+    사용한 쿠폰 <span class="ml-1 font-semibold"><%= kpi_counts[:used_coupons] %></span>
+  </span>
+</div>
