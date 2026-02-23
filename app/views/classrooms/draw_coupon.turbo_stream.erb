@@ -18,7 +18,7 @@
 
   <%= turbo_stream.update dom_id(winner, :recent_issued_coupons) do %>
     <%= render partial: "user_coupons/issued_coupons",
-               locals: { coupons: winner_coupons, show_user: false } %>
+               locals: { coupons: winner_recent_issued_coupons, show_user: false } %>
   <% end %>
 
   <%= turbo_stream.update dom_id(winner, :kpis) do %>

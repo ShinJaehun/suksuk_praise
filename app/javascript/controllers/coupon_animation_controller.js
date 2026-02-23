@@ -101,11 +101,16 @@ export default class extends Controller {
   close() {
     this.resolveTargetCardWithRetry()
     this.hideOverlay()
+    if (this.animationType() !== "draw") {
+      this.element.remove()
+      return
+    }
     this.applyCardHighlight()
 
     clearTimeout(this.highlightCleanupTimer)
     this.highlightCleanupTimer = setTimeout(() => {
       this.targetCard?.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
+      this.element.remove()
     }, 1300)
   }
 

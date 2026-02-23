@@ -123,6 +123,7 @@ class ClassroomsController < ApplicationController
     winner = nil
     template = nil
     winner_coupons = nil
+    winner_recent_issued_coupons = nil
     winner_kpi_counts = nil
     notice_message = nil
 
@@ -168,6 +169,12 @@ class ClassroomsController < ApplicationController
         .includes(:coupon_template)
         .order(created_at: :desc)
         .load
+      winner_recent_issued_coupons = policy_scope(UserCoupon)
+        .where(user_id: winner.id, classroom_id: @classroom.id)
+        .includes(:coupon_template, :user)
+        .order(issued_at: :desc)
+        .limit(10)
+        .load
       winner_kpi_counts = build_kpi_counts_for(user: winner, classroom: @classroom)
 
       notice_message = t("coupons.draw.success", name: winner.name, title: template.title)
@@ -183,6 +190,7 @@ class ClassroomsController < ApplicationController
             locals: {
               winner: winner,
               winner_coupons: winner_coupons,
+              winner_recent_issued_coupons: winner_recent_issued_coupons,
               winner_kpi_counts: winner_kpi_counts,
               issued_coupons: @issued_coupons
             }
