@@ -1,12 +1,12 @@
 <% if defined?(winner_coupons) && winner_coupons.present? %>
   <% payload = coupon_animation_payload(winner_coupons.first) %>
 
-  <%= turbo_stream.append "flash" do %>
-    <div data-controller="draw-animation"
-         data-draw-animation-type-value="draw"
-         data-draw-animation-id-value="<%= payload[:id] %>"
-         data-draw-animation-title-value="<%= payload[:title] %>"
-         data-draw-animation-image-url-value="<%= payload[:image_url] %>"></div>
+  <%= turbo_stream.append "effects" do %>
+    <div data-controller="coupon-animation"
+         data-coupon-animation-type-value="draw"
+         data-coupon-animation-id-value="<%= payload[:id] %>"
+         data-coupon-animation-title-value="<%= payload[:title] %>"
+         data-coupon-animation-image-url-value="<%= payload[:image_url] %>"></div>
   <% end %>
 <% end %>
 

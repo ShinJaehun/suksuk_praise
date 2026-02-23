@@ -1,11 +1,11 @@
 <% payload = coupon_animation_payload(@coupon) %>
 
-<%= turbo_stream.append "flash" do %>
-  <div data-controller="draw-animation"
-       data-draw-animation-type-value="use"
-       data-draw-animation-id-value="<%= payload[:id] %>"
-       data-draw-animation-title-value="<%= payload[:title] %>"
-       data-draw-animation-image-url-value="<%= payload[:image_url] %>"></div>
+<%= turbo_stream.append "effects" do %>
+  <div data-controller="coupon-animation"
+       data-coupon-animation-type-value="use"
+       data-coupon-animation-id-value="<%= payload[:id] %>"
+       data-coupon-animation-title-value="<%= payload[:title] %>"
+       data-coupon-animation-image-url-value="<%= payload[:image_url] %>"></div>
 <% end %>
 
 <%= turbo_stream.remove dom_id(@coupon) %>
