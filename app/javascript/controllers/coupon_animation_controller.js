@@ -41,7 +41,7 @@ export default class extends Controller {
 
     this.timers.push(setTimeout(() => this.phaseTwo(), 900))
     this.timers.push(setTimeout(() => {
-      this.revealCard()
+      this.revealCard("축하합니다")
       this.emitParticles()
     }, 1700))
   }
@@ -58,16 +58,17 @@ export default class extends Controller {
 
   phaseOne() {
     if (!this.labelEl) return
-    this.labelEl.textContent = "뽑는 중..."
+    this.labelEl.textContent = "뽑는 중"
   }
 
   phaseTwo() {
     if (!this.labelEl) return
-    this.labelEl.textContent = "두근두근..."
+    this.labelEl.textContent = "두근두근"
   }
 
-  revealCard() {
+  revealCard(message = null) {
     if (!this.centerEl) return
+    if (message && this.labelEl) this.labelEl.textContent = message
     this.centerEl.classList.remove("hidden")
     this.nameEl.textContent = this.titleText
 
@@ -106,13 +107,13 @@ export default class extends Controller {
     wrapper.innerHTML = `
       <div class="relative w-[320px] max-w-[90vw] rounded-2xl border border-amber-200/80 bg-white px-6 py-6 text-center shadow-2xl">
         <p class="text-sm font-semibold tracking-wide text-slate-500">쿠폰 추첨</p>
-        <p class="mt-2 text-xl font-extrabold text-amber-600 animate-pulse" data-draw-animation-role="label">뽑는 중...</p>
+        <p class="mt-2 text-xl font-extrabold text-amber-600 animate-pulse" data-coupon-animation-role="label">뽑는 중...</p>
 
-        <div class="mt-4 hidden" data-draw-animation-role="center">
-          <div class="mx-auto mb-3 hidden h-40 w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50" data-draw-animation-role="imageWrap">
-            <img alt="당첨 쿠폰" class="h-full w-full object-cover" data-draw-animation-role="image" />
+        <div class="mt-4 hidden" data-coupon-animation-role="center">
+          <div class="mx-auto mb-3 hidden h-40 w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-50" data-coupon-animation-role="imageWrap">
+            <img alt="당첨 쿠폰" class="h-full w-full object-cover" data-coupon-animation-role="image" />
           </div>
-          <p class="text-lg font-bold text-slate-900" data-draw-animation-role="name"></p>
+          <p class="text-lg font-bold text-slate-900" data-coupon-animation-role="name"></p>
           <p class="mt-2 text-xs text-slate-500">화면을 클릭하면 닫힙니다</p>
         </div>
       </div>
@@ -120,11 +121,11 @@ export default class extends Controller {
 
     document.body.appendChild(wrapper)
     this.overlay = wrapper
-    this.labelEl = wrapper.querySelector("[data-draw-animation-role='label']")
-    this.centerEl = wrapper.querySelector("[data-draw-animation-role='center']")
-    this.imageWrapEl = wrapper.querySelector("[data-draw-animation-role='imageWrap']")
-    this.imageEl = wrapper.querySelector("[data-draw-animation-role='image']")
-    this.nameEl = wrapper.querySelector("[data-draw-animation-role='name']")
+    this.labelEl = wrapper.querySelector("[data-coupon-animation-role='label']")
+    this.centerEl = wrapper.querySelector("[data-coupon-animation-role='center']")
+    this.imageWrapEl = wrapper.querySelector("[data-coupon-animation-role='imageWrap']")
+    this.imageEl = wrapper.querySelector("[data-coupon-animation-role='image']")
+    this.nameEl = wrapper.querySelector("[data-coupon-animation-role='name']")
 
     this.onOverlayClick = () => this.close()
     this.overlay.addEventListener("click", this.onOverlayClick)
