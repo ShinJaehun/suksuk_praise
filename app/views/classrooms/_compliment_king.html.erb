@@ -18,7 +18,7 @@
                 form: {
                   data: {
                     controller: "disable-on-submit",
-                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#enable",
+                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
                     turbo_submits_with: t("ui.processing")
                   },
                   aria: { busy: "false" }

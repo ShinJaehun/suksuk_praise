@@ -1,3 +1,15 @@
+<% if defined?(winner_coupons) && winner_coupons.present? %>
+  <% payload = coupon_animation_payload(winner_coupons.first) %>
+
+  <%= turbo_stream.append "flash" do %>
+    <div data-controller="draw-animation"
+         data-draw-animation-type-value="draw"
+         data-draw-animation-id-value="<%= payload[:id] %>"
+         data-draw-animation-title-value="<%= payload[:title] %>"
+         data-draw-animation-image-url-value="<%= payload[:image_url] %>"></div>
+  <% end %>
+<% end %>
+
 <% if winner.present? %>
   <%= turbo_stream.update dom_id(winner, :coupons) do %>
     <%= render partial: "user_coupons/list",
@@ -13,9 +25,4 @@
     <%= render partial: "users/kpi_chips",
                locals: { user: winner, kpi_counts: winner_kpi_counts } %>
   <% end %>
-<% end %>
-
-<% if defined?(winner_coupons) && winner_coupons.present? %>
-  <div data-controller="highlight"
-       data-highlight-id-value="<%= dom_id(winner_coupons.first) %>"></div>
 <% end %>
