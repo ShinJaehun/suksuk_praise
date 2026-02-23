@@ -47,7 +47,7 @@ class CouponEventsController < ApplicationController
     @summary_by_action = base.unscope(:includes).group(:action).count
 
     # pagination
-    @pagy, @events = pagy(:offset, base.order(sort_clause(params[:sort])), limit: 5)
+    @pagy, @events = pagy(:offset, base.order(sort_clause(params[:sort])), limit: 10)
   end
 
   private

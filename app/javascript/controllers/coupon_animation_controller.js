@@ -9,7 +9,7 @@ export default class extends Controller {
   }
 
   connect() {
-    this.targetCard = this.hasIdValue ? document.getElementById(this.idValue) : null
+    this.targetCard = null
 
     this.titleText =
       this.titleValue ||
@@ -20,7 +20,7 @@ export default class extends Controller {
       this.targetCard?.querySelector("img")?.getAttribute("src") ||
       ""
 
-    this.targetCard?.classList.add("ring-2", "ring-amber-400", "bg-amber-50")
+    this.resolveTargetCardWithRetry()
 
     if (this.animationType() === "use") {
       this.showUseSequence()
@@ -30,7 +30,20 @@ export default class extends Controller {
   }
 
   disconnect() {
+    clearTimeout(this.highlightRetryTimer)
     this.teardown()
+  }
+
+  resolveTargetCardWithRetry(tries = 10) {
+    if (!this.hasIdValue) return
+    this.targetCard = document.getElementById(this.idValue)
+    if (this.targetCard) return
+    if (tries <= 0) return
+    this.highlightRetryTimer = setTimeout(() => this.resolveTargetCardWithRetry(tries - 1), 80)
+  }
+
+  applyCardHighlight() {
+    this.targetCard?.classList.add("ring-2", "ring-amber-400", "bg-amber-50")
   }
 
   showDrawSequence() {
@@ -86,8 +99,14 @@ export default class extends Controller {
   }
 
   close() {
+    this.resolveTargetCardWithRetry()
     this.hideOverlay()
-    this.targetCard?.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
+    this.applyCardHighlight()
+
+    clearTimeout(this.highlightCleanupTimer)
+    this.highlightCleanupTimer = setTimeout(() => {
+      this.targetCard?.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
+    }, 1300)
   }
 
   hideOverlay() {
@@ -226,6 +245,8 @@ export default class extends Controller {
   }
 
   teardown() {
+    clearTimeout(this.highlightRetryTimer)
+    clearTimeout(this.highlightCleanupTimer)
     if (this.timers) this.timers.forEach((id) => clearTimeout(id))
     this.timers = []
     this.targetCard?.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
