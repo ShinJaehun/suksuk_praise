@@ -1,7 +1,7 @@
 <% if defined?(winner_coupons) && winner_coupons.present? %>
   <% payload = coupon_animation_payload(winner_coupons.first) %>
 
-  <%= turbo_stream.append "flash" do %>
+  <%= turbo_stream.append "effects" do %>
     <div data-controller="draw-animation"
          data-draw-animation-type-value="draw"
          data-draw-animation-id-value="<%= payload[:id] %>"
