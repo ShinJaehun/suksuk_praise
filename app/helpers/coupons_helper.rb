@@ -1,4 +1,20 @@
 module CouponsHelper
+  def coupon_animation_payload(coupon)
+    template = coupon.coupon_template
+    image_url =
+      if template.image.attached?
+        url_for(template.image)
+      elsif template.default_image_key.present?
+        asset_path(template.default_image_key)
+      end
+
+    {
+      id: dom_id(coupon),
+      title: template.title,
+      image_url: image_url
+    }
+  end
+
   def coupon_basis_badge(coupon)
     basis = coupon.issuance_basis.to_s
     label = I18n.t("coupons.basis.#{basis}", default: basis)
