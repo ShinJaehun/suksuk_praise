@@ -98,6 +98,7 @@ class ClassroomsController < ApplicationController
 
     basis, mode = normalized_basis_and_mode(params[:basis], params[:mode])
     now = Time.current
+    @play_coupon_animation = false
     
     # 0) 사전 검증: target_user_id가 있으면 해당 교실 소속인지 즉시 확인 (fail fast)
     if params[:user_id].present?
@@ -123,6 +124,7 @@ class ClassroomsController < ApplicationController
     winner = nil
     template = nil
     winner_coupons = nil
+    winner_recent_issued_coupons = nil
     winner_kpi_counts = nil
     notice_message = nil
 
@@ -168,9 +170,16 @@ class ClassroomsController < ApplicationController
         .includes(:coupon_template)
         .order(created_at: :desc)
         .load
+      winner_recent_issued_coupons = policy_scope(UserCoupon)
+        .where(user_id: winner.id, classroom_id: @classroom.id)
+        .includes(:coupon_template, :user)
+        .order(issued_at: :desc)
+        .limit(10)
+        .load
       winner_kpi_counts = build_kpi_counts_for(user: winner, classroom: @classroom)
 
       notice_message = t("coupons.draw.success", name: winner.name, title: template.title)
+      @play_coupon_animation = true
 
     end
 
@@ -183,6 +192,7 @@ class ClassroomsController < ApplicationController
             locals: {
               winner: winner,
               winner_coupons: winner_coupons,
+              winner_recent_issued_coupons: winner_recent_issued_coupons,
               winner_kpi_counts: winner_kpi_counts,
               issued_coupons: @issued_coupons
             }
@@ -308,4 +318,5 @@ class ClassroomsController < ApplicationController
       used_coupons: coupons_scope.where(status: "used").count
     }
   end
+
 end

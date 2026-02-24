@@ -17,6 +17,11 @@
             (<%= t("coupons.basis_tag.#{coupon.basis_tag}", default: coupon.basis_tag) %>)
           </span>
         <% end %>
+        <% if coupon.status == "used" %>
+          <span class="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+            사용함
+          </span>
+        <% end %>
 
         <span class="text-slate-500">(<%= l coupon.issued_at, format: :short %>)</span>
       </li>

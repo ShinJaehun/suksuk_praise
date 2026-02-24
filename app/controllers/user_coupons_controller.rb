@@ -13,8 +13,10 @@ class UserCouponsController < ApplicationController
   def use
     @coupon = @user.user_coupons.find(params[:id])
     authorize @coupon, :use?
+    @play_coupon_animation = false
 
     UserCoupons::Use.call!(coupon: @coupon, actor: current_user)
+    @play_coupon_animation = true
 
     load_recent_issued_coupons!(user: @user, classroom_id: @coupon.classroom_id)
     @kpi_counts = build_kpi_counts_for(user: @user, classroom_id: @coupon.classroom_id)
@@ -30,6 +32,7 @@ class UserCouponsController < ApplicationController
     end
 
   rescue ActiveRecord::RecordInvalid
+    @play_coupon_animation = false
     @kpi_counts = build_kpi_counts_for(user: @user, classroom_id: @coupon.classroom_id)
     message = t("coupons.use.already_used")
     respond_to do |f|
@@ -69,4 +72,5 @@ class UserCouponsController < ApplicationController
       used_coupons: coupons_scope.where(status: "used").count
     }
   end
+
 end

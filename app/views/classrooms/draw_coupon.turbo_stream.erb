@@ -1,6 +1,5 @@
-<% if defined?(winner_coupons) && winner_coupons.present? %>
+<% if @play_coupon_animation && defined?(winner_coupons) && winner_coupons.present? %>
   <% payload = coupon_animation_payload(winner_coupons.first) %>
-
   <%= turbo_stream.append "effects" do %>
     <div data-controller="coupon-animation"
          data-coupon-animation-type-value="draw"
@@ -18,7 +17,7 @@
 
   <%= turbo_stream.update dom_id(winner, :recent_issued_coupons) do %>
     <%= render partial: "user_coupons/issued_coupons",
-               locals: { coupons: winner_coupons, show_user: false } %>
+               locals: { coupons: winner_recent_issued_coupons, show_user: false } %>
   <% end %>
 
   <%= turbo_stream.update dom_id(winner, :kpis) do %>
