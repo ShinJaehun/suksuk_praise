@@ -1,6 +1,5 @@
-<% if defined?(winner_coupons) && winner_coupons.present? %>
+<% if @play_coupon_animation && defined?(winner_coupons) && winner_coupons.present? %>
   <% payload = coupon_animation_payload(winner_coupons.first) %>
-
   <%= turbo_stream.append "effects" do %>
     <div data-controller="coupon-animation"
          data-coupon-animation-type-value="draw"

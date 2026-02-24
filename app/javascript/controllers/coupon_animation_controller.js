@@ -124,8 +124,12 @@ export default class extends Controller {
   }
 
   buildOverlay() {
+    const existingOverlay = document.getElementById("coupon_animation_overlay")
+    if (existingOverlay) existingOverlay.remove()
+
     const wrapper = document.createElement("div")
     wrapper.className = "hidden fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-[1px]"
+    wrapper.id = "coupon_animation_overlay"
     wrapper.setAttribute("aria-hidden", "true")
 
     wrapper.innerHTML = `
