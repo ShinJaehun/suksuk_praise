@@ -1,9 +1,13 @@
 class CouponTemplate < ApplicationRecord
+  DEFAULT_IMAGE_KEY = 'coupon_templates/default.png'.freeze
+
   has_many :user_coupons, dependent: :restrict_with_exception
   has_one_attached :image
 
   belongs_to :created_by, class_name: 'User'
   belongs_to :source_template, class_name: 'CouponTemplate', optional: true
+
+  before_validation :assign_default_image_key, on: :create
 
   validates :title, presence: true
   validates :weight, presence: true,
@@ -27,4 +31,12 @@ class CouponTemplate < ApplicationRecord
       .merge(User.where(role: 'admin'))
       .where(bucket: 'library', active: true)
   }
+
+  private
+
+  def assign_default_image_key
+    return if image.attached?
+    return if default_image_key.present?
+    self.default_image_key = DEFAULT_IMAGE_KEY
+  end
 end
