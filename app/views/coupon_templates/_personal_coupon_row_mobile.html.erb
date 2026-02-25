@@ -1,0 +1,62 @@
+<%# locals: (row:) %>
+<% tpl = row.tpl %>
+
+<article id="<%= dom_id(tpl, :mobile) %>" class="rounded-lg border border-slate-200 bg-white p-3">
+  <div class="grid grid-cols-2 gap-x-3 gap-y-2">
+    <div class="flex flex-col items-center gap-2">
+      <%= coupon_thumbnail(tpl) %>
+      <div class="w-full text-center text-sm font-medium break-words leading-tight"><%= tpl.title %></div>
+    </div>
+
+    <div class="flex items-center justify-end">
+      <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
+        <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
+      </span>
+    </div>
+
+    <div class="flex items-center justify-center">
+      <div class="w-20">
+        <div class="grid justify-items-center gap-y-0.5">
+          <span class="font-mono tabular-nums text-center leading-none">
+            <%= tpl.weight %>
+          </span>
+          <div class="flex items-center justify-center gap-1">
+            <%= button_to "←",
+                  bump_weight_coupon_template_path(tpl, amount: -10),
+                  method: :patch,
+                  form: { class: "contents", data: { controller: "disable-on-submit" } },
+                  class: "px-2 py-0.5 text-xs border rounded",
+                  disabled: !row.can_decrease_weight,
+                  title: row.decrease_title %>
+
+            <%= button_to "→",
+                  bump_weight_coupon_template_path(tpl, amount: 10),
+                  method: :patch,
+                  form: { class: "contents", data: { controller: "disable-on-submit" } },
+                  class: "px-2 py-0.5 text-xs border rounded",
+                  disabled: tpl.weight.to_i >= 100,
+                  title: (tpl.weight.to_i >= 100) ? "최대 100까지 가능합니다" : nil %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2">
+      <%= button_to toggle_active_coupon_template_path(tpl),
+            method: :patch,
+            form: { data: { controller: "disable-on-submit" } },
+            class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50",
+            disabled: !row.can_toggle_active,
+            title: row.toggle_title do %>
+        <span aria-hidden="true"><%= tpl.active? ? "🟢" : "⚪" %></span>
+      <% end %>
+
+      <%= link_to edit_coupon_template_path(tpl),
+            data: { turbo_frame: "modal" },
+            class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50",
+            title: t("ui.edit", default: "수정") do %>
+        <span aria-hidden="true">✏</span>
+      <% end %>
+    </div>
+  </div>
+</article>

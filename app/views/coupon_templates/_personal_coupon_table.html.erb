@@ -1,6 +1,12 @@
-<div class="overflow-x-auto">
+<div class="space-y-2 md:hidden">
+  <%= render partial: "coupon_templates/personal_coupon_row_mobile",
+             collection: items,
+             as: :row %>
+</div>
+
+<div class="hidden md:block md:overflow-x-auto">
 <table class="w-full text-sm">
-  <thead class="hidden md:table-header-group">
+  <thead>
     <tr class="text-gray-600">
       <th class="py-2 text-left"><%= t("coupon_templates.columns.title", default: "쿠폰명") %></th>
       <th class="text-center"><%= t("coupon_templates.columns.weight", default: "가중치") %></th>
