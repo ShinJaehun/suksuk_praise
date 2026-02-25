@@ -1,4 +1,4 @@
-<div class="h-16 w-full flex items-center justify-between px-4 sticky top-0 bg-white border-b z-40">
+<div class="h-14 w-full flex items-center justify-between px-3 sm:px-4 sticky top-0 bg-white border-b z-40">
   <!-- Left: Brand / Primary links -->
   <div class="flex items-center gap-4">
     <%= link_to "Home", root_path, class: "font-semibold text-gray-800" %>
@@ -48,7 +48,7 @@
       <!-- Mobile: Hamburger + Dropdown -->
       <details class="md:hidden relative">
         <summary class="list-none flex items-center gap-2 cursor-pointer select-none">
-          <div class="flex flex-col items-end text-xs text-gray-600">
+          <div class="hidden min-[380px]:flex flex-col items-end text-xs text-gray-600">
             <span><%= current_user.name.presence || current_user.email %></span>
             <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
           </div>

@@ -1,11 +1,11 @@
 <section class="mx-auto w-full max-w-5xl pt-4">
-  <div class="mb-6 flex items-center justify-between gap-3">
+  <div class="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
     <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">내 교실</h1>
 
     <% if policy(Classroom).create? %>
       <%= link_to t('ui.buttons.new_classroom'),
             new_classroom_path,
-            class: "inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700" %>
+            class: "inline-flex w-full justify-center items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 sm:w-auto" %>
     <% end %>
   </div>
 

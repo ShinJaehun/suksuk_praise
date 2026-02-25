@@ -1,0 +1,18 @@
+<tr class="border-t">
+  <td class="py-2 text-left"><%= tpl.title %></td>
+
+  <td class="py-2 text-center font-mono tabular-nums">
+    <%= tpl.weight %>
+  </td>
+
+  <td class="py-2 text-right">
+    <%= button_to adopt_coupon_template_path(tpl),
+          method: :post,
+          form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+          class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50 md:h-auto md:w-auto md:border-0 md:p-0 md:text-sm md:underline md:hover:bg-transparent",
+          title: t("coupon_templates.actions.adopt", default: "가져오기") do %>
+      <span class="md:hidden" aria-hidden="true">📥</span>
+      <span class="hidden md:inline"><%= t("coupon_templates.actions.adopt", default: "가져오기") %></span>
+    <% end %>
+  </td>
+</tr>

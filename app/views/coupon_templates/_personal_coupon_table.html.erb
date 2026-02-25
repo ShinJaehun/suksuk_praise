@@ -1,5 +1,6 @@
+<div class="overflow-x-auto">
 <table class="w-full text-sm">
-  <thead>
+  <thead class="hidden md:table-header-group">
     <tr class="text-gray-600">
       <th class="py-2 text-left"><%= t("coupon_templates.columns.title", default: "쿠폰명") %></th>
       <th class="text-center"><%= t("coupon_templates.columns.weight", default: "가중치") %></th>
@@ -9,9 +10,10 @@
   </thead>
   <tbody>
     <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
-    <%= render partial: "coupon_templates/personal_row",
+    <%= render partial: "coupon_templates/personal_coupon_row",
                collection: items,
                as: :row,
                locals: { active_total: total } %>
   </tbody>
 </table>
+</div>

@@ -1,0 +1,72 @@
+<tr class="grid grid-cols-2 gap-x-3 gap-y-2 border-t py-2 md:table-row md:py-0" id="<%= dom_id(tpl) %>">
+  <td class="order-1 block py-1 text-left md:table-cell md:py-2 md:order-none">
+    <div class="flex items-center gap-3">
+      <%= coupon_thumbnail(tpl) %>
+      <div class="font-medium truncate max-w-[14rem]"><%= tpl.title %></div>
+    </div>
+  </td>
+
+  <td class="order-3 flex items-center py-1 align-middle text-center md:table-cell md:py-2 md:order-none">
+    <div class="mx-auto w-20">
+      <div class="grid justify-items-center gap-y-0.5">
+        <span class="font-mono tabular-nums text-center leading-none">
+          <%= tpl.weight %>
+        </span>
+
+        <div class="flex items-center justify-center gap-1">
+          <%= button_to "←",
+                bump_weight_coupon_template_path(tpl, amount: -10),
+                method: :patch,
+                form: { data: { controller: "disable-on-submit" } },
+                class: "px-2 py-0.5 text-xs border rounded",
+                disabled: tpl.weight.to_i <= 0,
+                title: (tpl.weight.to_i <= 0) ? "이미 0입니다" : nil %>
+
+          <%= button_to "→",
+                bump_weight_coupon_template_path(tpl, amount: 10),
+                method: :patch,
+                form: { data: { controller: "disable-on-submit" } },
+                class: "px-2 py-0.5 text-xs border rounded",
+                disabled: tpl.weight.to_i >= 100,
+                title: (tpl.weight.to_i >= 100) ? "최대 100까지 가능합니다" : nil %>
+        </div>
+      </div>
+    </div>
+  </td>
+
+  <td class="order-2 flex items-center justify-end py-1 text-right md:table-cell md:py-2 md:text-center md:order-none">
+    <span class="<%= tpl.active? ? 'text-green-700' : 'text-gray-500' %>">
+      <%= tpl.active? ? t("ui.on", default: "켜짐") : t("ui.off", default: "꺼짐") %>
+    </span>
+  </td>
+
+  <td class="order-4 flex items-center justify-end py-1 text-right md:table-cell md:py-2 md:order-none">
+    <div class="flex items-center justify-end gap-2">
+      <%= button_to adopt_coupon_template_path(tpl),
+            method: :post,
+            form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+            class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50 md:h-auto md:w-auto md:border-0 md:p-0 md:text-sm md:underline md:hover:bg-transparent",
+            title: t("coupon_templates.actions.adopt", default: "가져오기") do %>
+        <span class="md:hidden" aria-hidden="true">📥</span>
+        <span class="hidden md:inline"><%= t("coupon_templates.actions.adopt", default: "가져오기") %></span>
+      <% end %>
+
+      <%= button_to toggle_active_coupon_template_path(tpl),
+            method: :patch,
+            form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
+            class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50 md:h-auto md:w-auto md:border-0 md:p-0 md:text-sm md:underline md:hover:bg-transparent",
+            title: (tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") : t("coupon_templates.actions.activate", default: "활성")) do %>
+        <span class="md:hidden" aria-hidden="true"><%= tpl.active? ? "🟢" : "⚪" %></span>
+        <span class="hidden md:inline"><%= tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") : t("coupon_templates.actions.activate", default: "활성") %></span>
+      <% end %>
+
+      <%= link_to edit_coupon_template_path(tpl),
+            data: { turbo_frame: "modal" },
+            class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50 md:h-auto md:w-auto md:border-0 md:p-0 md:text-sm md:underline md:hover:bg-transparent",
+            title: t("ui.edit", default: "편집") do %>
+        <span class="md:hidden" aria-hidden="true">✏</span>
+        <span class="hidden md:inline"><%= t("ui.edit", default: "편집") %></span>
+      <% end %>
+    </div>
+  </td>
+</tr>

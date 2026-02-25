@@ -1,0 +1,18 @@
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+  <thead class="hidden md:table-header-group">
+    <tr class="text-gray-600">
+      <th class="py-2 text-left"><%= t("coupon_templates.columns.title", default: "쿠폰명") %></th>
+      <th class="text-center"><%= t("coupon_templates.columns.weight", default: "가중치") %></th>
+      <th class="text-center"><%= t("coupon_templates.columns.active", default: "상태") %></th>
+      <th class="text-right"><%= t("ui.actions", default: "작업") %></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <%= render partial: "coupon_templates/library_admin_coupon_row",
+               collection: templates,
+               as: :tpl %>
+  </tbody>
+</table>
+</div>

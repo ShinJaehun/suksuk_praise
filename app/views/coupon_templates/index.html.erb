@@ -6,14 +6,14 @@
       <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.personal") %></h2>
 
       <%= turbo_frame_tag "personal" do %>
-        <%= render partial: "personal_section", locals: { items: @personal_rows } %>
+        <%= render partial: "personal_coupon_table_section", locals: { items: @personal_rows } %>
       <% end %>
     </section>
     <!-- Library -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
       <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.library") %></h2>
       <%= turbo_frame_tag "library" do %>
-        <%= render partial: "library_section",
+        <%= render partial: "library_coupon_table_section",
               locals: { templates: @library, library_admin: @library_admin } %>
       <% end %>
     </section>
