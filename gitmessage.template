@@ -1,0 +1,15 @@
+<Short summary (50 chars max)>
+
+What:
+-
+
+Why:
+-
+
+Risk:
+-
+
+Verify:
+- rails test
+- 수동 테스트:
+- 기타:
