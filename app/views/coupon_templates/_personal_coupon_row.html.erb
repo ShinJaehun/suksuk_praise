@@ -46,24 +46,22 @@
   </td>
 
   <td class="py-2 text-center">
-    <div class="flex items-center justify-end gap-3">
-      <%= button_to(
-            (tpl.active? ?
-              t("coupon_templates.actions.deactivate", default: "비활성") :
-              t("coupon_templates.actions.activate",   default: "활성")),
-            toggle_active_coupon_template_path(tpl),
+    <div class="flex items-center justify-end gap-2">
+      <%= button_to toggle_active_coupon_template_path(tpl),
             method: :patch,
             form: { data: { controller: "disable-on-submit" } },
             class: "underline",
             disabled: !row.can_toggle_active,
-            title: row.toggle_title            
-          ) %>
+            title: row.toggle_title do %>
+        <%= tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") : t("coupon_templates.actions.activate", default: "활성") %>
+      <% end %>
 
-      <%= link_to t("ui.edit", default: "수정"),
-            edit_coupon_template_path(tpl),
+      <%= link_to edit_coupon_template_path(tpl),
             data: { turbo_frame: "modal" },
-            class: "underline" %>
-
+            class: "underline",
+            title: t("ui.edit", default: "수정") do %>
+        <%= t("ui.edit", default: "수정") %>
+      <% end %>
     </div>
   </td>
 </tr>

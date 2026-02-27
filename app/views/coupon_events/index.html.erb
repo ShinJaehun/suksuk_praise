@@ -4,21 +4,21 @@
     <%= form_with url: coupon_events_path, method: :get, local: true, class: "flex flex-wrap gap-2 items-end" do %>
       <%= select_tag :classroom_id,
             options_for_select(@classroom_options, params[:classroom_id]),
-            class: "border rounded px-2 py-1" %>
+            class: "w-full sm:w-auto border rounded px-2 py-1" %>
 
       <%= select_tag :template_id,
             options_for_select(@template_options, params[:template_id]),
-            class: "border rounded px-2 py-1" %>
+            class: "w-full sm:w-auto border rounded px-2 py-1" %>
 
       <%= select_tag :event_action,
             options_for_select(@action_options, params[:event_action]),
-            class: "border rounded px-2 py-1" %>
+            class: "w-full sm:w-auto border rounded px-2 py-1" %>
 
       <div>
         <label class="block text-sm font-semibold mb-1"><%= t("reports.filters.period") %></label>
         <%= select_tag :period,
               options_for_select(@period_options, params[:period].presence || "last_7_days"),
-              class: "border rounded px-2 py-1" %>
+              class: "w-full sm:w-auto border rounded px-2 py-1" %>
       </div>
 
       <div>
@@ -28,10 +28,10 @@
                 [t("reports.sort.issued_at_desc"), "issued_at_desc"],
                 [t("reports.sort.issued_at_asc"),  "issued_at_asc"]
               ], params[:sort]),
-              class: "border rounded px-2 py-1" %>
+              class: "w-full sm:w-auto border rounded px-2 py-1" %>
       </div>
 
-      <%= submit_tag t("reports.filters.apply", default: "적용"), class: "bg-blue-500 text-white px-3 py-1 rounded" %>
+      <%= submit_tag t("reports.filters.apply", default: "적용"), class: "w-full sm:w-auto bg-blue-500 text-white px-3 py-1 rounded" %>
     <% end %>
 
     <div class="text-sm text-gray-700">

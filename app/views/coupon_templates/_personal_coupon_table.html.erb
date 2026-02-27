@@ -1,3 +1,10 @@
+<div class="space-y-2 md:hidden">
+  <%= render partial: "coupon_templates/personal_coupon_row_mobile",
+             collection: items,
+             as: :row %>
+</div>
+
+<div class="hidden md:block md:overflow-x-auto">
 <table class="w-full text-sm">
   <thead>
     <tr class="text-gray-600">
@@ -9,9 +16,10 @@
   </thead>
   <tbody>
     <% total = items.sum { |r| r.tpl.active? ? r.tpl.weight.to_i : 0 } %>
-    <%= render partial: "coupon_templates/personal_row",
+    <%= render partial: "coupon_templates/personal_coupon_row",
                collection: items,
                as: :row,
                locals: { active_total: total } %>
   </tbody>
 </table>
+</div>

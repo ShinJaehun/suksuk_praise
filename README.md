@@ -22,3 +22,5 @@ Things you may want to cover:
 * Deployment instructions
 
 * ...
+
+Note: For codex_review workflow in this repository, `spec.md` is the SSOT.

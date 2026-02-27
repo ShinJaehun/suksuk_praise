@@ -32,7 +32,7 @@
             class: "px-3 py-1 bg-blue-600 text-white rounded text-xs" %>
     </div>
   </div>
-  <%= render partial: "library_admin", locals: { templates: templates } %>
+  <%= render partial: "library_admin_coupon_table", locals: { templates: templates } %>
 <% else %>
-  <%= render partial: "library", locals: { templates: templates } %>
+  <%= render partial: "library_coupon_table", locals: { templates: templates } %>
 <% end %>
