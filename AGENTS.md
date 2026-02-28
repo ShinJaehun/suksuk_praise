@@ -18,6 +18,10 @@
 - 변경은 항상 작고 안전한 단위로 나눈다.
   대규모 일괄 변경 금지.
 
+- 기본 브랜치는 `main`이다.
+  가능하면 작업 단위별 브랜치를 생성해 작업하고,
+  검증/커밋 후 `main`에 머지한다.
+
 - 새로운 패치가 기존 동작을 대체하는 경우,
   이전 구현은 반드시 제거한다.
   Do not introduce parallel implementations.
@@ -28,6 +32,7 @@
 
 - Turbo Stream 응답은 항상 `layout: "application"`을 유지한다.
   기존 Turbo frame id 명명 규칙을 깨지 않는다.
+  Turbo effects/하이라이트는 누적되지 않도록 self-cleanup을 보장한다.
 
 - N+1 쿼리를 방지한다.
   목록/최근 발급 등은 includes/preload를 고려한다.
@@ -90,7 +95,9 @@
 ## 5. spec 기반 작업 규칙 (codex_review workflow)
 
 - `spec.md`는 프로젝트 루트의 SSOT다. 작업 시작 전에 반드시 읽고, 구현은 spec에 맞춰 진행한다.
+- 기본 순서는 `pull_spec → 분석 → diff 제시/승인 → 수정 → commit → send_review`를 따른다.
 - spec 변경이 필요하면 먼저 제안하고 승인 후 반영한다. (임의로 spec 밖의 기능을 추가하지 않는다.)
+- 별도 지시가 없으면 `spec.md`는 커밋에 포함한다.
 - 작업 결과는 git 커밋으로 남긴다. 커밋 메시지는 반드시 상세히 작성한다.
 
 ### 커밋 메시지 규칙
@@ -103,5 +110,3 @@
 - commit message는 한국어 우선.
 
 ---
-
-
