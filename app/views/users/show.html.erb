@@ -19,6 +19,21 @@
                       classroom_path(@classroom),
                       class: "inline-flex items-center rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700 hover:bg-slate-200" %>
         <% end %>
+        <% if @can_create_compliment %>
+          <%= button_to t("ui.buttons.compliment"),
+                classroom_compliments_path(@classroom),
+                method: :post,
+                params: { compliment: { receiver_id: @user.id } },
+                form: {
+                  data: {
+                    controller: "disable-on-submit",
+                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
+                    turbo_submits_with: t("ui.processing")
+                  },
+                  aria: { busy: "false" }
+                },
+                class: "inline-flex items-center rounded-lg bg-amber-300 px-3 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-400" %>
+        <% end %>
         <% if @classroom && policy(@classroom).draw_coupon? %>
           <%= button_to t("ui.buttons.issue_coupon_manual"),
                 draw_coupon_classroom_path(
@@ -77,26 +92,9 @@
         <h2 class="text-base font-semibold text-slate-900">칭찬 타임라인</h2>
         <span class="text-xs text-slate-500">최근순</span>
       </div>
-      <div class="mt-3 space-y-3 max-h-[60vh] overflow-auto pr-1">
-        <% if @compliments.empty? %>
-          <div class="text-sm text-slate-500">아직 칭찬 기록이 없어요.</div>
-        <% else %>
-          <% @compliments.each do |c| %>
-            <div class="rounded-lg bg-slate-50 px-3 py-2">
-              <div class="text-sm text-slate-800">
-                <span class="font-semibold"><%= c.giver.name %></span>
-                <span class="text-slate-500">선생님</span>
-                <% if c.classroom %>
-                  <span class="mx-1 text-slate-400">·</span>
-                  <span class="text-slate-600"><%= c.classroom.name %></span>
-                <% end %>
-                <span class="mx-1 text-slate-400">·</span>
-                <span class="text-xs text-slate-500">
-                  <%= l c.given_at, format: :short %>
-                </span>
-              </div>
-            </div>
-          <% end %>
+      <div class="mt-3">
+        <%= turbo_frame_tag dom_id(@user, :compliments) do %>
+          <%= render partial: "users/compliments_timeline", locals: { compliments: @compliments } %>
         <% end %>
       </div>
     </section>
