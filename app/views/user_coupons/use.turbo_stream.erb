@@ -11,7 +11,7 @@
 
 <%= turbo_stream.update dom_id(@user, :coupons) do %>
   <%= render partial: "user_coupons/list",
-    locals: { coupons: @issued_coupons, user: @user } %>
+    locals: { coupons: @coupons, user: @user } %>
 <% end %>
 
 <%= turbo_stream.update dom_id(@user, :kpis) do %>
@@ -21,11 +21,7 @@
 
 <%= turbo_stream.update dom_id(@user, :recent_issued_coupons) do %>
   <%= render partial: "user_coupons/issued_coupons",
-    locals: { coupons: @issued_coupons, show_user: false } %>
-<% end %>
-
-<%= turbo_stream.append "effects" do %>
-  <div data-controller="highlight" data-highlight-id-value="<%= dom_id(@coupon) %>"></div>
+    locals: { coupons: @recent_issued_coupons, show_user: false } %>
 <% end %>
 
 <%#= turbo_stream.update "flash" do %>

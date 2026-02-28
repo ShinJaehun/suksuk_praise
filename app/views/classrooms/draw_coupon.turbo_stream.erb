@@ -25,10 +25,4 @@
                locals: { user: winner, kpi_counts: winner_kpi_counts } %>
   <% end %>
 
-  <% if winner_recent_issued_coupons.present? %>
-    <%= turbo_stream.append "effects" do %>
-      <div data-controller="highlight"
-           data-highlight-id-value="<%= dom_id(winner_recent_issued_coupons.first) %>"></div>
-    <% end %>
-  <% end %>
 <% end %>

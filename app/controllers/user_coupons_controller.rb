@@ -18,8 +18,7 @@ class UserCouponsController < ApplicationController
     UserCoupons::Use.call!(coupon: @coupon, actor: current_user)
     @play_coupon_animation = true
 
-    load_recent_issued_coupons!(user: @user, classroom_id: @coupon.classroom_id)
-    @kpi_counts = build_kpi_counts_for(user: @user, classroom_id: @coupon.classroom_id)
+    load_use_stream_data!(user: @user, classroom_id: @coupon.classroom_id)
 
     respond_to do |f|
       f.html { redirect_to user_path(@user), notice: t("coupons.use.success"), status: :see_other }
@@ -33,7 +32,7 @@ class UserCouponsController < ApplicationController
 
   rescue ActiveRecord::RecordInvalid
     @play_coupon_animation = false
-    @kpi_counts = build_kpi_counts_for(user: @user, classroom_id: @coupon.classroom_id)
+    load_use_stream_data!(user: @user, classroom_id: @coupon.classroom_id)
     message = t("coupons.use.already_used")
     respond_to do |f|
       f.html { redirect_to user_path(@user), alert: message, status: :conflict }
@@ -53,12 +52,19 @@ class UserCouponsController < ApplicationController
     authorize @user, :show?  # 학생 상세/자원 접근 권한
   end
 
-  def load_recent_issued_coupons!(user:, classroom_id:)
-    @issued_coupons = policy_scope(UserCoupon)
+  def load_use_stream_data!(user:, classroom_id:)
+    @coupons = policy_scope(UserCoupon)
+      .where(user_id: user.id, classroom_id: classroom_id, status: "issued")
+      .includes(:coupon_template)
+      .order(issued_at: :desc)
+
+    @recent_issued_coupons = policy_scope(UserCoupon)
       .where(user_id: user.id, classroom_id: classroom_id)
       .includes(:coupon_template, :user)
       .order(issued_at: :desc)
       .limit(10)
+
+    @kpi_counts = build_kpi_counts_for(user: user, classroom_id: classroom_id)
   end
 
   def build_kpi_counts_for(user:, classroom_id:)
