@@ -5,6 +5,7 @@ export default class extends Controller {
 
     disconnect() {
         if (this.retryTimer) clearTimeout(this.retryTimer)
+        if (this.highlightCleanupTimer) clearTimeout(this.highlightCleanupTimer)
     }
 
     connect() {
@@ -26,7 +27,9 @@ export default class extends Controller {
         const el = document.getElementById(this.idValue)
         if (el) {
             el.classList.add("ring-2", "ring-amber-400", "bg-amber-50")
-            setTimeout(() => el.classList.remove("ring-2", "ring-amber-400", "bg-amber-50"), 1000)
+            this.highlightCleanupTimer = setTimeout(() => {
+                el.classList.remove("ring-2", "ring-amber-400", "bg-amber-50")
+            }, 1000)
             this.cleanup()
             return
         }
