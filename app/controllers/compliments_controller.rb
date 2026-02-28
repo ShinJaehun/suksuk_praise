@@ -1,13 +1,13 @@
 class ComplimentsController < ApplicationController
+  include UserShowDataLoader
+
   before_action :authenticate_user!
   before_action :set_classroom
 
   DUP_WINDOW = 1.second
 
   def create
-    # 1) 교실 접근 가능? (admin or member) -> show?
     authorize @classroom, :show?
-    # 2) 칭찬 권한? (admin or teacher_of?) -> create_compliment?
     authorize @classroom, :create_compliment?
     
     @receiver = @classroom.classroom_memberships.find_by!(user_id: compliment_params[:receiver_id]).user
@@ -15,14 +15,18 @@ class ComplimentsController < ApplicationController
     now = Time.current
 
     @classroom.with_lock do
-      # 같은 교사→같은 학생→같은 교실, 최근 1초 내 칭찬 존재하면 차단
       if Compliment.where(
            classroom_id: @classroom.id,
            giver_id:     current_user.id,
            receiver_id:  @receiver.id
          ).where("given_at >= ?", now - DUP_WINDOW).exists?
 
-        load_user_show_data!(user: @receiver)
+        load_user_show_data!(
+          user: @receiver,
+          classroom: @classroom,
+          include_recent_issued: false,
+          recent_in_classroom: true
+        )
         message = t("compliments.create.duplicate")
         return respond_to do |f|
           f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
@@ -35,7 +39,6 @@ class ComplimentsController < ApplicationController
         end
       end
 
-      # 첫 요청만 여기 도달 → 생성 & 포인트 반영 (같은 트랜잭션)
       ApplicationRecord.transaction(requires_new: true) do
         @created_compliment = Compliment.create!(
           classroom_id: @classroom.id,
@@ -47,7 +50,12 @@ class ComplimentsController < ApplicationController
       end
     end
 
-    load_user_show_data!(user: @receiver)
+    load_user_show_data!(
+      user: @receiver,
+      classroom: @classroom,
+      include_recent_issued: false,
+      recent_in_classroom: true
+    )
 
     respond_to do |f|
       f.html { redirect_to user_path(@receiver, classroom_id: @classroom.id), status: :see_other }
@@ -56,7 +64,12 @@ class ComplimentsController < ApplicationController
     end
 
   rescue ActiveRecord::RecordInvalid => e
-    load_user_show_data!(user: @receiver) if defined?(@receiver) && @receiver.present?
+    load_user_show_data!(
+      user: @receiver,
+      classroom: @classroom,
+      include_recent_issued: false,
+      recent_in_classroom: true
+    ) if defined?(@receiver) && @receiver.present?
     message =  t("compliments.create.failure", detail: e.message) 
     respond_to do |f|
       f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
@@ -78,22 +91,5 @@ class ComplimentsController < ApplicationController
 
   def compliment_params
     params.require(:compliment).permit(:receiver_id)
-  end
-
-  def load_user_show_data!(user:)
-    @compliments = policy_scope(Compliment)
-      .where(receiver_id: user.id, classroom_id: @classroom.id)
-      .includes(:giver, :classroom)
-      .order(given_at: :desc)
-
-    compliments_scope = policy_scope(Compliment).where(receiver_id: user.id, classroom_id: @classroom.id)
-    coupons_scope = policy_scope(UserCoupon).where(user_id: user.id, classroom_id: @classroom.id)
-    @kpi_counts = {
-      points: user.points,
-      today_compliments: compliments_scope.where(given_at: Time.zone.today.all_day).count,
-      issued_count: coupons_scope.where(status: "issued").count,
-      today_issued_coupons: coupons_scope.where(issued_at: Time.zone.today.all_day).count,
-      used_coupons: coupons_scope.where(status: "used").count
-    }
   end
 end
