@@ -3,22 +3,30 @@
   <%= turbo_stream.append "effects" do %>
     <div data-controller="coupon-animation"
          data-coupon-animation-type-value="use"
-         data-coupon-animation-id-value="<%= payload[:id] %>"
+         data-coupon-animation-id-value="<%= dom_id(@coupon) %>"
          data-coupon-animation-title-value="<%= payload[:title] %>"
          data-coupon-animation-image-url-value="<%= payload[:image_url] %>"></div>
   <% end %>
 <% end %>
 
-<%= turbo_stream.remove dom_id(@coupon) %>
-
 <%= turbo_stream.update dom_id(@user, :coupons) do %>
   <%= render partial: "user_coupons/list",
-    locals: { coupons: @issued_coupons, user: @user } %>
+    locals: { coupons: @coupons, user: @user } %>
 <% end %>
 
 <%= turbo_stream.update dom_id(@user, :kpis) do %>
   <%= render partial: "users/kpi_chips",
     locals: { user: @user, kpi_counts: @kpi_counts } %>
+<% end %>
+
+<%= turbo_stream.update dom_id(@user, :recent_issued_coupons) do %>
+  <%= render partial: "user_coupons/issued_coupons",
+    locals: { coupons: @recent_issued_coupons, show_user: false } %>
+<% end %>
+
+<%= turbo_stream.append "effects" do %>
+  <div data-controller="highlight"
+       data-highlight-id-value="<%= dom_id(@coupon, :recent) %>"></div>
 <% end %>
 
 <%#= turbo_stream.update "flash" do %>

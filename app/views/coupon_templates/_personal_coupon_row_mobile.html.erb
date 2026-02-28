@@ -24,16 +24,18 @@
             <%= button_to "←",
                   bump_weight_coupon_template_path(tpl, amount: -10),
                   method: :patch,
-                  form: { class: "contents", data: { controller: "disable-on-submit" } },
+                  form: { data: { controller: "disable-on-submit" } },
                   class: "px-2 py-0.5 text-xs border rounded",
+                  "aria-label": t("coupon_templates.actions.decrease_weight", default: "가중치 감소"),
                   disabled: !row.can_decrease_weight,
                   title: row.decrease_title %>
 
             <%= button_to "→",
                   bump_weight_coupon_template_path(tpl, amount: 10),
                   method: :patch,
-                  form: { class: "contents", data: { controller: "disable-on-submit" } },
+                  form: { data: { controller: "disable-on-submit" } },
                   class: "px-2 py-0.5 text-xs border rounded",
+                  "aria-label": t("coupon_templates.actions.increase_weight", default: "가중치 증가"),
                   disabled: tpl.weight.to_i >= 100,
                   title: (tpl.weight.to_i >= 100) ? "최대 100까지 가능합니다" : nil %>
           </div>
@@ -46,6 +48,7 @@
             method: :patch,
             form: { data: { controller: "disable-on-submit" } },
             class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50",
+            "aria-label": (tpl.active? ? t("coupon_templates.actions.deactivate", default: "비활성") : t("coupon_templates.actions.activate", default: "활성")),
             disabled: !row.can_toggle_active,
             title: row.toggle_title do %>
         <span aria-hidden="true"><%= tpl.active? ? "🟢" : "⚪" %></span>
@@ -54,6 +57,7 @@
       <%= link_to edit_coupon_template_path(tpl),
             data: { turbo_frame: "modal" },
             class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50",
+            "aria-label": t("ui.edit", default: "수정"),
             title: t("ui.edit", default: "수정") do %>
         <span aria-hidden="true">✏</span>
       <% end %>

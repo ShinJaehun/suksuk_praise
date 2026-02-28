@@ -2,7 +2,7 @@
 <% if coupons&.any? %>
   <ul class="space-y-2">
     <% coupons.each do |coupon| %>
-      <li id="<%= dom_id(coupon) %>" class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+      <li id="<%= dom_id(coupon, :recent) %>" class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
         <% if show_user %>
           <span class="font-semibold text-slate-800"><%= coupon.user.name %></span>
           <span class="text-slate-400">→</span>
