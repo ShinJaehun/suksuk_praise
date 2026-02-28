@@ -15,6 +15,7 @@ class UsersController < ApplicationController
 
         # 1) 사용자 페이지 접근 권한
         authorize @user, :show?
+        @can_create_compliment = @classroom.present? && policy(@classroom).create_compliment?
 
         # 2) 칭찬 쿼리(공통 scope) + KPI
         compliments_scope = policy_scope(Compliment).where(receiver_id: @user.id)

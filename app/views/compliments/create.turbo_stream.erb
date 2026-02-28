@@ -1,3 +1,23 @@
 <%= turbo_stream.replace dom_id(@receiver) do %>
   <%= render "users/user", user: @receiver, classroom: @classroom %>
 <% end %>
+
+<% if defined?(@kpi_counts) %>
+  <%= turbo_stream.update dom_id(@receiver, :kpis) do %>
+    <%= render partial: "users/kpi_chips",
+      locals: { user: @receiver, kpi_counts: @kpi_counts } %>
+  <% end %>
+<% end %>
+
+<% if defined?(@compliments) %>
+  <%= turbo_stream.update dom_id(@receiver, :compliments) do %>
+    <%= render partial: "users/compliments_timeline", locals: { compliments: @compliments } %>
+  <% end %>
+<% end %>
+
+<% if defined?(@created_compliment) && @created_compliment.present? %>
+  <%= turbo_stream.append "effects" do %>
+    <div data-controller="highlight"
+         data-highlight-id-value="<%= dom_id(@created_compliment) %>"></div>
+  <% end %>
+<% end %>

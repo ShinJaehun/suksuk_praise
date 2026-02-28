@@ -1,0 +1,23 @@
+<%# locals: (compliments:) %>
+<div class="space-y-3 max-h-[60vh] overflow-auto p-1">
+  <% if compliments.empty? %>
+    <div class="text-sm text-slate-500">아직 칭찬 기록이 없어요.</div>
+  <% else %>
+    <% compliments.each do |c| %>
+      <div id="<%= dom_id(c) %>" class="rounded-lg bg-slate-50 px-3 py-2">
+        <div class="text-sm text-slate-800">
+          <span class="font-semibold"><%= c.giver.name %></span>
+          <span class="text-slate-500">선생님</span>
+          <% if c.classroom %>
+            <span class="mx-1 text-slate-400">·</span>
+            <span class="text-slate-600"><%= c.classroom.name %></span>
+          <% end %>
+          <span class="mx-1 text-slate-400">·</span>
+          <span class="text-xs text-slate-500">
+            <%= l c.given_at, format: :short %>
+          </span>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

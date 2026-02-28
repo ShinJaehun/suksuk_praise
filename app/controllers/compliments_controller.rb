@@ -22,6 +22,7 @@ class ComplimentsController < ApplicationController
            receiver_id:  @receiver.id
          ).where("given_at >= ?", now - DUP_WINDOW).exists?
 
+        load_user_show_data!(user: @receiver)
         message = t("compliments.create.duplicate")
         return respond_to do |f|
           f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
@@ -36,7 +37,7 @@ class ComplimentsController < ApplicationController
 
       # 첫 요청만 여기 도달 → 생성 & 포인트 반영 (같은 트랜잭션)
       ApplicationRecord.transaction(requires_new: true) do
-        Compliment.create!(
+        @created_compliment = Compliment.create!(
           classroom_id: @classroom.id,
           giver_id:     current_user.id,
           receiver_id:  @receiver.id,
@@ -46,6 +47,8 @@ class ComplimentsController < ApplicationController
       end
     end
 
+    load_user_show_data!(user: @receiver)
+
     respond_to do |f|
       f.html { redirect_to user_path(@receiver, classroom_id: @classroom.id), status: :see_other }
       f.turbo_stream { render :create, layout: "application" }
@@ -53,6 +56,7 @@ class ComplimentsController < ApplicationController
     end
 
   rescue ActiveRecord::RecordInvalid => e
+    load_user_show_data!(user: @receiver) if defined?(@receiver) && @receiver.present?
     message =  t("compliments.create.failure", detail: e.message) 
     respond_to do |f|
       f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
@@ -74,5 +78,22 @@ class ComplimentsController < ApplicationController
 
   def compliment_params
     params.require(:compliment).permit(:receiver_id)
+  end
+
+  def load_user_show_data!(user:)
+    @compliments = policy_scope(Compliment)
+      .where(receiver_id: user.id, classroom_id: @classroom.id)
+      .includes(:giver, :classroom)
+      .order(given_at: :desc)
+
+    compliments_scope = policy_scope(Compliment).where(receiver_id: user.id, classroom_id: @classroom.id)
+    coupons_scope = policy_scope(UserCoupon).where(user_id: user.id, classroom_id: @classroom.id)
+    @kpi_counts = {
+      points: user.points,
+      today_compliments: compliments_scope.where(given_at: Time.zone.today.all_day).count,
+      issued_count: coupons_scope.where(status: "issued").count,
+      today_issued_coupons: coupons_scope.where(issued_at: Time.zone.today.all_day).count,
+      used_coupons: coupons_scope.where(status: "used").count
+    }
   end
 end
