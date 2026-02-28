@@ -19,7 +19,7 @@ class UsersController < ApplicationController
             user: @user,
             classroom: @classroom,
             include_recent_issued: true,
-            recent_in_classroom: false
+            recent_in_classroom: true
         )
     end
 
