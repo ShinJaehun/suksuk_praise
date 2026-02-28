@@ -55,9 +55,10 @@ class UserCouponsController < ApplicationController
 
   def load_recent_issued_coupons!(user:, classroom_id:)
     @issued_coupons = policy_scope(UserCoupon)
-      .where(user_id: user.id, classroom_id: classroom_id, status: "issued")
-      .includes(:coupon_template)
+      .where(user_id: user.id, classroom_id: classroom_id)
+      .includes(:coupon_template, :user)
       .order(issued_at: :desc)
+      .limit(10)
   end
 
   def build_kpi_counts_for(user:, classroom_id:)
