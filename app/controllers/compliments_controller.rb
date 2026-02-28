@@ -1,13 +1,13 @@
 class ComplimentsController < ApplicationController
+  include UserShowDataLoader
+
   before_action :authenticate_user!
   before_action :set_classroom
 
   DUP_WINDOW = 1.second
 
   def create
-    # 1) 교실 접근 가능? (admin or member) -> show?
     authorize @classroom, :show?
-    # 2) 칭찬 권한? (admin or teacher_of?) -> create_compliment?
     authorize @classroom, :create_compliment?
     
     @receiver = @classroom.classroom_memberships.find_by!(user_id: compliment_params[:receiver_id]).user
@@ -15,13 +15,18 @@ class ComplimentsController < ApplicationController
     now = Time.current
 
     @classroom.with_lock do
-      # 같은 교사→같은 학생→같은 교실, 최근 1초 내 칭찬 존재하면 차단
       if Compliment.where(
            classroom_id: @classroom.id,
            giver_id:     current_user.id,
            receiver_id:  @receiver.id
          ).where("given_at >= ?", now - DUP_WINDOW).exists?
 
+        load_user_show_data!(
+          user: @receiver,
+          classroom: @classroom,
+          include_recent_issued: false,
+          recent_in_classroom: true
+        )
         message = t("compliments.create.duplicate")
         return respond_to do |f|
           f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
@@ -34,9 +39,8 @@ class ComplimentsController < ApplicationController
         end
       end
 
-      # 첫 요청만 여기 도달 → 생성 & 포인트 반영 (같은 트랜잭션)
       ApplicationRecord.transaction(requires_new: true) do
-        Compliment.create!(
+        @created_compliment = Compliment.create!(
           classroom_id: @classroom.id,
           giver_id:     current_user.id,
           receiver_id:  @receiver.id,
@@ -46,6 +50,13 @@ class ComplimentsController < ApplicationController
       end
     end
 
+    load_user_show_data!(
+      user: @receiver,
+      classroom: @classroom,
+      include_recent_issued: false,
+      recent_in_classroom: true
+    )
+
     respond_to do |f|
       f.html { redirect_to user_path(@receiver, classroom_id: @classroom.id), status: :see_other }
       f.turbo_stream { render :create, layout: "application" }
@@ -53,6 +64,12 @@ class ComplimentsController < ApplicationController
     end
 
   rescue ActiveRecord::RecordInvalid => e
+    load_user_show_data!(
+      user: @receiver,
+      classroom: @classroom,
+      include_recent_issued: false,
+      recent_in_classroom: true
+    ) if defined?(@receiver) && @receiver.present?
     message =  t("compliments.create.failure", detail: e.message) 
     respond_to do |f|
       f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
@@ -75,4 +92,5 @@ class ComplimentsController < ApplicationController
   def compliment_params
     params.require(:compliment).permit(:receiver_id)
   end
+
 end
