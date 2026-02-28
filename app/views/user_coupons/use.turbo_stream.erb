@@ -3,7 +3,7 @@
   <%= turbo_stream.append "effects" do %>
     <div data-controller="coupon-animation"
          data-coupon-animation-type-value="use"
-         data-coupon-animation-id-value="<%= payload[:id] %>"
+         data-coupon-animation-id-value="<%= dom_id(@coupon, :recent) %>"
          data-coupon-animation-title-value="<%= payload[:title] %>"
          data-coupon-animation-image-url-value="<%= payload[:image_url] %>"></div>
   <% end %>
