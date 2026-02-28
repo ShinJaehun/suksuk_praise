@@ -22,7 +22,7 @@
           <%= button_to "←",
                 bump_weight_coupon_template_path(tpl, amount: -10),
                 method: :patch,
-                form: { class: "contents", data: { controller: "disable-on-submit" } },
+                form: { data: { controller: "disable-on-submit" } },
                 class: "px-2 py-0.5 text-xs border rounded",
                 disabled: !row.can_decrease_weight,
                 title: row.decrease_title %>
@@ -30,7 +30,7 @@
           <%= button_to "→",
                 bump_weight_coupon_template_path(tpl, amount: 10),
                 method: :patch,
-                form: { class: "contents", data: { controller: "disable-on-submit" } },
+                form: { data: { controller: "disable-on-submit" } },
                 class: "px-2 py-0.5 text-xs border rounded",
                 disabled: tpl.weight.to_i >= 100,
                 title: (tpl.weight.to_i >= 100) ? "최대 100까지 가능합니다" : nil %>
