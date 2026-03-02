@@ -13,7 +13,14 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def create
-    @user = User.new(user_params.merge(role: "student", points: 0, avatar: random_avatar))
+    used_indices = used_avatar_indices_in_classroom
+    @user = User.new(
+      user_params.merge(
+        role: "student",
+        points: 0,
+        default_avatar_index: pick_avatar_index(used_indices)
+      )
+    )
     if @user.save
       @classroom.classroom_memberships.create!(user: @user, role: "student")
 
@@ -52,17 +59,21 @@ class ClassroomStudentsController < ApplicationController
     created = []
     prefix = Array('A'..'Z').sample(4).join
 
+    used_indices = used_avatar_indices_in_classroom
+
     ApplicationRecord.transaction do
       count.times do |i|
         name = format("%s%02d", prefix, i + 1)
         email = "#{name}@suksuk.or.kr"
+        avatar_index = pick_avatar_index(used_indices)
+        used_indices << avatar_index
         user = User.create!(
           name: name,
           email: email,
           password: "123456",
           role: "student",
           points: 0,
-          avatar: random_avatar
+          default_avatar_index: avatar_index
         )
         @classroom.classroom_memberships.create!(user: user, role: "student")
         created << user
@@ -96,11 +107,20 @@ class ClassroomStudentsController < ApplicationController
     params.require(:user).permit(:name, :email, :password)
   end
 
-  def random_avatar
-    "avatars/avatar_#{rand(1..30)}.png"
-  end
-
   def authorize_manage!
     authorize @classroom, :manage_members?
+  end
+
+  def used_avatar_indices_in_classroom
+    @classroom.classroom_memberships
+      .joins(:user)
+      .where.not(users: { default_avatar_index: nil })
+      .distinct
+      .pluck("users.default_avatar_index")
+  end
+
+  def pick_avatar_index(used_indices)
+    available = (1..32).to_a - used_indices
+    available.sample || rand(1..32)
   end
 end

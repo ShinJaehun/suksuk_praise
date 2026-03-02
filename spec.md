@@ -1,84 +1,140 @@
-# SPEC 4 — 학생 화면 “칭찬하기” Turbo 로그 추가 + 하이라이트
+# SPEC --- User Avatar (Default + Custom Upload)
 
 ## 1. Background
 
-현재 상태:
-- 학생 상세 화면: `/classrooms/:classroom_id/users/:id` (예: `/classrooms/1/users/9`)에서
-  - 보유 쿠폰(사용) / 최근 발급 쿠폰 / 칭찬 타임라인 섹션이 렌더링된다.
-- 쿠폰 발급/사용은 Turbo Stream으로 프레임을 갱신하며, 효과 트리거는 `turbo_stream.append "effects"` 패턴을 사용한다.
-- 하이라이트는 `highlight_controller`가 `data-highlight-id-value`로 DOM id를 찾아 1초 강조 후 트리거 노드를 제거(cleanup)한다.
-- 칭찬 타임라인은 현재 서버 렌더링된 리스트(또는 테이블)로만 표시되며, “즉시 칭찬 로그 추가” 액션 버튼은 없다(또는 Turbo로 연결되어 있지 않다).
+현재 상태: - User 모델에는 아바타 개념이 존재하지 않음. - 학생 화면 및
+교실 화면에서 사용자 식별을 텍스트 기반으로만 처리 중. - 기본 프로필
+이미지 시스템이 없음.
 
-문제:
-- 교사가 학생 화면에서 즉시 “칭찬하기”를 누르고 기록을 남겼을 때,
-  타임라인에 로그가 **즉시 반영되지 않거나**(전체 새로고침 필요),
-  반영되더라도 방금 추가된 항목이 **시각적으로 구분되지 않는다**.
+문제: - 사용자 시각적 구분이 어려움. - 교실 화면에서 학생 리스트
+가독성이 낮음. - 커스텀 프로필 이미지 업로드 기능이 없음.
 
-왜 이 작업이 필요한가:
-- 교실 운영 UX에서 “칭찬 클릭 → 즉시 기록 확인” 피드백 루프를 만든다.
-- 기존 Turbo/Effects/Highlight 패턴을 재사용하여 일관성을 유지한다.
+왜 이 작업이 필요한가: - 사용자 경험 개선 (UX) - 교실 화면 가독성 향상 -
+향후 개인화 기능 확장 기반 마련 - Rails way 기반의 일관된 이미지 처리
+구조 도입
 
----
+------------------------------------------------------------------------
 
 ## 2. Scope (이번 작업 범위)
 
 ### 포함
 
-#### A) 학생 화면에 “칭찬하기” 버튼 추가
-- 경로: `/classrooms/:classroom_id/users/:id`
-- 버튼 클릭 시 서버에 “칭찬 생성(create)” 요청을 보낸다.
-- 버튼은 Turbo 요청을 사용하며, 중복 제출 방지는 기존 `disable-on-submit` 패턴을 따른다.
-
-#### B) Turbo Stream으로 칭찬 타임라인 즉시 갱신
-- 칭찬 생성 성공 시:
-  - 칭찬 타임라인 프레임(또는 컨테이너)을 Turbo Stream으로 갱신(append 또는 update)한다.
-  - “방금 생성된 칭찬” 항목이 타임라인에 즉시 나타나야 한다.
-
-#### C) 방금 추가된 칭찬 로그 하이라이트
-- 성공 시 `turbo_stream.append "effects"`로 highlight 트리거를 추가한다.
-- 타겟은 “방금 생성된 칭찬 로그 row DOM id”를 사용한다.
-- `highlight_controller`는 기존과 동일하게:
-  - 오버레이가 떠 있으면 대기(있을 경우)
-  - 대상 element에 highlight 적용 후 1초 뒤 제거
-  - trigger 노드는 cleanup으로 누적 방지
-
-#### D) Effects cleanup 보장
-- highlight 트리거는 반드시 self-remove되어 `#effects` 하위에 누적되지 않는다.
+-   모든 User(teacher, student, admin)에 avatar 개념 추가
+-   기본 랜덤 썸네일 자동 할당
+-   ActiveStorage 기반 커스텀 업로드 지원
+-   user show 화면에서 512px 이미지 표시
+-   classrooms show 화면에서 128px 이미지 표시
+-   seed 생성 시 기본 썸네일 자동 배정
+-   default_avatar_index 컬럼 추가
+-   기본 아바타 asset 구조 및 네이밍 규칙 명세화
 
 ### 제외 (이번 작업에서 하지 않을 것)
-- 칭찬 도메인 모델/정책의 대규모 리팩토링
-- 칭찬 편집/삭제 기능
-- 실시간 방송(ActionCable/WebSocket) 도입
-- 타임라인 UI 레이아웃 대규모 변경(최소 변경으로 버튼/프레임만 추가)
 
----
+-   이미지 크롭 UI
+-   Drag & Drop 업로드 UI
+-   CDN 구성
+-   Avatar 선택 UI
+-   기존 정책/권한 구조 변경
+-   썸네일 관리용 Admin UI
+
+------------------------------------------------------------------------
 
 ## 3. Constraints (제약 조건)
 
-- 기존 동작 동일 유지 (기존 쿠폰 기능/프레임/애니메이션 영향 없음)
-- Public interface 변경 금지 (기존 URL/프레임 id 유지)
-- Turbo frame id 유지 (칭찬 타임라인 영역에 안정적인 frame/container id 유지)
-- Pundit 정책 구조 유지 (칭찬 생성 권한은 기존 정책을 따른다)
-- 기존 테스트 깨지지 않아야 함
-- `effects` 트리거 누적 방지 (cleanup 필수)
+-   기존 동작 동일 유지
+-   Public interface 변경 금지
+-   Turbo frame id 유지
+-   Pundit 정책 구조 유지
+-   기존 테스트 깨지지 않아야 함
+-   기본 아바타는 static asset으로 유지 (ActiveStorage에 저장하지 않음)
+-   DB에는 index 값만 저장 (파일 경로 직접 저장 금지)
+-   파일 네이밍 규칙은 명세와 반드시 일치해야 함
 
----
+------------------------------------------------------------------------
 
-## 4. Acceptance Criteria (완료 조건)
+## 4. Asset Structure & Naming Convention
 
-- [ ] `/classrooms/:classroom_id/users/:id` 화면에 “칭찬하기” 버튼이 노출된다. (권한 조건이 있다면 해당 조건에 맞게 노출)
-- [ ] 버튼 클릭 시 칭찬 로그가 DB에 생성된다.
-- [ ] 생성 직후 칭찬 타임라인 영역이 Turbo Stream으로 즉시 갱신된다.
-- [ ] 방금 생성된 칭찬 항목이 타임라인에서 1초간 highlight 된다.
-- [ ] highlight 트리거 노드는 DOM에서 제거되어 `#effects` 하위에 누적되지 않는다.
-- [ ] 중복 클릭/연타 시 UX가 깨지지 않는다(기존 disable-on-submit 패턴 준수).
+### 4.1 Directory
+
+기본 아바타 파일은 다음 경로에 위치해야 한다:
+
+app/assets/images/avatars/
+
+### 4.2 File Naming Rule
+
+각 기본 아바타는 두 가지 사이즈를 가진다:
+
+-   512px (User show 용)
+-   128px (Classrooms show 용)
+
+파일명 규칙:
+
+user_profile_XX_512.png user_profile_XX_128.png
+
+여기서: - XX는 01 \~ 32까지의 두 자리 숫자 - 총 32 세트 - 전체 파일 수:
+64개
+
+예:
+
+user_profile_01_512.png user_profile_01_128.png user_profile_32_512.png
+user_profile_32_128.png
+
+### 4.3 Index Mapping
+
+DB에는 다음 값만 저장한다:
+
+default_avatar_index : integer (1 \~ 32)
+
+파일 매핑은 다음 규칙을 따른다:
+
+index = 7
+
+→ user_profile_07_512.png → user_profile_07_128.png
+
+------------------------------------------------------------------------
+
+## 5. Avatar Selection Logic
+
+### 5.1 Creation Rule
+
+User 생성 시:
+
+-   avatar가 attach 되어 있지 않고
+-   default_avatar_index가 nil이면
+-   1..32 범위에서 랜덤 할당
+
+------------------------------------------------------------------------
+
+## 6. Rendering Logic (Single Source of Truth)
+
+표시 우선순위:
+
+if user.avatar.attached? → ActiveStorage image else → asset avatar
+(default_avatar_index 기반)
+
+------------------------------------------------------------------------
+
+## 7. Acceptance Criteria (완료 조건)
+
+-   [ ] users 테이블에 default_avatar_index 컬럼이 존재한다.
+-   [ ] app/assets/images/avatars/ 경로에 64개 파일이 존재한다.
+-   [ ] 파일 네이밍 규칙이 명세와 일치한다.
+-   [ ] User 생성 시 avatar 미첨부 상태이면 1\~32 중 랜덤 index가
+    저장된다.
+-   [ ] user show 화면에서 512px 기본/커스텀 이미지가 정상 표시된다.
+-   [ ] classrooms show 화면에서 128px 기본/커스텀 이미지가 정상
+    표시된다.
+-   [ ] 커스텀 이미지 업로드 시 기본 썸네일보다 우선 적용된다.
+-   [ ] seed 실행 시 각 user가 기본 썸네일을 가진다.
+-   [ ] 기존 테스트가 모두 통과한다.
 
 모든 항목이 충족되면 작업 완료로 간주한다.
 
----
+------------------------------------------------------------------------
 
-## 5. Risks / Open Questions
+## 8. Risks / Open Questions
 
-- 칭찬 타임라인이 현재 “프레임 없음/단순 반복 렌더”라면, 안정적인 Turbo 갱신을 위해 frame id(예: `dom_id(@user, :compliments)` 또는 `dom_id(@classroom, :compliments_for_user_#{@user.id})`)를 추가해야 할 수 있다.
-- 칭찬 항목 row에 안정적인 DOM id가 없으면(예: `<div id="<%= dom_id(c) %>">`), highlight 타겟 지정을 위해 id 추가가 필요하다.
-- 동일 화면에서 쿠폰 애니메이션 오버레이와 타임라인 하이라이트가 동시에 발생할 수 있는지, 발생한다면 대기 로직이 UX에 영향을 주는지 확인이 필요하다.
+-   32개 기본 썸네일 개수는 향후 증가 가능한가?
+-   teacher/admin도 랜덤 배정이 정책적으로 적절한가?
+-   default_avatar_index NULL 허용 여부를 유지할 것인가?
+-   asset 파일 누락 시 fallback 전략은 무엇인가?

@@ -5,8 +5,10 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
 
   validates :name, presence: true, length: { maximum: 30 }
+  validates :default_avatar_index, inclusion: { in: 1..32 }, allow_nil: true
 
   enum role: { student: "student", teacher: "teacher", admin: "admin" }
+  has_one_attached :avatar
 
   # 교실 멤버십은 유저 삭제 시 같이 삭제(조인 테이블)
   has_many :classroom_memberships, dependent: :destroy
@@ -29,8 +31,14 @@ class User < ApplicationRecord
   has_many :coupon_templates, through: :user_coupons
 
   after_commit :setup_default_coupons_for_teacher, on: :create
+  before_validation :assign_default_avatar_index, on: :create
 
   private
+
+  def assign_default_avatar_index
+    return if avatar.attached? || default_avatar_index.present?
+    self.default_avatar_index = rand(1..32)
+  end
 
   def setup_default_coupons_for_teacher
     return unless teacher?
