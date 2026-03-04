@@ -12,28 +12,31 @@ User.create!(
   email: 'a@a',
   password: 'password',
   name: '관리자에이',
-  role: 'admin'
+  role: 'admin',
+  default_avatar_index: rand(1..32)
 )
 
 teacherB = User.create!(
   email: 'b@b',
   password: 'password',
   name: '티쳐비',
-  role: 'teacher'
+  role: 'teacher',
+  default_avatar_index: rand(1..32)
 )
 
 teacherT = User.create!(
   email: 't@t',
   password: 'password',
   name: '티쳐티',
-  role: 'teacher'
+  role: 'teacher',
+  default_avatar_index: rand(1..32)
 )
 
 students = 30.times.map do |i|
   User.create!(
     name: "학생#{i + 1}",
     role: 'student',
-    avatar: "avatars/avatar_#{(i % 30) + 1}.png",
+    default_avatar_index: rand(1..32),
     points: 0,
     email: "student#{i + 1}@school.com", # Devise 필수
     password: 'password'
