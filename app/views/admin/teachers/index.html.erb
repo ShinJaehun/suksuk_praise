@@ -10,7 +10,7 @@
     <table class="min-w-[760px] w-full text-sm">
       <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
         <tr>
-          <th class="px-4 py-3 text-left">이름</th>
+          <th class="px-4 py-3 text-left">교사</th>
           <th class="px-4 py-3 text-left">이메일</th>
           <th class="px-4 py-3 text-left">생성일</th>
           <th class="px-4 py-3 text-left">담임 교실</th>
@@ -22,7 +22,17 @@
         <% @rows.each do |row| %>
           <% t = row.teacher %>
           <tr class="border-t border-slate-100">
-            <td class="px-4 py-3"><%= t.name %></td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <%= user_avatar_image(
+                      t,
+                      size: 128,
+                      class: "h-9 w-9 rounded-xl object-cover border border-slate-200 bg-slate-100",
+                      alt: "#{t.name} avatar"
+                    ) %>
+                <span class="font-medium text-slate-800"><%= t.name %></span>
+              </div>
+            </td>
             <td class="px-4 py-3"><%= t.email %></td>
             <td class="px-4 py-3"><%= l(t.created_at, format: :short) %></td>
             <td class="px-4 py-3">
@@ -36,7 +46,7 @@
             <td class="px-4 py-3 text-right">
               <%= link_to "수정",
                     edit_admin_teacher_path(t),
-                    class: "text-blue-700 underline hover:text-blue-900" %>
+                    class: "inline-flex items-center rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100" %>
             </td>
           </tr>
         <% end %>
