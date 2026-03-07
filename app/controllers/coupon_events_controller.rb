@@ -6,13 +6,9 @@ class CouponEventsController < ApplicationController
 
     # 드롭다운 데이터 준비
     @classrooms = policy_scope(Classroom).select(:id, :name).order(:name)
-    @templates  = CouponTemplate.active.select(:id, :title).order(:title)
 
     @classroom_options = [[t('reports.defaults.all_classrooms', default: '전체 교실'), '']] +
                          @classrooms.map { |c| [c.name, c.id] }
-
-    @template_options = [[t('reports.defaults.all_templates', default: '전체 쿠폰'), '']] +
-                        @templates.map { |t| [t.title, t.id] }
 
     @action_options = [
       [t('reports.defaults.all_actions', default: '전체 액션'), ''],
@@ -34,7 +30,6 @@ class CouponEventsController < ApplicationController
            .includes(:actor, :classroom, :coupon_template, user_coupon: :user)
 
     base = base.where(classroom_id: params[:classroom_id]) if params[:classroom_id].present?
-    base = base.where(coupon_template_id: params[:template_id]) if params[:template_id].present?
     base = base.where(action: params[:event_action]) if params[:event_action].present?
 
     period_key = params[:period].presence || 'last_7_days'
