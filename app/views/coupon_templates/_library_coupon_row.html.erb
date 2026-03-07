@@ -1,5 +1,10 @@
 <tr class="border-t">
-  <td class="py-2 text-left"><%= tpl.title %></td>
+  <td class="py-2 text-left">
+    <div class="flex items-center gap-3">
+      <%= coupon_thumbnail(tpl) %>
+      <div class="font-medium truncate max-w-[14rem]"><%= tpl.title %></div>
+    </div>
+  </td>
 
   <td class="py-2 text-center font-mono tabular-nums">
     <%= tpl.weight %>
