@@ -5,6 +5,11 @@
   <% end %>
 <% end %>
 
+<%# 교실 화면 학생 카드(포인트) 즉시 갱신 %>
+<%= turbo_stream.replace dom_id(@receiver) do %>
+  <%= render partial: "users/user", locals: { user: @receiver, classroom: @classroom } %>
+<% end %>
+
 <% if defined?(@compliments) %>
   <%= turbo_stream.update dom_id(@receiver, :compliments) do %>
     <%= render partial: "users/compliments_timeline", locals: { compliments: @compliments } %>

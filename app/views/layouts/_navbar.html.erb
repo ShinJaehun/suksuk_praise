@@ -31,12 +31,18 @@
   <!-- Right: User / Hamburger -->
   <div class="flex items-center gap-3">
     <% if current_user %>
-      <!-- Desktop: 유저 정보 간단 표시 -->
-      <div class="hidden md:flex flex-col items-end text-xs text-gray-600">
-        <span><%= current_user.name.presence || current_user.email %></span>
-        <span class="text-[10px] text-gray-400">
-          <%= current_user.role %>
-        </span>
+      <!-- Desktop: 아바타 + 유저 정보 -->
+      <div class="hidden md:flex items-center gap-2">
+        <%= user_avatar_image(
+              current_user,
+              size: 128,
+              class: "h-8 w-8 rounded-xl object-cover border border-slate-200 bg-slate-100",
+              alt: "#{current_user.name.presence || current_user.email} avatar"
+            ) %>
+        <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
+          <span><%= current_user.name.presence || current_user.email %></span>
+          <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
+        </div>
       </div>
 
       <!-- Desktop: Sign out -->
@@ -48,9 +54,17 @@
       <!-- Mobile: Hamburger + Dropdown -->
       <details class="md:hidden relative">
         <summary class="list-none flex items-center gap-2 cursor-pointer select-none">
-          <div class="hidden min-[380px]:flex flex-col items-end text-xs text-gray-600">
-            <span><%= current_user.name.presence || current_user.email %></span>
-            <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
+          <div class="hidden min-[380px]:flex items-center gap-2">
+            <%= user_avatar_image(
+                  current_user,
+                  size: 128,
+                  class: "h-7 w-7 rounded-xl object-cover border border-slate-200 bg-slate-100",
+                  alt: "#{current_user.name.presence || current_user.email} avatar"
+                ) %>
+            <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
+              <span><%= current_user.name.presence || current_user.email %></span>
+              <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
+            </div>
           </div>
           <div class="w-6 h-6 flex flex-col justify-between">
             <span class="block h-[2px] bg-gray-700"></span>
