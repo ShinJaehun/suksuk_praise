@@ -79,6 +79,8 @@ test:
 #
 production:
   <<: *default
-  database: suksuk_praise_production
-  username: suksuk_praise
+  database: <%= ENV.fetch("SUKSUK_PRAISE_DATABASE_NAME", "suksuk_praise_production") %>
+  username: <%= ENV.fetch("SUKSUK_PRAISE_DATABASE_USER", "suksuk_praise") %>
   password: <%= ENV["SUKSUK_PRAISE_DATABASE_PASSWORD"] %>
+  host: <%= ENV.fetch("SUKSUK_PRAISE_DATABASE_HOST", "db") %>
+  port: <%= ENV.fetch("SUKSUK_PRAISE_DATABASE_PORT", 5432) %>

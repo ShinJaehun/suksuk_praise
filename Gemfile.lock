@@ -377,6 +377,7 @@ DEPENDENCIES
   rails_db
   rubocop
   selenium-webdriver
+  simple_form
   sprockets-rails
   stimulus-rails
   tailwindcss-rails

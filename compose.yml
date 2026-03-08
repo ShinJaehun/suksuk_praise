@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16
+    container_name: suksuk_praise_db
+    environment:
+      POSTGRES_DB: suksuk_praise_production
+      POSTGRES_USER: suksuk_praise
+      POSTGRES_PASSWORD: ${SUKSUK_PRAISE_DATABASE_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U suksuk_praise -d suksuk_praise_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: suksuk-praise:local
+    container_name: suksuk_praise_web
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      FORCE_SSL: "false"
+      SUKSUK_PRAISE_DATABASE_NAME: suksuk_praise_production
+      SUKSUK_PRAISE_DATABASE_USER: suksuk_praise
+      SUKSUK_PRAISE_DATABASE_PASSWORD: ${SUKSUK_PRAISE_DATABASE_PASSWORD}
+      SUKSUK_PRAISE_DATABASE_HOST: db
+      SUKSUK_PRAISE_DATABASE_PORT: 5432
+    ports:
+      - "3000:3000"
+    command: ["./bin/rails", "server", "-b", "0.0.0.0"]
+
+volumes:
+  postgres_data:

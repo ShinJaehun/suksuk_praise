@@ -78,6 +78,7 @@ gem 'rails-i18n', '~> 7.0'
 # pagination
 gem "pagy"
 
-
+# simleform : deploy
+gem "simple_form"
 
 
