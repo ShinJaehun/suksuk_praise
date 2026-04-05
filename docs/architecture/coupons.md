@@ -125,7 +125,7 @@ end
 
 - `action`: `issued` or `used`
 - `metadata`: 발급 기준, 학생 정보 등 포함
-- Admin/Teacher 로그 조회 페이지 `/admin/coupon_events#index`
+- Admin/Teacher 로그 조회 페이지 `/coupon_events#index`
 
 ---
 
@@ -147,7 +147,7 @@ end
 
 | 액션 | 설명 |
 |------|------|
-| index | 내 쿠폰(@mine) + 라이브러리(@library) 프레임 렌더 |
+| index | 내 쿠폰(@personal) + 라이브러리(@library) 프레임 렌더 |
 | rebalance_equal | WeightBalancer로 균등 분배 |
 | create / update / toggle_active / destroy | personal 관리용, 후처리로 normalize 호출 |
 | adopt | library 템플릿을 personal로 복제 |
