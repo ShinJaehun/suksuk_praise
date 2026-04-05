@@ -1,4 +1,4 @@
-# SPEC --- User Avatar (Default + Custom Upload)
+# Avatar: Default Asset + Custom Upload Spec
 
 ## 1. Background
 
