@@ -1,117 +1,88 @@
-# AGENTS.md — suksuk_praise (쑥쑥칭찬통장) Codex 작업 규칙
+# AGENTS.md
+
+## 목적
+이 문서는 `suksuk_praise` 저장소에서 작업하는 에이전트(Codex 등)가
+프로젝트의 기본 원칙과 문서 참조 순서를 일관되게 따르도록 하기 위한 안내서다.
 
 ---
 
-## 1. 작업 원칙 (Engineering Principles)
+## 기본 작업 원칙
 
-- Rails way를 최우선으로 따른다.
-  비표준 접근이 필요하면 반드시:
-  (1) 왜 필요한지
-  (2) Rails way 대안
-  (3) 트레이드오프
-  를 함께 제시한다.
-
-- "기존 동작 동일"이 최우선이다.
-  리팩토링은 동작/테스트 유지가 목표다.
-  Public interface(라우트, 파라미터, 응답 구조)를 변경하지 않는다.
-
-- 변경은 항상 작고 안전한 단위로 나눈다.
-  대규모 일괄 변경 금지.
-
-- 기본 브랜치는 `main`이다.
-  가능하면 작업 단위별 브랜치를 생성해 작업하고,
-  검증/커밋 후 `main`에 머지한다.
-
-- 새로운 패치가 기존 동작을 대체하는 경우,
-  이전 구현은 반드시 제거한다.
-  Do not introduce parallel implementations.
-  조건부 공존(if flag 등)으로 병렬 유지하지 않는다.
-
-- Service 객체는 비즈니스 로직 전용이다.
-  컨트롤러는 orchestration(흐름 제어)만 담당한다.
-
-- Turbo Stream 응답은 항상 `layout: "application"`을 유지한다.
-  기존 Turbo frame id 명명 규칙을 깨지 않는다.
-  Turbo effects/하이라이트는 누적되지 않도록 self-cleanup을 보장한다.
-
-- N+1 쿼리를 방지한다.
-  목록/최근 발급 등은 includes/preload를 고려한다.
-
-- 먼저 읽고(탐색) → 설계/변경 제안 → 승인 후 수정한다.
-  바로 수정하지 말고 diff로 제시한다.
-
-- 테스트/시드/마이그레이션이 얽히는 경우,
-  영향 범위와 적용 순서를 먼저 제안한다.
-
-- 마이그레이션은 기본적으로 단순하게 유지한다.
-  기존 DB 유지보다 DB 초기화(`db:drop db:create db:migrate db:seed`) 전제를 우선하며,
-  데이터 이관/백필/레거시 호환을 위한 복잡한 마이그레이션은
-  명시적 요청이 있을 때만 작성한다.
+- Rails 관례(Rails way)를 최우선으로 따른다.
+- 꼭 필요하지 않다면 비표준 구조/과한 추상화/과한 메타프로그래밍을 피한다.
+- 기존 public behavior를 함부로 바꾸지 않는다.
+- 작은 단위로 읽고, 작은 단위로 수정하고, 변경 이유를 분명히 남긴다.
+- UI 문구/마크업만 보고 성급히 수정하지 말고, 관련 정책/도메인 규칙부터 확인한다.
 
 ---
 
-## 2. 권한/정책 (Pundit Rules)
+## 문서 우선순위
 
-- authorize / policy_scope 호출은 컨트롤러에서만 수행한다.
-- 뷰에서 policy(...) 직접 호출을 피한다.
+작업 전 아래 문서를 가능한 먼저 확인한다.
 
-  - 전역 체크는 helper 사용 (예: can_view_coupon_events?)
-  - 리스트의 per-item 권한은
-    컨트롤러에서 ID 목록(@destroyable_ids 등)을 계산하여
-    locals로 내려받아 렌더링한다.
-
-- policy_scope는 항상 명시적으로 호출한다.
-  암묵적 접근 금지.
+1. `AGENTS.md`
+2. `spec.md`
+3. 관련 도메인 문서 (`docs/architecture/*.md`)
+4. 관련 작업 스펙 (`docs/specs/*.md`)
+5. 테스트 전략 (`docs/testing/*.md`)
+6. 운영 문서 (`docs/ops/*.md`)
 
 ---
 
-## 3. 도메인 핵심 규칙 (Domain Invariants)
+## 아키텍처/도메인 원칙
 
-### CouponTemplate
-
-- personal(bucket=personal)의 active/weight는 인바리언트로 동기화한다.
-  `weight = 0 ⇄ active = false` 를 항상 유지한다.
-
-- library(bucket=library):
-  - admin만 생성/수정/비활성화/weight 편집 가능
-  - teacher는 adopt만 가능
-
-- 병렬 정책(legacy 규칙 + 신규 규칙 동시 유지)을 만들지 않는다.
-  도메인 규칙 변경 시 기존 규칙을 제거한다.
+- role은 `admin`, `teacher`, `student`를 기준으로 다룬다.
+- 권한 판단은 controller/policy 중심으로 유지한다.
+- view에서 직접 복잡한 권한 조건을 늘리지 않는다.
+- coupon/compliment 규칙은 문서화된 불변식을 우선 기준으로 삼는다.
+- Turbo 응답과 HTML 응답은 둘 다 깨지지 않도록 주의한다.
 
 ---
 
-## 4. 커뮤니케이션 규칙 (Codex Output Style)
+## 변경 승인 원칙
 
-- 긴 사전 선언문은 쓰지 않는다.
-- 필요한 확인/결정 포인트만 간단히 제시한다.
-
-코드 변경이 필요한 경우 반드시 다음을 포함한다:
-
-1. 바꿀 파일 목록
-2. 위험 포인트
-3. 최소 diff
-4. 검증 방법 (rails test/spec/console)
-
-불필요한 설명은 생략한다.
+- 기본적으로 파일을 바로 수정하지 말고, 먼저 변경 계획과 diff/patch 요약을 제시한다.
+- 사용자가 승인하기 전에는 실제 파일 수정(write)을 하지 않는다.
+- 문서 작업도 동일하게 적용한다.
+- 사용자가 “바로 반영해도 된다”고 명시한 경우에만 즉시 수정한다.
+- 변경 범위가 클 경우, 파일별 수정 계획을 먼저 요약한다.
 
 ---
 
-## 5. spec 기반 작업 규칙 (codex_review workflow)
+## spec 기반 작업 규칙 (codex_review workflow)
 
 - `spec.md`는 프로젝트 루트의 SSOT다. 작업 시작 전에 반드시 읽고, 구현은 spec에 맞춰 진행한다.
 - 기본 순서는 `pull_spec → 분석 → diff 제시/승인 → 수정 → commit → send_review`를 따른다.
-- spec 변경이 필요하면 먼저 제안하고 승인 후 반영한다. (임의로 spec 밖의 기능을 추가하지 않는다.)
+- spec 변경이 필요하면 먼저 제안하고 승인 후 반영한다. 임의로 spec 밖의 기능을 추가하지 않는다.
 - 별도 지시가 없으면 `spec.md`는 커밋에 포함한다.
-- 작업 결과는 git 커밋으로 남긴다. 커밋 메시지는 반드시 상세히 작성한다.
+- 작업 결과는 git 커밋으로 남긴다. 커밋 메시지는 상세히 작성한다.
 
 ### 커밋 메시지 규칙
+
 - 최소 포함 항목:
   - What: 무엇을 변경했는가
   - Why: 왜 변경했는가
   - Risk: 영향/부작용(있다면)
   - Verify: 검증 방법(실행한 테스트/절차)
-- 짧은 한 줄 메시지 금지.
-- commit message는 한국어 우선.
+- 짧은 한 줄 메시지는 피한다.
+- commit message는 한국어 우선이다.
 
 ---
+
+## 테스트 원칙
+
+- 테스트의 목적은 coverage 수치가 아니라 confidence 확보이다.
+- 핵심 도메인 규칙, 권한, 멱등성, request 흐름을 우선 테스트한다.
+- brittle한 HTML 구조 테스트는 지양한다.
+- system spec은 핵심 happy path 중심으로 최소화한다.
+- RSpec 스타일은 readable > clever 원칙을 따른다.
+- 과도한 shared context / 과도한 helper / 과도한 abstraction을 피한다.
+
+---
+
+## 작업 완료 후 기대사항
+
+- 변경 이유를 짧게 설명할 수 있어야 한다.
+- 가능하면 관련 테스트를 함께 추가/수정한다.
+- 새 규칙이 생겼다면 관련 문서도 함께 갱신한다.
+- 배포/운영 영향이 있다면 `docs/ops` 문서 반영 여부를 검토한다.

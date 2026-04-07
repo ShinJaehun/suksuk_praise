@@ -1,4 +1,4 @@
-# DEPLOY_OCI.md
+# OCI Production Deploy Runbook
 
 ## 목적
 이 문서는 `suksuk_praise`를 **OCI(Oracle Cloud Infrastructure)** 에 배포하기 전에,
