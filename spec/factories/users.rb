@@ -6,5 +6,17 @@ FactoryBot.define do
     role { "student" }
     points { 0 }
     default_avatar_index { 1 }
+
+    trait :student do
+      role { "student" }
+    end
+
+    trait :teacher do
+      role { "teacher" }
+    end
+
+    trait :admin do
+      role { "admin" }
+    end
   end
 end
