@@ -9,13 +9,20 @@ FactoryBot.define do
     issuance_basis { "daily" }
     period_start_on { issued_at.to_date }
 
-    before(:create) do |user_coupon|
-      next if ClassroomMembership.exists?(
-        user: user_coupon.user,
-        classroom: user_coupon.classroom
-      )
+    trait :with_classroom_membership do
+      before(:create) do |user_coupon|
+        next if ClassroomMembership.exists?(
+          user: user_coupon.user,
+          classroom: user_coupon.classroom
+        )
 
-      create(:classroom_membership, user: user_coupon.user, classroom: user_coupon.classroom, role: "student")
+        create(
+          :classroom_membership,
+          user: user_coupon.user,
+          classroom: user_coupon.classroom,
+          role: "student"
+        )
+      end
     end
   end
 end

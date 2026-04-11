@@ -9,6 +9,7 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # return unless Rails.env.test?
 require 'rspec/rails'
 require 'shoulda/matchers'
+require 'devise'
 # Add additional requires below this line. Rails is not loaded until this point!
 
 Shoulda::Matchers.configure do |config|
@@ -42,6 +43,7 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 RSpec.configure do |config|
   config.include Shoulda::Matchers::ActiveModel, type: :model
+  config.include Devise::Test::IntegrationHelpers, type: :request
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [

@@ -109,6 +109,9 @@ end
 
 - `issue!` 헬퍼로 basis, period_start_on 자동 설정
 - `use!` → `issued` → `used` 전이만 허용
+- period duplicate guard는 현재 `daily` 발급에만 적용한다.
+- `manual` 발급은 동일한 `basis_tag`가 있어도 daily duplicate 규칙과 별개로 취급한다.
+- 향후 `weekly`, `monthly` 발급이 도입되면 각 기간 기준에 맞춰 duplicate guard를 확장한다.
 
 ### CouponEvent
 

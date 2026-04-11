@@ -31,6 +31,9 @@
 - `CouponTemplate` personal 영역은 소유권(`created_by_id`)이 핵심 기준이다.
 - `UserCoupon` 조회는 scope, 사용은 `use?` policy로 나뉜다.
 - admin 전용 UI라도 controller/policy가 별도 서버측 가드를 갖는지 함께 확인한다.
+- 권한 실패 응답은 형식별로 일관되게 유지한다.
+- HTML 요청은 redirect + alert를 사용한다.
+- JSON 요청은 `403 Forbidden`과 `{ ok: false, error: "not_authorized" }`를 반환한다.
 
 ## 표 읽는 법
 

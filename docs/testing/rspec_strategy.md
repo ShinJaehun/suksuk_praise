@@ -50,6 +50,18 @@ Coverage 수치 자체를 목표로 삼지 않는다.
 - 자주 바뀌는 마크업
 - 스타일/문구 중심 테스트
 
+## 현재 작업 범위
+
+- 이번 작업 범위는 `request/policy` 빈 영역 보강이다.
+- 우선 대상은 다음 세 가지다.
+- coupon 뽑기 request 흐름
+- coupon 사용 request 흐름
+- teacher/admin/student 권한 분기 policy/request 고정
+- 기존 1차 `model/service spec`은 큰 리라이트 없이 유지한다.
+- 이번 작업에서 아래 범위까지 반영했다.
+- `ComplimentsController#create` request
+- `UserCouponPolicy::Scope`, `ComplimentPolicy::Scope` spec
+
 ---
 
 ## 권장 테스트 레벨
@@ -93,3 +105,10 @@ Coverage 수치 자체를 목표로 삼지 않는다.
 - period duplicate 판정
 - weight balancer
 - 권한 정책과 주요 controller request 흐름
+
+현재 duplicate guard 해석:
+- 현 단계에서는 `daily` period duplicate만 우선 고정한다.
+- `manual`은 동일 mode라도 duplicate 대상에 포함하지 않는다.
+- `weekly`, `monthly` 확장 시 해당 period 규칙을 별도 추가한다.
+
+## 다음 단계 후보

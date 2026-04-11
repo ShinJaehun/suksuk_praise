@@ -65,7 +65,7 @@ RSpec.describe UserCoupon, type: :model do
 
   describe "#use!" do
     it "marks an issued coupon as used" do
-      coupon = create(:user_coupon)
+      coupon = create(:user_coupon, :with_classroom_membership)
       used_at = Time.zone.local(2026, 4, 7, 11, 0, 0)
 
       coupon.use!(used_at: used_at)
@@ -75,7 +75,12 @@ RSpec.describe UserCoupon, type: :model do
     end
 
     it "rejects repeated use" do
-      coupon = create(:user_coupon, status: :used, used_at: Time.zone.local(2026, 4, 7, 11, 0, 0))
+      coupon = create(
+        :user_coupon,
+        :with_classroom_membership,
+        status: :used,
+        used_at: Time.zone.local(2026, 4, 7, 11, 0, 0)
+      )
 
       expect {
         coupon.use!

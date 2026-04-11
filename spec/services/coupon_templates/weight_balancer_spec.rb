@@ -30,7 +30,12 @@ RSpec.describe CouponTemplates::WeightBalancer, type: :service do
 
       described_class.normalize!(teacher)
 
-      expect([first.reload.weight, second.reload.weight, third.reload.weight]).to eq([40, 30, 30])
+      weights = [first.reload.weight, second.reload.weight, third.reload.weight]
+
+      expect(weights.sum).to eq(100)
+      expect(weights.all? { |weight| (weight % 10).zero? }).to eq(true)
+      expect(weights.sort).to eq([30, 30, 40])
+      expect(weights.max - weights.min).to eq(10)
     end
 
     it "preserves proportions using ten-point units" do

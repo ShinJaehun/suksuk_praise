@@ -256,20 +256,6 @@ class ClassroomsController < ApplicationController
       end
       f.json { render json: { ok: false, error: "invalid", detail: e.message }, status: :unprocessable_entity }
     end
-    
-  rescue StandardError => e
-    # 예: 기간 중복/템플릿 없음 등 서비스에서 커스텀 예외를 올린 경우
-    message = t("coupons.draw.invalid", reason: e.message)
-    load_recent_issued_coupons! 
-    respond_to do |f|
-      f.html { redirect_to classroom_path(@classroom), alert: message, status: :unprocessable_entity }
-      f.turbo_stream do
-        flash.now[:alert] = message
-        render layout: "application", status: :unprocessable_entity,
-          locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
-      end
-      f.json { render json: { ok: false, error: "failed", detail: e.message }, status: :unprocessable_entity }
-    end
   end
 
   private
