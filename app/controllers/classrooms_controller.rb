@@ -299,8 +299,7 @@ class ClassroomsController < ApplicationController
       classroom_id: @classroom.id,
       issuance_basis: period,
       basis_tag: "#{period}_top",
-      period_start_on: UserCoupon.period_start_for(period),
-      status: :issued
+      period_start_on: UserCoupon.period_start_for(period)
     ).pluck(:user_id)
   end
 

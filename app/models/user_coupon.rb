@@ -40,8 +40,7 @@ class UserCoupon < ApplicationRecord
       classroom_id: classroom_id,
       issuance_basis: basis,
       basis_tag: basis_tag,
-      period_start_on: period_start_on,
-      status: :issued
+      period_start_on: period_start_on
     )
   }
 

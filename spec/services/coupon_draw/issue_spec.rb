@@ -79,6 +79,40 @@ RSpec.describe CouponDraw::Issue, type: :service do
       end
     end
 
+    it "rejects reissuance after a daily top coupon was already used" do
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      classroom = create(:classroom)
+      template = create(:coupon_template, created_by: teacher)
+      now = Time.zone.local(2026, 4, 7, 10, 0, 0)
+
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: now)
+      create(
+        :user_coupon,
+        user: student,
+        classroom: classroom,
+        coupon_template: template,
+        issued_by: teacher,
+        issuance_basis: "daily",
+        basis_tag: "daily_top",
+        period_start_on: now.to_date,
+        status: :used
+      )
+
+      travel_to now do
+        expect {
+          described_class.call(
+            classroom: classroom,
+            basis: "daily",
+            mode: "daily_top",
+            issued_by: teacher,
+            target_user_id: student.id
+          )
+        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+      end
+    end
+
     it "allows a weekly top winner to receive a weekly coupon once per week" do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
@@ -140,6 +174,40 @@ RSpec.describe CouponDraw::Issue, type: :service do
       end
     end
 
+    it "rejects reissuance after a weekly top coupon was already used" do
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      classroom = create(:classroom)
+      template = create(:coupon_template, created_by: teacher)
+      now = Time.zone.local(2026, 4, 8, 10, 0, 0)
+
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 9, 0, 0))
+      create(
+        :user_coupon,
+        user: student,
+        classroom: classroom,
+        coupon_template: template,
+        issued_by: teacher,
+        issuance_basis: "weekly",
+        basis_tag: "weekly_top",
+        period_start_on: Date.new(2026, 4, 6),
+        status: :used
+      )
+
+      travel_to now do
+        expect {
+          described_class.call(
+            classroom: classroom,
+            basis: "weekly",
+            mode: "weekly_top",
+            issued_by: teacher,
+            target_user_id: student.id
+          )
+        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+      end
+    end
+
     it "allows a monthly top winner to receive a monthly coupon once per month" do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
@@ -187,6 +255,40 @@ RSpec.describe CouponDraw::Issue, type: :service do
       )
 
       create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: now)
+
+      travel_to now do
+        expect {
+          described_class.call(
+            classroom: classroom,
+            basis: "monthly",
+            mode: "monthly_top",
+            issued_by: teacher,
+            target_user_id: student.id
+          )
+        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+      end
+    end
+
+    it "rejects reissuance after a monthly top coupon was already used" do
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      classroom = create(:classroom)
+      template = create(:coupon_template, created_by: teacher)
+      now = Time.zone.local(2026, 4, 20, 10, 0, 0)
+
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: now)
+      create(
+        :user_coupon,
+        user: student,
+        classroom: classroom,
+        coupon_template: template,
+        issued_by: teacher,
+        issuance_basis: "monthly",
+        basis_tag: "monthly_top",
+        period_start_on: Date.new(2026, 4, 1),
+        status: :used
+      )
 
       travel_to now do
         expect {
