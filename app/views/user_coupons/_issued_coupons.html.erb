@@ -10,15 +10,12 @@
 
         <span class="font-semibold text-slate-900"><%= coupon.coupon_template.title %></span>
 
-        <!-- 발급 기준 배지(daily/manual/weekly) -->
         <%= coupon_basis_badge(coupon) %>
-        <% if coupon.basis_tag.present? %>
-          <span class="text-[11px] text-slate-500">
-            (<%= t("coupons.basis_tag.#{coupon.basis_tag}", default: coupon.basis_tag) %>)
-          </span>
+        <% if (period_tag = coupon_period_tag(coupon)) %>
+          <%= period_tag %>
         <% end %>
         <% if coupon.status == "used" %>
-          <span class="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+          <span class="inline-block rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
             사용함
           </span>
         <% end %>

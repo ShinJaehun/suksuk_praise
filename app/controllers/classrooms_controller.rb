@@ -18,17 +18,9 @@ class ClassroomsController < ApplicationController
     authorize @classroom
     @can_manage_classroom = policy(@classroom).update?
     @students = @classroom.students.order(created_at: :asc)
-
-    today = Time.zone.today.all_day
-    counts = Compliment.where(classroom: @classroom, given_at: today).group(:receiver_id).count
-    if counts.any?
-      max = counts.values.max
-      @compliment_kings = @students.select { |s| counts[s.id] == max }
-      @compliment_king_count = max
-    else
-      @compliment_kings = []
-      @compliment_king_count = 0
-    end
+    @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
+    @compliment_king_sections = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods)
+    @compliment_king_period_cards = build_compliment_king_period_cards(enabled_periods: @enabled_compliment_king_periods)
 
     load_recent_issued_coupons!
   end
@@ -75,17 +67,11 @@ class ClassroomsController < ApplicationController
   # Turbo로 일간 칭찬왕 영역만 새로고침
   def refresh_compliment_king
     authorize @classroom, :show?
-    @students = @classroom.students.order(created_at: :asc)
-    today = Time.zone.today.all_day
-    counts = Compliment.where(classroom: @classroom, given_at: today).group(:receiver_id).count
-    if counts.any?
-      max = counts.values.max
-      @compliment_kings = @students.select { |s| counts[s.id] == max }
-      @compliment_king_count = max
-    else
-      @compliment_kings = []
-      @compliment_king_count = 0
-    end
+    @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
+    @selected_period = params[:period].presence || "daily"
+    raise ActiveRecord::RecordNotFound unless @enabled_compliment_king_periods.include?(@selected_period)
+    @selected_section = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods).fetch(@selected_period)
+    @issued_winner_ids = build_issued_compliment_king_winner_ids(period: @selected_period, section: @selected_section)
 
     respond_to do |f|
       f.html { redirect_to classroom_path(@classroom) }
@@ -181,6 +167,13 @@ class ClassroomsController < ApplicationController
       notice_message = t("coupons.draw.success", name: winner.name, title: template.title)
       @play_coupon_animation = true
 
+      if %w[daily weekly monthly].include?(basis)
+        enabled_periods = @classroom.enabled_compliment_king_periods
+        @selected_period = basis
+        @selected_section = build_compliment_king_sections(enabled_periods: enabled_periods).fetch(@selected_period)
+        @issued_winner_ids = build_issued_compliment_king_winner_ids(period: @selected_period, section: @selected_section)
+      end
+
     end
 
     load_recent_issued_coupons! 
@@ -265,9 +258,14 @@ class ClassroomsController < ApplicationController
   end
 
   def classroom_params
-    params.require(:classroom).permit(:name)
+    params.require(:classroom).permit(
+      :name,
+      :daily_compliment_king_enabled,
+      :weekly_compliment_king_enabled,
+      :monthly_compliment_king_enabled
+    )
   end
-  
+
   def load_recent_issued_coupons!
     @issued_coupons = policy_scope(UserCoupon).where(classroom_id: @classroom.id)
       .includes(:user, :coupon_template)
@@ -276,17 +274,47 @@ class ClassroomsController < ApplicationController
       .load
   end
 
+  def build_compliment_king_sections(enabled_periods:)
+    Classroom::COMPLIMENT_KING_PERIODS.filter_map do |period|
+      next unless enabled_periods.include?(period)
+
+      [period, ComplimentKings::Pick.call(classroom: @classroom, period: period)]
+    end.to_h
+  end
+
+  def build_compliment_king_period_cards(enabled_periods:)
+    enabled_periods.map do |period|
+      {
+        period: period,
+        frame_id: view_context.dom_id(@classroom, :"compliment_king_#{period}")
+      }
+    end
+  end
+
+  def build_issued_compliment_king_winner_ids(period:, section:)
+    return [] unless section.present? && section.winners.present?
+
+    UserCoupon.where(
+      user_id: section.winners.map(&:id),
+      classroom_id: @classroom.id,
+      issuance_basis: period,
+      basis_tag: "#{period}_top",
+      period_start_on: UserCoupon.period_start_for(period),
+      status: :issued
+    ).pluck(:user_id)
+  end
+
   def normalized_basis_and_mode(basis_param, mode_param)
     basis = case basis_param
             when "manual" then "manual"
-            # when "weekly" then "weekly"
-            # when "hybrid" then "hybrid"
+            when "weekly" then "weekly"
+            when "monthly" then "monthly"
             else "daily"
             end
     mode = if mode_param.present?
             mode_param.to_s
           else
-            basis == "manual" ? "default" : "daily_top"
+            basis == "manual" ? "default" : "#{basis}_top"
           end
 
     [basis, mode]

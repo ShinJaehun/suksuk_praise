@@ -1,0 +1,50 @@
+<% issued_winner_ids ||= [] %>
+<section class="<%= compliment_king_card_classes(section) %>">
+  <h2 class="<%= compliment_king_title_classes(section) %>">
+    <%= t("classrooms.refresh.period_titles.#{period}") %>
+  </h2>
+
+  <% if compliment_king_populated?(section) %>
+    <p class="<%= compliment_king_count_classes(section) %>">
+      <%= t("classrooms.refresh.count", count: section.compliment_count) %>
+    </p>
+
+    <% section.winners.each do |king| %>
+      <% issued = compliment_king_coupon_issued?(issued_winner_ids, king) %>
+      <div class="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2">
+        <%= user_avatar_image(king,
+              size: 128,
+              class: "h-10 w-10 rounded-xl border border-amber-200 bg-amber-100 object-cover",
+              alt: "#{display_name(king)} avatar") %>
+        <span class="font-bold text-slate-900"><%= display_name(king) %></span>
+        <% if show_compliment_king_coupon_button?(classroom, period) %>
+          <%= button_to t("ui.buttons.issue_coupon"),
+                draw_coupon_classroom_path(
+                  classroom,
+                  basis: compliment_king_coupon_basis(period),
+                  mode: compliment_king_coupon_mode(period),
+                  user_id: king.id
+                ),
+                method: :post,
+                disabled: issued,
+                form: {
+                  data: {
+                    controller: "disable-on-submit",
+                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
+                    turbo_submits_with: t("ui.processing")
+                  },
+                  aria: { busy: "false" }
+                },
+                class: compliment_king_coupon_button_classes(disabled: issued) %>
+        <% end %>
+        <% if issued %>
+          <%= compliment_king_issued_badge %>
+        <% end %>
+      </div>
+    <% end %>
+  <% elsif section.present? %>
+    <p class="<%= compliment_king_count_classes(section) %>">
+      <%= compliment_king_empty_message(period) %>
+    </p>
+  <% end %>
+</section>

@@ -1,8 +1,10 @@
-<%#= turbo_stream.update "compliment_king_#{@classroom.id}" do %>
-<%= turbo_stream.update dom_id(@classroom, :compliment_king) do %>
-  <%= render partial: "classrooms/compliment_king", locals: {
-    compliment_kings: @compliment_kings,
-    compliment_king_count: @compliment_king_count,
-    classroom: @classroom
-  } %>
+<%= turbo_stream.replace compliment_king_frame_id(@classroom, @selected_period) do %>
+  <%= turbo_frame_tag compliment_king_frame_id(@classroom, @selected_period) do %>
+    <%= render partial: "classrooms/compliment_king_card", locals: {
+          classroom: @classroom,
+          period: @selected_period,
+          section: @selected_section,
+          issued_winner_ids: @issued_winner_ids
+        } %>
+  <% end %>
 <% end %>
