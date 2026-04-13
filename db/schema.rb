@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_02_173000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_11_093000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -58,6 +58,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_02_173000) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "daily_compliment_king_enabled", default: true, null: false
+    t.boolean "weekly_compliment_king_enabled", default: false, null: false
+    t.boolean "monthly_compliment_king_enabled", default: false, null: false
   end
 
   create_table "compliments", force: :cascade do |t|

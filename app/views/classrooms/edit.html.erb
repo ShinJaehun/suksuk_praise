@@ -6,5 +6,24 @@
     <%= f.text_field :name, class: "border px-2 py-1 w-full rounded" %>
   </div>
 
+  <div class="mb-4 space-y-3">
+    <h3 class="font-semibold">칭찬왕 기간 설정</h3>
+
+    <label class="flex items-center gap-2">
+      <%= f.check_box :daily_compliment_king_enabled %>
+      <span>일간 칭찬왕 표시</span>
+    </label>
+
+    <label class="flex items-center gap-2">
+      <%= f.check_box :weekly_compliment_king_enabled %>
+      <span>주간 칭찬왕 표시</span>
+    </label>
+
+    <label class="flex items-center gap-2">
+      <%= f.check_box :monthly_compliment_king_enabled %>
+      <span>월간 칭찬왕 표시</span>
+    </label>
+  </div>
+
   <%= f.submit "수정", class: "bg-blue-500 text-white px-4 py-2 rounded" %>
 <% end %>

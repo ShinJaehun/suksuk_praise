@@ -10,6 +10,7 @@ class UserCoupon < ApplicationRecord
   enum issuance_basis: {
     daily:  "daily",
     weekly: "weekly",
+    monthly: "monthly",
     manual: "manual",
     hybrid: "hybrid"
   }
@@ -50,6 +51,7 @@ class UserCoupon < ApplicationRecord
   def self.period_start_for(basis, now: Time.zone.now)
     case basis.to_s
     when "weekly" then now.to_date.beginning_of_week(:monday)
+    when "monthly" then now.to_date.beginning_of_month
     when "daily"  then now.to_date
     when "manual" then now.to_date          # 임시 기본값(컨트롤러에서 원하는 값으로 덮어쓰기 권장)
     when "hybrid" then now.to_date          # 하이브리드도 일단 일자 기준(컨트롤러에서 명확히 설정)

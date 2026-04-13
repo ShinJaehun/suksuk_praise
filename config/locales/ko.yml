@@ -30,8 +30,11 @@ ko:
       edit_classroom: "교실 정보 수정 ✏️"
       delete_classroom: "교실 삭제 🗑"
       confirm_delete_classroom: "정말 이 교실을 삭제할까요? 이 작업은 되돌릴 수 없습니다."
-      refresh_king: "칭찬왕 새로고침 🔄"
       issue_coupon_manual: "쿠폰 직접 뽑기"
+      refresh_king_for:
+        daily: "오늘의 칭찬왕"
+        weekly: "이번 주 칭찬왕"
+        monthly: "이번 달 칭찬왕"
 
     user_labels:
       name: "이름"
@@ -55,7 +58,12 @@ ko:
     destroy:
       success: "교실이 삭제되었습니다."
     refresh:
-      title: "오늘의 칭찬왕"
+      title: "칭찬왕"
+      count: "%{count}회 칭찬 받음"
+      period_titles:
+        daily: "오늘의 칭찬왕"
+        weekly: "이번 주 칭찬왕"
+        monthly: "이번 달 칭찬왕"
 
   students:
     create:
@@ -69,7 +77,8 @@ ko:
     basis:
       daily: "일일"
       weekly: "주간"
-      manual: "뽑기"
+      monthly: "월간"
+      manual: "선물"
       aria_label: "발급 기준: %{basis}"
     basis_tag:
       daily_top: "칭찬왕"
@@ -83,6 +92,8 @@ ko:
       no_candidate: "선발할 학생이 없습니다."
       no_active_template: "활성 쿠폰 템플릿이 없습니다."      
       already_issued_today: "이미 오늘 발급되었습니다."
+      already_issued_this_week: "이미 이번 주 발급되었습니다."
+      already_issued_this_month: "이미 이번 달 발급되었습니다."
       not_today_king: "오늘의 칭찬왕이 아닙니다."
     use:
       success: "쿠폰을 사용했습니다."
@@ -127,6 +138,12 @@ ko:
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."
     today_king: "아직 오늘의 칭찬왕이 없습니다."
+    compliment_king:
+      daily: "아직 오늘의 칭찬왕이 없습니다."
+      weekly: "아직 이번 주 칭찬왕이 없습니다."
+      monthly: "아직 이번 달 칭찬왕이 없습니다."
+      none_enabled: "표시할 칭찬왕 기간이 없습니다."
+      pick_a_period: "보고 싶은 칭찬왕 기간을 선택해주세요."
     coupon_events: "표시할 쿠폰 이벤트가 없습니다."
 
   reports:

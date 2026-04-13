@@ -9,6 +9,19 @@
   <% end %>
 <% end %>
 
+<% if defined?(@selected_period) && @selected_period.present? && defined?(@selected_section) && @selected_section.present? %>
+  <%= turbo_stream.replace compliment_king_frame_id(@classroom, @selected_period) do %>
+    <%= turbo_frame_tag compliment_king_frame_id(@classroom, @selected_period) do %>
+      <%= render partial: "classrooms/compliment_king_card", locals: {
+            classroom: @classroom,
+            period: @selected_period,
+            section: @selected_section,
+            issued_winner_ids: @issued_winner_ids
+          } %>
+    <% end %>
+  <% end %>
+<% end %>
+
 <% if winner.present? %>
   <%= turbo_stream.update dom_id(winner, :coupons) do %>
     <%= render partial: "user_coupons/list",

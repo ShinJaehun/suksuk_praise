@@ -123,5 +123,89 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
         expect(response).to have_http_status(:conflict)
       end
     end
+
+    it "creates a weekly coupon for the weekly compliment king" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      classroom.update!(weekly_compliment_king_enabled: true)
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 8, 9, 0, 0))
+
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "weekly", mode: "weekly_top", user_id: student.id },
+          as: :json
+
+        expect(response).to have_http_status(:created)
+        expect(UserCoupon.last.issuance_basis).to eq("weekly")
+      end
+    end
+
+    it "creates a monthly coupon for the monthly compliment king" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      classroom.update!(monthly_compliment_king_enabled: true)
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 20, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 2, 10, 0, 0))
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 20, 9, 0, 0))
+
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "monthly", mode: "monthly_top", user_id: student.id },
+          as: :json
+
+        expect(response).to have_http_status(:created)
+        expect(UserCoupon.last.issuance_basis).to eq("monthly")
+      end
+    end
+
+    it "returns 409 when the same weekly draw is requested twice in one week" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      classroom.update!(weekly_compliment_king_enabled: true)
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "weekly", mode: "weekly_top", user_id: student.id },
+          as: :json
+
+        expect(response).to have_http_status(:created)
+
+        expect {
+          post draw_coupon_classroom_path(classroom),
+            params: { basis: "weekly", mode: "weekly_top", user_id: student.id },
+            as: :json
+        }.not_to change(UserCoupon, :count)
+
+        expect(response).to have_http_status(:conflict)
+      end
+    end
+
+    it "returns 409 when the same monthly draw is requested twice in one month" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      classroom.update!(monthly_compliment_king_enabled: true)
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 20, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 2, 10, 0, 0))
+
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "monthly", mode: "monthly_top", user_id: student.id },
+          as: :json
+
+        expect(response).to have_http_status(:created)
+
+        expect {
+          post draw_coupon_classroom_path(classroom),
+            params: { basis: "monthly", mode: "monthly_top", user_id: student.id },
+            as: :json
+        }.not_to change(UserCoupon, :count)
+
+        expect(response).to have_http_status(:conflict)
+      end
+    end
   end
 end

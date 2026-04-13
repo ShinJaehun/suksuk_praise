@@ -21,10 +21,8 @@
 
             <div class="mt-1 flex items-center gap-1">
               <%= coupon_basis_badge(c) %>
-              <% if c.basis_tag.present? %>
-                <span class="text-[11px] text-gray-500">
-                  (<%= t("coupons.basis_tag.#{c.basis_tag}", default: c.basis_tag) %>)
-                </span>
+              <% if (period_tag = coupon_period_tag(c)) %>
+                <%= period_tag %>
               <% end %>
             </div>
 

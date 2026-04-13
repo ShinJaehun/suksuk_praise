@@ -1,30 +1,37 @@
 module ComplimentKings
   class Pick
-    Result = Struct.new(:winner, keyword_init: true)
+    Result = Struct.new(:period, :winners, :compliment_count, keyword_init: true)
 
-    def self.call(classroom:, basis:, mode:)
-      range = case [basis.to_s, mode.to_s]
-              when ["daily",  "daily_top"]  then Time.zone.today.all_day
-              when ["weekly", "weekly_top"]
-                start = Time.zone.now.beginning_of_week(:monday)
-                start..start.end_of_week(:monday)
-              else
-                # 기본: 일간 최다
-                Time.zone.today.all_day
-              end
+    def self.call(classroom:, period:, now: Time.zone.now)
+      range = range_for(period, now: now)
+      counts = Compliment.where(classroom: classroom, given_at: range).group(:receiver_id).count
 
-      winner = top_receiver_in_range(classroom, range)
-      Result.new(winner: winner)
-    end
-
-    def self.top_receiver_in_range(classroom, range)
-      counts = Compliment.where(classroom: classroom, given_at: range)
-                         .group(:receiver_id).count
-      return nil if counts.blank?
+      return Result.new(period: period.to_s, winners: [], compliment_count: 0) if counts.blank?
 
       max = counts.values.max
-      candidate_ids = counts.select { |_, v| v == max }.keys
-      classroom.students.where(id: candidate_ids).sample
+      candidate_ids = counts.select { |_, value| value == max }.keys
+      winners = classroom.students.where(id: candidate_ids).order(:id).to_a
+
+      Result.new(
+        period: period.to_s,
+        winners: winners,
+        compliment_count: max
+      )
+    end
+
+    def self.range_for(period, now: Time.zone.now)
+      case period.to_s
+      when "daily"
+        now.to_date.all_day
+      when "weekly"
+        start_date = now.beginning_of_week(:monday)
+        start_date..start_date.end_of_week(:monday)
+      when "monthly"
+        start_date = now.beginning_of_month
+        start_date..start_date.end_of_month
+      else
+        raise ArgumentError, "unsupported period: #{period}"
+      end
     end
   end
 end
