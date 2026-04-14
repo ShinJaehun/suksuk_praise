@@ -13,24 +13,9 @@
         <% end %>
 
         <% if @can_manage_classroom %>
-          <%= link_to t('ui.buttons.create_student'),
-                new_classroom_student_path(@classroom),
-                data: { turbo_frame: "modal" },
-                class: "w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 sm:w-auto" %>
-
-          <%= link_to t('ui.buttons.bulk_create_students'),
-                bulk_new_classroom_students_path(@classroom),
-                data: { turbo_frame: "modal" },
-                class: "w-full rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 sm:w-auto" %>
-
-          <%= link_to t('ui.buttons.edit_classroom'),
+          <%= link_to "교실 관리",
                 edit_classroom_path(@classroom),
                 class: "w-full rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 sm:w-auto" %>
-
-          <%= link_to t('ui.buttons.delete_classroom'),
-                classroom_path(@classroom),
-                data: { turbo_method: :delete, turbo_confirm: t('ui.buttons.confirm_delete_classroom') },
-                class: "w-full rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 sm:w-auto" %>
         <% end %>
       </div>
     </div>
@@ -45,13 +30,10 @@
   <% end %>
 
   <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <h2 class="mb-4 text-lg font-bold text-slate-900"><%= @classroom.name %>의 학생들</h2>
     <%= turbo_frame_tag "students_list_#{@classroom.id}" do %>
       <div id="students_grid_<%= @classroom.id %>" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <%= render partial: "users/user", collection: @students, as: :user, locals: { classroom: @classroom } %>
       </div>
     <% end %>
   </section>
-
-  <%= turbo_frame_tag :modal %>
 </section>

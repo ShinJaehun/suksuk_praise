@@ -1,29 +1,108 @@
-<h2 class="text-xl font-bold mb-4">교실 이름 수정</h2>
+<section class="mx-auto w-full max-w-5xl space-y-6 pt-4">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">교실 관리</h1>
+    </div>
 
-<%= form_with model: @classroom, local: true do |f| %>
-  <div class="mb-4">
-    <%= f.label :name, "교실 이름", class: "block font-semibold mb-1" %>
-    <%= f.text_field :name, class: "border px-2 py-1 w-full rounded" %>
+    <%= link_to "교실로 돌아가기",
+          classroom_path(@classroom),
+          class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
   </div>
 
-  <div class="mb-4 space-y-3">
-    <h3 class="font-semibold">칭찬왕 기간 설정</h3>
+  <%= form_with model: @classroom, local: true do |f| %>
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-4">
+        <h2 class="text-base font-semibold text-slate-900">교실 이름 수정</h2>
+      </div>
 
-    <label class="flex items-center gap-2">
-      <%= f.check_box :daily_compliment_king_enabled %>
-      <span>일간 칭찬왕 표시</span>
-    </label>
+      <div class="flex flex-col gap-3 sm:max-w-3xl sm:flex-row sm:items-end">
+        <div class="flex-1">
+        <%= f.label :name, "교실 이름", class: "mb-2 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :name,
+              class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+        </div>
 
-    <label class="flex items-center gap-2">
-      <%= f.check_box :weekly_compliment_king_enabled %>
-      <span>주간 칭찬왕 표시</span>
-    </label>
+        <%= f.submit "교실 이름 저장",
+              class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700" %>
+      </div>
+    </section>
+  <% end %>
 
-    <label class="flex items-center gap-2">
-      <%= f.check_box :monthly_compliment_king_enabled %>
-      <span>월간 칭찬왕 표시</span>
-    </label>
-  </div>
+  <%= form_with model: @classroom, local: true do |f| %>
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="mb-4">
+        <h2 class="text-base font-semibold text-slate-900">칭찬왕 설정</h2>
+      </div>
 
-  <%= f.submit "수정", class: "bg-blue-500 text-white px-4 py-2 rounded" %>
-<% end %>
+      <div class="space-y-3">
+        <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <%= f.check_box :daily_compliment_king_enabled,
+                class: "mt-1 rounded border-slate-300 text-sky-600 focus:ring-sky-500" %>
+          <span class="space-y-1">
+            <span class="block text-sm font-semibold text-slate-800">일간 칭찬왕</span>
+            <span class="block text-sm text-slate-500">하루 단위로 가장 많이 칭찬받은 학생을 표시합니다.</span>
+          </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <%= f.check_box :weekly_compliment_king_enabled,
+                class: "mt-1 rounded border-slate-300 text-sky-600 focus:ring-sky-500" %>
+          <span class="space-y-1">
+            <span class="block text-sm font-semibold text-slate-800">주간 칭찬왕</span>
+            <span class="block text-sm text-slate-500">이번 주 기준으로 가장 많이 칭찬받은 학생을 표시합니다.</span>
+          </span>
+        </label>
+
+        <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <%= f.check_box :monthly_compliment_king_enabled,
+                class: "mt-1 rounded border-slate-300 text-sky-600 focus:ring-sky-500" %>
+          <span class="space-y-1">
+            <span class="block text-sm font-semibold text-slate-800">월간 칭찬왕</span>
+            <span class="block text-sm text-slate-500">이번 달 기준으로 가장 많이 칭찬받은 학생을 표시합니다.</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="mt-5 flex justify-end">
+        <%= f.submit "칭찬왕 설정 저장",
+              class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+      </div>
+    </section>
+  <% end %>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="mb-4">
+      <h2 class="text-base font-semibold text-slate-900">학생 관리</h2>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <%= link_to t('ui.buttons.create_student'),
+            new_classroom_student_path(@classroom),
+            data: { turbo_frame: "modal" },
+            class: "inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" %>
+
+      <%= link_to t('ui.buttons.bulk_create_students'),
+            bulk_new_classroom_students_path(@classroom),
+            data: { turbo_frame: "modal" },
+            class: "inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700" %>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+    <div class="mb-4">
+      <h2 class="text-base font-semibold text-rose-900">교실 삭제</h2>
+      <p class="mt-1 text-sm text-rose-700">
+        교실을 삭제합니다. 학생과 칭찬, 쿠폰 자료가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <%= link_to t('ui.buttons.delete_classroom'),
+            classroom_path(@classroom),
+            data: { turbo_method: :delete, turbo_confirm: t('ui.buttons.confirm_delete_classroom') },
+            class: "inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100" %>
+    </div>
+  </section>
+
+  <%= turbo_frame_tag :modal %>
+</section>
