@@ -4,6 +4,12 @@ class ApplicationController < ActionController::Base
   
   before_action :configure_permitted_parameters, if: :devise_controller?
 
+  def after_sign_in_path_for(resource_or_scope)
+    return user_path(resource_or_scope) if resource_or_scope.is_a?(User) && resource_or_scope.student?
+
+    super
+  end
+
   rescue_from Pundit::NotAuthorizedError do
     respond_to do |format|
       format.html do
@@ -26,7 +32,7 @@ class ApplicationController < ActionController::Base
 
   def configure_permitted_parameters
     devise_parameter_sanitizer.permit(:sign_up, keys: [:name])
-    devise_parameter_sanitizer.permit(:account_update, keys: [:name])
+    devise_parameter_sanitizer.permit(:account_update, keys: [:name, :avatar])
   end
 
 

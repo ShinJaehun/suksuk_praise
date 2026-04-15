@@ -26,6 +26,16 @@
             coupon_events_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
+
+    <% if current_user %>
+      <%= link_to "마이페이지",
+            user_path(current_user),
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+
+      <%= link_to "내 정보 수정",
+            edit_user_registration_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+    <% end %>
   </div>
 
   <!-- Right: User / Hamburger -->
@@ -93,7 +103,14 @@
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% end %>
 
-          <%# TODO: 나중에 '내 정보 수정' 같은 계정 설정 링크 추가 예정 %>
+          <%= link_to "마이페이지",
+                user_path(current_user),
+                class: "block px-3 py-1 hover:bg-gray-50" %>
+
+          <%= link_to "내 정보 수정",
+                edit_user_registration_path,
+                class: "block px-3 py-1 hover:bg-gray-50" %>
+
           <%= link_to "Sign out",
                 destroy_user_session_path,
                 data: { turbo_method: :delete },

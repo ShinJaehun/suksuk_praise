@@ -1,5 +1,9 @@
 Rails.application.routes.draw do
-  devise_for :users
+  devise_for :users, controllers: { registrations: "users/registrations" }
+  devise_scope :user do
+    get "/account/password/edit", to: "users/registrations#edit_password", as: :edit_account_password
+    patch "/account/password", to: "users/registrations#update_password", as: :account_password
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -24,7 +28,7 @@ Rails.application.routes.draw do
     end
 
     # /classrooms/:classroom_id/users/:id
-    resources :users, only: [:show], controller: "users"  
+    resources :users, only: [:show, :destroy], controller: "users"  
 
     # RESTful 하게 칭찬은 교실 리소스 하위에 생성
     resources :compliments, only: [:create]
