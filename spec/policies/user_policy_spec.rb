@@ -37,4 +37,35 @@ RSpec.describe UserPolicy do
       expect(described_class.new(student, other_student).show?).to eq(false)
     end
   end
+
+  describe "#destroy_student?" do
+    let(:teacher) { create(:user, :teacher) }
+    let(:student) { create(:user, :student) }
+    let(:classroom) { create(:classroom) }
+
+    it "permits admin for a student account" do
+      admin = create(:user, :admin)
+
+      expect(described_class.new(admin, student).destroy_student?).to eq(true)
+    end
+
+    it "permits a teacher for a student in the teacher's classroom" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+
+      expect(described_class.new(teacher, student).destroy_student?).to eq(true)
+    end
+
+    it "rejects a teacher for a student outside the teacher's classroom" do
+      other_classroom = create(:classroom)
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      create(:classroom_membership, user: student, classroom: other_classroom, role: "student")
+
+      expect(described_class.new(teacher, student).destroy_student?).to eq(false)
+    end
+
+    it "rejects a student for self" do
+      expect(described_class.new(student, student).destroy_student?).to eq(false)
+    end
+  end
 end

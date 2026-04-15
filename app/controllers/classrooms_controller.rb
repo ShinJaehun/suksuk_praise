@@ -1,6 +1,7 @@
 # app/controllers/classrooms_controller.rb
 class ClassroomsController < ApplicationController
   before_action :authenticate_user!
+  before_action :redirect_students_to_mypage!, only: [:index, :show]
   before_action :set_classroom, only: [
     :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon
   ]
@@ -264,6 +265,12 @@ class ClassroomsController < ApplicationController
       :weekly_compliment_king_enabled,
       :monthly_compliment_king_enabled
     )
+  end
+
+  def redirect_students_to_mypage!
+    return unless current_user&.student?
+
+    redirect_to user_path(current_user)
   end
 
   def load_recent_issued_coupons!

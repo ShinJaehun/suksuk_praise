@@ -39,4 +39,13 @@ class UserPolicy < ApplicationPolicy
     # 관리자이면서, 대상이 교사 계정일 때만 허용
     user&.admin? && record.teacher?
   end
+
+  def destroy_student?
+    return false unless record.student?
+    return true if user&.admin?
+    return false unless user&.teacher?
+
+    teacher_classroom_ids = user.classroom_memberships.where(role: "teacher").pluck(:classroom_id)
+    ClassroomMembership.exists?(user_id: record.id, classroom_id: teacher_classroom_ids)
+  end
 end

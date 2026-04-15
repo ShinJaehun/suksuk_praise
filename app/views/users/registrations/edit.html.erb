@@ -4,26 +4,33 @@
       <div>
         <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">내 정보 수정</h1>
         <p class="mt-1 text-sm text-slate-500">
-          이름, 아바타, 이메일과 비밀번호를 수정할 수 있습니다.
+          이름, 아바타, 이메일을 수정할 수 있습니다.
         </p>
       </div>
 
-      <%= link_to "마이페이지로 돌아가기",
-            user_path(resource),
-            class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      <div class="flex flex-wrap items-center gap-2">
+        <%= link_to "비밀번호 변경",
+              edit_account_password_path,
+              data: { turbo_frame: "modal" },
+              class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+
+        <%= link_to "마이페이지로 돌아가기",
+              user_path(current_user),
+              class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      </div>
     </div>
   </div>
 
   <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <div class="mb-5 flex items-start gap-4">
-      <%= user_avatar_image(resource,
+      <%= user_avatar_image(current_user,
             size: 512,
             class: "h-24 w-24 rounded-2xl object-cover border border-slate-200 bg-slate-100",
-            alt: "#{resource.name} avatar") %>
+            alt: "#{current_user.name} avatar") %>
       <div class="space-y-1 text-sm text-slate-600">
         <p class="font-semibold text-slate-900">현재 아바타</p>
         <p>업로드한 아바타가 있으면 우선 표시되고, 없으면 기본 아바타가 보입니다.</p>
-        <% if resource.avatar.attached? %>
+        <% if current_user.avatar.attached? %>
           <p class="text-emerald-700">업로드된 아바타를 사용 중입니다.</p>
         <% else %>
           <p class="text-slate-500">현재 기본 아바타를 사용 중입니다.</p>
@@ -72,39 +79,11 @@
               },
               hint: "이미지 파일만 업로드할 수 있습니다.",
               label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
-
-        <div class="grid gap-5 md:grid-cols-2">
-          <%= f.input :password,
-                hint: "비밀번호를 바꾸지 않으려면 비워두세요.",
-                required: false,
-                input_html: {
-                  autocomplete: "new-password",
-                  class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                },
-                label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
-
-          <%= f.input :password_confirmation,
-                required: false,
-                input_html: {
-                  autocomplete: "new-password",
-                  class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-                },
-                label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
-        </div>
-
-        <%= f.input :current_password,
-              hint: "변경 사항 저장을 위해 현재 비밀번호를 입력하세요.",
-              required: true,
-              input_html: {
-                autocomplete: "current-password",
-                class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
-              },
-              label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
       </div>
 
       <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="text-sm text-slate-500">
-          비밀번호를 포함한 계정 변경은 Devise 기본 인증 규칙을 따릅니다.
+          프로필 정보 변경은 현재 비밀번호 없이 저장됩니다.
         </div>
 
         <%= f.button :submit,
