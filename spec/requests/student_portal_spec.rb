@@ -51,13 +51,13 @@ RSpec.describe "Student portal flow", type: :request do
 
       get user_path(student)
 
-      expect(response).to redirect_to(classroom_user_path(classroom, student))
+      expect(response).to redirect_to(classroom_student_path(classroom, student))
     end
 
     it "allows a teacher to view the classroom-scoped student page" do
       sign_in teacher
 
-      get classroom_user_path(classroom, student)
+      get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
     end
@@ -77,7 +77,7 @@ RSpec.describe "Student portal flow", type: :request do
       sign_in student
 
       expect {
-        delete classroom_user_path(classroom, student)
+        delete classroom_student_path(classroom, student)
       }.not_to change(User, :count)
 
       expect(response).to redirect_to(root_path)
@@ -87,10 +87,58 @@ RSpec.describe "Student portal flow", type: :request do
       sign_in teacher
 
       expect {
-        delete classroom_user_path(classroom, student)
+        delete classroom_student_path(classroom, student)
       }.to change(User, :count).by(-1)
 
       expect(response).to redirect_to(classroom_path(classroom))
+    end
+  end
+
+  describe "managed student account page" do
+    let(:student) { create(:user, :student, password: "password123") }
+    let(:teacher) { create(:user, :teacher) }
+    let(:classroom) { create(:classroom) }
+
+    before do
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    end
+
+    it "allows a classroom teacher to open the managed account page" do
+      sign_in teacher
+
+      get edit_classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "allows a classroom teacher to update student name and email" do
+      sign_in teacher
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: "새 이름",
+          email: "student-updated@example.com"
+        }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.name).to eq("새 이름")
+      expect(student.email).to eq("student-updated@example.com")
+    end
+
+    it "allows a classroom teacher to reset student password" do
+      sign_in teacher
+
+      patch reset_password_classroom_student_path(classroom, student), params: {
+        user: {
+          password: "newpassword123",
+          password_confirmation: "newpassword123"
+        }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.valid_password?("newpassword123")).to eq(true)
     end
   end
 end

@@ -1,7 +1,10 @@
 class ClassroomStudentsController < ApplicationController
+  include UserShowDataLoader
+
   before_action :authenticate_user!
   before_action :set_classroom
-  before_action :authorize_manage!
+  before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_create]
+  before_action :set_student, only: [:show, :edit, :update, :destroy, :reset_password]
 
   def new
     @user = User.new
@@ -97,6 +100,61 @@ class ClassroomStudentsController < ApplicationController
       status: :see_other
   end
 
+  def show
+    authorize @student, :show?
+
+    @user = @student
+    @self_page = false
+    @managed_page = true
+    @can_destroy_student = Pundit.policy!(current_user, @student).destroy_student?
+    @can_create_compliment = policy(@classroom).create_compliment?
+    @can_draw_coupon = policy(@classroom).draw_coupon?
+    @visible_classrooms = []
+
+    load_user_show_data!(
+      user: @student,
+      classroom: @classroom,
+      include_recent_issued: true,
+      recent_in_classroom: true
+    )
+
+    render "users/show"
+  end
+
+  def edit
+    authorize @student, :manage_student_account?
+    @user = @student
+  end
+
+  def update
+    authorize @student, :manage_student_account?
+    @user = @student
+
+    if @student.update(managed_student_params)
+      redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 계정 정보를 수정했습니다."
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def reset_password
+    authorize @student, :manage_student_password?
+    @user = @student
+
+    if @student.update(password_reset_params)
+      redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 비밀번호를 재설정했습니다."
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    authorize @student, :destroy_student?
+
+    @student.destroy!
+    redirect_to classroom_path(@classroom), notice: "학생 계정을 삭제했습니다.", status: :see_other
+  end
+
   private
   
   def set_classroom
@@ -105,6 +163,20 @@ class ClassroomStudentsController < ApplicationController
 
   def user_params
     params.require(:user).permit(:name, :email, :password)
+  end
+
+  def set_student
+    @student = User.find(params[:id])
+    raise ActiveRecord::RecordNotFound unless @student.student?
+    raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(user_id: @student.id)
+  end
+
+  def managed_student_params
+    params.require(:user).permit(:name, :email)
+  end
+
+  def password_reset_params
+    params.require(:user).permit(:password, :password_confirmation)
   end
 
   def authorize_manage!
