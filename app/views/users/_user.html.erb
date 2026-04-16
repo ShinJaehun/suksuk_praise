@@ -6,7 +6,7 @@
             alt: "#{display_name(user)} avatar") %>
       <p class="font-semibold text-slate-800">
         <%= link_to display_name(user),
-                    classroom_user_path(classroom, user),
+                    classroom_student_path(classroom, user),
                     data: { turbo: false },
                     class: "text-sky-700 hover:underline" %>
       </p>

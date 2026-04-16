@@ -20,15 +20,15 @@ Rails.application.routes.draw do
 
   resources :classrooms do
     member { post :refresh_compliment_king }
-    resources :students, controller: "classroom_students", only: [:new, :create] do
+    resources :students, controller: "classroom_students", only: [:new, :create, :show, :edit, :update, :destroy] do
       collection do
         get :bulk_new
         post :bulk_create
       end
+      member do
+        patch :reset_password
+      end
     end
-
-    # /classrooms/:classroom_id/users/:id
-    resources :users, only: [:show, :destroy], controller: "users"  
 
     # RESTful 하게 칭찬은 교실 리소스 하위에 생성
     resources :compliments, only: [:create]

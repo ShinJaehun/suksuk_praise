@@ -48,4 +48,12 @@ class UserPolicy < ApplicationPolicy
     teacher_classroom_ids = user.classroom_memberships.where(role: "teacher").pluck(:classroom_id)
     ClassroomMembership.exists?(user_id: record.id, classroom_id: teacher_classroom_ids)
   end
+
+  def manage_student_account?
+    destroy_student?
+  end
+
+  def manage_student_password?
+    destroy_student?
+  end
 end
