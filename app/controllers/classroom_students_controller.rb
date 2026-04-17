@@ -104,12 +104,9 @@ class ClassroomStudentsController < ApplicationController
     authorize @student, :show?
 
     @user = @student
-    @self_page = false
-    @managed_page = true
     @can_destroy_student = Pundit.policy!(current_user, @student).destroy_student?
     @can_create_compliment = policy(@classroom).create_compliment?
     @can_draw_coupon = policy(@classroom).draw_coupon?
-    @visible_classrooms = []
 
     load_user_show_data!(
       user: @student,
@@ -118,7 +115,7 @@ class ClassroomStudentsController < ApplicationController
       recent_in_classroom: true
     )
 
-    render "users/show"
+    render "classroom_students/show"
   end
 
   def edit

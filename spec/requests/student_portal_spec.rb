@@ -44,6 +44,8 @@ RSpec.describe "Student portal flow", type: :request do
       get user_path(student)
 
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include("내 정보 수정")
+      expect(response.body).not_to include("계정 관리")
     end
 
     it "redirects a teacher from non-nested student show to the classroom-scoped page" do
@@ -60,6 +62,10 @@ RSpec.describe "Student portal flow", type: :request do
       get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include("계정 관리")
+      expect(response.body).to include(classroom.name)
+      expect(response.body).not_to include("내 마이페이지")
+      expect(response.body).not_to include("내 소속 교실")
     end
   end
 

@@ -6,23 +6,60 @@
               class: "h-24 w-24 rounded-2xl object-cover border border-slate-200 bg-slate-100",
               alt: "#{@user.name} avatar") %>
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
-            <%= @user.name %>
-            <% if @visible_classrooms.any? %>
-              <span class="ml-2 text-sm font-medium text-slate-500">
-                <%= @visible_classrooms.map(&:name).join(", ") %>
-              </span>
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+              <%= @user.name %>
+              <span class="ml-2 text-sm font-medium text-slate-500"><%= @classroom.name %></span>
+            </h1>
+            <% if @can_destroy_student %>
+              <%= link_to "계정 관리",
+                    edit_classroom_student_path(@classroom, @user),
+                    class: "inline-flex items-center rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>
             <% end %>
-          </h1>
+          </div>
           <%= turbo_frame_tag dom_id(@user, :kpis) do %>
             <%= render partial: "users/kpi_chips", locals: { user: @user, kpi_counts: @kpi_counts } %>
           <% end %>
         </div>
       </div>
       <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-        <%= link_to "내 정보 수정",
-              edit_user_registration_path,
-              class: "inline-flex items-center rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
+        <%= link_to t("ui.buttons.back_to_classroom", name: @classroom.name),
+                    classroom_path(@classroom),
+                    class: "inline-flex items-center rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700 hover:bg-slate-200" %>
+        <% if @can_create_compliment %>
+          <%= button_to t("ui.buttons.compliment"),
+                classroom_compliments_path(@classroom),
+                method: :post,
+                params: { compliment: { receiver_id: @user.id } },
+                form: {
+                  data: {
+                    controller: "disable-on-submit",
+                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
+                    turbo_submits_with: t("ui.processing")
+                  },
+                  aria: { busy: "false" }
+                },
+                class: "inline-flex items-center rounded-lg bg-amber-300 px-3 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-400" %>
+        <% end %>
+        <% if @can_draw_coupon %>
+          <%= button_to t("ui.buttons.issue_coupon_manual"),
+                draw_coupon_classroom_path(
+                  @classroom,
+                  basis: "manual",
+                  mode: "default",
+                  user_id: @user.id
+                ),
+                method: :post,
+                form: {
+                  data: {
+                    controller: "disable-on-submit",
+                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
+                    turbo_submits_with: t("ui.processing")
+                  },
+                  aria: { busy: "false" }
+                },
+                class: "inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" %>
+        <% end %>
       </div>
     </div>
   </div>
