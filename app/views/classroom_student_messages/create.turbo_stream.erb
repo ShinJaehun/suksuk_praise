@@ -1,0 +1,7 @@
+<%= turbo_stream.replace @message_section_dom_id do %>
+  <%= render "user_messages/managed_frame",
+        dom_id: @message_section_dom_id,
+        threads: @message_threads,
+        message: @new_message,
+        form_url: classroom_student_messages_path(@classroom, @student) %>
+<% end %>

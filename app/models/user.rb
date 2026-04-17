@@ -30,6 +30,18 @@ class User < ApplicationRecord
   has_many :user_coupons, dependent: :destroy
   has_many :coupon_templates, through: :user_coupons
 
+  has_many :sent_messages,
+           class_name: "UserMessage",
+           foreign_key: :sender_id,
+           dependent: :destroy,
+           inverse_of: :sender
+
+  has_many :received_messages,
+           class_name: "UserMessage",
+           foreign_key: :recipient_id,
+           dependent: :destroy,
+           inverse_of: :recipient
+
   after_commit :setup_default_coupons_for_teacher, on: :create
   before_validation :assign_default_avatar_index, on: :create
 

@@ -16,11 +16,14 @@ Rails.application.routes.draw do
   #   end
   # end
 
-  resources :users, only: [:show]
+  resources :users, only: [:show] do
+    resources :messages, only: [:create], controller: "user_messages"
+  end
 
   resources :classrooms do
     member { post :refresh_compliment_king }
     resources :students, controller: "classroom_students", only: [:new, :create, :show, :edit, :update, :destroy] do
+      resources :messages, only: [:create], controller: "classroom_student_messages"
       collection do
         get :bulk_new
         post :bulk_create

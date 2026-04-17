@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_11_093000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_17_123000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -51,7 +51,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_11_093000) do
     t.index ["classroom_id", "user_id"], name: "index_classroom_memberships_on_classroom_id_and_user_id", unique: true
     t.index ["classroom_id"], name: "index_classroom_memberships_on_classroom_id"
     t.index ["user_id"], name: "index_classroom_memberships_on_user_id"
-    t.check_constraint "role::text = ANY (ARRAY['teacher'::character varying, 'student'::character varying]::text[])", name: "chk_cm_role"
+    t.check_constraint "role::text = ANY (ARRAY['teacher'::character varying::text, 'student'::character varying::text])", name: "chk_cm_role"
   end
 
   create_table "classrooms", force: :cascade do |t|
@@ -139,6 +139,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_11_093000) do
     t.index ["user_id"], name: "index_user_coupons_on_user_id"
   end
 
+  create_table "user_messages", force: :cascade do |t|
+    t.bigint "classroom_id", null: false
+    t.bigint "sender_id", null: false
+    t.bigint "recipient_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "parent_message_id"
+    t.index ["classroom_id", "sender_id", "recipient_id", "created_at"], name: "idx_user_messages_on_conversation"
+    t.index ["classroom_id"], name: "index_user_messages_on_classroom_id"
+    t.index ["parent_message_id", "created_at"], name: "index_user_messages_on_parent_message_id_and_created_at"
+    t.index ["parent_message_id"], name: "index_user_messages_on_parent_message_id"
+    t.index ["recipient_id", "created_at"], name: "index_user_messages_on_recipient_id_and_created_at"
+    t.index ["recipient_id"], name: "index_user_messages_on_recipient_id"
+    t.index ["sender_id"], name: "index_user_messages_on_sender_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -172,4 +189,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_11_093000) do
   add_foreign_key "user_coupons", "coupon_templates"
   add_foreign_key "user_coupons", "users"
   add_foreign_key "user_coupons", "users", column: "issued_by_id", on_delete: :nullify
+  add_foreign_key "user_messages", "classrooms"
+  add_foreign_key "user_messages", "user_messages", column: "parent_message_id"
+  add_foreign_key "user_messages", "users", column: "recipient_id"
+  add_foreign_key "user_messages", "users", column: "sender_id"
 end

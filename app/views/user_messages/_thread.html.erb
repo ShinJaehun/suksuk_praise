@@ -1,0 +1,16 @@
+<% if threads.any? %>
+  <div class="mt-4 space-y-4">
+    <% threads.each do |thread| %>
+      <%= render "user_messages/message_card",
+            thread: thread,
+            reply_message: reply_message,
+            user: user,
+            active_reply_thread_id: local_assigns[:active_reply_thread_id] %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center">
+    <p class="text-sm font-medium text-slate-700">아직 메시지가 없습니다.</p>
+    <p class="mt-1 text-sm text-slate-500">새 메시지를 보내면 여기에서 대화를 이어볼 수 있습니다.</p>
+  </div>
+<% end %>

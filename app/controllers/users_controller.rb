@@ -1,5 +1,6 @@
 class UsersController < ApplicationController
   include UserShowDataLoader
+  include ActionView::RecordIdentifier
 
   before_action :authenticate_user!
   before_action :set_user, only: [:show]
@@ -18,6 +19,9 @@ class UsersController < ApplicationController
       include_recent_issued: true,
       recent_in_classroom: false
     )
+
+    @reply_message = UserMessage.new
+    @message_section_dom_id = dom_id(@user, :message_section)
   end
 
   private
