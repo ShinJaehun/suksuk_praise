@@ -8,8 +8,6 @@ class UsersController < ApplicationController
     authorize @user, :show?
     redirect_to_managed_student_page! and return if @user.student? && current_user != @user
 
-    @self_page = current_user == @user
-    @managed_page = false
     @can_create_compliment = false
     @can_draw_coupon = false
     @visible_classrooms = @user.classrooms.order(created_at: :asc)

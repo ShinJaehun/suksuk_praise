@@ -29,7 +29,7 @@ class ComplimentsController < ApplicationController
         )
         message = t("compliments.create.duplicate")
         return respond_to do |f|
-          f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
+          f.html { redirect_back fallback_location: classroom_student_path(@classroom, @receiver),
             alert: message, status: :conflict }
           f.turbo_stream do
             flash.now[:alert] = message
@@ -58,7 +58,7 @@ class ComplimentsController < ApplicationController
     )
 
     respond_to do |f|
-      f.html { redirect_to user_path(@receiver, classroom_id: @classroom.id), status: :see_other }
+      f.html { redirect_to classroom_student_path(@classroom, @receiver), status: :see_other }
       f.turbo_stream { render :create, layout: "application" }
       f.json { render json: { ok: true, receiver_id: @receiver.id }, status: :created }
     end
@@ -72,7 +72,7 @@ class ComplimentsController < ApplicationController
     ) if defined?(@receiver) && @receiver.present?
     message =  t("compliments.create.failure", detail: e.message) 
     respond_to do |f|
-      f.html { redirect_back fallback_location: user_path(@receiver, classroom_id: @classroom.id),
+      f.html { redirect_back fallback_location: classroom_student_path(@classroom, @receiver),
         alert: message, status: :unprocessable_entity }
       f.turbo_stream do
         flash.now[:alert] = message
