@@ -1,5 +1,6 @@
 class ClassroomStudentsController < ApplicationController
   include UserShowDataLoader
+  include ActionView::RecordIdentifier
 
   before_action :authenticate_user!
   before_action :set_classroom
@@ -114,6 +115,9 @@ class ClassroomStudentsController < ApplicationController
       include_recent_issued: true,
       recent_in_classroom: true
     )
+
+    @new_message = UserMessage.new
+    @message_section_dom_id = dom_id(@user, :message_section)
 
     render "classroom_students/show"
   end

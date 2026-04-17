@@ -1,0 +1,8 @@
+<%= turbo_frame_tag dom_id do %>
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <%= render "user_messages/managed_section",
+          threads: threads,
+          message: message,
+          form_url: form_url %>
+  </section>
+<% end %>

@@ -1,0 +1,42 @@
+<%= simple_form_for reply_message, url: user_messages_path(user) do |f| %>
+  <%= hidden_field_tag :reply_to_message_id, thread.id %>
+  <div class="space-y-3 rounded-2xl bg-slate-50 p-3">
+    <% if active && reply_message.errors.any? %>
+      <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <%= reply_message.errors.full_messages.to_sentence %>
+      </div>
+    <% end %>
+
+    <div class="flex items-center gap-3">
+      <%= user_avatar_image(
+            current_user,
+            size: 128,
+            class: "h-8 w-8 rounded-full border border-slate-200 bg-white object-cover",
+            alt: "#{current_user.name} avatar"
+          ) %>
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-sm font-semibold text-slate-900"><%= current_user.name %></p>
+        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+          나
+        </span>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+      <div class="min-w-0 flex-1">
+        <%= f.input :body,
+              as: :text,
+              required: true,
+              label: false,
+              input_html: {
+                rows: 2,
+                class: "block w-full rounded-xl border px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 #{active && reply_message.errors.any? ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100' : 'border-slate-300 focus:border-sky-500 focus:ring-sky-100'}"
+              } %>
+      </div>
+
+      <%= button_tag "메시지 보내기",
+            type: :submit,
+            class: "inline-flex h-11 w-full shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-200 sm:w-auto" %>
+    </div>
+  </div>
+<% end %>

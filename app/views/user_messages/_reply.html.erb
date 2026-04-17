@@ -1,0 +1,21 @@
+<article class="ml-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+  <div class="flex items-start justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <%= user_avatar_image(
+            reply.sender,
+            size: 128,
+            class: "h-7 w-7 rounded-full border border-slate-200 bg-white object-cover",
+            alt: "#{reply.sender.name} avatar"
+          ) %>
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-sm font-semibold text-slate-900"><%= reply.sender.name %></p>
+        <span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-600">
+          <%= user_message_sender_label(reply) %>
+        </span>
+      </div>
+    </div>
+    <p class="shrink-0 text-xs text-slate-500"><%= l(reply.created_at, format: :short) %></p>
+  </div>
+
+  <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700"><%= reply.body %></p>
+</article>

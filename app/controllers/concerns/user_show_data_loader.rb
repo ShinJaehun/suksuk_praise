@@ -8,6 +8,22 @@ module UserShowDataLoader
     compliments_scope = compliments_scope.where(classroom_id: classroom.id) if classroom
     @compliments = compliments_scope.includes(:giver, :classroom).order(given_at: :desc)
 
+    messages_scope = policy_scope(UserMessage)
+    @message_threads =
+      if classroom
+        messages_scope
+          .root_messages
+          .where(classroom_id: classroom.id, recipient_id: user.id)
+          .includes(:sender, :recipient, replies: [:sender, :recipient])
+          .order(created_at: :asc)
+      else
+        messages_scope
+          .root_messages
+          .where(recipient_id: user.id)
+          .includes(:sender, :recipient, replies: [:sender, :recipient])
+          .order(created_at: :asc)
+      end
+
     coupons_scope = policy_scope(UserCoupon).where(user_id: user.id)
     coupons_scope = coupons_scope.where(classroom_id: classroom.id) if classroom
     @coupons = coupons_scope

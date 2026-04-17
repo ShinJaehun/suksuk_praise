@@ -85,7 +85,7 @@
           </h2>
           <span class="text-xs text-slate-500">최신 순</span>
         </div>
-        <div class="mt-3">
+        <div class="mt-3 max-h-[20rem] overflow-y-auto md:h-[28rem]">
           <%= turbo_frame_tag dom_id(@user, :recent_issued_coupons) do %>
             <%= render partial: "user_coupons/issued_coupons",
               locals: { coupons: @recent_issued_coupons, show_user: false } %>
@@ -97,12 +97,18 @@
           <h2 class="text-base font-semibold text-slate-900">칭찬 타임라인</h2>
           <span class="text-xs text-slate-500">최근순</span>
         </div>
-        <div class="mt-3">
+        <div class="mt-3 max-h-[20rem] overflow-y-auto md:h-[28rem]">
           <%= turbo_frame_tag dom_id(@user, :compliments) do %>
             <%= render partial: "users/compliments_timeline", locals: { compliments: @compliments } %>
           <% end %>
         </div>
       </section>
     </div>
+
+    <%= render "user_messages/managed_frame",
+          dom_id: @message_section_dom_id,
+          threads: @message_threads,
+          message: @new_message,
+          form_url: classroom_student_messages_path(@classroom, @user) %>
   </div>
 </section>
