@@ -116,6 +116,12 @@ RSpec.describe "Student portal flow", type: :request do
       get edit_classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include("기본 정보")
+      expect(response.body).to include("PIN 설정")
+      expect(response.body).to include("계정 삭제")
+      expect(response.body).not_to include("비밀번호 재설정")
+      expect(response.body).not_to include('name="user[password]"')
+      expect(response.body).not_to include('name="user[password_confirmation]"')
     end
 
     it "allows a classroom teacher to update student name and email" do
