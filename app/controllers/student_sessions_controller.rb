@@ -15,6 +15,7 @@ class StudentSessionsController < ApplicationController
     if student&.student_pin_configured? && student.authenticate_student_pin(params[:student_pin].to_s)
       sign_out(:user) if user_signed_in?
       sign_in(:user, student)
+      session[:student_login_classroom_id] = @classroom.id
       redirect_to user_path(student), notice: "로그인했습니다."
     else
       flash.now[:alert] = "교실, 학생, PIN을 확인해 주세요."
@@ -23,8 +24,9 @@ class StudentSessionsController < ApplicationController
   end
 
   def destroy
+    classroom_id = session.delete(:student_login_classroom_id)
     sign_out(:user) if current_user&.student?
-    redirect_to new_student_session_path, notice: "사용을 끝냈습니다."
+    redirect_to student_logout_redirect_path(classroom_id), notice: "사용을 끝냈습니다."
   end
 
   private
@@ -45,5 +47,12 @@ class StudentSessionsController < ApplicationController
     return nil unless @classroom.classroom_memberships.exists?(user_id: student.id, role: "student")
 
     student
+  end
+
+  def student_logout_redirect_path(classroom_id)
+    return new_student_session_path if classroom_id.blank?
+    return new_student_session_path unless Classroom.exists?(id: classroom_id)
+
+    classroom_student_login_path(classroom_id)
   end
 end

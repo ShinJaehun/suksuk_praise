@@ -56,8 +56,8 @@
       </div>
 
       <!-- Desktop: Sign out -->
-      <%= link_to "Sign out",
-            destroy_user_session_path,
+      <%= link_to current_user.student? ? "사용 끝내기" : "Sign out",
+            current_user.student? ? destroy_student_session_path : destroy_user_session_path,
             data: { turbo_method: :delete },
             class: "hidden md:inline-block text-sm text-gray-500 hover:text-red-600" %>
 
@@ -111,8 +111,8 @@
                 edit_user_registration_path,
                 class: "block px-3 py-1 hover:bg-gray-50" %>
 
-          <%= link_to "Sign out",
-                destroy_user_session_path,
+          <%= link_to current_user.student? ? "사용 끝내기" : "Sign out",
+                current_user.student? ? destroy_student_session_path : destroy_user_session_path,
                 data: { turbo_method: :delete },
                 class: "block px-3 py-1 text-red-600 hover:bg-red-50 mt-1 border-t" %>
         </div>

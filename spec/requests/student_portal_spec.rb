@@ -11,7 +11,7 @@ RSpec.describe "Student portal flow", type: :request do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
     end
 
-    it "redirects a student to the self page after sign in" do
+    it "blocks a student from signing in through Devise" do
       post user_session_path, params: {
         user: {
           email: student.email,
@@ -19,7 +19,7 @@ RSpec.describe "Student portal flow", type: :request do
         }
       }
 
-      expect(response).to redirect_to(user_path(student))
+      expect(response).to redirect_to(new_student_session_path)
     end
 
     it "redirects a signed-in student away from classrooms index" do

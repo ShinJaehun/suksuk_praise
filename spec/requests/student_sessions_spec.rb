@@ -46,6 +46,38 @@ RSpec.describe "Student PIN sessions", type: :request do
     expect(response).to redirect_to(user_path(student))
   end
 
+  it "redirects student logout back to the classroom PIN login page" do
+    post classroom_student_login_path(classroom), params: {
+      student_id: student.id,
+      student_pin: "1234"
+    }
+
+    expect(session[:student_login_classroom_id]).to eq(classroom.id)
+
+    delete destroy_student_session_path
+
+    expect(response).to redirect_to(classroom_student_login_path(classroom))
+  end
+
+  it "falls back to the global student login page without a stored classroom" do
+    sign_in student
+
+    delete destroy_student_session_path
+
+    expect(response).to redirect_to(new_student_session_path)
+  end
+
+  it "shows a student-specific logout link on the self page" do
+    sign_in student
+
+    get user_path(student)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("사용 끝내기")
+    expect(response.body).to include(destroy_student_session_path)
+    expect(response.body).not_to include(destroy_user_session_path)
+  end
+
   it "rejects an invalid PIN" do
     post classroom_student_login_path(classroom), params: {
       student_id: student.id,

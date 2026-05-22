@@ -1,5 +1,8 @@
 Rails.application.routes.draw do
-  devise_for :users, controllers: { registrations: "users/registrations" }
+  devise_for :users, controllers: {
+    registrations: "users/registrations",
+    sessions: "users/sessions"
+  }
   devise_scope :user do
     get "/account/password/edit", to: "users/registrations#edit_password", as: :edit_account_password
     patch "/account/password", to: "users/registrations#update_password", as: :account_password
