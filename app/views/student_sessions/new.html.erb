@@ -1,0 +1,37 @@
+<section class="mx-auto w-full max-w-md pt-8">
+  <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <h1 class="text-xl font-bold text-slate-900">학생 PIN 로그인</h1>
+
+    <% if @classroom %>
+      <p class="mt-2 text-sm text-slate-600"><%= @classroom.name %></p>
+
+      <%= form_with url: classroom_student_login_path(@classroom), method: :post, class: "mt-6 space-y-4" do %>
+        <div>
+          <%= label_tag :student_id, "학생", class: "mb-1 block text-sm font-medium text-slate-700" %>
+          <%= select_tag :student_id,
+                options_from_collection_for_select(@students, :id, :name, params[:student_id]),
+                prompt: "학생을 선택하세요",
+                class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" %>
+        </div>
+
+        <div>
+          <%= label_tag :student_pin, "PIN", class: "mb-1 block text-sm font-medium text-slate-700" %>
+          <%= password_field_tag :student_pin,
+                nil,
+                maxlength: 4,
+                inputmode: "numeric",
+                pattern: "\\d{4}",
+                autocomplete: "one-time-code",
+                class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" %>
+        </div>
+
+        <%= submit_tag "로그인",
+              class: "w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+      <% end %>
+    <% else %>
+      <p class="mt-4 text-sm text-slate-600">
+        학생 로그인은 교실별 로그인 주소를 사용해 주세요.
+      </p>
+    <% end %>
+  </div>
+</section>

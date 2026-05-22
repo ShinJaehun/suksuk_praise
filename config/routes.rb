@@ -4,6 +4,9 @@ Rails.application.routes.draw do
     get "/account/password/edit", to: "users/registrations#edit_password", as: :edit_account_password
     patch "/account/password", to: "users/registrations#update_password", as: :account_password
   end
+
+  get "/student_login", to: "student_sessions#new", as: :new_student_session
+  delete "/student_logout", to: "student_sessions#destroy", as: :destroy_student_session
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -21,6 +24,9 @@ Rails.application.routes.draw do
   end
 
   resources :classrooms do
+    get :student_login, to: "student_sessions#new", as: :student_login
+    post :student_login, to: "student_sessions#create"
+
     member { post :refresh_compliment_king }
     resources :students, controller: "classroom_students", only: [:new, :create, :show, :edit, :update, :destroy] do
       resources :messages, only: [:create], controller: "classroom_student_messages"

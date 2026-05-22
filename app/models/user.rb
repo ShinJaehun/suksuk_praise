@@ -3,9 +3,11 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
+  has_secure_password :student_pin, validations: false
 
   validates :name, presence: true, length: { maximum: 30 }
   validates :default_avatar_index, inclusion: { in: 1..32 }, allow_nil: true
+  validates :student_pin, format: { with: /\A\d{4}\z/, message: "must be 4 digits" }, allow_blank: true
 
   enum role: { student: "student", teacher: "teacher", admin: "admin" }
   has_one_attached :avatar
@@ -44,6 +46,14 @@ class User < ApplicationRecord
 
   after_commit :setup_default_coupons_for_teacher, on: :create
   before_validation :assign_default_avatar_index, on: :create
+
+  def student_pin_configured?
+    student_pin_digest.present?
+  end
+
+  def default_student_pin?
+    student_pin_configured? && authenticate_student_pin("1234")
+  end
 
   private
 

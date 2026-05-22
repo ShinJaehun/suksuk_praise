@@ -30,6 +30,28 @@
                   class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 },
                 label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
+
+          <div>
+            <%= f.label :student_pin, "학생 PIN (4자리)", class: "mb-2 block text-sm font-medium text-slate-700" %>
+            <p class="mb-2 text-sm font-medium text-slate-600">
+              현재 PIN:
+              <% if @user.default_student_pin? %>
+                기본 PIN(1234)으로 설정됨
+              <% elsif @user.student_pin_configured? %>
+                설정됨
+              <% else %>
+                미설정
+              <% end %>
+            </p>
+            <%= f.password_field :student_pin,
+                  value: nil,
+                  maxlength: 4,
+                  inputmode: "numeric",
+                  pattern: "\\d{4}",
+                  autocomplete: "one-time-code",
+                  class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+            <p class="mt-1 text-sm text-slate-500">새 PIN을 입력하면 변경됩니다. 비워두면 기존 PIN을 유지합니다.</p>
+          </div>
         </div>
 
         <div class="flex justify-end">

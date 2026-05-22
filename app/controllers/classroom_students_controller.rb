@@ -62,6 +62,7 @@ class ClassroomStudentsController < ApplicationController
     count = 30 if count <= 0 || count > 30
     created = []
     prefix = Array('A'..'Z').sample(4).join
+    student_pin = params[:student_pin].to_s.strip
 
     used_indices = used_avatar_indices_in_classroom
 
@@ -71,14 +72,16 @@ class ClassroomStudentsController < ApplicationController
         email = "#{name}@suksuk.or.kr"
         avatar_index = pick_avatar_index(used_indices)
         used_indices << avatar_index
-        user = User.create!(
+        attrs = {
           name: name,
           email: email,
           password: "123456",
           role: "student",
           points: 0,
           default_avatar_index: avatar_index
-        )
+        }
+        attrs[:student_pin] = student_pin if student_pin.present?
+        user = User.create!(attrs)
         @classroom.classroom_memberships.create!(user: user, role: "student")
         created << user
       end
@@ -163,7 +166,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :password)
+    params.require(:user).permit(:name, :email, :password, :student_pin)
   end
 
   def set_student
@@ -173,7 +176,9 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def managed_student_params
-    params.require(:user).permit(:name, :email)
+    params.require(:user).permit(:name, :email, :student_pin).tap do |permitted|
+      permitted.delete(:student_pin) if permitted[:student_pin].blank?
+    end
   end
 
   def password_reset_params
