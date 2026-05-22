@@ -16,6 +16,7 @@ class StudentSessionsController < ApplicationController
       sign_out(:user) if user_signed_in?
       sign_in(:user, student)
       session[:student_login_classroom_id] = @classroom.id
+      session[:student_last_seen_at] = Time.current.to_i
       redirect_to user_path(student), notice: "로그인했습니다."
     else
       flash.now[:alert] = "교실, 학생, PIN을 확인해 주세요."
@@ -25,6 +26,7 @@ class StudentSessionsController < ApplicationController
 
   def destroy
     classroom_id = session.delete(:student_login_classroom_id)
+    session.delete(:student_last_seen_at)
     sign_out(:user) if current_user&.student?
     redirect_to student_logout_redirect_path(classroom_id), notice: "사용을 끝냈습니다."
   end

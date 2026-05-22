@@ -1,8 +1,11 @@
 class ApplicationController < ActionController::Base
+  STUDENT_SESSION_TTL = 20.minutes
+
   include Pundit::Authorization
   include Pagy::Method
   
   before_action :configure_permitted_parameters, if: :devise_controller?
+  before_action :expire_student_session_if_inactive
 
   def after_sign_in_path_for(resource_or_scope)
     return user_path(resource_or_scope) if resource_or_scope.is_a?(User) && resource_or_scope.student?
@@ -37,6 +40,39 @@ class ApplicationController < ActionController::Base
 
 
   private
+
+  def expire_student_session_if_inactive
+    return unless current_user&.student?
+    return if student_session_ttl_exempt_controller?
+
+    now = Time.current.to_i
+    last_seen_at = session[:student_last_seen_at]
+
+    unless last_seen_at.present?
+      session[:student_last_seen_at] = now
+      return
+    end
+
+    if now - last_seen_at.to_i > STUDENT_SESSION_TTL.to_i
+      classroom_id = session[:student_login_classroom_id]
+      sign_out(:user)
+      redirect_to student_session_timeout_redirect_path(classroom_id),
+        alert: "사용 시간이 지나 자동으로 로그아웃되었습니다. 다시 로그인해 주세요."
+    else
+      session[:student_last_seen_at] = now
+    end
+  end
+
+  def student_session_ttl_exempt_controller?
+    devise_controller? || is_a?(StudentSessionsController)
+  end
+
+  def student_session_timeout_redirect_path(classroom_id)
+    return new_student_session_path if classroom_id.blank?
+    return new_student_session_path unless Classroom.exists?(id: classroom_id)
+
+    classroom_student_login_path(classroom_id)
+  end
 
   # index가 아닌 액션에서는 authorize 검증, Devise 컨트롤러는 제외
   def skip_pundit_verify_authorized?

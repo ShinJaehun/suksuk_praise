@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Student PIN sessions", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:classroom) { create(:classroom) }
   let(:student) { create(:user, :student, student_pin: "1234") }
   let(:teacher) { create(:user, :teacher) }
@@ -46,6 +48,72 @@ RSpec.describe "Student PIN sessions", type: :request do
     expect(response).to redirect_to(user_path(student))
   end
 
+  it "stores the student session last seen timestamp after PIN login" do
+    post classroom_student_login_path(classroom), params: {
+      student_id: student.id,
+      student_pin: "1234"
+    }
+
+    expect(session[:student_login_classroom_id]).to eq(classroom.id)
+    expect(session[:student_last_seen_at]).to be_present
+  end
+
+  it "keeps a student signed in within the TTL and refreshes last seen" do
+    travel_to Time.zone.local(2026, 5, 22, 10, 0, 0) do
+      post classroom_student_login_path(classroom), params: {
+        student_id: student.id,
+        student_pin: "1234"
+      }
+    end
+
+    travel_to Time.zone.local(2026, 5, 22, 10, 5, 0) do
+      get user_path(student)
+    end
+
+    expect(response).to have_http_status(:ok)
+    expect(session[:student_last_seen_at]).to eq(Time.zone.local(2026, 5, 22, 10, 5, 0).to_i)
+  end
+
+  it "redirects an expired student session to the classroom PIN login page" do
+    travel_to Time.zone.local(2026, 5, 22, 10, 0, 0) do
+      post classroom_student_login_path(classroom), params: {
+        student_id: student.id,
+        student_pin: "1234"
+      }
+    end
+
+    travel_to Time.zone.local(2026, 5, 22, 10, 21, 1) do
+      get user_path(student)
+    end
+
+    expect(response).to redirect_to(classroom_student_login_path(classroom))
+    expect(controller.current_user).to be_nil
+  end
+
+  it "falls back to the global student login page when an expired session has no classroom" do
+    sign_in student
+
+    travel_to Time.zone.local(2026, 5, 22, 10, 0, 0) do
+      get user_path(student)
+    end
+
+    travel_to Time.zone.local(2026, 5, 22, 10, 21, 1) do
+      get user_path(student)
+    end
+
+    expect(response).to redirect_to(new_student_session_path)
+    expect(controller.current_user).to be_nil
+  end
+
+  it "initializes missing student last seen without expiring the session" do
+    sign_in student
+
+    get user_path(student)
+
+    expect(response).to have_http_status(:ok)
+    expect(session[:student_last_seen_at]).to be_present
+  end
+
   it "redirects student logout back to the classroom PIN login page" do
     post classroom_student_login_path(classroom), params: {
       student_id: student.id,
@@ -76,6 +144,15 @@ RSpec.describe "Student PIN sessions", type: :request do
     expect(response.body).to include("사용 끝내기")
     expect(response.body).to include(destroy_student_session_path)
     expect(response.body).not_to include(destroy_user_session_path)
+  end
+
+  it "does not apply student TTL to a teacher" do
+    sign_in teacher
+
+    get root_path
+
+    expect(response).to have_http_status(:ok)
+    expect(controller.current_user).to eq(teacher)
   end
 
   it "rejects an invalid PIN" do
