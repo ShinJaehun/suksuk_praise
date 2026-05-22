@@ -1,0 +1,48 @@
+<section class="mx-auto w-full max-w-md pt-8">
+  <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <h1 class="text-xl font-bold text-slate-900">PIN 변경</h1>
+
+    <%= form_with url: student_pin_path, method: :patch, class: "mt-6 space-y-4" do %>
+      <div>
+        <%= label_tag :current_pin, "현재 PIN", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= password_field_tag :current_pin,
+              nil,
+              maxlength: 4,
+              inputmode: "numeric",
+              pattern: "\\d{4}",
+              autocomplete: "current-password",
+              class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" %>
+      </div>
+
+      <div>
+        <%= label_tag :student_pin, "새 PIN", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= password_field_tag :student_pin,
+              nil,
+              maxlength: 4,
+              inputmode: "numeric",
+              pattern: "\\d{4}",
+              autocomplete: "new-password",
+              class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" %>
+      </div>
+
+      <div>
+        <%= label_tag :student_pin_confirmation, "새 PIN 확인", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= password_field_tag :student_pin_confirmation,
+              nil,
+              maxlength: 4,
+              inputmode: "numeric",
+              pattern: "\\d{4}",
+              autocomplete: "new-password",
+              class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" %>
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <%= link_to "취소",
+              user_path(current_user),
+              class: "rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+        <%= submit_tag "변경하기",
+              class: "rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+      </div>
+    <% end %>
+  </div>
+</section>

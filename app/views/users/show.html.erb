@@ -23,6 +23,11 @@
         <%= link_to "내 정보 수정",
               edit_user_registration_path,
               class: "inline-flex items-center rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
+        <% if current_user&.student? && current_user == @user %>
+          <%= link_to "PIN 변경",
+                edit_student_pin_path,
+                class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+        <% end %>
       </div>
     </div>
   </div>
