@@ -80,6 +80,7 @@ ko:
       invalid: "발급에 실패했습니다: %{reason}"
       already_issued_today: "이미 오늘 발급되었습니다."
       not_today_king: "오늘의 칭찬왕이 아닙니다."
+      no_active_templates: "발급에 사용할 내 쿠폰(개인)이 없습니다. 쿠폰 관리에서 라이브러리 기본 세트 가져오기로 쿠폰을 가져온 뒤, 내 쿠폰을 활성화/가중치 설정해 주세요."
     use:
       success: "쿠폰을 사용했습니다."
       already_used: "이미 사용된 쿠폰입니다."

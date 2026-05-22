@@ -199,6 +199,21 @@ class ClassroomsController < ApplicationController
       end
     end
 
+  rescue CouponDraw::Issue::NoActiveTemplateError
+    # personal 템플릿이 없거나(미채택) / 활성 가중치 합이 0인 경우
+    message = t("coupons.draw.no_active_templates")
+    load_recent_issued_coupons!
+    respond_to do |f|
+      f.html { redirect_to classroom_path(@classroom), alert: message, status: :unprocessable_entity }
+      f.turbo_stream do
+        flash.now[:alert] = message
+        render :draw_coupon, layout: "application", status: :unprocessable_entity,
+          locals: { winner: nil, winner_coupons: nil, issued_coupons: @issued_coupons }
+      end
+      f.json { render json: { ok: false, error: "no_active_templates" }, status: :unprocessable_entity }
+    end
+    return
+
   rescue ActiveRecord::RecordNotUnique, PG::UniqueViolation
     # 부분 유니크 인덱스(status=0 & daily)에 걸린 경우
     message = t("coupons.draw.already_issued_today")
