@@ -4,6 +4,9 @@
 
 ## 목적
 
+현재 전체 구현 상태 요약은 `docs/architecture/current_system.md`를 참고한다.
+이 문서는 교사/admin ↔ 학생 메시지 기능의 상세 정책과 경계를 정리한다.
+
 학생용 자기 페이지와 교사용 학생 관리 페이지가 분리된 상태에서,
 교사 또는 관리자가 특정 학생에게 칭찬/안내 메시지를 보내고,
 학생은 자기 페이지에서 해당 메시지를 확인한 뒤
@@ -244,10 +247,9 @@
 본문은 한 줄에 고정하지 않고, 길면 자연스럽게 여러 줄로 감긴다.
 root와 reply의 시각적 위계는 유지하되, 큰 제목/큰 카드형 작성 영역은 피한다.
 
-학생 root message의 수신자는 현재 단계에서 `teacher_options.first`를 기본 teacher로 사용한다.
+학생 root message의 수신자는 현재 구현에서 화면에 전달된 teacher options 중 첫 번째 teacher를 사용한다.
 한 교실에 teacher가 여러 명 있을 수 있지만, 이번 단계에서는 담임/부담임/primary teacher 구분을 만들지 않는다.
-추후 notification 작업에서 primary teacher 정책과 알림 대상 teacher 정책을 함께 검토한다.
-예를 들어 message recipient는 대표 teacher 1명으로 두고, notification 대상은 교실 teacher 전체로 분리할 수 있다.
+primary teacher 정책과 notification 대상 정책은 `docs/planning/backlog.md`의 후속 작업 후보와 함께 검토한다.
 
 ---
 

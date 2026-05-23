@@ -1,0 +1,78 @@
+# Current System
+
+## 문서 목적
+
+이 문서는 `suksuk_praise`의 현재 구현 상태를 빠르게 파악하기 위한 요약 문서다.
+
+- 후속 작업은 `docs/planning/backlog.md`에 둔다.
+- 테스트 작성 원칙과 우선순위는 `docs/testing/rspec_strategy.md`에 둔다.
+- 기능별 상세 정책은 `docs/specs/*.md`와 관련 architecture 문서에 둔다.
+
+## 핵심 역할
+
+- `admin`: 전역 관리 권한을 가진다.
+- `teacher`: 교실 teacher membership을 기준으로 학생, 칭찬, 쿠폰, 메시지 기능을 사용한다.
+- `student`: 본인과 본인이 속한 교실 맥락의 정보만 조회하고 일부 학생용 기능을 사용한다.
+
+## 인증/세션
+
+- admin/teacher는 Devise 로그인을 사용한다.
+- student는 일반 Devise 로그인 흐름에서 차단되며, 교실 범위 PIN 로그인으로 접근한다.
+- student PIN 로그인은 교실과 학생 membership, PIN을 확인한다.
+- PIN 로그인 성공 시 기존 세션을 reset하고 해당 student로 `sign_in`한다.
+- PIN 로그인 성공 후 교실 맥락이 있으면 `classroom_student_path(classroom, student)`로 이동한다.
+- student 세션은 `STUDENT_SESSION_TTL`과 `session[:student_last_seen_at]`으로 짧게 관리된다.
+- student가 `/users/:id`에 접근할 때 가능한 경우 교실 범위 학생 상세 경로로 redirect한다.
+
+## 교실/학생 관리
+
+- 교사와 학생의 관계는 `ClassroomMembership`을 기준으로 한다.
+- teacher/admin은 교실 범위 학생 페이지에서 학생을 조회하고 관리한다.
+- 학생 canonical page는 `GET /classrooms/:classroom_id/students/:id`이다.
+- 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
+- teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
+- 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
+- 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다.
+
+## 칭찬
+
+- teacher/admin은 교실 맥락에서 학생에게 compliment를 생성할 수 있다.
+- student, guest, 담당 범위 밖 teacher는 compliment를 생성할 수 없다.
+- compliment 생성 시 receiver 학생의 points가 증가한다.
+- 짧은 시간 안의 같은 giver/receiver/classroom 중복 요청은 차단된다.
+- 칭찬 목록과 타임라인은 학생 상세 화면에서 교실/권한 범위에 맞게 로드된다.
+
+## 쿠폰
+
+- coupon template은 teacher personal template과 admin library template으로 구분된다.
+- teacher는 library template을 읽고 personal template으로 adopt할 수 있다.
+- personal template에는 active/weight 불변식과 weight normalization 흐름이 있다.
+- teacher/admin은 교실 맥락에서 학생에게 coupon draw/issue를 수행할 수 있다.
+- 학생은 본인의 보유 coupon을 확인할 수 있다.
+- `UserCoupon`은 issued/used 상태 전이를 가진다.
+- coupon 발급/사용 이벤트는 `CouponEvent`로 기록된다.
+- 최근 발급 쿠폰과 보유 쿠폰 카드는 학생 상세 화면에 표시된다.
+- 학생 쿠폰 사용 요청 전용 모델이나 승인 흐름은 현재 없다.
+
+## 메시지
+
+- 교실에는 `student_initiated_messages_enabled` 설정이 있으며 기본값은 false다.
+- 설정이 false이면 student는 새 root message를 먼저 시작할 수 없다.
+- 설정이 true이면 student는 자기 소속 교실 teacher에게 새 root message를 시작할 수 있다.
+- 현재 student root message 수신자는 화면에서 제공되는 teacher options 중 첫 번째 teacher를 사용한다.
+- 기존 root thread reply는 `student_initiated_messages_enabled` 값과 별개로 thread 참여/관리 권한 기준으로 허용된다.
+- 답글의 답글은 허용하지 않는다.
+- teacher/admin은 관리 가능한 학생 상세 화면에서 thread별 reply를 작성할 수 있다.
+- 메시지 UI는 root/reply form과 compact thread display 구조를 사용한다.
+
+## 학생 상세 화면
+
+- 학생 상세 화면은 개인정보/요약, 보유 쿠폰, 메시지, 최근 발급 쿠폰, 칭찬 타임라인을 함께 보여준다.
+- teacher/admin에게는 학생 관리, 칭찬, 쿠폰 관련 버튼이 노출된다.
+- student에게는 관리 버튼과 교실로 돌아가기 버튼이 노출되지 않는다.
+- 역할별 노출은 controller/helper/partial 흐름을 통해 관리한다.
+
+## 테스트 상태
+
+- student PIN/auth, student portal, classroom student management, message, coupon, compliment, policy/scope, Turbo/HTML 핵심 흐름에 대한 RSpec 파일이 존재한다.
+- 테스트 작성 원칙과 우선순위는 `docs/testing/rspec_strategy.md`를 기준으로 한다.
