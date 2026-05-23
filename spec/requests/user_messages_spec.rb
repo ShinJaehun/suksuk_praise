@@ -54,7 +54,6 @@ RSpec.describe "User messages", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("선생님 메시지")
       expect(response.body).to include("학생 댓글")
-      expect(response.body).to include("나")
       expect(response.body).to include("reply_to_message_id")
 
       root_index = response.body.index("선생님 메시지")
@@ -77,7 +76,7 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).to include("먼저 질문")
       expect(response.body).to include("reply_to_message_id")
       expect(response.body).to include(%(value="#{student_root.id}"))
-      expect(response.body).not_to include("선생님께 메시지 보내기")
+      expect(response.body).not_to include('name="user_message[recipient_id]"')
     end
 
     it "does not show a student root message form when the classroom setting is off" do
@@ -86,10 +85,10 @@ RSpec.describe "User messages", type: :request do
       get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("선생님께 메시지 보내기")
+      expect(response.body).not_to include('name="user_message[recipient_id]"')
     end
 
-    it "shows a student root message form with classroom teachers only when the classroom setting is on" do
+    it "shows a compact student root message form with the first classroom teacher when the classroom setting is on" do
       classroom.update!(student_initiated_messages_enabled: true)
       outside_teacher = create(:user, :teacher, name: "다른 반 선생님")
       sign_in student
@@ -97,12 +96,12 @@ RSpec.describe "User messages", type: :request do
       get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("선생님께 메시지 보내기")
       expect(response.body).to include('name="user_message[recipient_id]"')
-      expect(response.body).to include(teacher.name)
-      expect(response.body).to include(other_teacher.name)
+      expect(response.body).to include(%(type="hidden"))
+      expect(response.body).not_to include("<select")
+      expect(response.body).to include("보내기")
+      expect(response.body).to match(/#{Regexp.escape(teacher.name)}|#{Regexp.escape(other_teacher.name)}/)
       expect(response.body).not_to include(outside_teacher.name)
-      expect(response.body).to include("선택된 선생님")
     end
 
     it "rejects a student root message when the classroom setting is off" do
@@ -383,7 +382,7 @@ RSpec.describe "User messages", type: :request do
       get classroom_student_path(classroom, student)
 
       coupon_index = response.body.index("보유 쿠폰")
-      message_index = response.body.index("메시지 보내기")
+      message_index = response.body.index("보내기")
       recent_index = response.body.index("최근 발급 쿠폰")
       compliment_index = response.body.index("칭찬 타임라인")
 

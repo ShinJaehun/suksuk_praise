@@ -53,10 +53,11 @@
 
 ### 2. 학생 → 선생님 새 메시지 / 발신자 응답
 
-- 교실의 `student_initiated_messages_enabled` 설정이 켜져 있으면 학생은 자기 페이지에서 소속 교실의 teacher를 선택한다
+- 교실의 `student_initiated_messages_enabled` 설정이 켜져 있으면 학생은 자기 페이지에서 소속 교실의 teacher에게 새 메시지를 작성할 수 있다
 - 메시지를 작성해 parent message 없이 새 메시지를 시작할 수 있다
 - 기본값은 false이며, 꺼져 있으면 학생은 새 root message를 먼저 시작할 수 없다
 - 수신자는 자기 소속 교실의 teacher로 제한한다
+- 현재 단계에서는 `teacher_options.first`를 기본 수신 teacher로 사용한다
 - admin에게 학생이 먼저 보내는 흐름은 이번 단계에서 제외한다
 - 다른 교실 teacher, 다른 학생, 임의 사용자에게 보내는 것은 허용하지 않는다
 
@@ -156,7 +157,7 @@
 
 이번 단계에서 포함할 UI 후보:
 - 학생과의 최근 메시지 목록
-- 메시지 입력 폼
+- sender avatar/name/input/button 형태의 compact 메시지 입력 폼
 - 각 root thread 아래의 답글 목록
 - 각 root thread 아래의 응답 입력 폼
 - 전송 버튼
@@ -169,8 +170,8 @@
 - 응답 작성
 
 이번 단계에서 포함할 UI 후보:
-- teacher/admin 원글 카드 목록
-- 교실 설정이 켜진 경우 teacher 선택 새 메시지 입력 폼
+- root thread 카드 목록
+- 교실 설정이 켜진 경우 기본 teacher에게 보내는 compact 새 메시지 입력 폼
 - 각 root thread 카드 아래의 답글 목록
 - 각 root thread 카드 아래의 응답 입력 폼
 - 전송 버튼
@@ -222,6 +223,31 @@
 - 학생 페이지/교사 페이지에서 새 메시지 표시
 
 하지만 이번 spec 구현의 필수 요구사항은 아니다.
+
+---
+
+### 4. 메시지 UI는 compact thread 형태를 기본으로 한다
+
+메시지 입력 UI는 root message form과 reply form 모두 가능한 같은 구조를 사용한다.
+
+- sender avatar
+- sender name
+- message input
+- "보내기" button
+
+메시지 표시 UI도 root message와 reply message 모두 가능한 같은 흐름을 사용한다.
+
+- sender avatar
+- sender name
+- message body
+
+본문은 한 줄에 고정하지 않고, 길면 자연스럽게 여러 줄로 감긴다.
+root와 reply의 시각적 위계는 유지하되, 큰 제목/큰 카드형 작성 영역은 피한다.
+
+학생 root message의 수신자는 현재 단계에서 `teacher_options.first`를 기본 teacher로 사용한다.
+한 교실에 teacher가 여러 명 있을 수 있지만, 이번 단계에서는 담임/부담임/primary teacher 구분을 만들지 않는다.
+추후 notification 작업에서 primary teacher 정책과 알림 대상 teacher 정책을 함께 검토한다.
+예를 들어 message recipient는 대표 teacher 1명으로 두고, notification 대상은 교실 teacher 전체로 분리할 수 있다.
 
 ---
 
