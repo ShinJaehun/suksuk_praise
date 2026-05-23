@@ -3,6 +3,7 @@ require "rails_helper"
 RSpec.describe "Classroom students", type: :request do
   let(:teacher) { create(:user, :teacher) }
   let(:classroom) { create(:classroom) }
+  let(:turbo_headers) { { "ACCEPT" => "text/vnd.turbo-stream.html" } }
 
   before do
     create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
@@ -30,6 +31,83 @@ RSpec.describe "Classroom students", type: :request do
       expect(student.avatar_key).to eq("boy23")
       expect(response).to redirect_to(classroom_path(classroom))
     end
+
+    it "creates a student and classroom membership with turbo stream" do
+      expect {
+        post classroom_students_path(classroom),
+          params: {
+            user: {
+              name: "터보 학생",
+              email: "turbo-student@example.com",
+              password: "password123",
+              gender: "girl"
+            }
+          },
+          headers: turbo_headers
+      }.to change(User.student, :count).by(1)
+        .and change(ClassroomMembership, :count).by(1)
+
+      student = User.find_by!(email: "turbo-student@example.com")
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(classroom.classroom_memberships.exists?(user: student, role: "student")).to eq(true)
+    end
+
+    it "returns 422 with turbo stream when the student is invalid" do
+      expect {
+        post classroom_students_path(classroom),
+          params: {
+            user: {
+              name: "",
+              email: "invalid-student@example.com",
+              password: "password123",
+              gender: "boy"
+            }
+          },
+          headers: turbo_headers
+      }.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+    end
+
+    it "rejects a teacher outside the classroom" do
+      outsider = create(:user, :teacher)
+      sign_out teacher
+      sign_in outsider
+
+      expect {
+        post classroom_students_path(classroom), params: {
+          user: {
+            name: "외부 생성",
+            email: "outside-create@example.com",
+            password: "password123",
+            gender: "boy"
+          }
+        }
+      }.not_to change(User.student, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "rejects a student" do
+      student = create(:user, :student)
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      sign_out teacher
+      sign_in student
+
+      expect {
+        post classroom_students_path(classroom), params: {
+          user: {
+            name: "학생 생성",
+            email: "student-create@example.com",
+            password: "password123",
+            gender: "girl"
+          }
+        }
+      }.not_to change(User.student, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
   end
 
   describe "POST /classrooms/:classroom_id/students/bulk_create" do
@@ -43,6 +121,21 @@ RSpec.describe "Classroom students", type: :request do
       expect(students.map(&:gender)).to contain_exactly("boy", "boy", "girl")
       expect(students.map(&:avatar_key)).to all(be_present)
       expect(response).to redirect_to(classroom_path(classroom))
+    end
+
+    it "rejects a teacher outside the classroom" do
+      outsider = create(:user, :teacher)
+      sign_out teacher
+      sign_in outsider
+
+      expect {
+        post bulk_create_classroom_students_path(classroom), params: {
+          boy_count: 1,
+          girl_count: 1
+        }
+      }.not_to change(User.student, :count)
+
+      expect(response).to redirect_to(root_path)
     end
   end
 

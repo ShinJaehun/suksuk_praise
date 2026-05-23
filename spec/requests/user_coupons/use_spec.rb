@@ -8,6 +8,7 @@ RSpec.describe "UserCoupons#use", type: :request do
     let!(:teacher_membership) { create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher") }
     let!(:student_membership) { create(:classroom_membership, user: student, classroom: classroom, role: "student") }
     let!(:template) { create(:coupon_template, created_by: teacher, active: true, weight: 100) }
+    let(:turbo_headers) { { "ACCEPT" => "text/vnd.turbo-stream.html" } }
     let!(:coupon) do
       create(
         :user_coupon,
@@ -112,6 +113,41 @@ RSpec.describe "UserCoupons#use", type: :request do
 
       expect(event).to have_attributes(action: "used", actor: teacher, user_coupon: coupon)
       expect(event.metadata["target_user_id"]).to eq(student.id)
+    end
+
+    it "redirects to the coupon owner page on HTML success" do
+      sign_in teacher
+
+      post use_user_coupon_path(student, coupon)
+
+      expect(response).to redirect_to(user_path(student))
+      expect(response).to have_http_status(:see_other)
+      expect(coupon.reload).to be_used
+    end
+
+    it "returns turbo stream on success" do
+      sign_in teacher
+
+      expect {
+        post use_user_coupon_path(student, coupon), headers: turbo_headers
+      }.to change(CouponEvent, :count).by(1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(coupon.reload).to be_used
+    end
+
+    it "returns turbo stream conflict when the coupon is already used" do
+      sign_in teacher
+      coupon.update!(status: :used, used_at: Time.zone.local(2026, 4, 7, 11, 0, 0))
+
+      expect {
+        post use_user_coupon_path(student, coupon), headers: turbo_headers
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:conflict)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(coupon.reload).to be_used
     end
   end
 end
