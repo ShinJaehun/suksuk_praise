@@ -44,7 +44,8 @@ RSpec.describe "Student portal flow", type: :request do
       get user_path(student)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("내 정보 수정")
+      expect(response.body).not_to include("내 정보 수정")
+      expect(response.body).to include("PIN 변경")
       expect(response.body).not_to include("계정 관리")
     end
 

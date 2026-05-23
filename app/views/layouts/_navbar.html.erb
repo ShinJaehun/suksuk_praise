@@ -32,9 +32,11 @@
             user_path(current_user),
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
 
-      <%= link_to "내 정보 수정",
-            edit_user_registration_path,
-            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+      <% unless current_user.student? %>
+        <%= link_to "내 정보 수정",
+              edit_user_registration_path,
+              class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+      <% end %>
     <% end %>
   </div>
 
@@ -107,9 +109,11 @@
                 user_path(current_user),
                 class: "block px-3 py-1 hover:bg-gray-50" %>
 
-          <%= link_to "내 정보 수정",
-                edit_user_registration_path,
-                class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% unless current_user.student? %>
+            <%= link_to "내 정보 수정",
+                  edit_user_registration_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% end %>
 
           <%= link_to current_user.student? ? "사용 끝내기" : "Sign out",
                 current_user.student? ? destroy_student_session_path : destroy_user_session_path,

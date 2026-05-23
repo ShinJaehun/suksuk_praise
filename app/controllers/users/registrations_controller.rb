@@ -1,4 +1,5 @@
 class Users::RegistrationsController < Devise::RegistrationsController
+  before_action :redirect_student_self_account_edit!, only: [:edit, :update, :edit_password, :update_password]
   before_action :authenticate_scope!, only: [:edit_password, :update_password]
 
   def edit
@@ -41,6 +42,12 @@ class Users::RegistrationsController < Devise::RegistrationsController
   end
 
   private
+
+  def redirect_student_self_account_edit!
+    return unless current_user&.student?
+
+    redirect_to user_path(current_user), alert: "학생 계정 정보는 선생님에게 요청해 주세요. PIN은 PIN 변경 페이지에서 바꿀 수 있습니다."
+  end
 
   def password_change_params?(params)
     params[:password].present? || params[:password_confirmation].present?
