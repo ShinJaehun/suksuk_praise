@@ -94,6 +94,52 @@ RSpec.describe UserMessage, type: :model do
     expect(reply).to be_valid
   end
 
+  it 'allows a student reply under a student-started root message after the classroom setting is turned off' do
+    classroom.update!(student_initiated_messages_enabled: true)
+    root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: '학생 원글')
+    classroom.update!(student_initiated_messages_enabled: false)
+
+    reply = described_class.new(
+      classroom: classroom,
+      sender: student,
+      recipient: teacher,
+      parent_message: root,
+      body: '추가 답글'
+    )
+
+    expect(reply).to be_valid
+  end
+
+  it 'allows a teacher reply under a teacher-started root message' do
+    root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: '교사 원글')
+
+    reply = described_class.new(
+      classroom: classroom,
+      sender: teacher,
+      recipient: student,
+      parent_message: root,
+      body: '교사 추가 답글'
+    )
+
+    expect(reply).to be_valid
+  end
+
+  it 'rejects a teacher reply addressed away from the root student participant' do
+    other_teacher = create(:user, :teacher)
+    create(:classroom_membership, user: other_teacher, classroom: classroom, role: 'teacher')
+    root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: '교사 원글')
+
+    reply = described_class.new(
+      classroom: classroom,
+      sender: teacher,
+      recipient: other_teacher,
+      parent_message: root,
+      body: '잘못된 수신자'
+    )
+
+    expect(reply).not_to be_valid
+  end
+
   it 'allows a student root message without parent_message to a classroom teacher when enabled' do
     classroom.update!(student_initiated_messages_enabled: true)
 

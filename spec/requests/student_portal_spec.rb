@@ -65,6 +65,26 @@ RSpec.describe "Student portal flow", type: :request do
       expect(response.body).not_to include("내 마이페이지")
       expect(response.body).not_to include("내 소속 교실")
     end
+
+    it "blocks a student from viewing another student's classroom-scoped page" do
+      other_student = create(:user, :student)
+      create(:classroom_membership, user: other_student, classroom: classroom, role: "student")
+      sign_in student
+
+      get classroom_student_path(classroom, other_student)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "does not expose avatar management controls on the student self page" do
+      sign_in student
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("아바타 변경")
+      expect(response.body).not_to include('name="user[avatar_key]"')
+    end
   end
 
   describe "student account deletion boundary" do

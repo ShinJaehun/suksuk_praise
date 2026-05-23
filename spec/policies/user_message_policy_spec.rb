@@ -53,6 +53,43 @@ RSpec.describe UserMessagePolicy do
       expect(described_class.new(student, reply).create?).to eq(false)
     end
 
+    it "allows a student root message when classroom student initiated messages are enabled" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      message = build(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 보냄")
+
+      expect(described_class.new(student, message).create?).to eq(true)
+    end
+
+    it "allows a student to reply to an existing student-started root even when the setting is off" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "학생 원글")
+      classroom.update!(student_initiated_messages_enabled: false)
+      reply = build(:user_message, classroom: classroom, sender: student, recipient: teacher, parent_message: root, body: "추가 답장")
+
+      expect(described_class.new(student, reply).create?).to eq(true)
+    end
+
+    it "allows a teacher to reply to a managed student's teacher-started root" do
+      root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "교사 원글")
+      reply = build(:user_message, classroom: classroom, sender: teacher, recipient: student, parent_message: root, body: "교사 답장")
+
+      expect(described_class.new(teacher, reply).create?).to eq(true)
+    end
+
+    it "rejects a teacher replying to a thread outside the teacher's classrooms" do
+      root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "교사 원글")
+      reply = build(:user_message, classroom: classroom, sender: other_teacher, recipient: student, parent_message: root, body: "외부 교사 답장")
+
+      expect(described_class.new(other_teacher, reply).create?).to eq(false)
+    end
+
+    it "allows an admin to reply to a student thread" do
+      root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "교사 원글")
+      reply = build(:user_message, classroom: classroom, sender: admin, recipient: student, parent_message: root, body: "관리자 답장")
+
+      expect(described_class.new(admin, reply).create?).to eq(true)
+    end
+
     it "rejects a student for another student's root thread" do
       root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "원글")
       reply = build(:user_message, classroom: classroom, sender: other_student, recipient: teacher, parent_message: root, body: "남의 대화")
