@@ -13,13 +13,17 @@ class StudentSessionsController < ApplicationController
 
     student = find_student_for_pin_login
     if student&.student_pin_configured? && student.authenticate_student_pin(params[:student_pin].to_s)
+      classroom_id = @classroom.id
+
       sign_out(:user) if user_signed_in?
+      reset_session
+
       sign_in(:user, student)
-      session[:student_login_classroom_id] = @classroom.id
+      session[:student_login_classroom_id] = classroom_id
       session[:student_last_seen_at] = Time.current.to_i
-      redirect_to student_landing_path(student), notice: "로그인했습니다."
+      redirect_to student_landing_path(student), notice: '로그인했습니다.'
     else
-      flash.now[:alert] = "교실, 학생, PIN을 확인해 주세요."
+      flash.now[:alert] = '교실, 학생, PIN을 확인해 주세요.'
       render :new, status: :unprocessable_entity
     end
   end
@@ -28,7 +32,7 @@ class StudentSessionsController < ApplicationController
     classroom_id = session.delete(:student_login_classroom_id)
     session.delete(:student_last_seen_at)
     sign_out(:user) if current_user&.student?
-    redirect_to student_logout_redirect_path(classroom_id), notice: "사용을 끝냈습니다."
+    redirect_to student_logout_redirect_path(classroom_id), notice: '사용을 끝냈습니다.'
   end
 
   private
@@ -46,7 +50,7 @@ class StudentSessionsController < ApplicationController
 
     student = User.find_by(id: params[:student_id])
     return nil unless student&.student?
-    return nil unless @classroom.classroom_memberships.exists?(user_id: student.id, role: "student")
+    return nil unless @classroom.classroom_memberships.exists?(user_id: student.id, role: 'student')
 
     student
   end
