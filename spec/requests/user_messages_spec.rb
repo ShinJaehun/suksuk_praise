@@ -49,19 +49,26 @@ RSpec.describe "User messages", type: :request do
       create(:user_message, classroom: classroom, sender: student, recipient: teacher, parent_message: root, body: "학생 댓글")
       sign_in student
 
-      get user_path(student)
+      get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("선생님 메시지")
       expect(response.body).to include("학생 댓글")
       expect(response.body).to include("나")
       expect(response.body).to include("reply_to_message_id")
+
+      root_index = response.body.index("선생님 메시지")
+      reply_index = response.body.index("학생 댓글")
+      form_index = response.body.index("reply_to_message_id")
+
+      expect(root_index).to be < reply_index
+      expect(reply_index).to be < form_index
     end
 
     it "does not show a student root message form when the classroom setting is off" do
       sign_in student
 
-      get user_path(student)
+      get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("선생님께 메시지 보내기")
@@ -72,7 +79,7 @@ RSpec.describe "User messages", type: :request do
       outside_teacher = create(:user, :teacher, name: "다른 반 선생님")
       sign_in student
 
-      get user_path(student)
+      get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("선생님께 메시지 보내기")
@@ -257,11 +264,13 @@ RSpec.describe "User messages", type: :request do
 
       get classroom_student_path(classroom, student)
 
-      recent_index = response.body.index("최근 발급 쿠폰")
+      coupon_index = response.body.index("보유 쿠폰")
       message_index = response.body.index("메시지 보내기")
+      recent_index = response.body.index("최근 발급 쿠폰")
       compliment_index = response.body.index("칭찬 타임라인")
 
-      expect(recent_index).to be < message_index
+      expect(coupon_index).to be < message_index
+      expect(message_index).to be < recent_index
       expect(message_index).to be < compliment_index
     end
 

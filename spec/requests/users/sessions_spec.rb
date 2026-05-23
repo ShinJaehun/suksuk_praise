@@ -67,6 +67,6 @@ RSpec.describe "Users::Sessions", type: :request do
       student_pin: "1234"
     }
 
-    expect(response).to redirect_to(user_path(student))
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
   end
 end

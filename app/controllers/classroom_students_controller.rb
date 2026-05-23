@@ -119,6 +119,8 @@ class ClassroomStudentsController < ApplicationController
     )
 
     @new_message = UserMessage.new
+    @reply_message = UserMessage.new
+    @message_teacher_options = student_message_teacher_options
     @message_section_dom_id = dom_id(@user, :message_section)
 
     render "classroom_students/show"
@@ -238,5 +240,15 @@ class ClassroomStudentsController < ApplicationController
     attrs[:gender].present? &&
       attrs[:gender] != @student.gender &&
       !@student.avatar.attached?
+  end
+
+  def student_message_teacher_options
+    return User.none unless current_user == @student && @classroom.student_initiated_messages_enabled?
+
+    User.teacher
+      .joins(:classroom_memberships)
+      .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
+      .distinct
+      .order(:name, :id)
   end
 end

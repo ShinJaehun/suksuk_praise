@@ -17,7 +17,7 @@ class StudentSessionsController < ApplicationController
       sign_in(:user, student)
       session[:student_login_classroom_id] = @classroom.id
       session[:student_last_seen_at] = Time.current.to_i
-      redirect_to user_path(student), notice: "로그인했습니다."
+      redirect_to student_landing_path(student), notice: "로그인했습니다."
     else
       flash.now[:alert] = "교실, 학생, PIN을 확인해 주세요."
       render :new, status: :unprocessable_entity
@@ -49,6 +49,12 @@ class StudentSessionsController < ApplicationController
     return nil unless @classroom.classroom_memberships.exists?(user_id: student.id, role: "student")
 
     student
+  end
+
+  def student_landing_path(student)
+    return classroom_student_path(@classroom, student) if @classroom
+
+    user_path(student)
   end
 
   def student_logout_redirect_path(classroom_id)

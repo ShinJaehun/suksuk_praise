@@ -7,6 +7,7 @@ class UsersController < ApplicationController
 
   def show
     authorize @user, :show?
+    redirect_student_self_to_classroom_context! and return if @user.student? && current_user == @user
     redirect_to_managed_student_page! and return if @user.student? && current_user != @user
 
     @can_create_compliment = false
@@ -44,6 +45,27 @@ class UsersController < ApplicationController
     return teacher_managed_classroom_for(user) if current_user.teacher?
 
     nil
+  end
+
+  def redirect_student_self_to_classroom_context!
+    classroom = student_self_page_classroom_for(@user)
+    return unless classroom
+
+    redirect_to classroom_student_path(classroom, @user)
+  end
+
+  def student_self_page_classroom_for(user)
+    session_classroom = session_classroom_for(user)
+    return session_classroom if session_classroom
+
+    user.classrooms.order(created_at: :asc).first
+  end
+
+  def session_classroom_for(user)
+    classroom_id = session[:student_login_classroom_id]
+    return nil if classroom_id.blank?
+
+    user.classrooms.where(id: classroom_id).first
   end
 
   def teacher_managed_classroom_for(user)

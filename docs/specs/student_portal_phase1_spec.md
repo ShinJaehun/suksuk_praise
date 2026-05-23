@@ -5,11 +5,11 @@
 ## 목적
 
 현재 `suksuk_praise`는 교실 중심 화면(`classrooms#index`, `classrooms#show`)을 기반으로 동작하고 있다.  
-앞으로는 **학생도 개별 로그인**할 수 있으므로, 학생 로그인 이후의 기본 동선을 **교실 화면 중심**이 아니라 **자기 마이페이지 중심**으로 전환한다.
+앞으로는 **학생도 개별 로그인**할 수 있으므로, 학생 로그인 이후의 기본 동선을 **교실 맥락이 있는 학생 상세 화면 중심**으로 전환한다.
 
 이번 작업의 1차 목표는 다음이다.
 
-1. 학생 로그인 후 기본 진입 화면을 자기 페이지로 고정
+1. 학생 로그인 후 기본 진입 화면을 교실 맥락이 있는 학생 상세 화면으로 고정
 2. 학생은 자기 자신과 관련된 정보만 볼 수 있도록 권한 경계 강화
 3. 교사/관리자용 학생 상세 관리와 학생 본인용 마이페이지를 역할별로 분리
 4. 이후 기능(쿠폰 사용 요청, 교사↔학생 메시지)의 기반이 되는 구조를 먼저 안정화
@@ -25,7 +25,7 @@
   - 학생 상세 페이지에서 학생 관리 수행
 
 - **student**
-  - 로그인 후 자기 마이페이지로 이동
+  - 로그인 후 교실 맥락이 있는 자기 학생 상세 화면으로 이동
   - 자기 정보 / 자기 쿠폰 / 자기 상태만 확인
   - 다른 학생 목록, 다른 학생 상세, 교실 전체 관리 기능은 접근 불가
 
@@ -70,24 +70,24 @@
 
 ## 1. 학생 로그인 후 기본 진입 경로
 
-학생 로그인 후에는 `classrooms#index` 나 특정 `classrooms#show`로 보내지 말고,  
-**항상 자기 마이페이지**로 보내도록 한다.
+학생 PIN 로그인 후에는 `classrooms#index` 나 특정 `classrooms#show`로 보내지 말고,
+**항상 교실 맥락이 있는 자기 학생 상세 화면**으로 보내도록 한다.
 
 예시 방향:
 
 - admin / teacher 로그인 후: 기존 기본 흐름 유지
-- student 로그인 후: `user_path(current_user)`
+- student PIN 로그인 후: `classroom_student_path(login_classroom, current_user)`
 
 이번 단계에서는 `/me` 같은 별도 경로를 새로 만들지 않고,
-기존 `UsersController#show`를 학생 본인 마이페이지의 진입점으로 사용한다.
+기존 `classroom_students#show`를 학생 본인 화면의 canonical 진입점으로 사용한다.
+`/users/:id`는 당장 제거하지 않지만, 학생 본인이 접근하면 가능한 경우 classroom scoped path로 유도한다.
 
 즉:
 
-- student self page: `GET /users/:id`
+- student canonical page: `GET /classrooms/:classroom_id/students/:id`
 - teacher/admin managed page: `GET /classrooms/:classroom_id/students/:id`
 
-같은 `UsersController#show`를 재사용하더라도,
-경로 컨텍스트와 역할별 렌더링 책임은 명확히 분리한다.
+학생 상세 화면의 카드 순서는 개인정보/요약, 보유 쿠폰, 메시지, 쿠폰 로그/칭찬 타임라인 순서를 기준으로 한다.
 
 ---
 

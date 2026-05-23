@@ -77,37 +77,49 @@
       </div>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex items-center justify-between">
-        <h2 class="text-base font-semibold text-slate-900">
-          <%= t("titles.recent_issued_coupons_for_user", default: "최근 발급 쿠폰") %>
-        </h2>
-        <span class="text-xs text-slate-500">최신 순</span>
-      </div>
-      <div class="mt-3 max-h-[20rem] overflow-y-auto md:max-h-[28rem]">
-        <%= turbo_frame_tag dom_id(@user, :recent_issued_coupons) do %>
-          <%= render partial: "user_coupons/issued_coupons",
-            locals: { coupons: @recent_issued_coupons, show_user: false } %>
-        <% end %>
-      </div>
-    </section>
+    <% if current_user == @user && current_user.student? %>
+      <%= render "user_messages/self_frame",
+            dom_id: @message_section_dom_id,
+            threads: @message_threads,
+            new_message: @new_message,
+            teacher_options: @message_teacher_options,
+            reply_message: @reply_message,
+            user: @user %>
+    <% else %>
+      <%= render "user_messages/managed_frame",
+            dom_id: @message_section_dom_id,
+            threads: @message_threads,
+            message: @new_message,
+            form_url: classroom_student_messages_path(@classroom, @user) %>
+    <% end %>
 
-    <%= render "user_messages/managed_frame",
-          dom_id: @message_section_dom_id,
-          threads: @message_threads,
-          message: @new_message,
-          form_url: classroom_student_messages_path(@classroom, @user) %>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-semibold text-slate-900">
+            <%= t("titles.recent_issued_coupons_for_user", default: "최근 발급 쿠폰") %>
+          </h2>
+          <span class="text-xs text-slate-500">최신 순</span>
+        </div>
+        <div class="mt-3 max-h-[20rem] overflow-y-auto md:h-[28rem]">
+          <%= turbo_frame_tag dom_id(@user, :recent_issued_coupons) do %>
+            <%= render partial: "user_coupons/issued_coupons",
+              locals: { coupons: @recent_issued_coupons, show_user: false } %>
+          <% end %>
+        </div>
+      </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="flex items-center justify-between">
-        <h2 class="text-base font-semibold text-slate-900">칭찬 타임라인</h2>
-        <span class="text-xs text-slate-500">최근순</span>
-      </div>
-      <div class="mt-3 max-h-[20rem] overflow-y-auto md:max-h-[28rem]">
-        <%= turbo_frame_tag dom_id(@user, :compliments) do %>
-          <%= render partial: "users/compliments_timeline", locals: { compliments: @compliments } %>
-        <% end %>
-      </div>
-    </section>
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-semibold text-slate-900">칭찬 타임라인</h2>
+          <span class="text-xs text-slate-500">최근순</span>
+        </div>
+        <div class="mt-3 max-h-[20rem] overflow-y-auto md:h-[28rem]">
+          <%= turbo_frame_tag dom_id(@user, :compliments) do %>
+            <%= render partial: "users/compliments_timeline", locals: { compliments: @compliments } %>
+          <% end %>
+        </div>
+      </section>
+    </div>
   </div>
 </section>

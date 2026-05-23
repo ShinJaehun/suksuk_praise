@@ -45,7 +45,7 @@ RSpec.describe "Student PIN sessions", type: :request do
       student_pin: "1234"
     }
 
-    expect(response).to redirect_to(user_path(student))
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
   end
 
   it "stores the student session last seen timestamp after PIN login" do
@@ -67,7 +67,7 @@ RSpec.describe "Student PIN sessions", type: :request do
     end
 
     travel_to Time.zone.local(2026, 5, 22, 10, 5, 0) do
-      get user_path(student)
+      get classroom_student_path(classroom, student)
     end
 
     expect(response).to have_http_status(:ok)
@@ -83,7 +83,7 @@ RSpec.describe "Student PIN sessions", type: :request do
     end
 
     travel_to Time.zone.local(2026, 5, 22, 10, 21, 1) do
-      get user_path(student)
+      get classroom_student_path(classroom, student)
     end
 
     expect(response).to redirect_to(classroom_student_login_path(classroom))
@@ -94,7 +94,7 @@ RSpec.describe "Student PIN sessions", type: :request do
     sign_in student
 
     travel_to Time.zone.local(2026, 5, 22, 10, 0, 0) do
-      get user_path(student)
+      get classroom_student_path(classroom, student)
     end
 
     travel_to Time.zone.local(2026, 5, 22, 10, 21, 1) do
@@ -110,7 +110,7 @@ RSpec.describe "Student PIN sessions", type: :request do
 
     get user_path(student)
 
-    expect(response).to have_http_status(:ok)
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
     expect(session[:student_last_seen_at]).to be_present
   end
 
@@ -138,7 +138,7 @@ RSpec.describe "Student PIN sessions", type: :request do
   it "shows a student-specific logout link on the self page" do
     sign_in student
 
-    get user_path(student)
+    get classroom_student_path(classroom, student)
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("사용 끝내기")
@@ -236,7 +236,7 @@ RSpec.describe "Student PIN sessions", type: :request do
       student_pin: "4321"
     }
 
-    expect(response).to redirect_to(user_path(student))
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
   end
 
   it "keeps the existing student PIN when the managed PIN field is blank" do

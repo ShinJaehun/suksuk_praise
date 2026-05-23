@@ -38,16 +38,12 @@ RSpec.describe "Student portal flow", type: :request do
       expect(response).to redirect_to(user_path(student))
     end
 
-    it "allows a student to view the self page" do
+    it "redirects a student self page to the classroom-scoped page" do
       sign_in student
 
       get user_path(student)
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("내 정보 수정")
-      expect(response.body).to include("PIN 변경")
-      expect(response.body).not_to include('name="user[avatar_key]"')
-      expect(response.body).not_to include("계정 관리")
+      expect(response).to redirect_to(classroom_student_path(classroom, student))
     end
 
     it "redirects a teacher from non-nested student show to the classroom-scoped page" do
