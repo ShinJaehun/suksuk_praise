@@ -4,11 +4,15 @@ module UsersHelper
   end
 
   def user_avatar_path(user, size:)
-    return "avatars/#{user.avatar_key}.png" if user.avatar_key.present?
+    "avatars/#{user.avatar_key.presence || fallback_avatar_key(user)}.png"
+  end
 
-    index = user.default_avatar_index.to_i
-    index = 1 unless index.between?(1, 32)
-    "avatars/user_profile_#{format('%02d', index)}_#{size}.png"
+  def fallback_avatar_key(user)
+    return "admin" if user.admin?
+    return user.gender == "female" ? "teacherF01" : "teacherM01" if user.teacher?
+    return user.gender == "girl" ? "girl01" : "boy01" if user.student?
+
+    "boy01"
   end
 
   def user_avatar_image(user, size:, **options)

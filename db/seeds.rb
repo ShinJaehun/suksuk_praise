@@ -19,13 +19,21 @@ def pick_demo_avatar_key(gender, used_avatar_keys)
   avatar_key
 end
 
+def existing_demo_avatar_keys(keys)
+  keys.select { |key| Rails.root.join("app/assets/images/avatars/#{key}.png").exist? }
+end
+
+def pick_existing_demo_avatar_key(gender, fallback_key)
+  existing_demo_avatar_keys(User.avatar_keys_for(gender)).sample || fallback_key
+end
+
 admin_user = User.find_or_initialize_by(email: 'a@a')
 admin_user.assign_attributes(
   email: 'a@a',
   password: 'password',
   name: '관리자에이',
   role: 'admin',
-  default_avatar_index: rand(1..32)
+  avatar_key: 'admin'
 )
 admin_user.save!
 
@@ -35,7 +43,8 @@ teacherB.assign_attributes(
   password: 'password',
   name: '티쳐비',
   role: 'teacher',
-  default_avatar_index: rand(1..32)
+  gender: 'female',
+  avatar_key: pick_existing_demo_avatar_key('female', 'teacherF01')
 )
 teacherB.save!
 
@@ -45,7 +54,8 @@ teacherT.assign_attributes(
   password: 'password',
   name: '티쳐티',
   role: 'teacher',
-  default_avatar_index: rand(1..32)
+  gender: 'male',
+  avatar_key: pick_existing_demo_avatar_key('male', 'teacherM01')
 )
 teacherT.save!
 
@@ -62,7 +72,6 @@ students = 30.times.map do |i|
     role: 'student',
     gender: gender,
     avatar_key: avatar_key,
-    default_avatar_index: rand(1..32),
     points: 0,
     email: "student#{i + 1}@school.com", # Devise 필수
     password: 'password'

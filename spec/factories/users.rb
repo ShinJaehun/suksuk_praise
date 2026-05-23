@@ -5,7 +5,6 @@ FactoryBot.define do
     name { "Test User" }
     role { "student" }
     points { 0 }
-    default_avatar_index { 1 }
 
     trait :student do
       role { "student" }

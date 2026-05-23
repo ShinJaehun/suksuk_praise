@@ -17,12 +17,10 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def create
-    used_indices = used_avatar_indices_in_classroom
     used_avatar_keys = used_avatar_keys_in_classroom
     attrs = user_params.merge(
       role: "student",
-      points: 0,
-      default_avatar_index: pick_avatar_index(used_indices)
+      points: 0
     )
     attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys)
     @user = User.new(attrs)
@@ -64,16 +62,13 @@ class ClassroomStudentsController < ApplicationController
     prefix = Array('A'..'Z').sample(4).join
     student_pin = params[:student_pin].to_s.strip
 
-    used_indices = used_avatar_indices_in_classroom
     used_avatar_keys = used_avatar_keys_in_classroom
 
     ApplicationRecord.transaction do
       genders.each_with_index do |gender, i|
         name = format("%s%02d", prefix, i + 1)
         email = "#{name}@suksuk.or.kr"
-        avatar_index = pick_avatar_index(used_indices)
         avatar_key = pick_avatar_key(gender, used_avatar_keys)
-        used_indices << avatar_index
         used_avatar_keys << avatar_key if avatar_key.present?
         attrs = {
           name: name,
@@ -82,8 +77,7 @@ class ClassroomStudentsController < ApplicationController
           role: "student",
           points: 0,
           gender: gender,
-          avatar_key: avatar_key,
-          default_avatar_index: avatar_index
+          avatar_key: avatar_key
         }
         attrs[:student_pin] = student_pin if student_pin.present?
         user = User.create!(attrs)
@@ -198,25 +192,12 @@ class ClassroomStudentsController < ApplicationController
     authorize @classroom, :manage_members?
   end
 
-  def used_avatar_indices_in_classroom
-    @classroom.classroom_memberships
-      .joins(:user)
-      .where.not(users: { default_avatar_index: nil })
-      .distinct
-      .pluck("users.default_avatar_index")
-  end
-
   def used_avatar_keys_in_classroom(excluding: nil)
     scope = @classroom.classroom_memberships
       .joins(:user)
       .where.not(users: { avatar_key: nil })
     scope = scope.where.not(users: { id: excluding.id }) if excluding
     scope.distinct.pluck("users.avatar_key")
-  end
-
-  def pick_avatar_index(used_indices)
-    available = (1..32).to_a - used_indices
-    available.sample || rand(1..32)
   end
 
   def pick_avatar_key(gender, used_avatar_keys)
