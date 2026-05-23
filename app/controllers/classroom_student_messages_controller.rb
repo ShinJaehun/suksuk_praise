@@ -7,12 +7,10 @@ class ClassroomStudentMessagesController < ApplicationController
   before_action :set_student
 
   def create
-    @message = UserMessage.new(
-      classroom: @classroom,
-      sender: current_user,
-      recipient: @student,
-      body: message_params[:body]
-    )
+    replied_message = find_repliable_student_root_message if params[:reply_to_message_id].present?
+    return redirect_to_invalid_reply if params[:reply_to_message_id].present? && !replied_message
+
+    @message = replied_message ? build_reply_message(replied_message) : build_root_message
     authorize @message
 
     if @message.save
@@ -30,7 +28,11 @@ class ClassroomStudentMessagesController < ApplicationController
             status: :see_other
         end
         format.turbo_stream do
-          load_managed_message_section!(message: @message)
+          load_managed_message_section!(
+            message: replied_message ? UserMessage.new : @message,
+            reply_message: replied_message ? @message : UserMessage.new,
+            active_reply_thread_id: replied_message&.id
+          )
           render :create, status: :unprocessable_entity
         end
       end
@@ -53,7 +55,49 @@ class ClassroomStudentMessagesController < ApplicationController
     params.require(:user_message).permit(:body)
   end
 
-  def load_managed_message_section!(message: nil)
+  def find_repliable_student_root_message
+    UserMessage
+      .root_messages
+      .where(classroom_id: @classroom.id)
+      .where("sender_id = :id OR recipient_id = :id", id: @student.id)
+      .find_by(id: params[:reply_to_message_id])
+  end
+
+  def build_root_message
+    UserMessage.new(
+      classroom: @classroom,
+      sender: current_user,
+      recipient: @student,
+      body: message_params[:body]
+    )
+  end
+
+  def build_reply_message(replied_message)
+    UserMessage.new(
+      classroom: @classroom,
+      sender: current_user,
+      recipient: @student,
+      parent_message: replied_message,
+      body: message_params[:body]
+    )
+  end
+
+  def redirect_to_invalid_reply
+    respond_to do |format|
+      format.html { redirect_to classroom_student_path(@classroom, @student), alert: "응답할 수 없는 메시지입니다.", status: :see_other }
+      format.turbo_stream do
+        invalid_reply_message = UserMessage.new
+        invalid_reply_message.errors.add(:base, "응답할 수 없는 메시지입니다.")
+        load_managed_message_section!(
+          reply_message: invalid_reply_message,
+          active_reply_thread_id: params[:reply_to_message_id].presence&.to_i
+        )
+        render :create, status: :unprocessable_entity
+      end
+    end
+  end
+
+  def load_managed_message_section!(message: nil, reply_message: nil, active_reply_thread_id: nil)
     load_user_show_data!(
       user: @student,
       classroom: @classroom,
@@ -62,6 +106,8 @@ class ClassroomStudentMessagesController < ApplicationController
     )
 
     @new_message = message || UserMessage.new
+    @reply_message = reply_message || UserMessage.new
+    @active_reply_thread_id = active_reply_thread_id
     @message_section_dom_id = dom_id(@student, :message_section)
   end
 end

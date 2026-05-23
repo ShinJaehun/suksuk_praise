@@ -32,6 +32,7 @@
       <%= render "user_messages/reply_form",
             thread: thread,
             reply_message: reply_message,
+            form_url: local_assigns[:form_url],
             user: user,
             active: active_reply_thread_id == thread.id %>
     </div>

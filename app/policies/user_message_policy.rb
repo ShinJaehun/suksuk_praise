@@ -17,8 +17,8 @@ class UserMessagePolicy < ApplicationPolicy
   end
 
   def create?
-    return admin_to_student? if user&.admin?
-    return teacher_to_managed_student? if user&.teacher?
+    return admin_message_to_student? if user&.admin?
+    return teacher_message_to_managed_student? if user&.teacher?
     return student_message_to_classroom_teacher? if user&.student?
 
     false
@@ -42,31 +42,53 @@ class UserMessagePolicy < ApplicationPolicy
 
   private
 
-  def admin_to_student?
+  def admin_message_to_student?
     return false unless record.sender_id == user.id
-    return false unless record.parent_message_id.nil?
     return false unless record.recipient&.student?
+
+    return admin_reply_to_student_thread? if record.parent_message.present?
+    return false unless record.parent_message_id.nil?
 
     student_in_classroom?(record.recipient, record.classroom)
   end
 
-  def teacher_to_managed_student?
+  def teacher_message_to_managed_student?
     return false unless record.sender_id == user.id
-    return false unless record.parent_message_id.nil?
     return false unless record.recipient&.student?
     return false unless teacher_manages_classroom?(record.classroom)
 
+    return teacher_reply_to_managed_student_thread? if record.parent_message.present?
+    return false unless record.parent_message_id.nil?
+
     student_in_classroom?(record.recipient, record.classroom)
+  end
+
+  def admin_reply_to_student_thread?
+    reply_to_managed_student_thread? && student_in_classroom?(record.recipient, record.classroom)
+  end
+
+  def teacher_reply_to_managed_student_thread?
+    reply_to_managed_student_thread? && student_in_classroom?(record.recipient, record.classroom)
+  end
+
+  def reply_to_managed_student_thread?
+    return false unless record.parent_message.present?
+    return false unless record.parent_message.parent_message_id.nil?
+    return false unless [record.parent_message.sender_id, record.parent_message.recipient_id].include?(record.recipient_id)
+    return false unless [record.parent_message.sender, record.parent_message.recipient].any?(&:student?)
+    return false unless record.parent_message.classroom_id == record.classroom_id
+
+    true
   end
 
   def student_reply_to_existing_root_message?
     return false unless record.sender_id == user.id
     return false unless record.parent_message.present?
     return false unless record.parent_message.parent_message_id.nil?
-    return false unless record.recipient&.teacher? || record.recipient&.admin?
     return false unless student_in_classroom?(user, record.classroom)
-    return false unless record.parent_message.recipient_id == user.id
-    return false unless record.parent_message.sender_id == record.recipient_id
+    return false unless [record.parent_message.sender_id, record.parent_message.recipient_id].include?(user.id)
+    return false unless [record.parent_message.sender_id, record.parent_message.recipient_id].include?(record.recipient_id)
+    return false unless record.recipient_id != user.id
     return false unless record.parent_message.classroom_id == record.classroom_id
     return false if record.recipient.teacher? && !teacher_in_classroom?(record.recipient, record.classroom)
 

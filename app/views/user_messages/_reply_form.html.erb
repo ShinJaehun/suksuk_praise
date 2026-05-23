@@ -1,4 +1,4 @@
-<%= simple_form_for reply_message, url: user_messages_path(user) do |f| %>
+<%= simple_form_for reply_message, url: local_assigns[:form_url] || user_messages_path(user) do |f| %>
   <%= hidden_field_tag :reply_to_message_id, thread.id %>
   <div class="space-y-3 rounded-2xl bg-slate-50 p-3">
     <% if active && reply_message.errors.any? %>

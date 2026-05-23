@@ -65,6 +65,21 @@ RSpec.describe "User messages", type: :request do
       expect(reply_index).to be < form_index
     end
 
+    it "shows a student reply form under a student root thread even when the classroom setting is off" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
+      classroom.update!(student_initiated_messages_enabled: false)
+      sign_in student
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("먼저 질문")
+      expect(response.body).to include("reply_to_message_id")
+      expect(response.body).to include(%(value="#{student_root.id}"))
+      expect(response.body).not_to include("선생님께 메시지 보내기")
+    end
+
     it "does not show a student root message form when the classroom setting is off" do
       sign_in student
 
@@ -87,6 +102,7 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).to include(teacher.name)
       expect(response.body).to include(other_teacher.name)
       expect(response.body).not_to include(outside_teacher.name)
+      expect(response.body).to include("선택된 선생님")
     end
 
     it "rejects a student root message when the classroom setting is off" do
@@ -192,6 +208,108 @@ RSpec.describe "User messages", type: :request do
 
       expect(UserMessage.last.recipient).to eq(admin)
       expect(UserMessage.last.parent_message).to eq(incoming)
+    end
+
+    it "allows a student to reply under a student root thread after the classroom setting is turned off" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
+      classroom.update!(student_initiated_messages_enabled: false)
+      sign_in student
+
+      expect {
+        post user_messages_path(student),
+             params: {
+               reply_to_message_id: student_root.id,
+               user_message: { body: "추가 질문" }
+             },
+             headers: turbo_headers
+      }.to change(UserMessage, :count).by(1)
+
+      expect(UserMessage.last.sender).to eq(student)
+      expect(UserMessage.last.recipient).to eq(teacher)
+      expect(UserMessage.last.parent_message).to eq(student_root)
+    end
+
+    it "shows a managed reply form under a student root message" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
+      sign_in teacher
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("먼저 질문")
+      expect(response.body).to include("reply_to_message_id")
+      expect(response.body).to include(%(value="#{student_root.id}"))
+    end
+
+    it "shows a managed reply form under a teacher root message" do
+      teacher_root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "선생님 원글")
+      sign_in teacher
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("선생님 원글")
+      expect(response.body).to include("reply_to_message_id")
+      expect(response.body).to include(%(value="#{teacher_root.id}"))
+    end
+
+    it "allows a teacher to reply under a student root message with turbo stream" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
+      sign_in teacher
+
+      expect {
+        post classroom_student_messages_path(classroom, student),
+             params: {
+               reply_to_message_id: student_root.id,
+               user_message: { body: "선생님 답변" }
+             },
+             headers: turbo_headers
+      }.to change(UserMessage, :count).by(1)
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(UserMessage.last.sender).to eq(teacher)
+      expect(UserMessage.last.recipient).to eq(student)
+      expect(UserMessage.last.parent_message).to eq(student_root)
+    end
+
+    it "allows a teacher to reply under a teacher root message with turbo stream" do
+      teacher_root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "선생님 원글")
+      sign_in teacher
+
+      expect {
+        post classroom_student_messages_path(classroom, student),
+             params: {
+               reply_to_message_id: teacher_root.id,
+               user_message: { body: "선생님 추가 답글" }
+             },
+             headers: turbo_headers
+      }.to change(UserMessage, :count).by(1)
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(UserMessage.last.sender).to eq(teacher)
+      expect(UserMessage.last.recipient).to eq(student)
+      expect(UserMessage.last.parent_message).to eq(teacher_root)
+    end
+
+    it "allows an admin to reply under a student root message" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
+      sign_in admin
+
+      expect {
+        post classroom_student_messages_path(classroom, student),
+             params: {
+               reply_to_message_id: student_root.id,
+               user_message: { body: "관리자 답변" }
+             }
+      }.to change(UserMessage, :count).by(1)
+
+      expect(UserMessage.last.sender).to eq(admin)
+      expect(UserMessage.last.recipient).to eq(student)
+      expect(UserMessage.last.parent_message).to eq(student_root)
     end
 
     it "lets a student reply inside each sender's root thread separately" do

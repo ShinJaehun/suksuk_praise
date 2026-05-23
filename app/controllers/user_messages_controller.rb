@@ -43,13 +43,13 @@ class UserMessagesController < ApplicationController
   end
 
   def find_repliable_root_message
-    message = current_user.received_messages
+    message = UserMessage
       .root_messages
       .includes(:sender)
+      .where("sender_id = :id OR recipient_id = :id", id: current_user.id)
       .find_by(id: params[:reply_to_message_id])
 
     return nil unless message
-    return nil if message.sender.student?
 
     message
   end
@@ -58,10 +58,14 @@ class UserMessagesController < ApplicationController
     UserMessage.new(
       classroom: replied_message.classroom,
       sender: current_user,
-      recipient: replied_message.sender,
+      recipient: reply_recipient_for(replied_message),
       parent_message: replied_message,
       body: message_params[:body]
     )
+  end
+
+  def reply_recipient_for(replied_message)
+    replied_message.sender_id == current_user.id ? replied_message.recipient : replied_message.sender
   end
 
   def build_root_message

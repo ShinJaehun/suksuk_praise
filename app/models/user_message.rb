@@ -20,7 +20,7 @@ class UserMessage < ApplicationRecord
   validate :non_student_participant_must_be_teacher_or_admin
   validate :participants_must_match_classroom_context
   validate :student_root_message_must_target_classroom_teacher
-  validate :reply_must_target_teacher_or_admin_root_message
+  validate :reply_must_target_root_message
 
   private
 
@@ -80,14 +80,34 @@ class UserMessage < ApplicationRecord
     errors.add(:base, "학생은 자기 교실 선생님에게만 새 메시지를 보낼 수 있습니다.")
   end
 
-  def reply_must_target_teacher_or_admin_root_message
+  def reply_must_target_root_message
     return if parent_message.blank?
 
     errors.add(:base, "답글의 답글은 이번 단계에서 허용하지 않습니다.") if parent_message.parent_message_id.present?
-    errors.add(:base, "학생만 답글을 작성할 수 있습니다.") unless sender&.student?
-    errors.add(:base, "teacher/admin 원글에만 답글을 달 수 있습니다.") unless parent_message.sender&.teacher? || parent_message.sender&.admin?
-    errors.add(:base, "본인에게 온 원글에만 답글을 달 수 있습니다.") unless parent_message.recipient_id == sender_id
-    errors.add(:base, "원글 작성자에게만 답글을 보낼 수 있습니다.") unless recipient_id == parent_message.sender_id
     errors.add(:base, "원글과 같은 교실 맥락에서만 답글을 달 수 있습니다.") unless classroom_id == parent_message.classroom_id
+
+    if sender&.student?
+      errors.add(:base, "본인이 참여한 원글에만 답글을 달 수 있습니다.") unless [parent_message.sender_id, parent_message.recipient_id].include?(sender_id)
+      errors.add(:base, "원글의 상대 참여자에게만 답글을 보낼 수 있습니다.") unless recipient_id == other_root_participant_id(sender_id)
+    elsif sender&.teacher? || sender&.admin?
+      errors.add(:base, "학생이 참여한 원글에만 답글을 달 수 있습니다.") unless [parent_message.sender, parent_message.recipient].any?(&:student?)
+      errors.add(:base, "원글의 학생 참여자에게만 답글을 보낼 수 있습니다.") unless recipient_id == root_student_participant_id
+    else
+      errors.add(:base, "허용되지 않은 답글 작성자입니다.")
+    end
+  end
+
+  def root_student_participant_id
+    return parent_message.sender_id if parent_message.sender&.student?
+    return parent_message.recipient_id if parent_message.recipient&.student?
+
+    nil
+  end
+
+  def other_root_participant_id(participant_id)
+    return parent_message.recipient_id if parent_message.sender_id == participant_id
+    return parent_message.sender_id if parent_message.recipient_id == participant_id
+
+    nil
   end
 end

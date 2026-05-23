@@ -8,10 +8,14 @@ module UserMessagesHelper
   end
 
   def show_user_message_reply_form?(message, user)
-    user.present? &&
-      current_user == user &&
-      message.recipient_id == user.id &&
-      message.parent_message_id.nil? &&
-      !message.sender.student?
+    return false unless user.present? && message.parent_message_id.nil?
+
+    if current_user.student?
+      current_user == user && [message.sender_id, message.recipient_id].include?(user.id)
+    elsif current_user.teacher? || current_user.admin?
+      user.student? && [message.sender_id, message.recipient_id].include?(user.id)
+    else
+      false
+    end
   end
 end

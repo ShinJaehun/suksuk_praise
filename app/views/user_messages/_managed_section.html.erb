@@ -1,8 +1,9 @@
 <%= render "user_messages/thread",
       threads: threads,
-      reply_message: nil,
-      user: nil,
-      active_reply_thread_id: nil %>
+      reply_message: reply_message,
+      user: user,
+      form_url: form_url,
+      active_reply_thread_id: active_reply_thread_id %>
 
 <%= simple_form_for message, url: form_url do |f| %>
   <div class="mt-4 space-y-4 rounded-2xl border-t border-slate-100 bg-slate-50 p-4 pt-4">

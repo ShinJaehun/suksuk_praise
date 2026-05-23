@@ -3,6 +3,9 @@
     <%= render "user_messages/managed_section",
           threads: threads,
           message: message,
-          form_url: form_url %>
+          reply_message: reply_message,
+          user: user,
+          form_url: form_url,
+          active_reply_thread_id: local_assigns[:active_reply_thread_id] %>
   </section>
 <% end %>
