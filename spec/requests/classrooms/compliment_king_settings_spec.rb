@@ -23,6 +23,30 @@ RSpec.describe "Classroom compliment king settings", type: :request do
       expect(classroom.daily_compliment_king_enabled?).to eq(true)
     end
 
+    it "allows a classroom teacher to update student initiated message setting" do
+      sign_in teacher
+
+      patch classroom_path(classroom), params: {
+        classroom: {
+          name: classroom.name,
+          student_initiated_messages_enabled: "1"
+        }
+      }
+
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(classroom.reload.student_initiated_messages_enabled?).to eq(true)
+    end
+
+    it "shows the message management setting on edit" do
+      sign_in teacher
+
+      get edit_classroom_path(classroom)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("메시지 관리")
+      expect(response.body).to include("student_initiated_messages_enabled")
+    end
+
     it "rejects a student" do
       student = create(:user, :student)
       create(:classroom_membership, user: student, classroom: classroom, role: "student")

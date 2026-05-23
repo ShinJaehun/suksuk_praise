@@ -19,7 +19,7 @@ class UserMessage < ApplicationRecord
   validate :exactly_one_student_participant_for_now
   validate :non_student_participant_must_be_teacher_or_admin
   validate :participants_must_match_classroom_context
-  validate :root_message_sender_must_not_be_student
+  validate :student_root_message_must_target_classroom_teacher
   validate :reply_must_target_teacher_or_admin_root_message
 
   private
@@ -65,12 +65,19 @@ class UserMessage < ApplicationRecord
     errors.add(:base, "교실 맥락과 맞지 않는 참여자입니다.")
   end
 
-  def root_message_sender_must_not_be_student
+  def student_root_message_must_target_classroom_teacher
     return if parent_message_id.present?
-    return if sender.blank?
+    return if sender.blank? || recipient.blank?
     return unless sender.student?
 
-    errors.add(:base, "학생은 새 원글 메시지를 시작할 수 없습니다.")
+    unless classroom&.student_initiated_messages_enabled?
+      errors.add(:base, "학생 새 메시지가 허용되지 않은 교실입니다.")
+      return
+    end
+
+    return if recipient.teacher? && classroom.classroom_memberships.exists?(user_id: recipient.id, role: "teacher")
+
+    errors.add(:base, "학생은 자기 교실 선생님에게만 새 메시지를 보낼 수 있습니다.")
   end
 
   def reply_must_target_teacher_or_admin_root_message

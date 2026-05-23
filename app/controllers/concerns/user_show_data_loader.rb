@@ -11,15 +11,17 @@ module UserShowDataLoader
     messages_scope = policy_scope(UserMessage)
     @message_threads =
       if classroom
-        messages_scope
-          .root_messages
-          .where(classroom_id: classroom.id, recipient_id: user.id)
+        classroom_messages_scope = messages_scope.root_messages.where(classroom_id: classroom.id)
+        classroom_messages_scope
+          .where(sender_id: user.id)
+          .or(classroom_messages_scope.where(recipient_id: user.id))
           .includes(:sender, :recipient, replies: [:sender, :recipient])
           .order(created_at: :asc)
       else
-        messages_scope
-          .root_messages
-          .where(recipient_id: user.id)
+        root_messages_scope = messages_scope.root_messages
+        root_messages_scope
+          .where(sender_id: user.id)
+          .or(root_messages_scope.where(recipient_id: user.id))
           .includes(:sender, :recipient, replies: [:sender, :recipient])
           .order(created_at: :asc)
       end

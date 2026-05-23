@@ -19,7 +19,7 @@ class UserMessagePolicy < ApplicationPolicy
   def create?
     return admin_to_student? if user&.admin?
     return teacher_to_managed_student? if user&.teacher?
-    return student_reply_to_existing_root_message? if user&.student?
+    return student_message_to_classroom_teacher? if user&.student?
 
     false
   end
@@ -69,6 +69,17 @@ class UserMessagePolicy < ApplicationPolicy
     return false unless record.parent_message.sender_id == record.recipient_id
     return false unless record.parent_message.classroom_id == record.classroom_id
     return false if record.recipient.teacher? && !teacher_in_classroom?(record.recipient, record.classroom)
+
+    true
+  end
+
+  def student_message_to_classroom_teacher?
+    return false unless record.sender_id == user.id
+    return student_reply_to_existing_root_message? if record.parent_message.present?
+    return false unless record.classroom&.student_initiated_messages_enabled?
+    return false unless record.recipient&.teacher?
+    return false unless student_in_classroom?(user, record.classroom)
+    return false unless teacher_in_classroom?(record.recipient, record.classroom)
 
     true
   end

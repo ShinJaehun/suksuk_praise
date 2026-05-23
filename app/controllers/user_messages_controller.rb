@@ -6,16 +6,10 @@ class UserMessagesController < ApplicationController
   before_action :set_user
 
   def create
-    replied_message = find_repliable_root_message
-    return redirect_to_invalid_reply unless replied_message
+    replied_message = find_repliable_root_message if params[:reply_to_message_id].present?
+    return redirect_to_invalid_reply if params[:reply_to_message_id].present? && !replied_message
 
-    @message = UserMessage.new(
-      classroom: replied_message.classroom,
-      sender: current_user,
-      recipient: replied_message.sender,
-      parent_message: replied_message,
-      body: message_params[:body]
-    )
+    @message = replied_message ? build_reply_message(replied_message) : build_root_message
     authorize @message
 
     if @message.save
@@ -29,7 +23,11 @@ class UserMessagesController < ApplicationController
       respond_to do |format|
         format.html { redirect_to user_path(@user), alert: @message.errors.full_messages.to_sentence, status: :see_other }
         format.turbo_stream do
-          load_self_message_section!(reply_message: @message, active_reply_thread_id: replied_message.id)
+          load_self_message_section!(
+            root_message: replied_message ? UserMessage.new : @message,
+            reply_message: replied_message ? @message : UserMessage.new,
+            active_reply_thread_id: replied_message&.id
+          )
           render :create, status: :unprocessable_entity
         end
       end
@@ -56,6 +54,43 @@ class UserMessagesController < ApplicationController
     message
   end
 
+  def build_reply_message(replied_message)
+    UserMessage.new(
+      classroom: replied_message.classroom,
+      sender: current_user,
+      recipient: replied_message.sender,
+      parent_message: replied_message,
+      body: message_params[:body]
+    )
+  end
+
+  def build_root_message
+    recipient = User.teacher.find_by(id: message_params[:recipient_id])
+    classroom = classroom_for_student_root_message(recipient)
+
+    UserMessage.new(
+      classroom: classroom,
+      sender: current_user,
+      recipient: recipient,
+      body: message_params[:body]
+    )
+  end
+
+  def classroom_for_student_root_message(recipient)
+    return nil if recipient.blank?
+
+    classroom_ids = current_user.classroom_memberships.where(role: "student").select(:classroom_id)
+    Classroom
+      .joins(:classroom_memberships)
+      .where(
+        id: classroom_ids,
+        student_initiated_messages_enabled: true,
+        classroom_memberships: { user_id: recipient.id, role: "teacher" }
+      )
+      .order(:id)
+      .first
+  end
+
   def redirect_to_invalid_reply
     respond_to do |format|
       format.html { redirect_to user_path(@user), alert: "응답할 수 없는 메시지입니다.", status: :see_other }
@@ -72,10 +107,10 @@ class UserMessagesController < ApplicationController
   end
 
   def message_params
-    params.require(:user_message).permit(:body)
+    params.require(:user_message).permit(:body, :recipient_id)
   end
 
-  def load_self_message_section!(reply_message: nil, active_reply_thread_id: nil)
+  def load_self_message_section!(root_message: nil, reply_message: nil, active_reply_thread_id: nil)
     load_user_show_data!(
       user: @user,
       classroom: nil,
@@ -83,8 +118,22 @@ class UserMessagesController < ApplicationController
       recent_in_classroom: false
     )
 
+    @new_message = root_message || UserMessage.new
     @reply_message = reply_message || UserMessage.new
     @active_reply_thread_id = active_reply_thread_id
     @message_section_dom_id = dom_id(@user, :message_section)
+    @message_teacher_options = message_teacher_options
+  end
+
+  def message_teacher_options
+    classroom_ids = current_user.classroom_memberships.where(role: "student").select(:classroom_id)
+    User.teacher
+      .joins(classroom_memberships: :classroom)
+      .where(
+        classrooms: { student_initiated_messages_enabled: true },
+        classroom_memberships: { classroom_id: classroom_ids, role: "teacher" }
+      )
+      .distinct
+      .order(:name, :id)
   end
 end

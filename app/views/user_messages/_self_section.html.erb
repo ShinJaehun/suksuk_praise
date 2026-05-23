@@ -1,3 +1,42 @@
+<% if teacher_options.any? || new_message.errors.any? %>
+  <%= simple_form_for new_message, url: user_messages_path(user) do |f| %>
+    <div class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-base font-semibold text-slate-900">선생님께 메시지 보내기</h2>
+      </div>
+
+      <% if new_message.errors.any? %>
+        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <%= new_message.errors.full_messages.to_sentence %>
+        </div>
+      <% end %>
+
+      <div class="grid gap-3 md:grid-cols-[14rem_1fr_auto] md:items-end">
+        <%= f.input :recipient_id,
+              collection: teacher_options.map { |teacher| [teacher.name.presence || teacher.email, teacher.id] },
+              include_blank: false,
+              label: false,
+              input_html: {
+                class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+              } %>
+
+        <%= f.input :body,
+              as: :text,
+              required: true,
+              label: false,
+              input_html: {
+                rows: 2,
+                class: "block w-full rounded-xl border px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 #{new_message.errors.any? ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100' : 'border-slate-300 focus:border-sky-500 focus:ring-sky-100'}"
+              } %>
+
+        <%= button_tag "메시지 보내기",
+              type: :submit,
+              class: "inline-flex h-11 w-full shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-200 md:w-auto" %>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+
 <%= render "user_messages/thread",
       threads: threads,
       reply_message: reply_message,

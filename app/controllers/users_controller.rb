@@ -21,6 +21,8 @@ class UsersController < ApplicationController
     )
 
     @reply_message = UserMessage.new
+    @new_message = UserMessage.new
+    @message_teacher_options = message_teacher_options
     @message_section_dom_id = dom_id(@user, :message_section)
   end
 
@@ -51,5 +53,19 @@ class UsersController < ApplicationController
       .where(id: user.classroom_ids)
       .order(created_at: :asc)
       .first
+  end
+
+  def message_teacher_options
+    return User.none unless @user.student?
+
+    classroom_ids = @user.classroom_memberships.where(role: "student").select(:classroom_id)
+    User.teacher
+      .joins(classroom_memberships: :classroom)
+      .where(
+        classrooms: { student_initiated_messages_enabled: true },
+        classroom_memberships: { classroom_id: classroom_ids, role: "teacher" }
+      )
+      .distinct
+      .order(:name, :id)
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_23_001000) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_23_002000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -61,6 +61,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_23_001000) do
     t.boolean "daily_compliment_king_enabled", default: true, null: false
     t.boolean "weekly_compliment_king_enabled", default: false, null: false
     t.boolean "monthly_compliment_king_enabled", default: false, null: false
+    t.boolean "student_initiated_messages_enabled", default: false, null: false
   end
 
   create_table "compliments", force: :cascade do |t|

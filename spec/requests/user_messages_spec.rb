@@ -58,6 +58,99 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).to include("reply_to_message_id")
     end
 
+    it "does not show a student root message form when the classroom setting is off" do
+      sign_in student
+
+      get user_path(student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("선생님께 메시지 보내기")
+    end
+
+    it "shows a student root message form with classroom teachers only when the classroom setting is on" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      outside_teacher = create(:user, :teacher, name: "다른 반 선생님")
+      sign_in student
+
+      get user_path(student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("선생님께 메시지 보내기")
+      expect(response.body).to include('name="user_message[recipient_id]"')
+      expect(response.body).to include(teacher.name)
+      expect(response.body).to include(other_teacher.name)
+      expect(response.body).not_to include(outside_teacher.name)
+    end
+
+    it "rejects a student root message when the classroom setting is off" do
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          user_message: {
+            recipient_id: teacher.id,
+            body: "먼저 질문해도 될까요?"
+          }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "allows a student to start a root message to a classroom teacher when the classroom setting is on" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      sign_in student
+
+      expect {
+        post user_messages_path(student),
+             params: {
+               user_message: {
+                 recipient_id: teacher.id,
+                 body: "먼저 질문해도 될까요?"
+               }
+             },
+             headers: turbo_headers
+      }.to change(UserMessage, :count).by(1)
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(UserMessage.last.sender).to eq(student)
+      expect(UserMessage.last.recipient).to eq(teacher)
+      expect(UserMessage.last.parent_message_id).to be_nil
+    end
+
+    it "rejects a student root message to an outside teacher" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      outside_teacher = create(:user, :teacher)
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          user_message: {
+            recipient_id: outside_teacher.id,
+            body: "다른 반 선생님께 질문"
+          }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "rejects a student root message to an admin" do
+      classroom.update!(student_initiated_messages_enabled: true)
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          user_message: {
+            recipient_id: admin.id,
+            body: "관리자에게 질문"
+          }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
+
     it "allows a student to reply under a teacher root with turbo stream" do
       incoming = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "질문 있어?")
       sign_in student
@@ -157,6 +250,19 @@ RSpec.describe "User messages", type: :request do
       }.not_to change(UserMessage, :count)
 
       expect(response).to redirect_to(root_path)
+    end
+
+    it "shows managed student sections in the expected order" do
+      sign_in teacher
+
+      get classroom_student_path(classroom, student)
+
+      recent_index = response.body.index("최근 발급 쿠폰")
+      message_index = response.body.index("메시지 보내기")
+      compliment_index = response.body.index("칭찬 타임라인")
+
+      expect(recent_index).to be < message_index
+      expect(message_index).to be < compliment_index
     end
 
     it "re-renders the managed message section with inline errors on turbo failure" do

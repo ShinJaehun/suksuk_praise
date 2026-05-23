@@ -263,7 +263,8 @@ class ClassroomsController < ApplicationController
       :name,
       :daily_compliment_king_enabled,
       :weekly_compliment_king_enabled,
-      :monthly_compliment_king_enabled
+      :monthly_compliment_king_enabled,
+      :student_initiated_messages_enabled
     )
   end
 
