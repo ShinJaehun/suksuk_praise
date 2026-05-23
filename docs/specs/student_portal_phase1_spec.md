@@ -203,6 +203,7 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 - 저장소 구현은 Active Storage 기준으로 두고,
   개발/테스트에서는 local/test service를 사용하되 이후 production 에서 S3 같은 외부 스토리지로 교체 가능한 구조를 전제로 한다.
 - 학생 name/email/avatar는 교사/admin의 학생 관리 화면에서 수정한다.
+- 학생 avatar는 학생 self-service가 아니라 교사/admin 학생 관리 화면에서 제공된 학생용 `avatar_key` 목록(boy/girl 기본 아바타) 중 선택한다.
 - 이번 단계에서는 이미지 크롭 UI, 직접 업로드 최적화, 실제 S3 운영 설정, 학생 self-service 업로드 변경 UI까지 포함하지 않는다.
 
 ### D. 학생 쿠폰 사용 요청 원칙

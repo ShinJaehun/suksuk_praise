@@ -16,6 +16,23 @@
 
     <%= simple_form_for @user, url: classroom_student_path(@classroom, @user), method: :patch do |f| %>
       <div class="mt-4 space-y-5">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <button type="button"
+                  class="group w-fit"
+                  onclick="document.getElementById('student-avatar-dialog').showModal()">
+            <%= user_avatar_image(@user,
+                  size: 128,
+                  class: "h-24 w-24 rounded-2xl border border-slate-200 bg-slate-100 object-cover transition group-hover:border-blue-400",
+                  alt: "#{@user.name} avatar") %>
+          </button>
+
+          <button type="button"
+                  class="inline-flex w-fit items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  onclick="document.getElementById('student-avatar-dialog').showModal()">
+            아바타 변경
+          </button>
+        </div>
+
         <div class="grid gap-5 md:grid-cols-2">
           <%= f.input :name,
                 required: true,
@@ -40,6 +57,38 @@
                 },
                 label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
         </div>
+
+        <dialog id="student-avatar-dialog" 
+          class="fixed inset-0 m-auto w-[min(42rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-black/50">
+          <div class="p-5">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-base font-semibold text-slate-900">아바타 선택</h3>
+            </div>
+
+            <div class="mt-4 grid max-h-[60vh] grid-cols-4 gap-3 overflow-y-auto sm:grid-cols-6 md:grid-cols-8">
+              <% @student_avatar_keys.each do |avatar_key| %>
+                <label class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-slate-200 p-2 text-xs text-slate-600 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                  <%= f.radio_button :avatar_key, avatar_key, class: "sr-only" %>
+                  <%= image_tag "avatars/#{avatar_key}.png",
+                        class: "h-12 w-12 rounded-xl object-cover",
+                        alt: avatar_key %>
+                  <span><%= avatar_key %></span>
+                </label>
+              <% end %>
+            </div>
+
+            <div class="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <button type="button"
+                      class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      onclick="document.getElementById('student-avatar-dialog').close()">
+                닫기
+              </button>
+              <%= f.button :submit,
+                    "저장하기",
+                    class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+            </div>            
+          </div>
+        </dialog>
 
         <div class="flex justify-end">
           <%= f.button :submit,

@@ -127,6 +127,7 @@ class ClassroomStudentsController < ApplicationController
   def edit
     authorize @student, :manage_student_account?
     @user = @student
+    @student_avatar_keys = student_avatar_keys
   end
 
   def update
@@ -140,6 +141,7 @@ class ClassroomStudentsController < ApplicationController
     if @student.update(attrs)
       redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 계정 정보를 수정했습니다."
     else
+      @student_avatar_keys = student_avatar_keys
       render :edit, status: :unprocessable_entity
     end
   end
@@ -179,7 +181,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def managed_student_params
-    params.require(:user).permit(:name, :email, :student_pin, :gender).tap do |permitted|
+    params.require(:user).permit(:name, :email, :student_pin, :gender, :avatar_key).tap do |permitted|
       permitted.delete(:student_pin) if permitted[:student_pin].blank?
     end
   end
@@ -208,6 +210,10 @@ class ClassroomStudentsController < ApplicationController
     available.sample || pool.sample
   end
 
+  def student_avatar_keys
+    User.avatar_keys_for("boy") + User.avatar_keys_for("girl")
+  end
+
   def bulk_student_genders
     boy_count = [params[:boy_count].to_i, 0].max
     girl_count = [params[:girl_count].to_i, 0].max
@@ -227,6 +233,8 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def reassign_avatar_key?(attrs)
+    return false if attrs[:avatar_key].present?
+
     attrs[:gender].present? &&
       attrs[:gender] != @student.gender &&
       !@student.avatar.attached?

@@ -4,7 +4,8 @@ module UsersHelper
   end
 
   def user_avatar_path(user, size:)
-    "avatars/#{user.avatar_key.presence || fallback_avatar_key(user)}.png"
+    avatar_key = user.avatar_key if User::AVATAR_KEYS.include?(user.avatar_key)
+    "avatars/#{avatar_key.presence || fallback_avatar_key(user)}.png"
   end
 
   def fallback_avatar_key(user)

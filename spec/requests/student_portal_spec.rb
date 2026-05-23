@@ -46,6 +46,7 @@ RSpec.describe "Student portal flow", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("내 정보 수정")
       expect(response.body).to include("PIN 변경")
+      expect(response.body).not_to include('name="user[avatar_key]"')
       expect(response.body).not_to include("계정 관리")
     end
 
@@ -118,6 +119,13 @@ RSpec.describe "Student portal flow", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("기본 정보")
+      expect(response.body).to include("아바타 선택")
+      expect(response.body).to include("아바타 변경")
+      expect(response.body).to include('name="user[avatar_key]"')
+      expect(response.body).to include("boy01")
+      expect(response.body).to include("girl01")
+      expect(response.body).not_to include('value="teacherM01"')
+      expect(response.body).not_to include('value="admin"')
       expect(response.body).to include("PIN 설정")
       expect(response.body).to include("계정 삭제")
       expect(response.body).not_to include("비밀번호 재설정")
@@ -138,6 +146,55 @@ RSpec.describe "Student portal flow", type: :request do
       expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
       expect(student.reload.name).to eq("새 이름")
       expect(student.email).to eq("student-updated@example.com")
+    end
+
+    it "allows a classroom teacher to update student avatar_key" do
+      sign_in teacher
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          email: student.email,
+          gender: "girl",
+          avatar_key: "girl03"
+        }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.avatar_key).to eq("girl03")
+    end
+
+    it "allows an admin to update student avatar_key" do
+      admin = create(:user, :admin)
+      sign_in admin
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          email: student.email,
+          gender: "boy",
+          avatar_key: "boy04"
+        }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.avatar_key).to eq("boy04")
+    end
+
+    it "rejects invalid avatar_key values" do
+      original_avatar_key = student.avatar_key
+      sign_in teacher
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          email: student.email,
+          avatar_key: "unknown"
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.avatar_key).to eq(original_avatar_key)
     end
 
     it "allows a classroom teacher to reset student password" do
