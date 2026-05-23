@@ -36,6 +36,19 @@ RSpec.describe "Compliments#create", type: :request do
       expect(json_body).to eq("ok" => true, "receiver_id" => student.id)
     end
 
+    it "redirects to the classroom student page on HTML success" do
+      sign_in teacher
+
+      expect {
+        post classroom_compliments_path(classroom),
+          params: { compliment: { receiver_id: student.id } }
+      }.to change(Compliment, :count).by(1)
+        .and change { student.reload.points }.by(1)
+
+      expect(response).to redirect_to(classroom_student_path(classroom, student))
+      expect(response).to have_http_status(:see_other)
+    end
+
     it "allows an admin to create a compliment" do
       admin = create(:user, :admin)
       sign_in admin
@@ -110,6 +123,20 @@ RSpec.describe "Compliments#create", type: :request do
       expect(compliment.receiver).to eq(student)
     end
 
+    it "returns a turbo stream response on success" do
+      sign_in teacher
+
+      expect {
+        post classroom_compliments_path(classroom),
+          params: { compliment: { receiver_id: student.id } },
+          headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+      }.to change(Compliment, :count).by(1)
+        .and change { student.reload.points }.by(1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+    end
+
     it "returns 409 for a duplicate request inside the duplicate window" do
       sign_in teacher
 
@@ -129,6 +156,73 @@ RSpec.describe "Compliments#create", type: :request do
         expect(response).to have_http_status(:conflict)
         expect(json_body).to eq("ok" => false, "error" => "duplicate_request")
         expect(student.reload.points).to eq(1)
+      end
+    end
+
+    it "returns a turbo stream conflict for a duplicate request inside the duplicate window" do
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 7, 10, 0, 0) do
+        post classroom_compliments_path(classroom),
+          params: { compliment: { receiver_id: student.id } },
+          headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+
+        expect(response).to have_http_status(:ok)
+
+        expect {
+          post classroom_compliments_path(classroom),
+            params: { compliment: { receiver_id: student.id } },
+            headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+        }.not_to change(Compliment, :count)
+
+        expect(response).to have_http_status(:conflict)
+        expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+        expect(student.reload.points).to eq(1)
+      end
+    end
+
+    it "allows the same teacher to create another compliment after the duplicate window" do
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 7, 10, 0, 0) do
+        post classroom_compliments_path(classroom),
+          params: { compliment: { receiver_id: student.id } },
+          as: :json
+      end
+
+      travel_to Time.zone.local(2026, 4, 7, 10, 0, 2) do
+        expect {
+          post classroom_compliments_path(classroom),
+            params: { compliment: { receiver_id: student.id } },
+            as: :json
+        }.to change(Compliment, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(student.reload.points).to eq(2)
+      end
+    end
+
+    it "does not treat another teacher's compliment for the same student as a duplicate" do
+      other_teacher = create(:user, :teacher)
+      create(:classroom_membership, user: other_teacher, classroom: classroom, role: "teacher")
+
+      travel_to Time.zone.local(2026, 4, 7, 10, 0, 0) do
+        sign_in teacher
+        post classroom_compliments_path(classroom),
+          params: { compliment: { receiver_id: student.id } },
+          as: :json
+
+        sign_out teacher
+        sign_in other_teacher
+
+        expect {
+          post classroom_compliments_path(classroom),
+            params: { compliment: { receiver_id: student.id } },
+            as: :json
+        }.to change(Compliment, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        expect(student.reload.points).to eq(2)
       end
     end
 
