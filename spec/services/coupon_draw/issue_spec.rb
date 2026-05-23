@@ -79,6 +79,30 @@ RSpec.describe CouponDraw::Issue, type: :service do
       end
     end
 
+    it "allows repeated manual issuance for the same user, mode, and day" do
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      classroom = create(:classroom)
+      create(:coupon_template, created_by: teacher, active: true, weight: 100)
+      now = Time.zone.local(2026, 4, 7, 10, 0, 0)
+
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+
+      travel_to now do
+        expect {
+          2.times do
+            described_class.call(
+              classroom: classroom,
+              basis: "manual",
+              mode: "default",
+              issued_by: teacher,
+              target_user_id: student.id
+            )
+          end
+        }.to change(UserCoupon, :count).by(2)
+      end
+    end
+
     it "rejects reissuance after a daily top coupon was already used" do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
@@ -342,7 +366,15 @@ RSpec.describe CouponDraw::Issue, type: :service do
 
         expect(coupon).to be_persisted
         expect(coupon.coupon_template).to eq(template)
-        expect(CouponEvent.last).to have_attributes(action: "issued", user_coupon: coupon, actor: teacher)
+        event = CouponEvent.last
+
+        expect(event).to have_attributes(action: "issued", user_coupon: coupon, actor: teacher)
+        expect(event.metadata).to include(
+          "basis" => "manual",
+          "mode" => "default",
+          "target_user_id" => student.id,
+          "target_user_name" => student.name
+        )
       end
     end
   end

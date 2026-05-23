@@ -76,6 +76,19 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(coupon.reload).to be_issued
     end
 
+    it "rejects a teacher outside the coupon classroom" do
+      outsider = create(:user, :teacher)
+      sign_in outsider
+
+      expect {
+        post use_user_coupon_path(student, coupon), as: :json
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_body).to eq("ok" => false, "error" => "not_authorized")
+      expect(coupon.reload).to be_issued
+    end
+
     it "returns 409 for an already used coupon" do
       sign_in teacher
       coupon.update!(status: :used, used_at: Time.zone.local(2026, 4, 7, 11, 0, 0))

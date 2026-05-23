@@ -72,5 +72,20 @@ RSpec.describe CouponTemplates::WeightBalancer, type: :service do
       expect(bad.weight).to eq(0)
       expect(good.reload.weight).to eq(100)
     end
+
+    it "splits active library template weights into ten-point units totaling 100" do
+      admin = create(:user, :admin)
+      first = create(:coupon_template, created_by: admin, bucket: "library", active: true, weight: 10)
+      second = create(:coupon_template, created_by: admin, bucket: "library", active: true, weight: 10)
+      third = create(:coupon_template, created_by: admin, bucket: "library", active: true, weight: 10)
+
+      described_class.normalize_library!
+
+      weights = [first.reload.weight, second.reload.weight, third.reload.weight]
+
+      expect(weights.sum).to eq(100)
+      expect(weights.all? { |weight| (weight % 10).zero? }).to eq(true)
+      expect(weights.sort).to eq([30, 30, 40])
+    end
   end
 end
