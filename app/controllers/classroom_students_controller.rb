@@ -18,13 +18,14 @@ class ClassroomStudentsController < ApplicationController
 
   def create
     used_indices = used_avatar_indices_in_classroom
-    @user = User.new(
-      user_params.merge(
-        role: "student",
-        points: 0,
-        default_avatar_index: pick_avatar_index(used_indices)
-      )
+    used_avatar_keys = used_avatar_keys_in_classroom
+    attrs = user_params.merge(
+      role: "student",
+      points: 0,
+      default_avatar_index: pick_avatar_index(used_indices)
     )
+    attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys)
+    @user = User.new(attrs)
     if @user.save
       @classroom.classroom_memberships.create!(user: @user, role: "student")
 
@@ -58,26 +59,30 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def bulk_create
-    count = params[:count].to_i
-    count = 30 if count <= 0 || count > 30
+    genders = bulk_student_genders
     created = []
     prefix = Array('A'..'Z').sample(4).join
     student_pin = params[:student_pin].to_s.strip
 
     used_indices = used_avatar_indices_in_classroom
+    used_avatar_keys = used_avatar_keys_in_classroom
 
     ApplicationRecord.transaction do
-      count.times do |i|
+      genders.each_with_index do |gender, i|
         name = format("%s%02d", prefix, i + 1)
         email = "#{name}@suksuk.or.kr"
         avatar_index = pick_avatar_index(used_indices)
+        avatar_key = pick_avatar_key(gender, used_avatar_keys)
         used_indices << avatar_index
+        used_avatar_keys << avatar_key if avatar_key.present?
         attrs = {
           name: name,
           email: email,
           password: "123456",
           role: "student",
           points: 0,
+          gender: gender,
+          avatar_key: avatar_key,
           default_avatar_index: avatar_index
         }
         attrs[:student_pin] = student_pin if student_pin.present?
@@ -133,8 +138,12 @@ class ClassroomStudentsController < ApplicationController
   def update
     authorize @student, :manage_student_account?
     @user = @student
+    attrs = managed_student_params
+    if reassign_avatar_key?(attrs)
+      attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys_in_classroom(excluding: @student))
+    end
 
-    if @student.update(managed_student_params)
+    if @student.update(attrs)
       redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 계정 정보를 수정했습니다."
     else
       render :edit, status: :unprocessable_entity
@@ -166,7 +175,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :student_pin)
+    params.require(:user).permit(:name, :email, :password, :student_pin, :gender)
   end
 
   def set_student
@@ -176,7 +185,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def managed_student_params
-    params.require(:user).permit(:name, :email, :student_pin).tap do |permitted|
+    params.require(:user).permit(:name, :email, :student_pin, :gender).tap do |permitted|
       permitted.delete(:student_pin) if permitted[:student_pin].blank?
     end
   end
@@ -197,8 +206,48 @@ class ClassroomStudentsController < ApplicationController
       .pluck("users.default_avatar_index")
   end
 
+  def used_avatar_keys_in_classroom(excluding: nil)
+    scope = @classroom.classroom_memberships
+      .joins(:user)
+      .where.not(users: { avatar_key: nil })
+    scope = scope.where.not(users: { id: excluding.id }) if excluding
+    scope.distinct.pluck("users.avatar_key")
+  end
+
   def pick_avatar_index(used_indices)
     available = (1..32).to_a - used_indices
     available.sample || rand(1..32)
+  end
+
+  def pick_avatar_key(gender, used_avatar_keys)
+    pool = User.avatar_keys_for(gender)
+    return nil if pool.empty?
+
+    available = pool - used_avatar_keys
+    available.sample || pool.sample
+  end
+
+  def bulk_student_genders
+    boy_count = [params[:boy_count].to_i, 0].max
+    girl_count = [params[:girl_count].to_i, 0].max
+    total_count = boy_count + girl_count
+
+    unless params.key?(:boy_count) || params.key?(:girl_count)
+      count = params[:count].to_i
+      count = 30 if count <= 0 || count > 30
+      return Array.new(count, "boy")
+    end
+
+    if total_count < 1 || total_count > 30
+      raise ActiveRecord::RecordInvalid.new(User.new.tap { |user| user.errors.add(:base, "학생은 한 번에 30명까지 생성할 수 있습니다.") })
+    end
+
+    Array.new(boy_count, "boy") + Array.new(girl_count, "girl")
+  end
+
+  def reassign_avatar_key?(attrs)
+    attrs[:gender].present? &&
+      attrs[:gender] != @student.gender &&
+      !@student.avatar.attached?
   end
 end

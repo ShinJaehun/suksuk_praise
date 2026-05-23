@@ -5,8 +5,19 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
   has_secure_password :student_pin, validations: false
 
+  GENDERS = %w[boy girl].freeze
+  BOY_AVATAR_KEYS = (1..23).map { |number| format("boy%02d", number) }.freeze
+  GIRL_AVATAR_KEYS = (1..17).map { |number| format("girl%02d", number) }.freeze
+  AVATAR_KEYS_BY_GENDER = {
+    "boy" => BOY_AVATAR_KEYS,
+    "girl" => GIRL_AVATAR_KEYS
+  }.freeze
+  AVATAR_KEYS = AVATAR_KEYS_BY_GENDER.values.flatten.freeze
+
   validates :name, presence: true, length: { maximum: 30 }
   validates :default_avatar_index, inclusion: { in: 1..32 }, allow_nil: true
+  validates :gender, inclusion: { in: GENDERS }, allow_nil: true
+  validates :avatar_key, inclusion: { in: AVATAR_KEYS }, allow_nil: true
   validates :student_pin, format: { with: /\A\d{4}\z/, message: "must be 4 digits" }, allow_blank: true
 
   enum role: { student: "student", teacher: "teacher", admin: "admin" }
@@ -46,6 +57,10 @@ class User < ApplicationRecord
 
   after_commit :setup_default_coupons_for_teacher, on: :create
   before_validation :assign_default_avatar_index, on: :create
+
+  def self.avatar_keys_for(gender)
+    AVATAR_KEYS_BY_GENDER.fetch(gender.to_s, [])
+  end
 
   def student_pin_configured?
     student_pin_digest.present?

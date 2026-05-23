@@ -4,6 +4,8 @@ module UsersHelper
   end
 
   def user_avatar_path(user, size:)
+    return "avatars/#{user.avatar_key}.png" if user.avatar_key.present?
+
     index = user.default_avatar_index.to_i
     index = 1 unless index.between?(1, 32)
     "avatars/user_profile_#{format('%02d', index)}_#{size}.png"

@@ -12,9 +12,15 @@
           data: { turbo_frame: :modal, 
             action: "submit->modal#showProgress",
             turbo_submits_with: "처리중..." } do |f| %>
-        <div class="mb-4">
-          <%= f.label :count, "몇 명을 생성할까요? (1~30명)" %>
-          <%= f.number_field :count, value: 30, min: 1, max: 30, class: "border px-2 py-1 rounded w-24" %>
+        <div class="mb-4 grid grid-cols-2 gap-3">
+          <div>
+            <%= f.label :boy_count, "남학생 수" %>
+            <%= f.number_field :boy_count, value: 15, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
+          </div>
+          <div>
+            <%= f.label :girl_count, "여학생 수" %>
+            <%= f.number_field :girl_count, value: 15, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
+          </div>
         </div>
         <div class="mb-4">
           <%= f.label :student_pin, "공통 초기 PIN (선택, 4자리)" %>

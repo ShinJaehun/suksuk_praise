@@ -17,6 +17,13 @@
                 <%= f.password_field :password, class: "border px-2 py-1 rounded w-full" %>
             </div>
             <div class="mb-2">
+                <%= f.label :gender, "성별" %>
+                <%= f.select :gender,
+                    [["남학생", "boy"], ["여학생", "girl"]],
+                    { prompt: "선택해 주세요" },
+                    class: "border px-2 py-1 rounded w-full" %>
+            </div>
+            <div class="mb-2">
                 <%= f.label :student_pin, "학생 PIN (4자리)" %>
                 <%= f.password_field :student_pin,
                     maxlength: 4,
