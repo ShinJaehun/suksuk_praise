@@ -1,0 +1,8 @@
+<%# locals: (user:, pending_coupon_request:) %>
+<span id="<%= dom_id(user, :student_card_alerts) %>" class="inline-flex items-center gap-1">
+  <% if pending_coupon_request %>
+    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+      쿠폰 요청
+    </span>
+  <% end %>
+</span>

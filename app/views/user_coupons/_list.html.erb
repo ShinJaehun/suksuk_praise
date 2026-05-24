@@ -1,4 +1,4 @@
-<%# locals: (coupons:, user:, pending_coupon_use_requests_by_coupon_id: {}) %>
+<%# locals: (coupons:, user:, pending_coupon_use_requests_by_coupon_id: {}, viewer: current_user) %>
 <% if coupons.present? %>
 
   <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -35,7 +35,7 @@
         <div class="shrink-0 w-full sm:w-auto">
           <% pending_request = pending_coupon_use_requests_by_coupon_id[c.id] %>
 
-          <% if current_user&.student? && current_user == user %>
+          <% if viewer&.student? && viewer == user %>
             <% if pending_request %>
               <span class="inline-flex w-full items-center justify-center rounded bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700 sm:w-auto">
                 사용 요청 중

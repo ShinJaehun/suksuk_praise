@@ -25,7 +25,7 @@
 <% if winner.present? %>
   <%= turbo_stream.update dom_id(winner, :coupons) do %>
     <%= render partial: "user_coupons/list",
-               locals: { coupons: winner_coupons, user: winner } %>
+               locals: { coupons: winner_coupons, user: winner, viewer: current_user } %>
   <% end %>
 
   <%= turbo_stream.update dom_id(winner, :recent_issued_coupons) do %>
