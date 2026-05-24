@@ -31,6 +31,8 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).to include("URL 복사")
     expect(response.body).to include("QR 코드 보기")
     expect(response.body).to include(student_login_qr_classroom_path(classroom))
+    expect(response.body).to include("QR 코드 다운로드")
+    expect(response.body).to include(download_student_login_qr_classroom_path(classroom))
     expect(response.body).to include("학생 로그인 주소 재발급")
   end
 
@@ -70,7 +72,7 @@ RSpec.describe "Classroom student login link", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("학생 로그인 QR 코드")
-    expect(response.body).to include("<svg")
+    expect(response.body).to include("data:image/png;base64,")
     expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
   end
 
@@ -80,8 +82,38 @@ RSpec.describe "Classroom student login link", type: :request do
     get student_login_qr_classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("<svg")
+    expect(response.body).to include("data:image/png;base64,")
     expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
+  end
+
+  it "downloads the student login QR PNG for a classroom teacher" do
+    create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    sign_in teacher
+
+    get download_student_login_qr_classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.media_type).to eq("image/png")
+    expect(response.body.bytes.first(4)).to eq([137, 80, 78, 71])
+  end
+
+  it "does not allow a non-managing teacher to download the QR PNG" do
+    sign_in teacher
+
+    get download_student_login_qr_classroom_path(classroom)
+
+    expect(response).to redirect_to(root_path)
+    expect(response.body).not_to include(classroom.student_login_token)
+  end
+
+  it "does not allow a student to download the QR PNG" do
+    create(:classroom_membership, user: student, classroom: classroom, role: "student")
+    sign_in student
+
+    get download_student_login_qr_classroom_path(classroom)
+
+    expect(response).to redirect_to(root_path)
+    expect(response.body).not_to include(classroom.student_login_token)
   end
 
   it "does not allow a non-managing teacher to access the QR page" do
@@ -130,6 +162,19 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(public_student_login_url(student_login_token: new_token))
     expect(response.body).not_to include(public_student_login_url(student_login_token: old_token))
+  end
+
+  it "downloads a QR PNG after regeneration" do
+    create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    sign_in teacher
+
+    patch regenerate_student_login_token_classroom_path(classroom)
+
+    get download_student_login_qr_classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.media_type).to eq("image/png")
+    expect(response.body.bytes.first(4)).to eq([137, 80, 78, 71])
   end
 
   it "expires the old token route and keeps the new token route available after regeneration" do

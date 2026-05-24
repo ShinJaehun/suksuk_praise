@@ -1,9 +1,11 @@
 # app/controllers/classrooms_controller.rb
+require "base64"
+
 class ClassroomsController < ApplicationController
   before_action :authenticate_user!
   before_action :redirect_students_to_mypage!, only: [:index, :show]
   before_action :set_classroom, only: [
-    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon, :student_login_qr, :regenerate_student_login_token
+    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon, :student_login_qr, :download_student_login_qr, :regenerate_student_login_token
   ]
   
   # 더블클릭/중복요청 소프트 가드(2초)
@@ -69,14 +71,17 @@ class ClassroomsController < ApplicationController
     authorize @classroom, :update?
 
     @student_login_url = public_student_login_url(student_login_token: @classroom.student_login_token)
-    @student_login_qr_svg = RQRCode::QRCode.new(@student_login_url).as_svg(
-      offset: 0,
-      color: "000",
-      shape_rendering: "crispEdges",
-      module_size: 6,
-      standalone: true,
-      use_path: true
-    )
+    @student_login_qr_png_data_url = qr_png_data_url(@student_login_url)
+  end
+
+  def download_student_login_qr
+    authorize @classroom, :update?
+
+    student_login_url = public_student_login_url(student_login_token: @classroom.student_login_token)
+    send_data qr_png_binary(student_login_url),
+      type: "image/png",
+      disposition: "attachment",
+      filename: "student-login-qr-#{@classroom.id}.png"
   end
 
   def regenerate_student_login_token
@@ -303,6 +308,14 @@ class ClassroomsController < ApplicationController
       .order(created_at: :desc)
       .limit(5)
       .load
+  end
+
+  def qr_png_data_url(text)
+    "data:image/png;base64,#{Base64.strict_encode64(qr_png_binary(text))}"
+  end
+
+  def qr_png_binary(text)
+    RQRCode::QRCode.new(text).as_png(size: 320).to_s
   end
 
   def build_compliment_king_sections(enabled_periods:)

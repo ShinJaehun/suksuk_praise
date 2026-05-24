@@ -101,21 +101,29 @@
     </div>
 
     <div data-controller="clipboard" class="space-y-3">
-      <p data-clipboard-target="source"
-         class="break-all rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800">
-        <%= public_student_login_url(student_login_token: @classroom.student_login_token) %>
-      </p>
+      <div class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center">
+        <p data-clipboard-target="source"
+           class="min-w-0 flex-1 break-all text-sm font-medium text-slate-800">
+          <%= public_student_login_url(student_login_token: @classroom.student_login_token) %>
+        </p>
+
+        <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <button type="button"
+                  data-action="clipboard#copy"
+                  class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            URL 복사
+          </button>
+          <span data-clipboard-target="status" class="text-sm text-slate-500 sm:max-w-52" aria-live="polite"></span>
+        </div>
+      </div>
 
       <div class="flex flex-col gap-2 sm:flex-row">
-        <button type="button"
-                data-action="clipboard#copy"
-                class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-          URL 복사
-        </button>
         <%= link_to "QR 코드 보기",
               student_login_qr_classroom_path(@classroom),
               class: "inline-flex items-center justify-center rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
-        <span data-clipboard-target="status" class="self-center text-sm text-slate-500" aria-live="polite"></span>
+        <%= link_to "QR 코드 다운로드",
+              download_student_login_qr_classroom_path(@classroom),
+              class: "inline-flex items-center justify-center rounded-lg border border-sky-300 bg-white px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50" %>
       </div>
     </div>
 
