@@ -5,7 +5,7 @@
     <% if @classroom %>
       <p class="mt-2 text-sm text-slate-600"><%= @classroom.name %></p>
 
-      <%= form_with url: classroom_student_login_path(@classroom), method: :post, class: "mt-6 space-y-4" do %>
+      <%= form_with url: @student_session_form_url, method: :post, class: "mt-6 space-y-4" do %>
         <div>
           <%= label_tag :student_id, "학생", class: "mb-1 block text-sm font-medium text-slate-700" %>
           <%= select_tag :student_id,

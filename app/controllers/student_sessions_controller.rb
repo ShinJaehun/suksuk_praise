@@ -4,11 +4,13 @@ class StudentSessionsController < ApplicationController
 
   def new
     load_classroom
+    set_student_session_form_url
     load_students if @classroom
   end
 
   def create
     load_classroom
+    set_student_session_form_url
     load_students
 
     student = find_student_for_pin_login
@@ -38,7 +40,23 @@ class StudentSessionsController < ApplicationController
   private
 
   def load_classroom
-    @classroom = Classroom.find_by(id: params[:classroom_id])
+    @classroom =
+      if params[:student_login_token].present?
+        Classroom.find_by!(student_login_token: params[:student_login_token])
+      elsif params[:classroom_id].present?
+        Classroom.find(params[:classroom_id])
+      end
+  end
+
+  def set_student_session_form_url
+    @student_session_form_url =
+      if params[:student_login_token].present?
+        public_student_login_path(student_login_token: params[:student_login_token])
+      elsif @classroom
+        classroom_student_login_path(@classroom)
+      else
+        new_student_session_path
+      end
   end
 
   def load_students

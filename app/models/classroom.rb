@@ -1,6 +1,8 @@
 class Classroom < ApplicationRecord
     COMPLIMENT_KING_PERIODS = %w[daily weekly monthly].freeze
 
+    has_secure_token :student_login_token
+
     # 교실 삭제 시 관련 칭찬/쿠폰도 함께 삭제
     has_many :classroom_memberships, dependent: :destroy
     has_many :users, through: :classroom_memberships

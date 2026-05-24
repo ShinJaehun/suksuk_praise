@@ -39,6 +39,25 @@ RSpec.describe "Student PIN sessions", type: :request do
     expect(response.body).not_to include(other_student.name)
   end
 
+  it "shows only students from the token classroom login page" do
+    other_classroom = create(:classroom)
+    other_student = create(:user, :student, name: "다른 학생", student_pin: "5678")
+    create(:classroom_membership, classroom: other_classroom, user: other_student, role: "student")
+
+    get public_student_login_path(student_login_token: classroom.student_login_token)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(student.name)
+    expect(response.body).to include(public_student_login_path(student_login_token: classroom.student_login_token))
+    expect(response.body).not_to include(other_student.name)
+  end
+
+  it "returns not found for an invalid student login token" do
+    get public_student_login_path(student_login_token: "invalid-token")
+
+    expect(response).to have_http_status(:not_found)
+  end
+
   it "signs in a student with classroom, student, and PIN" do
     post classroom_student_login_path(classroom), params: {
       student_id: student.id,
@@ -46,6 +65,16 @@ RSpec.describe "Student PIN sessions", type: :request do
     }
 
     expect(response).to redirect_to(classroom_student_path(classroom, student))
+  end
+
+  it "signs in a student through the token classroom login route" do
+    post public_student_login_path(student_login_token: classroom.student_login_token), params: {
+      student_id: student.id,
+      student_pin: "1234"
+    }
+
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
+    expect(session[:student_login_classroom_id]).to eq(classroom.id)
   end
 
   it "stores the student session last seen timestamp after PIN login" do
