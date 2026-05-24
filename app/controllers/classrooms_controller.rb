@@ -3,7 +3,7 @@ class ClassroomsController < ApplicationController
   before_action :authenticate_user!
   before_action :redirect_students_to_mypage!, only: [:index, :show]
   before_action :set_classroom, only: [
-    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon
+    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon, :regenerate_student_login_token
   ]
   
   # 더블클릭/중복요청 소프트 가드(2초)
@@ -63,6 +63,15 @@ class ClassroomsController < ApplicationController
     authorize @classroom
     @classroom.destroy
     redirect_to classrooms_path, notice: t("classrooms.destroy.success")
+  end
+
+  def regenerate_student_login_token
+    authorize @classroom, :update?
+
+    @classroom.regenerate_student_login_token
+    redirect_to edit_classroom_path(@classroom),
+      notice: "학생 로그인 주소를 재발급했습니다. 기존에 복사해 둔 주소와 기존 QR 코드는 더 이상 사용할 수 없습니다. 아래 새 주소를 다시 복사해서 학생들에게 안내해 주세요.",
+      status: :see_other
   end
 
   # Turbo로 일간 칭찬왕 영역만 새로고침

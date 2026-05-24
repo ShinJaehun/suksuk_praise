@@ -34,7 +34,11 @@ Rails.application.routes.draw do
     get :student_login, to: "student_sessions#new", as: :student_login
     post :student_login, to: "student_sessions#create"
 
-    member { post :refresh_compliment_king }
+    member do
+      post :refresh_compliment_king
+      patch :regenerate_student_login_token
+    end
+
     resources :students, controller: "classroom_students", only: [:new, :create, :show, :edit, :update, :destroy] do
       resources :messages, only: [:create], controller: "classroom_student_messages"
       collection do

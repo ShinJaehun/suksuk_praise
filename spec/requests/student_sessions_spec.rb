@@ -56,6 +56,8 @@ RSpec.describe "Student PIN sessions", type: :request do
     get public_student_login_path(student_login_token: "invalid-token")
 
     expect(response).to have_http_status(:not_found)
+    expect(response.body).to include("학생 로그인 주소를 사용할 수 없습니다.")
+    expect(response.body).to include("새 QR 코드나 로그인 주소")
   end
 
   it "signs in a student with classroom, student, and PIN" do

@@ -3,13 +3,15 @@ class StudentSessionsController < ApplicationController
   skip_after_action :verify_policy_scoped
 
   def new
-    load_classroom
+    return unless load_classroom
+
     set_student_session_form_url
     load_students if @classroom
   end
 
   def create
-    load_classroom
+    return unless load_classroom
+
     set_student_session_form_url
     load_students
 
@@ -42,10 +44,20 @@ class StudentSessionsController < ApplicationController
   def load_classroom
     @classroom =
       if params[:student_login_token].present?
-        Classroom.find_by!(student_login_token: params[:student_login_token])
+        classroom = Classroom.find_by(student_login_token: params[:student_login_token])
+        return render_invalid_link unless classroom
+
+        classroom
       elsif params[:classroom_id].present?
         Classroom.find(params[:classroom_id])
       end
+
+    true
+  end
+
+  def render_invalid_link
+    render :invalid_link, status: :not_found
+    false
   end
 
   def set_student_session_form_url
