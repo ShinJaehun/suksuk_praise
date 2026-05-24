@@ -149,7 +149,7 @@ RSpec.describe "Student PIN sessions", type: :request do
   it "does not apply student TTL to a teacher" do
     sign_in teacher
 
-    get root_path
+    get classrooms_path
 
     expect(response).to have_http_status(:ok)
     expect(controller.current_user).to eq(teacher)

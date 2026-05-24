@@ -19,14 +19,13 @@ RSpec.describe "Users::Sessions", type: :request do
     }
 
     expect(response).to redirect_to(root_path)
-    follow_redirect!
     expect(controller.current_user).to eq(teacher)
   end
 
   it "keeps the teacher Devise sign out path available" do
     sign_in teacher
 
-    get root_path
+    get classrooms_path
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Sign out")
@@ -43,7 +42,6 @@ RSpec.describe "Users::Sessions", type: :request do
     }
 
     expect(response).to redirect_to(root_path)
-    follow_redirect!
     expect(controller.current_user).to eq(admin)
   end
 

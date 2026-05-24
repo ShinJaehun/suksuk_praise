@@ -62,7 +62,7 @@ Rails.application.routes.draw do
   get  "/users/:user_id/coupons",      to: "user_coupons#index", as: :user_coupons
 
   # Defines the root path route ("/")
-  root "classrooms#index"
+  root "home#index"
 
   resources :coupon_templates do
     member do

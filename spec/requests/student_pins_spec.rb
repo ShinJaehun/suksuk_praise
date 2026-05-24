@@ -82,7 +82,7 @@ RSpec.describe "Student PIN management", type: :request do
   it "does not show the PIN change link on non-student pages" do
     sign_in teacher
 
-    get root_path
+    get classrooms_path
 
     expect(response).to have_http_status(:ok)
     expect(response.body).not_to include("PIN 변경")
