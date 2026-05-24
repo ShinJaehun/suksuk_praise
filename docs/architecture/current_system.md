@@ -16,13 +16,18 @@
 
 ## 인증/세션
 
+- root(`/`)는 교사/관리자 로그인 진입으로 사용하며, 비로그인 사용자를 Devise 로그인 화면으로 보낸다.
 - admin/teacher는 Devise 로그인을 사용한다.
+- student는 root나 `/users/sign_in`에서 로그인하지 않는다.
 - student는 일반 Devise 로그인 흐름에서 차단되며, 교실 범위 PIN 로그인으로 접근한다.
+- 학생 공개 로그인 URL은 교실별 token URL인 `GET /c/:student_login_token/login`을 사용한다.
+- 기존 숫자 id 기반 학생 로그인 route는 호환을 위해 유지되어 있다.
 - student PIN 로그인은 교실과 학생 membership, PIN을 확인한다.
 - PIN 로그인 성공 시 기존 세션을 reset하고 해당 student로 `sign_in`한다.
 - PIN 로그인 성공 후 교실 맥락이 있으면 `classroom_student_path(classroom, student)`로 이동한다.
 - student 세션은 `STUDENT_SESSION_TTL`과 `session[:student_last_seen_at]`으로 짧게 관리된다.
 - student가 `/users/:id`에 접근할 때 가능한 경우 교실 범위 학생 상세 경로로 redirect한다.
+- 잘못되었거나 재발급으로 만료된 학생 로그인 token URL은 학생용 안내 화면을 `404 Not Found`로 보여준다.
 
 ## 교실/학생 관리
 
@@ -31,6 +36,10 @@
 - 학생 canonical page는 `GET /classrooms/:classroom_id/students/:id`이다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
 - teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
+- teacher/admin은 `classrooms/:id/edit` 교실 관리 화면에서 학생 로그인 URL을 확인할 수 있다.
+- 교실 관리 화면에서는 학생 로그인 URL 복사, QR 코드 보기, QR 코드 다운로드가 가능하다.
+- 학생 로그인 QR은 현재 token URL 기준으로 요청 시 생성하며 서버 파일로 저장하지 않는다.
+- 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
 - 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다.
 
