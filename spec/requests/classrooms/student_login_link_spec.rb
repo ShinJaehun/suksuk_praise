@@ -14,6 +14,7 @@ RSpec.describe "Classroom student login link", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).not_to include("학생 로그인 주소")
+    expect(response.body).not_to include("QR 코드 보기")
     expect(response.body).not_to include(classroom.student_login_token)
     expect(response.body).not_to include(public_student_login_url(student_login_token: classroom.student_login_token))
   end
@@ -28,6 +29,8 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).to include("학생 로그인 주소")
     expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
     expect(response.body).to include("URL 복사")
+    expect(response.body).to include("QR 코드 보기")
+    expect(response.body).to include(student_login_qr_classroom_path(classroom))
     expect(response.body).to include("학생 로그인 주소 재발급")
   end
 
@@ -59,6 +62,47 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).not_to include(classroom.student_login_token)
   end
 
+  it "shows the student login QR page to a classroom teacher" do
+    create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    sign_in teacher
+
+    get student_login_qr_classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("학생 로그인 QR 코드")
+    expect(response.body).to include("<svg")
+    expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
+  end
+
+  it "shows the student login QR page to an admin" do
+    sign_in admin
+
+    get student_login_qr_classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("<svg")
+    expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
+  end
+
+  it "does not allow a non-managing teacher to access the QR page" do
+    sign_in teacher
+
+    get student_login_qr_classroom_path(classroom)
+
+    expect(response).to redirect_to(root_path)
+    expect(response.body).not_to include(classroom.student_login_token)
+  end
+
+  it "does not allow a student to access the QR page" do
+    create(:classroom_membership, user: student, classroom: classroom, role: "student")
+    sign_in student
+
+    get student_login_qr_classroom_path(classroom)
+
+    expect(response).to redirect_to(root_path)
+    expect(response.body).not_to include(classroom.student_login_token)
+  end
+
   it "regenerates the student login token for a classroom teacher" do
     create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
     old_token = classroom.student_login_token
@@ -69,8 +113,23 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response).to redirect_to(edit_classroom_path(classroom))
     expect(flash[:notice]).to include("학생 로그인 주소를 재발급했습니다.")
     expect(flash[:notice]).to include("기존에 복사해 둔 주소와 기존 QR 코드는 더 이상 사용할 수 없습니다.")
-    expect(flash[:notice]).to include("아래 새 주소를 다시 복사해서 학생들에게 안내해 주세요.")
+    expect(flash[:notice]).to include("아래 새 주소를 다시 복사하거나 QR 코드를 다시 안내하세요.")
     expect(classroom.reload.student_login_token).not_to eq(old_token)
+  end
+
+  it "uses the new token URL on the QR page after regeneration" do
+    create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    old_token = classroom.student_login_token
+    sign_in teacher
+
+    patch regenerate_student_login_token_classroom_path(classroom)
+    new_token = classroom.reload.student_login_token
+
+    get student_login_qr_classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(public_student_login_url(student_login_token: new_token))
+    expect(response.body).not_to include(public_student_login_url(student_login_token: old_token))
   end
 
   it "expires the old token route and keeps the new token route available after regeneration" do

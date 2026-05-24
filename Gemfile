@@ -81,6 +81,8 @@ gem 'rails-i18n', '~> 7.0'
 # pagination
 gem "pagy"
 
+# QR code generation
+gem "rqrcode"
+
 # simleform : deploy
 gem "simple_form"
-

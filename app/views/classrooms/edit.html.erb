@@ -112,6 +112,9 @@
                 class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
           URL 복사
         </button>
+        <%= link_to "QR 코드 보기",
+              student_login_qr_classroom_path(@classroom),
+              class: "inline-flex items-center justify-center rounded-lg border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
         <span data-clipboard-target="status" class="self-center text-sm text-slate-500" aria-live="polite"></span>
       </div>
     </div>
