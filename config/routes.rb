@@ -66,6 +66,14 @@ Rails.application.routes.draw do
        to: "user_coupons#use",
        as: :use_user_coupon
 
+  post "/users/:user_id/coupons/:user_coupon_id/use_request",
+       to: "coupon_use_requests#create",
+       as: :request_user_coupon_use
+
+  patch "/coupon_use_requests/:id/approve",
+        to: "coupon_use_requests#approve",
+        as: :approve_coupon_use_request
+
   # 본인 쿠폰 목록
   get  "/users/:user_id/coupons",      to: "user_coupons#index", as: :user_coupons
 

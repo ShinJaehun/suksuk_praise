@@ -55,8 +55,40 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(coupon.reload).to be_used
     end
 
-    it "allows the owner student to use their coupon" do
+    it "rejects the owner student from directly using their coupon" do
       sign_in student
+
+      expect {
+        post use_user_coupon_path(student, coupon), as: :json
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_body).to eq("ok" => false, "error" => "not_authorized")
+      expect(coupon.reload).to be_issued
+    end
+
+    it "shows a use request button to the owner student" do
+      sign_in student
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("사용요청")
+      expect(response.body).not_to include("action=\"#{use_user_coupon_path(student, coupon)}\"")
+    end
+
+    it "shows a pending use request state to the owner student" do
+      create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
+      sign_in student
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("사용 요청 중")
+    end
+
+    it "keeps direct coupon use available to the classroom teacher" do
+      sign_in teacher
 
       post use_user_coupon_path(student, coupon), as: :json
 

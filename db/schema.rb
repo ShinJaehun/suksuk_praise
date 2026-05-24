@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_24_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_24_001000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -114,6 +114,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_24_000000) do
     t.index ["created_by_id"], name: "index_coupon_templates_on_created_by_id"
   end
 
+  create_table "coupon_use_requests", force: :cascade do |t|
+    t.bigint "user_coupon_id", null: false
+    t.bigint "classroom_id", null: false
+    t.bigint "student_id", null: false
+    t.bigint "requested_by_id", null: false
+    t.bigint "resolved_by_id"
+    t.integer "status", default: 0, null: false
+    t.datetime "requested_at", null: false
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["classroom_id"], name: "index_coupon_use_requests_on_classroom_id"
+    t.index ["requested_by_id"], name: "index_coupon_use_requests_on_requested_by_id"
+    t.index ["resolved_by_id"], name: "index_coupon_use_requests_on_resolved_by_id"
+    t.index ["student_id"], name: "index_coupon_use_requests_on_student_id"
+    t.index ["user_coupon_id"], name: "idx_coupon_use_requests_pending_unique", unique: true, where: "(status = 0)"
+    t.index ["user_coupon_id"], name: "index_coupon_use_requests_on_user_coupon_id"
+  end
+
   create_table "user_coupons", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "coupon_template_id", null: false
@@ -190,6 +209,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_24_000000) do
   add_foreign_key "coupon_events", "users", column: "actor_id"
   add_foreign_key "coupon_templates", "coupon_templates", column: "source_template_id", on_delete: :nullify
   add_foreign_key "coupon_templates", "users", column: "created_by_id"
+  add_foreign_key "coupon_use_requests", "classrooms"
+  add_foreign_key "coupon_use_requests", "user_coupons"
+  add_foreign_key "coupon_use_requests", "users", column: "requested_by_id"
+  add_foreign_key "coupon_use_requests", "users", column: "resolved_by_id"
+  add_foreign_key "coupon_use_requests", "users", column: "student_id"
   add_foreign_key "user_coupons", "classrooms"
   add_foreign_key "user_coupons", "coupon_templates"
   add_foreign_key "user_coupons", "users"

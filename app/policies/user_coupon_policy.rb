@@ -16,10 +16,11 @@ class UserCouponPolicy < ApplicationPolicy
     user.present?
   end
 
-  # 쿠폰 사용: 본인 or 해당 교실의 교사 or 관리자
+  # 쿠폰 사용: 해당 교실의 교사 or 관리자
   def use?
     return false unless user
-    user.admin? || record.user_id == user.id || teacher_of?(record.classroom)
+
+    user.admin? || teacher_of?(record.classroom)
   end
 
   private
@@ -28,7 +29,7 @@ class UserCouponPolicy < ApplicationPolicy
     ClassroomMembership.exists?(
       classroom_id: classroom.id,
       user_id: user.id,
-      role: "teacher"
+      role: 'teacher'
     )
   end
 end

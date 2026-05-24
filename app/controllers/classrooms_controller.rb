@@ -24,6 +24,7 @@ class ClassroomsController < ApplicationController
     @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
     @compliment_king_sections = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods)
     @compliment_king_period_cards = build_compliment_king_period_cards(enabled_periods: @enabled_compliment_king_periods)
+    @student_ids_with_pending_coupon_use_requests = student_ids_with_pending_coupon_use_requests
 
     load_recent_issued_coupons!
   end
@@ -308,6 +309,16 @@ class ClassroomsController < ApplicationController
       .order(created_at: :desc)
       .limit(5)
       .load
+  end
+
+  def student_ids_with_pending_coupon_use_requests
+    return [] unless @can_manage_classroom
+
+    CouponUseRequest
+      .pending
+      .where(classroom_id: @classroom.id, student_id: @students.select(:id))
+      .distinct
+      .pluck(:student_id)
   end
 
   def qr_png_data_url(text)

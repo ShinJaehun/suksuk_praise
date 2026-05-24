@@ -41,7 +41,12 @@
       </div>
       <div class="mt-3">
         <%= turbo_frame_tag dom_id(@user, :coupons) do %>
-          <%= render partial: "user_coupons/list", locals: { coupons: @coupons, user: @user } %>
+          <%= render partial: "user_coupons/list",
+                locals: {
+                  coupons: @coupons,
+                  user: @user,
+                  pending_coupon_use_requests_by_coupon_id: @pending_coupon_use_requests_by_coupon_id
+                } %>
         <% end %>
       </div>
     </section>

@@ -1,4 +1,4 @@
-<%# locals: (coupons:, user:) %>
+<%# locals: (coupons:, user:, pending_coupon_use_requests_by_coupon_id: {}) %>
 <% if coupons.present? %>
 
   <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -33,11 +33,33 @@
         </div>
 
         <div class="shrink-0 w-full sm:w-auto">
-          <%= button_to t('ui.buttons.use_coupon'),
-                use_user_coupon_path(user, c),
-                method: :post,
-                form: { data: { turbo_submits_with: "처리중..." } },
-                class: "w-full px-2 py-1 text-sm rounded bg-emerald-500 text-white hover:bg-emerald-600 sm:w-auto" %>
+          <% pending_request = pending_coupon_use_requests_by_coupon_id[c.id] %>
+
+          <% if current_user&.student? && current_user == user %>
+            <% if pending_request %>
+              <span class="inline-flex w-full items-center justify-center rounded bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700 sm:w-auto">
+                사용 요청 중
+              </span>
+            <% else %>
+              <%= button_to "사용요청",
+                    request_user_coupon_use_path(user, c),
+                    method: :post,
+                    form: { data: { turbo_frame: "_top", turbo_submits_with: "처리중..." } },
+                    class: "w-full px-2 py-1 text-sm rounded bg-emerald-500 text-white hover:bg-emerald-600 sm:w-auto" %>
+            <% end %>
+          <% elsif pending_request %>
+            <%= button_to "사용 승인",
+                  approve_coupon_use_request_path(pending_request),
+                  method: :patch,
+                  form: { data: { turbo_frame: "_top", turbo_submits_with: "처리중..." } },
+                  class: "w-full px-2 py-1 text-sm rounded bg-amber-500 text-white hover:bg-amber-600 sm:w-auto" %>
+          <% else %>
+            <%= button_to t('ui.buttons.use_coupon'),
+                  use_user_coupon_path(user, c),
+                  method: :post,
+                  form: { data: { turbo_submits_with: "처리중..." } },
+                  class: "w-full px-2 py-1 text-sm rounded bg-emerald-500 text-white hover:bg-emerald-600 sm:w-auto" %>
+          <% end %>
         </div>
       </li>
     <% end %>

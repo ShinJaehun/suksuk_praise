@@ -32,6 +32,10 @@ module UserShowDataLoader
       .where(status: "issued")
       .includes(:coupon_template)
       .order(issued_at: :desc)
+    @pending_coupon_use_requests_by_coupon_id = CouponUseRequest
+      .pending
+      .where(user_coupon_id: @coupons.select(:id))
+      .index_by(&:user_coupon_id)
 
     @kpi_counts = {
       points: user.points,
