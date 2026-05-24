@@ -36,6 +36,16 @@ RSpec.describe "Student PIN sessions", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(student.name)
+    expect(response.body).to include('data-controller="student-login-preview"')
+    expect(response.body).to include('data-student-login-preview-target="select"')
+    expect(response.body).to include("로그인할 학생을 선택하세요")
+    expect(response.body).to include("<option value=\"\">선택하세요</option>")
+    expect(response.body).to include("PIN을 입력하세요")
+    expect(response.body).to include("suksuk_logo")
+    expect(response.body).not_to include('alt="선택하세요"')
+    expect(response.body).to include("data-avatar-url=")
+    expect(response.body).to include("data-student-name=\"#{student.name}\"")
+    expect(response.body).not_to include("선택한 학생의 아바타가 여기에 표시됩니다.")
     expect(response.body).not_to include(other_student.name)
   end
 
@@ -49,6 +59,16 @@ RSpec.describe "Student PIN sessions", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(student.name)
     expect(response.body).to include(public_student_login_path(student_login_token: classroom.student_login_token))
+    expect(response.body).to include('data-controller="student-login-preview"')
+    expect(response.body).to include('data-student-login-preview-target="select"')
+    expect(response.body).to include("로그인할 학생을 선택하세요")
+    expect(response.body).to include("<option value=\"\">선택하세요</option>")
+    expect(response.body).to include("PIN을 입력하세요")
+    expect(response.body).to include("suksuk_logo")
+    expect(response.body).not_to include('alt="선택하세요"')
+    expect(response.body).to include("data-avatar-url=")
+    expect(response.body).to include("data-student-name=\"#{student.name}\"")
+    expect(response.body).not_to include("선택한 학생의 아바타가 여기에 표시됩니다.")
     expect(response.body).not_to include(other_student.name)
   end
 
