@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "UserCoupons#use", type: :request do
+  include ActionView::RecordIdentifier
+
   describe "POST /users/:user_id/coupons/:id/use" do
     let(:student) { create(:user, :student) }
     let(:teacher) { create(:user, :teacher) }
@@ -169,7 +171,44 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(coupon.reload).to be_used
     end
 
+    it "broadcasts student and managed coupon list updates after direct use" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+      sign_in teacher
+
+      post use_user_coupon_path(student, coupon), headers: turbo_headers
+
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :student_coupons,
+        hash_including(
+          target: dom_id(student, :coupons),
+          partial: "user_coupons/list",
+          locals: hash_including(
+            coupons: a_kind_of(ActiveRecord::Relation),
+            user: student,
+            viewer: student,
+            pending_coupon_use_requests_by_coupon_id: {}
+          )
+        )
+      )
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :managed_coupons,
+        hash_including(
+          target: dom_id(student, :coupons),
+          partial: "user_coupons/list",
+          locals: hash_including(
+            coupons: a_kind_of(ActiveRecord::Relation),
+            user: student,
+            viewer: nil,
+            pending_coupon_use_requests_by_coupon_id: {}
+          )
+        )
+      )
+    end
+
     it "returns turbo stream conflict when the coupon is already used" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
       sign_in teacher
       coupon.update!(status: :used, used_at: Time.zone.local(2026, 4, 7, 11, 0, 0))
 
@@ -180,6 +219,7 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(response).to have_http_status(:conflict)
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
       expect(coupon.reload).to be_used
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
     end
   end
 end

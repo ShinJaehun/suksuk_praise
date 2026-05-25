@@ -19,6 +19,7 @@ class UserCouponsController < ApplicationController
     @play_coupon_animation = true
 
     load_use_stream_data!(user: @user, classroom_id: @coupon.classroom_id)
+    broadcast_student_coupon_lists
 
     respond_to do |f|
       f.html { redirect_to user_path(@user), notice: t("coupons.use.success"), status: :see_other }
@@ -78,6 +79,33 @@ class UserCouponsController < ApplicationController
       today_issued_coupons: coupons_scope.where(issued_at: Time.zone.today.all_day).count,
       used_coupons: coupons_scope.where(status: "used").count
     }
+  end
+
+  def broadcast_student_coupon_lists
+    coupon_list_locals = {
+      coupons: @coupons,
+      user: @user,
+      pending_coupon_use_requests_by_coupon_id: CouponUseRequest
+        .pending
+        .where(user_coupon_id: @coupons.select(:id))
+        .index_by(&:user_coupon_id)
+    }
+
+    Turbo::StreamsChannel.broadcast_update_to(
+      @user,
+      :student_coupons,
+      target: view_context.dom_id(@user, :coupons),
+      partial: "user_coupons/list",
+      locals: coupon_list_locals.merge(viewer: @user)
+    )
+
+    Turbo::StreamsChannel.broadcast_update_to(
+      @user,
+      :managed_coupons,
+      target: view_context.dom_id(@user, :coupons),
+      partial: "user_coupons/list",
+      locals: coupon_list_locals.merge(viewer: nil)
+    )
   end
 
 end
