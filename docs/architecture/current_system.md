@@ -76,15 +76,16 @@
 
 - 교실에는 `student_initiated_messages_enabled` 설정이 있으며 기본값은 false다.
 - 설정이 false이면 student는 새 root message를 먼저 시작할 수 없다.
-- 설정이 true이면 student는 자기 소속 교실 teacher에게 새 root message를 시작할 수 있다.
-- 현재 student root message 수신자는 화면에서 제공되는 teacher options 중 첫 번째 teacher를 사용한다.
+- 설정이 true이면 student는 자기 소속 교실 teacher 전원에게 새 root message를 시작할 수 있다.
+- student root message는 teacher마다 별도 root thread로 생성되며 admin에게는 자동 발송하지 않는다.
 - 기존 root thread reply는 `student_initiated_messages_enabled` 값과 별개로 thread 참여/관리 권한 기준으로 허용된다.
 - 답글의 답글은 허용하지 않는다.
 - teacher/admin은 관리 가능한 학생 상세 화면에서 thread별 reply를 작성할 수 있다.
 - 메시지 UI는 root/reply form과 compact thread display 구조를 사용한다.
 - 일반 SNS식 navbar notification/count/list는 제공하지 않는다.
 - 학생 발신 미확인 메시지가 있으면 teacher/admin이 보는 교실 학생 카드에 새 메시지 badge를 표시한다.
-- teacher/admin이 학생 상세를 열거나 메시지에 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
+- 새 메시지 badge/read 처리는 teacher별 개인 inbox가 아니라 교실 단위 공동 처리 상태다.
+- teacher/admin 중 누군가 학생 상세를 열거나 메시지에 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
 - 학생 본인이 자기 화면을 여는 것은 학생 발신 unread 메시지를 read 처리하지 않는다.
 - 쿠폰 요청 badge와 메시지 badge는 `users/_student_card_alerts.html.erb` alert 영역을 공유한다.
 - 실시간 갱신은 Turbo Streams broadcast로 해당 학생의 alert 영역만 replace한다.

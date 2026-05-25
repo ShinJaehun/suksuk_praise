@@ -52,6 +52,33 @@ RSpec.describe "Classroom student message badge", type: :request do
     )
   end
 
+  it "marks all unread student messages for the student read as a shared classroom alert" do
+    classroom.update!(student_initiated_messages_enabled: true)
+    other_teacher = create(:user, :teacher)
+    create(:classroom_membership, user: other_teacher, classroom: classroom, role: "teacher")
+    message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
+    other_message = create(:user_message, classroom: classroom, sender: student, recipient: other_teacher, body: "다른 선생님께 질문")
+    sign_in teacher
+
+    get classroom_student_path(classroom, student)
+
+    expect(response).to have_http_status(:ok)
+    expect(message.reload.read_at).to be_present
+    expect(other_message.reload.read_at).to be_present
+  end
+
+  it "marks unread student messages read when an admin opens the managed student page" do
+    classroom.update!(student_initiated_messages_enabled: true)
+    admin = create(:user, :admin)
+    message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
+    sign_in admin
+
+    get classroom_student_path(classroom, student)
+
+    expect(response).to have_http_status(:ok)
+    expect(message.reload.read_at).to be_present
+  end
+
   it "does not mark unread student messages read when the student opens their own page" do
     classroom.update!(student_initiated_messages_enabled: true)
     message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")

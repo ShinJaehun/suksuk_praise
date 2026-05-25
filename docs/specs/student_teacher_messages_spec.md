@@ -56,11 +56,11 @@
 
 ### 2. 학생 → 선생님 새 메시지 / 발신자 응답
 
-- 교실의 `student_initiated_messages_enabled` 설정이 켜져 있으면 학생은 자기 페이지에서 소속 교실의 teacher에게 새 메시지를 작성할 수 있다
+- 교실의 `student_initiated_messages_enabled` 설정이 켜져 있으면 학생은 자기 페이지에서 소속 교실의 teacher들에게 새 메시지를 작성할 수 있다
 - 메시지를 작성해 parent message 없이 새 메시지를 시작할 수 있다
 - 기본값은 false이며, 꺼져 있으면 학생은 새 root message를 먼저 시작할 수 없다
-- 수신자는 자기 소속 교실의 teacher로 제한한다
-- 현재 단계에서는 `teacher_options.first`를 기본 수신 teacher로 사용한다
+- 수신자는 자기 소속 교실의 teacher 전원이며, teacher마다 별도 root message를 생성한다
+- 교실에 teacher가 없으면 학생 root message는 생성하지 않고 실패 처리한다
 - admin에게 학생이 먼저 보내는 흐름은 이번 단계에서 제외한다
 - 다른 교실 teacher, 다른 학생, 임의 사용자에게 보내는 것은 허용하지 않는다
 
@@ -71,7 +71,7 @@
 - 전송한 답글은 교사/admin이 학생 상세 페이지에서 같은 root thread 카드 안에서 확인할 수 있다
 
 중요:
-- 이번 단계에서는 설정이 켜진 교실에서만 학생이 **자기 소속 교실의 teacher에게만** 새 메시지를 시작할 수 있다.
+- 이번 단계에서는 설정이 켜진 교실에서만 학생이 **자기 소속 교실의 teacher 전원에게만** 새 메시지를 시작할 수 있다.
 - `student_initiated_messages_enabled`는 학생이 새 root message를 먼저 시작할 수 있는지만 제어한다.
 - 이미 존재하는 root thread에 대한 답글은 이 설정과 별개로, thread 참여/관리 권한 기준으로 허용한다.
 - 학생이 admin에게 먼저 보내거나 임의 사용자에게 보내는 구조는 만들지 않는다.
@@ -127,7 +127,7 @@
 ### 보낼 수 있는 사람
 
 - teacher/admin → 특정 학생에게 메시지 전송 가능
-- student → 교실 설정이 켜진 경우 자기 소속 교실 teacher에게 새 메시지 전송 가능
+- student → 교실 설정이 켜진 경우 자기 소속 교실 teacher 전원에게 새 메시지 전송 가능
 - student → 자신이 참여한 root thread에 응답 가능
 - teacher/admin → 관리 권한이 있는 학생과 관련된 root thread에 응답 가능
 
@@ -211,7 +211,7 @@
 학생의 새 root message 시작은 교실별 설정으로 제어한다.
 
 - 설정이 꺼져 있으면 학생은 새 root message를 먼저 시작할 수 없다.
-- 설정이 켜져 있으면 학생은 자기 소속 교실 teacher에게만 새 root message를 시작할 수 있다.
+- 설정이 켜져 있으면 학생은 자기 소속 교실 teacher 전원에게 root message를 시작할 수 있다.
 - 설정값과 무관하게, 이미 존재하는 root thread에 대한 답글은 기존 권한 기준으로 유지한다.
 
 ---
@@ -221,7 +221,8 @@
 이번 단계에서는 범용 notification 모델이나 navbar notification/count/list를 만들지 않는다.
 
 - 학생 발신 unread 메시지가 있으면 teacher/admin이 보는 교실 학생 카드에 새 메시지 badge를 표시한다.
-- teacher/admin이 학생 상세를 열거나 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
+- 새 메시지 badge는 teacher별 개인 inbox가 아니라 교실 단위 공동 처리 알림이다.
+- teacher/admin 중 누군가 학생 상세를 열거나 답변하면 해당 학생의 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
 - 학생 본인이 자기 화면을 여는 것은 read 처리 조건이 아니다.
 - 새 메시지 badge는 학생 상세 메시지 영역으로 이동한다.
 - 특정 메시지 item deep link는 아직 MVP 범위 밖이다.
@@ -246,9 +247,9 @@
 본문은 한 줄에 고정하지 않고, 길면 자연스럽게 여러 줄로 감긴다.
 root와 reply의 시각적 위계는 유지하되, 큰 제목/큰 카드형 작성 영역은 피한다.
 
-학생 root message의 수신자는 현재 구현에서 화면에 전달된 teacher options 중 첫 번째 teacher를 사용한다.
-한 교실에 teacher가 여러 명 있을 수 있지만, 이번 단계에서는 담임/부담임/primary teacher 구분을 만들지 않는다.
-primary teacher 정책과 notification 대상 정책은 `docs/planning/backlog.md`의 후속 작업 후보와 함께 검토한다.
+학생 root message의 수신자는 현재 구현에서 해당 교실의 teacher 전원이다.
+한 교실에 teacher가 여러 명이면 teacher별 root thread가 각각 생성된다.
+teacher별 개인 unread inbox나 primary teacher 정책은 이번 단계에서 만들지 않는다.
 
 ---
 

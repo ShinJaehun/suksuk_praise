@@ -9,10 +9,9 @@ class UserMessagesController < ApplicationController
     replied_message = find_repliable_root_message if params[:reply_to_message_id].present?
     return redirect_to_invalid_reply if params[:reply_to_message_id].present? && !replied_message
 
-    @message = replied_message ? build_reply_message(replied_message) : build_root_message
-    authorize @message
+    @message = replied_message ? build_reply_message(replied_message) : build_first_root_message
 
-    if @message.save
+    if replied_message ? save_reply_message : save_root_messages
       broadcast_student_card_alerts_for(@message.classroom, @message.sender) if @message.sender.student?
       load_self_message_section!
 
@@ -69,9 +68,9 @@ class UserMessagesController < ApplicationController
     replied_message.sender_id == current_user.id ? replied_message.recipient : replied_message.sender
   end
 
-  def build_root_message
-    recipient = User.teacher.find_by(id: message_params[:recipient_id])
-    classroom = classroom_for_student_root_message(recipient)
+  def build_first_root_message
+    classroom = classroom_for_student_root_message
+    recipient = classroom_teachers_for(classroom).first
 
     UserMessage.new(
       classroom: classroom,
@@ -81,19 +80,64 @@ class UserMessagesController < ApplicationController
     )
   end
 
-  def classroom_for_student_root_message(recipient)
-    return nil if recipient.blank?
-
+  def classroom_for_student_root_message
     classroom_ids = current_user.classroom_memberships.where(role: "student").select(:classroom_id)
     Classroom
-      .joins(:classroom_memberships)
       .where(
         id: classroom_ids,
-        student_initiated_messages_enabled: true,
-        classroom_memberships: { user_id: recipient.id, role: "teacher" }
+        student_initiated_messages_enabled: true
       )
       .order(:id)
       .first
+  end
+
+  def save_reply_message
+    authorize @message
+    @message.save
+  end
+
+  def save_root_messages
+    root_messages = root_messages_for_classroom
+    @message = root_messages.first || @message
+
+    if root_messages.empty?
+      @message.errors.add(:base, "메시지를 받을 선생님이 없습니다.")
+      return false
+    end
+
+    root_messages.each { |message| authorize message }
+
+    UserMessage.transaction do
+      root_messages.each(&:save!)
+    end
+
+    true
+  rescue ActiveRecord::RecordInvalid => e
+    @message = e.record if e.record.is_a?(UserMessage)
+    false
+  end
+
+  def root_messages_for_classroom
+    classroom = classroom_for_student_root_message
+
+    classroom_teachers_for(classroom).map do |teacher|
+      UserMessage.new(
+        classroom: classroom,
+        sender: current_user,
+        recipient: teacher,
+        body: message_params[:body]
+      )
+    end
+  end
+
+  def classroom_teachers_for(classroom)
+    return User.none if classroom.blank?
+
+    User.teacher
+      .joins(:classroom_memberships)
+      .where(classroom_memberships: { classroom_id: classroom.id, role: "teacher" })
+      .distinct
+      .order(:name, :id)
   end
 
   def redirect_to_invalid_reply
@@ -112,7 +156,7 @@ class UserMessagesController < ApplicationController
   end
 
   def message_params
-    params.require(:user_message).permit(:body, :recipient_id)
+    params.require(:user_message).permit(:body)
   end
 
   def load_self_message_section!(root_message: nil, reply_message: nil, active_reply_thread_id: nil)

@@ -90,7 +90,7 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).not_to include('name="user_message[recipient_id]"')
     end
 
-    it "shows a compact student root message form with the first classroom teacher when the classroom setting is on" do
+    it "shows a compact student root message form without choosing a teacher when the classroom setting is on" do
       classroom.update!(student_initiated_messages_enabled: true)
       outside_teacher = create(:user, :teacher, name: "다른 반 선생님")
       sign_in student
@@ -98,11 +98,10 @@ RSpec.describe "User messages", type: :request do
       get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('name="user_message[recipient_id]"')
-      expect(response.body).to include(%(type="hidden"))
+      expect(response.body).not_to include('name="user_message[recipient_id]"')
       expect(response.body).not_to include("<select")
       expect(response.body).to include("보내기")
-      expect(response.body).to match(/#{Regexp.escape(teacher.name)}|#{Regexp.escape(other_teacher.name)}/)
+      expect(response.body).to include(student.name)
       expect(response.body).not_to include(outside_teacher.name)
     end
 
@@ -118,10 +117,10 @@ RSpec.describe "User messages", type: :request do
         }
       }.not_to change(UserMessage, :count)
 
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(user_path(student))
     end
 
-    it "allows a student to start a root message to a classroom teacher when the classroom setting is on" do
+    it "allows a student to start root messages to all classroom teachers when the classroom setting is on" do
       classroom.update!(student_initiated_messages_enabled: true)
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
       sign_in student
@@ -135,13 +134,13 @@ RSpec.describe "User messages", type: :request do
                }
              },
              headers: turbo_headers
-      }.to change(UserMessage, :count).by(1)
+      }.to change(UserMessage, :count).by(2)
 
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
-      expect(UserMessage.last.sender).to eq(student)
-      expect(UserMessage.last.recipient).to eq(teacher)
-      expect(UserMessage.last.parent_message_id).to be_nil
-      expect(UserMessage.last.read_at).to be_nil
+      messages = UserMessage.where(sender: student, parent_message_id: nil).order(:recipient_id)
+      expect(messages.map(&:recipient)).to contain_exactly(teacher, other_teacher)
+      expect(messages.map(&:body).uniq).to eq(["먼저 질문해도 될까요?"])
+      expect(messages.map(&:read_at)).to all(be_nil)
       expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
         classroom,
         :student_card_alerts,
@@ -153,7 +152,7 @@ RSpec.describe "User messages", type: :request do
       )
     end
 
-    it "rejects a student root message to an outside teacher" do
+    it "ignores arbitrary recipient_id and still sends to all classroom teachers" do
       classroom.update!(student_initiated_messages_enabled: true)
       outside_teacher = create(:user, :teacher)
       sign_in student
@@ -165,12 +164,12 @@ RSpec.describe "User messages", type: :request do
             body: "다른 반 선생님께 질문"
           }
         }
-      }.not_to change(UserMessage, :count)
+      }.to change(UserMessage, :count).by(2)
 
-      expect(response).to redirect_to(root_path)
+      expect(UserMessage.where(sender: student).map(&:recipient)).to contain_exactly(teacher, other_teacher)
     end
 
-    it "rejects a student root message to an admin" do
+    it "does not create an automatic root message to an admin" do
       classroom.update!(student_initiated_messages_enabled: true)
       sign_in student
 
@@ -181,9 +180,23 @@ RSpec.describe "User messages", type: :request do
             body: "관리자에게 질문"
           }
         }
+      }.to change(UserMessage, :count).by(2)
+
+      expect(UserMessage.where(sender: student).map(&:recipient)).not_to include(admin)
+    end
+
+    it "does not create a student root message when the enabled classroom has no teachers" do
+      no_teacher_classroom = create(:classroom, student_initiated_messages_enabled: true)
+      create(:classroom_membership, user: student, classroom: no_teacher_classroom, role: "student")
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          user_message: { body: "선생님 계신가요?" }
+        }
       }.not_to change(UserMessage, :count)
 
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(user_path(student))
     end
 
     it "allows a student to reply under a teacher root with turbo stream" do

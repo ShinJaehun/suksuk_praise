@@ -1,11 +1,8 @@
 <% if teacher_options.any? %>
-  <% recipient_teacher = teacher_options.first %>
-
   <%= render "user_messages/message_form",
         message: new_message,
         form_url: user_messages_path(user),
-        sender: current_user,
-        recipient: recipient_teacher %>
+        sender: current_user %>
 <% end %>
 
 <%= render "user_messages/thread",
