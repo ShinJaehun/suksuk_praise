@@ -207,6 +207,53 @@ RSpec.describe "UserCoupons#use", type: :request do
       )
     end
 
+    it "broadcasts the issued coupon list to the student stream after issue reveal" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+      sign_in teacher
+
+      expect {
+        post reveal_issued_user_coupon_path(coupon), as: :json
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:no_content)
+      expect(coupon.reload).to be_issued
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :student_coupons,
+        hash_including(
+          target: dom_id(student, :coupons),
+          partial: "user_coupons/list",
+          locals: hash_including(
+            coupons: a_kind_of(ActiveRecord::Relation),
+            user: student,
+            viewer: student,
+            pending_coupon_use_requests_by_coupon_id: {}
+          )
+        )
+      )
+    end
+
+    it "rejects issue reveal by the owner student" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+      sign_in student
+
+      post reveal_issued_user_coupon_path(coupon), as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
+    end
+
+    it "rejects issue reveal by a teacher outside the coupon classroom" do
+      outsider = create(:user, :teacher)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+      sign_in outsider
+
+      post reveal_issued_user_coupon_path(coupon), as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
+    end
+
     it "returns turbo stream conflict when the coupon is already used" do
       allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
       sign_in teacher

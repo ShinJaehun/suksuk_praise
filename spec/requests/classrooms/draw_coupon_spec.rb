@@ -72,10 +72,41 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
 
       expect(response.body).to include("coupon-animation")
       expect(response.body).to include("data-coupon-animation-target=\"deferredStream\"")
+      expect(response.body).to include("data-coupon-animation-reveal-url-value=")
+      expect(response.body).to include(reveal_issued_user_coupon_path(UserCoupon.order(:id).last))
       expect(response.body).to include(dom_id(student, :coupons))
       expect(response.body).to include(dom_id(student, :recent_issued_coupons))
       expect(top_level_update_targets).not_to include(dom_id(student, :coupons))
       expect(top_level_update_targets).not_to include(dom_id(student, :recent_issued_coupons))
+    end
+
+    it "does not immediately broadcast the issued coupon list to the student's coupon stream" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+      sign_in teacher
+
+      post draw_coupon_classroom_path(classroom),
+        params: { basis: "manual", mode: "default", user_id: student.id },
+        headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
+    end
+
+    it "does not immediately broadcast the issued weekly king coupon list to the winning student's coupon stream" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      classroom.update!(weekly_compliment_king_enabled: true)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "weekly", mode: "weekly_top", user_id: student.id },
+          headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+      end
+
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
     end
 
     it "rejects a student" do

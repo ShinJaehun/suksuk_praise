@@ -7,6 +7,7 @@ export default class extends Controller {
     id: String,
     title: String,
     imageUrl: String,
+    revealUrl: String,
     type: String
   }
 
@@ -101,10 +102,14 @@ export default class extends Controller {
   }
 
   close() {
+    if (this.closed) return
+    this.closed = true
+
     this.applyDeferredStream()
     this.resolveTargetCardWithRetry()
     this.hideOverlay()
     this.scheduleDeferredHighlight()
+    this.notifyReveal()
 
     if (this.animationType() === "draw") {
       this.element.remove()
@@ -292,6 +297,25 @@ export default class extends Controller {
     trigger.dataset.controller = "highlight"
     trigger.dataset.highlightIdValue = this.idValue
     effects.appendChild(trigger)
+  }
+
+  notifyReveal() {
+    if (!this.hasRevealUrlValue) return
+
+    fetch(this.revealUrlValue, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "X-CSRF-Token": this.csrfToken(),
+        "Accept": "text/vnd.turbo-stream.html"
+      }
+    }).catch((error) => {
+      console.error("Failed to reveal issued coupon", error)
+    })
+  }
+
+  csrfToken() {
+    return document.querySelector("meta[name='csrf-token']")?.content || ""
   }
 
   teardown() {

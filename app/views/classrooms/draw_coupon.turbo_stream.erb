@@ -5,7 +5,8 @@
          data-coupon-animation-type-value="draw"
          data-coupon-animation-id-value="<%= payload[:id] %>"
          data-coupon-animation-title-value="<%= payload[:title] %>"
-         data-coupon-animation-image-url-value="<%= payload[:image_url] %>">
+         data-coupon-animation-image-url-value="<%= payload[:image_url] %>"
+         data-coupon-animation-reveal-url-value="<%= reveal_issued_user_coupon_path(winner_coupons.first) %>">
       <% if winner.present? %>
         <template data-coupon-animation-target="deferredStream">
           <%= turbo_stream.update dom_id(winner, :coupons) do %>

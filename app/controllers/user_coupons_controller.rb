@@ -1,6 +1,6 @@
 class UserCouponsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_user
+  before_action :set_user, only: [:index, :use]
 
   def index
     @coupons = policy_scope(UserCoupon)
@@ -46,6 +46,17 @@ class UserCouponsController < ApplicationController
 
   end
 
+  def reveal_issue
+    @coupon = UserCoupon.find(params[:id])
+    authorize @coupon, :use?
+
+    user = @coupon.user
+    coupons = issued_coupons_for(user: user, classroom_id: @coupon.classroom_id)
+    broadcast_student_coupon_list_for(user, coupons)
+
+    head :no_content
+  end
+
   private
 
   def set_user
@@ -54,10 +65,7 @@ class UserCouponsController < ApplicationController
   end
 
   def load_use_stream_data!(user:, classroom_id:)
-    @coupons = policy_scope(UserCoupon)
-      .where(user_id: user.id, classroom_id: classroom_id, status: "issued")
-      .includes(:coupon_template)
-      .order(issued_at: :desc)
+    @coupons = issued_coupons_for(user: user, classroom_id: classroom_id)
 
     @recent_issued_coupons = policy_scope(UserCoupon)
       .where(user_id: user.id, classroom_id: classroom_id)
@@ -105,6 +113,31 @@ class UserCouponsController < ApplicationController
       target: view_context.dom_id(@user, :coupons),
       partial: "user_coupons/list",
       locals: coupon_list_locals.merge(viewer: nil)
+    )
+  end
+
+  def issued_coupons_for(user:, classroom_id:)
+    policy_scope(UserCoupon)
+      .where(user_id: user.id, classroom_id: classroom_id, status: "issued")
+      .includes(:coupon_template)
+      .order(issued_at: :desc)
+  end
+
+  def broadcast_student_coupon_list_for(student, coupons)
+    Turbo::StreamsChannel.broadcast_update_to(
+      student,
+      :student_coupons,
+      target: view_context.dom_id(student, :coupons),
+      partial: "user_coupons/list",
+      locals: {
+        coupons: coupons,
+        user: student,
+        viewer: student,
+        pending_coupon_use_requests_by_coupon_id: CouponUseRequest
+          .pending
+          .where(user_coupon_id: coupons.select(:id))
+          .index_by(&:user_coupon_id)
+      }
     )
   end
 

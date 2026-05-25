@@ -66,6 +66,10 @@ Rails.application.routes.draw do
        to: "user_coupons#use",
        as: :use_user_coupon
 
+  post "/user_coupons/:id/reveal_issue",
+       to: "user_coupons#reveal_issue",
+       as: :reveal_issued_user_coupon
+
   post "/users/:user_id/coupons/:user_coupon_id/use_request",
        to: "coupon_use_requests#create",
        as: :request_user_coupon_use
