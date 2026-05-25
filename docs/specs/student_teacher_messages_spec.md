@@ -216,16 +216,15 @@
 
 ---
 
-### 3. 알림은 아직 메시지 목록/뱃지 수준으로만 고려
+### 3. 알림은 교실 학생 카드 badge 수준으로 제한
 
-이번 단계에서는 범용 notification 모델을 만들지 않는다.
+이번 단계에서는 범용 notification 모델이나 navbar notification/count/list를 만들지 않는다.
 
-대신 필요하다면 이후 단계에서 아래 정도는 검토 가능하다.
-
-- navbar에 미확인 메시지 수
-- 학생 페이지/교사 페이지에서 새 메시지 표시
-
-하지만 이번 spec 구현의 필수 요구사항은 아니다.
+- 학생 발신 unread 메시지가 있으면 teacher/admin이 보는 교실 학생 카드에 새 메시지 badge를 표시한다.
+- teacher/admin이 학생 상세를 열거나 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
+- 학생 본인이 자기 화면을 여는 것은 read 처리 조건이 아니다.
+- 새 메시지 badge는 학생 상세 메시지 영역으로 이동한다.
+- 특정 메시지 item deep link는 아직 MVP 범위 밖이다.
 
 ---
 

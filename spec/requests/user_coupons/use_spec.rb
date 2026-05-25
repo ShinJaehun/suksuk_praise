@@ -233,6 +233,21 @@ RSpec.describe "UserCoupons#use", type: :request do
       )
     end
 
+    it "allows an admin to reveal an issued coupon to the student stream" do
+      admin = create(:user, :admin)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+      sign_in admin
+
+      post reveal_issued_user_coupon_path(coupon), as: :json
+
+      expect(response).to have_http_status(:no_content)
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :student_coupons,
+        hash_including(target: dom_id(student, :coupons))
+      )
+    end
+
     it "rejects issue reveal by the owner student" do
       allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
       sign_in student

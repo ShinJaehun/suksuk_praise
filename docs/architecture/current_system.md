@@ -62,8 +62,15 @@
 - coupon 발급/사용 이벤트는 `CouponEvent`로 기록된다.
 - 최근 발급 쿠폰과 보유 쿠폰 카드는 학생 상세 화면에 표시된다.
 - 학생은 쿠폰을 직접 사용 처리하지 않고 쿠폰 사용 요청을 보낸다.
-- teacher/admin은 교실 학생 카드에서 쿠폰 요청 badge를 확인하고 학생 상세에서 승인한다.
+- teacher/admin은 학생의 쿠폰 사용 요청을 승인하거나 학생 쿠폰을 직접 사용 처리할 수 있다.
+- 쿠폰 사용 요청 또는 직접 사용 처리 성공 시 학생 화면과 관리 화면의 쿠폰 목록을 Turbo Streams로 갱신한다.
+- 학생의 쿠폰 사용 요청은 교실 학생 카드의 쿠폰 요청 badge로 표시된다.
+- teacher/admin은 쿠폰 요청 badge를 확인하고 학생 상세에서 승인한다.
 - 교실 학생 카드의 쿠폰 요청 badge는 학생 상세의 쿠폰 영역으로 이동한다.
+- teacher/admin이 쿠폰을 뽑으면 서버에서는 `draw_coupon` 시점에 쿠폰을 즉시 발급한다.
+- teacher/admin 화면의 쿠폰 목록, 최근 발급, KPI는 쿠폰 뽑기 overlay를 닫은 뒤 delayed reveal로 갱신한다.
+- 학생 화면의 쿠폰 목록은 teacher/admin이 overlay를 닫은 뒤 `reveal_issue` endpoint가 `student_coupons` stream으로 갱신한다.
+- 쿠폰 뽑기 overlay 중에는 teacher/admin 화면 뒤에 새 쿠폰 카드가 먼저 보이지 않아야 한다.
 
 ## 메시지
 
@@ -78,6 +85,7 @@
 - 일반 SNS식 navbar notification/count/list는 제공하지 않는다.
 - 학생 발신 미확인 메시지가 있으면 teacher/admin이 보는 교실 학생 카드에 새 메시지 badge를 표시한다.
 - teacher/admin이 학생 상세를 열거나 메시지에 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
+- 학생 본인이 자기 화면을 여는 것은 학생 발신 unread 메시지를 read 처리하지 않는다.
 - 쿠폰 요청 badge와 메시지 badge는 `users/_student_card_alerts.html.erb` alert 영역을 공유한다.
 - 실시간 갱신은 Turbo Streams broadcast로 해당 학생의 alert 영역만 replace한다.
 - 새 메시지 badge는 학생 상세의 메시지 영역으로 이동한다.
