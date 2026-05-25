@@ -1,6 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+  static targets = ["deferredStream"]
+
   static values = {
     id: String,
     title: String,
@@ -99,10 +101,17 @@ export default class extends Controller {
   }
 
   close() {
+    this.applyDeferredStream()
     this.resolveTargetCardWithRetry()
     this.hideOverlay()
+    this.scheduleDeferredHighlight()
 
-    // use/draw 모두 오버레이가 닫힌 뒤 카드 하이라이트를 적용한다.
+    if (this.animationType() === "draw") {
+      this.element.remove()
+      return
+    }
+
+    // use 애니메이션은 오버레이가 닫힌 뒤 카드 하이라이트를 적용한다.
     if (!this.targetCard) {
       this.element.remove()
       return
@@ -254,6 +263,35 @@ export default class extends Controller {
 
   animationType() {
     return this.hasTypeValue ? this.typeValue : "draw"
+  }
+
+  applyDeferredStream() {
+    if (!this.hasDeferredStreamTarget) return
+
+    const html = this.deferredStreamTarget.innerHTML.trim()
+    if (!html) return
+
+    Turbo.renderStreamMessage(html)
+    this.deferredStreamTarget.innerHTML = ""
+  }
+
+  scheduleDeferredHighlight() {
+    if (this.animationType() !== "draw") return
+    if (!this.hasIdValue) return
+
+    requestAnimationFrame(() => {
+      setTimeout(() => this.appendHighlightTrigger(), 50)
+    })
+  }
+
+  appendHighlightTrigger() {
+    const effects = document.getElementById("effects")
+    if (!effects) return
+
+    const trigger = document.createElement("div")
+    trigger.dataset.controller = "highlight"
+    trigger.dataset.highlightIdValue = this.idValue
+    effects.appendChild(trigger)
   }
 
   teardown() {

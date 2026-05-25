@@ -5,7 +5,26 @@
          data-coupon-animation-type-value="draw"
          data-coupon-animation-id-value="<%= payload[:id] %>"
          data-coupon-animation-title-value="<%= payload[:title] %>"
-         data-coupon-animation-image-url-value="<%= payload[:image_url] %>"></div>
+         data-coupon-animation-image-url-value="<%= payload[:image_url] %>">
+      <% if winner.present? %>
+        <template data-coupon-animation-target="deferredStream">
+          <%= turbo_stream.update dom_id(winner, :coupons) do %>
+            <%= render partial: "user_coupons/list",
+                       locals: { coupons: winner_coupons, user: winner, viewer: current_user } %>
+          <% end %>
+
+          <%= turbo_stream.update dom_id(winner, :recent_issued_coupons) do %>
+            <%= render partial: "user_coupons/issued_coupons",
+                       locals: { coupons: winner_recent_issued_coupons, show_user: false } %>
+          <% end %>
+
+          <%= turbo_stream.update dom_id(winner, :kpis) do %>
+            <%= render partial: "users/kpi_chips",
+                       locals: { user: winner, kpi_counts: winner_kpi_counts } %>
+          <% end %>
+        </template>
+      <% end %>
+    </div>
   <% end %>
 <% end %>
 
@@ -22,7 +41,7 @@
   <% end %>
 <% end %>
 
-<% if winner.present? %>
+<% if winner.present? && !@play_coupon_animation %>
   <%= turbo_stream.update dom_id(winner, :coupons) do %>
     <%= render partial: "user_coupons/list",
                locals: { coupons: winner_coupons, user: winner, viewer: current_user } %>

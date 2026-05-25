@@ -2,6 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Classrooms#draw_coupon", type: :request do
   include ActiveSupport::Testing::TimeHelpers
+  include ActionView::RecordIdentifier
 
   describe "POST /classrooms/:id/draw_coupon" do
     let(:classroom) { create(:classroom) }
@@ -53,6 +54,28 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       expect(response).to have_http_status(:created)
       expect(UserCoupon.last.issued_by).to eq(teacher)
       expect(UserCoupon.last.coupon_template).to eq(template)
+    end
+
+    it "returns a turbo stream with the draw animation and deferred coupon area updates" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      sign_in teacher
+
+      post draw_coupon_classroom_path(classroom),
+        params: { basis: "manual", mode: "default", user_id: student.id },
+        headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      fragment = Nokogiri::HTML.fragment(response.body)
+      top_level_update_targets = fragment.children
+        .select { |node| node.element? && node.name == "turbo-stream" && node["action"] == "update" }
+        .map { |node| node["target"] }
+
+      expect(response.body).to include("coupon-animation")
+      expect(response.body).to include("data-coupon-animation-target=\"deferredStream\"")
+      expect(response.body).to include(dom_id(student, :coupons))
+      expect(response.body).to include(dom_id(student, :recent_issued_coupons))
+      expect(top_level_update_targets).not_to include(dom_id(student, :coupons))
+      expect(top_level_update_targets).not_to include(dom_id(student, :recent_issued_coupons))
     end
 
     it "rejects a student" do
