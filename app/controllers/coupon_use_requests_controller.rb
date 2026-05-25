@@ -52,20 +52,7 @@ class CouponUseRequestsController < ApplicationController
   end
 
   def broadcast_student_card_alerts(coupon_use_request)
-    classroom = coupon_use_request.classroom
-    student = coupon_use_request.student
-    pending_coupon_request = CouponUseRequest.pending.exists?(classroom: classroom, student: student)
-
-    Turbo::StreamsChannel.broadcast_replace_to(
-      classroom,
-      :student_card_alerts,
-      target: view_context.dom_id(student, :student_card_alerts),
-      partial: "users/student_card_alerts",
-      locals: {
-        user: student,
-        pending_coupon_request: pending_coupon_request
-      }
-    )
+    broadcast_student_card_alerts_for(coupon_use_request.classroom, coupon_use_request.student)
   end
 
   def broadcast_student_coupon_lists(coupon_use_request)

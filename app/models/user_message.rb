@@ -12,6 +12,11 @@ class UserMessage < ApplicationRecord
            inverse_of: :parent_message
 
   scope :root_messages, -> { where(parent_message_id: nil) }
+  scope :unread, -> { where(read_at: nil) }
+  scope :sent_by_students, -> { joins(:sender).where(users: { role: "student" }) }
+  scope :unread_student_messages, -> { unread.sent_by_students }
+
+  before_validation :mark_non_student_sender_messages_read, on: :create
 
   validates :body, presence: true, length: { maximum: 1000 }
 
@@ -23,6 +28,13 @@ class UserMessage < ApplicationRecord
   validate :reply_must_target_root_message
 
   private
+
+  def mark_non_student_sender_messages_read
+    return if read_at.present?
+    return if sender.blank? || sender.student?
+
+    self.read_at = Time.current
+  end
 
   def participants_must_be_different
     return if sender_id.blank? || recipient_id.blank?

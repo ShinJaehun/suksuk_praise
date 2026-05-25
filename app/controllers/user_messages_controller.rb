@@ -13,6 +13,7 @@ class UserMessagesController < ApplicationController
     authorize @message
 
     if @message.save
+      broadcast_student_card_alerts_for(@message.classroom, @message.sender) if @message.sender.student?
       load_self_message_section!
 
       respond_to do |format|

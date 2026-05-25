@@ -110,6 +110,7 @@ class ClassroomStudentsController < ApplicationController
     @can_destroy_student = Pundit.policy!(current_user, @student).destroy_student?
     @can_create_compliment = policy(@classroom).create_compliment?
     @can_draw_coupon = policy(@classroom).draw_coupon?
+    read_count = mark_managed_student_messages_read
 
     load_user_show_data!(
       user: @student,
@@ -122,6 +123,7 @@ class ClassroomStudentsController < ApplicationController
     @reply_message = UserMessage.new
     @message_teacher_options = student_message_teacher_options
     @message_section_dom_id = dom_id(@user, :message_section)
+    broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
 
     render "classroom_students/show"
   end
@@ -250,5 +252,11 @@ class ClassroomStudentsController < ApplicationController
       .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
       .distinct
       .order(:name, :id)
+  end
+
+  def mark_managed_student_messages_read
+    return 0 unless current_user.admin? || current_user.teacher?
+
+    mark_unread_student_messages_read_for(@classroom, @student)
   end
 end

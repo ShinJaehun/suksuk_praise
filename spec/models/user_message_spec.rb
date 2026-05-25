@@ -22,6 +22,20 @@ RSpec.describe UserMessage, type: :model do
     expect(message).to be_valid
   end
 
+  it "marks a new teacher-sent message as read" do
+    message = create(:user_message, classroom: classroom, sender: teacher, recipient: student)
+
+    expect(message.read_at).to be_present
+  end
+
+  it "keeps a new student-sent message unread" do
+    classroom.update!(student_initiated_messages_enabled: true)
+
+    message = create(:user_message, classroom: classroom, sender: student, recipient: teacher)
+
+    expect(message.read_at).to be_nil
+  end
+
   it 'is valid for an admin sending a root message to a student in the classroom context' do
     message = described_class.new(
       classroom: classroom,

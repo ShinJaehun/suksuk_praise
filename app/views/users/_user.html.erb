@@ -1,6 +1,8 @@
 <%= turbo_frame_tag dom_id(user) do %>
   <% pending_coupon_request_ids = local_assigns.fetch(:student_ids_with_pending_coupon_use_requests, []) %>
+  <% unread_student_message_ids = local_assigns.fetch(:student_ids_with_unread_student_messages, []) %>
   <% pending_coupon_request = pending_coupon_request_ids.include?(user.id) %>
+  <% unread_student_message = unread_student_message_ids.include?(user.id) %>
   <div class="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
     <div class="flex items-center gap-3">
       <%= user_avatar_image(user, size: 128,
@@ -13,7 +15,8 @@
                     class: "text-sky-700 hover:underline" %>
         <%= render "users/student_card_alerts",
               user: user,
-              pending_coupon_request: pending_coupon_request %>
+              pending_coupon_request: pending_coupon_request,
+              unread_student_message: unread_student_message %>
       </p>
     </div>
 

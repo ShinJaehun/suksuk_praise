@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "User messages", type: :request do
+  include ActionView::RecordIdentifier
+
   describe "teacher/admin root messages and student replies" do
     let(:student) { create(:user, :student, password: "password123") }
     let(:teacher) { create(:user, :teacher) }
@@ -121,6 +123,7 @@ RSpec.describe "User messages", type: :request do
 
     it "allows a student to start a root message to a classroom teacher when the classroom setting is on" do
       classroom.update!(student_initiated_messages_enabled: true)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
       sign_in student
 
       expect {
@@ -138,6 +141,16 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.sender).to eq(student)
       expect(UserMessage.last.recipient).to eq(teacher)
       expect(UserMessage.last.parent_message_id).to be_nil
+      expect(UserMessage.last.read_at).to be_nil
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
+        classroom,
+        :student_card_alerts,
+        hash_including(
+          target: dom_id(student, :student_card_alerts),
+          partial: "users/student_card_alerts",
+          locals: hash_including(user: student, unread_student_message: true)
+        )
+      )
     end
 
     it "rejects a student root message to an outside teacher" do
@@ -257,6 +270,7 @@ RSpec.describe "User messages", type: :request do
     it "allows a teacher to reply under a student root message with turbo stream" do
       classroom.update!(student_initiated_messages_enabled: true)
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
+      allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
       sign_in teacher
 
       expect {
@@ -272,6 +286,16 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.sender).to eq(teacher)
       expect(UserMessage.last.recipient).to eq(student)
       expect(UserMessage.last.parent_message).to eq(student_root)
+      expect(student_root.reload.read_at).to be_present
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
+        classroom,
+        :student_card_alerts,
+        hash_including(
+          target: dom_id(student, :student_card_alerts),
+          partial: "users/student_card_alerts",
+          locals: hash_including(user: student, unread_student_message: false)
+        )
+      )
     end
 
     it "allows a teacher to reply under a teacher root message with turbo stream" do

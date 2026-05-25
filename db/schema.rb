@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_24_001000) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_25_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -169,6 +169,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_24_001000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "parent_message_id"
+    t.datetime "read_at"
+    t.index ["classroom_id", "sender_id", "read_at"], name: "idx_user_messages_classroom_sender_read_at"
     t.index ["classroom_id", "sender_id", "recipient_id", "created_at"], name: "idx_user_messages_on_conversation"
     t.index ["classroom_id"], name: "index_user_messages_on_classroom_id"
     t.index ["parent_message_id", "created_at"], name: "index_user_messages_on_parent_message_id_and_created_at"

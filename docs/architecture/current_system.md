@@ -61,7 +61,8 @@
 - `UserCoupon`은 issued/used 상태 전이를 가진다.
 - coupon 발급/사용 이벤트는 `CouponEvent`로 기록된다.
 - 최근 발급 쿠폰과 보유 쿠폰 카드는 학생 상세 화면에 표시된다.
-- 학생 쿠폰 사용 요청 전용 모델이나 승인 흐름은 현재 없다.
+- 학생은 쿠폰을 직접 사용 처리하지 않고 쿠폰 사용 요청을 보낸다.
+- teacher/admin은 교실 학생 카드에서 쿠폰 요청 badge를 확인하고 학생 상세에서 승인한다.
 
 ## 메시지
 
@@ -73,6 +74,11 @@
 - 답글의 답글은 허용하지 않는다.
 - teacher/admin은 관리 가능한 학생 상세 화면에서 thread별 reply를 작성할 수 있다.
 - 메시지 UI는 root/reply form과 compact thread display 구조를 사용한다.
+- 일반 SNS식 navbar notification/count/list는 제공하지 않는다.
+- 학생 발신 미확인 메시지가 있으면 teacher/admin이 보는 교실 학생 카드에 새 메시지 badge를 표시한다.
+- teacher/admin이 학생 상세를 열거나 메시지에 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
+- 쿠폰 요청 badge와 메시지 badge는 `users/_student_card_alerts.html.erb` alert 영역을 공유한다.
+- 실시간 갱신은 Turbo Streams broadcast로 해당 학생의 alert 영역만 replace한다.
 
 ## 학생 상세 화면
 

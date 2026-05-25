@@ -41,6 +41,35 @@ class ApplicationController < ActionController::Base
 
   private
 
+  def broadcast_student_card_alerts_for(classroom, student)
+    Turbo::StreamsChannel.broadcast_replace_to(
+      classroom,
+      :student_card_alerts,
+      target: view_context.dom_id(student, :student_card_alerts),
+      partial: "users/student_card_alerts",
+      locals: {
+        user: student,
+        pending_coupon_request: pending_coupon_request_for?(classroom, student),
+        unread_student_message: unread_student_message_for?(classroom, student)
+      }
+    )
+  end
+
+  def mark_unread_student_messages_read_for(classroom, student)
+    UserMessage
+      .unread_student_messages
+      .where(classroom: classroom, sender: student)
+      .update_all(read_at: Time.current, updated_at: Time.current)
+  end
+
+  def pending_coupon_request_for?(classroom, student)
+    CouponUseRequest.pending.exists?(classroom: classroom, student: student)
+  end
+
+  def unread_student_message_for?(classroom, student)
+    UserMessage.unread_student_messages.exists?(classroom: classroom, sender: student)
+  end
+
   def expire_student_session_if_inactive
     return unless current_user&.student?
     return if student_session_ttl_exempt_controller?

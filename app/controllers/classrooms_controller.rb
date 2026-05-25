@@ -1,5 +1,6 @@
 # app/controllers/classrooms_controller.rb
 require "base64"
+require "set"
 
 class ClassroomsController < ApplicationController
   before_action :authenticate_user!
@@ -25,6 +26,7 @@ class ClassroomsController < ApplicationController
     @compliment_king_sections = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods)
     @compliment_king_period_cards = build_compliment_king_period_cards(enabled_periods: @enabled_compliment_king_periods)
     @student_ids_with_pending_coupon_use_requests = student_ids_with_pending_coupon_use_requests
+    @student_ids_with_unread_student_messages = student_ids_with_unread_student_messages
 
     load_recent_issued_coupons!
   end
@@ -312,13 +314,23 @@ class ClassroomsController < ApplicationController
   end
 
   def student_ids_with_pending_coupon_use_requests
-    return [] unless @can_manage_classroom
+    return Set.new unless @can_manage_classroom
 
-    CouponUseRequest
+    Set.new(CouponUseRequest
       .pending
       .where(classroom_id: @classroom.id, student_id: @students.select(:id))
       .distinct
-      .pluck(:student_id)
+      .pluck(:student_id))
+  end
+
+  def student_ids_with_unread_student_messages
+    return Set.new unless @can_manage_classroom
+
+    Set.new(UserMessage
+      .unread_student_messages
+      .where(classroom_id: @classroom.id, sender_id: @students.select(:id))
+      .distinct
+      .pluck(:sender_id))
   end
 
   def qr_png_data_url(text)

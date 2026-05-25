@@ -14,6 +14,8 @@ class ClassroomStudentMessagesController < ApplicationController
     authorize @message
 
     if @message.save
+      mark_unread_student_messages_read_for(@classroom, @student)
+      broadcast_student_card_alerts_for(@classroom, @student)
       load_managed_message_section!
 
       respond_to do |format|
