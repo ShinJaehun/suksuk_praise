@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Classroom pending coupon use request badge", type: :request do
+  include ActionView::RecordIdentifier
+
   let(:classroom) { create(:classroom) }
   let(:student) { create(:user, :student) }
   let(:teacher) { create(:user, :teacher) }
@@ -19,6 +21,7 @@ RSpec.describe "Classroom pending coupon use request badge", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("쿠폰 요청")
+    expect(response.body).to include(classroom_student_path(classroom, student, anchor: dom_id(student, :coupons)))
   end
 
   it "does not show the badge when there is no pending request" do

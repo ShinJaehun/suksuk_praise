@@ -18,6 +18,7 @@ RSpec.describe "Classroom student message badge", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("새 메시지")
+    expect(response.body).to include(classroom_student_path(classroom, student, anchor: dom_id(student, :message_section)))
   end
 
   it "does not show a message badge for teacher-sent messages" do

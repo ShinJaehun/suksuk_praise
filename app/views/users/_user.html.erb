@@ -16,7 +16,9 @@
         <%= render "users/student_card_alerts",
               user: user,
               pending_coupon_request: pending_coupon_request,
-              unread_student_message: unread_student_message %>
+              unread_student_message: unread_student_message,
+              coupon_alert_path: classroom_student_path(classroom, user, anchor: dom_id(user, :coupons)),
+              message_alert_path: classroom_student_path(classroom, user, anchor: dom_id(user, :message_section)) %>
       </p>
     </div>
 

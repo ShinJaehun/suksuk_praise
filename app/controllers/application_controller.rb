@@ -50,7 +50,9 @@ class ApplicationController < ActionController::Base
       locals: {
         user: student,
         pending_coupon_request: pending_coupon_request_for?(classroom, student),
-        unread_student_message: unread_student_message_for?(classroom, student)
+        unread_student_message: unread_student_message_for?(classroom, student),
+        coupon_alert_path: student_card_coupon_alert_path(classroom, student),
+        message_alert_path: student_card_message_alert_path(classroom, student)
       }
     )
   end
@@ -68,6 +70,14 @@ class ApplicationController < ActionController::Base
 
   def unread_student_message_for?(classroom, student)
     UserMessage.unread_student_messages.exists?(classroom: classroom, sender: student)
+  end
+
+  def student_card_coupon_alert_path(classroom, student)
+    classroom_student_path(classroom, student, anchor: view_context.dom_id(student, :coupons))
+  end
+
+  def student_card_message_alert_path(classroom, student)
+    classroom_student_path(classroom, student, anchor: view_context.dom_id(student, :message_section))
   end
 
   def expire_student_session_if_inactive

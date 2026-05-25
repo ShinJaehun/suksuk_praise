@@ -1,13 +1,17 @@
-<%# locals: (user:, pending_coupon_request: false, unread_student_message: false) %>
+<%# locals: (user:, pending_coupon_request: false, unread_student_message: false, coupon_alert_path: nil, message_alert_path: nil) %>
 <span id="<%= dom_id(user, :student_card_alerts) %>" class="inline-flex items-center gap-1">
   <% if pending_coupon_request %>
-    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+    <%= link_to coupon_alert_path || "#",
+          data: { turbo: false },
+          class: "inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100" do %>
       쿠폰 요청
-    </span>
+    <% end %>
   <% end %>
   <% if unread_student_message %>
-    <span class="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
+    <%= link_to message_alert_path || "#",
+          data: { turbo: false },
+          class: "inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 hover:bg-sky-100" do %>
       새 메시지
-    </span>
+    <% end %>
   <% end %>
 </span>
