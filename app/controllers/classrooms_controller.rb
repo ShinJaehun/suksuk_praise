@@ -15,6 +15,16 @@ class ClassroomsController < ApplicationController
   def index
     # index는 policy_scope만 요구(verify_policy_scoped 훅 통과)
     @classrooms = policy_scope(Classroom).order(created_at: :desc)
+    @classrooms_index_title = current_user.admin? ? "교실 관리" : "내 교실"
+    classroom_ids = @classrooms.map(&:id)
+    @manageable_classroom_ids =
+      if current_user.admin?
+        classroom_ids.to_set
+      elsif current_user.teacher?
+        current_user.classroom_memberships.where(role: "teacher", classroom_id: classroom_ids).pluck(:classroom_id).to_set
+      else
+        Set.new
+      end
     # authorize Classroom  # <- 불필요 (after_action에서 index는 verify_authorized 제외)
   end
 
