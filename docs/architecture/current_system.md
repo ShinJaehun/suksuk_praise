@@ -78,7 +78,7 @@
 ## 메시지
 
 - 교실에는 `message_policy` 설정이 있으며 기본값은 `replies_only`다.
-- 기존 `student_initiated_messages_enabled` 컬럼은 호환을 위해 남아 있지만 현재 정책 판단 기준은 `message_policy`다.
+- 과거 boolean 설정은 `message_policy`로 이관 완료되었고, 기존 boolean 컬럼은 제거되었다.
 - `disabled`이면 학생/교사/admin 모두 해당 교실의 학생 메시지를 새로 작성하거나 답장할 수 없고, 학생 상세 메시지 영역과 새 메시지 badge를 표시하지 않는다.
 - `replies_only`이면 teacher/admin은 학생에게 새 root message를 보낼 수 있고, student는 기존 root thread에만 답장할 수 있다.
 - `student_initiated`이면 `replies_only` 흐름에 더해 student가 자기 소속 교실 teacher 전원에게 새 root message를 시작할 수 있다.
