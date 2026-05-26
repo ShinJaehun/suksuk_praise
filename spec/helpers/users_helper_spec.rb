@@ -22,6 +22,14 @@ RSpec.describe UsersHelper, type: :helper do
       expect(helper.user_avatar_path(build(:user, :student, gender: "boy", avatar_key: nil), size: 128)).to eq("avatars/boy01.png")
     end
 
+    it "falls back when an allowed avatar key does not have an asset" do
+      expect(User::AVATAR_KEYS).to include("teacherF03")
+
+      user = build(:user, :teacher, gender: "female", avatar_key: "teacherF03")
+
+      expect(helper.user_avatar_path(user, size: 128)).to eq("avatars/teacherF01.png")
+    end
+
     it "falls back to boy01 for unknown role context" do
       user = build(:user, avatar_key: nil)
       allow(user).to receive_messages(admin?: false, teacher?: false, student?: false)

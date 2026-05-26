@@ -11,7 +11,7 @@
 demo_student_pin = '1234' if Rails.env.development? || Rails.env.test?
 
 def pick_demo_avatar_key(gender, used_avatar_keys)
-  pool = User.avatar_keys_for(gender)
+  pool = existing_demo_avatar_keys(User.avatar_keys_for(gender))
   available = pool - used_avatar_keys
   avatar_key = available.sample || pool.sample
 
