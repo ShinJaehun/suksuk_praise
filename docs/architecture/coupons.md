@@ -113,6 +113,17 @@ end
 - `manual` 발급은 동일한 `basis_tag`가 있어도 daily duplicate 규칙과 별개로 취급한다.
 - 향후 `weekly`, `monthly` 발급이 도입되면 각 기간 기준에 맞춰 duplicate guard를 확장한다.
 
+### CouponUseRequest
+
+학생은 보유 쿠폰을 직접 사용 처리하지 않고 쿠폰 사용 요청을 생성한다.
+
+- 학생은 자기 `issued` 쿠폰에 대해서만 사용 요청을 만들 수 있다.
+- 같은 쿠폰에 pending 요청은 하나만 유지한다.
+- teacher/admin은 교실 학생 상세에서 pending 요청을 승인할 수 있다.
+- 승인 시 기존 `UserCoupon#use!` 흐름을 재사용해 쿠폰을 `used`로 전이하고 `CouponEvent`를 기록한다.
+- teacher/admin은 요청 승인과 별개로 학생 쿠폰을 직접 사용 처리할 수 있다.
+- 사용 요청 생성/승인/직접 사용 처리 후 학생 화면과 관리 화면의 쿠폰 목록은 Turbo Streams로 갱신한다.
+
 ### CouponEvent
 
 ```rb
@@ -155,6 +166,20 @@ end
 | create / update / toggle_active / destroy | personal 관리용, 후처리로 normalize 호출 |
 | adopt | library 템플릿을 personal로 복제 |
 | bump_weight | 10단위 증감, 합 100 초과 시 no-op, 0 → 비활성화, 양수 → 자동 활성 가능 |
+
+### Coupon image
+
+- 쿠폰 썸네일은 `CouponTemplate#image` Active Storage 첨부를 우선 사용한다.
+- 첨부 이미지가 없으면 `default_image_key`가 가리키는 asset을 사용한다.
+- `default_image_key`가 비어 있거나 실제 asset이 없으면 placeholder를 표시한다.
+
+### Draw coupon / reveal
+
+- teacher/admin이 쿠폰을 뽑으면 서버에서는 `draw_coupon` 요청 시점에 쿠폰을 즉시 발급한다.
+- Turbo 응답에는 쿠폰 뽑기 overlay와 delayed reveal용 stream이 포함된다.
+- overlay가 열려 있는 동안 teacher/admin 화면 뒤의 쿠폰 목록, 최근 발급, KPI는 즉시 갱신하지 않는다.
+- overlay close 후 delayed reveal이 teacher/admin 화면을 갱신한다.
+- 학생 화면은 `reveal_issue` endpoint 호출 후 `student_coupons` stream으로 새 쿠폰 목록을 갱신한다.
 
 ### 안전장치
 - `DUP_WINDOW` (1~2초) 중복 요청 방지
@@ -211,5 +236,5 @@ ct_try_bump(user, tpl_id, -100)   # 0으로 떨어질 때 auto 비활성화
 ## 9. 문서 유지 원칙
 
 - 현재 시스템 전체 요약은 `docs/architecture/current_system.md`에 둔다.
-- 이 문서는 쿠폰 템플릿, 발급, 사용, 이벤트, weight 관련 상세 규칙을 유지한다.
-- 학생 쿠폰 사용 요청처럼 아직 확정되지 않은 후보는 `docs/planning/backlog.md`에서 관리한다.
+- 이 문서는 쿠폰 템플릿, 발급, 사용 요청, 사용 처리, 이벤트, weight 관련 상세 규칙을 유지한다.
+- 아직 확정되지 않은 notification 확장 후보는 `docs/planning/backlog.md`에서 관리한다.

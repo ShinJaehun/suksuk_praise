@@ -32,38 +32,6 @@
 
 ## P0. 다음 기능 후보
 
-### 학생 쿠폰 사용 요청
-
-상태: Candidate  
-확정 여부: Needs decision  
-우선순위: 높음
-
-현재 학생은 보유 쿠폰을 직접 사용하는 흐름에 가깝다.  
-교실 운영 관점에서는 학생이 “쿠폰 사용 요청”을 보내고, 교사/admin이 확인 후 처리하는 흐름이 더 적절할 수 있다.
-
-검토할 내용:
-
-- 학생 쿠폰 카드의 버튼을 “사용하기”에서 “사용 요청”으로 바꿀지
-- 요청 상태를 별도 모델로 둘지
-- 기존 `UserCoupon` 상태에 request 상태를 추가할지
-- 교사/admin이 요청을 승인/거절/처리하는 화면을 어디에 둘지
-- 승인 시 기존 `UserCoupon#use!` 흐름을 재사용할지
-- 학생에게 요청 결과를 어떻게 보여줄지
-
-구현 전 확인:
-
-- `UserCoupon`
-- `UserCouponsController`
-- `UserCouponPolicy`
-- 현재 쿠폰 사용 request spec
-- notification 설계 여부
-
-spec 승격 후보:
-
-- `docs/specs/coupon_use_requests.md`
-
----
-
 ### Notification
 
 상태: Candidate  
@@ -72,10 +40,15 @@ spec 승격 후보:
 
 학생/교사 간 상호작용을 알림으로 연결한다.
 
-우선 후보:
+현재 구현된 범위:
 
-- 학생 쿠폰 사용 요청 알림
-- 학생 메시지 도착 알림
+- 학생 쿠폰 사용 요청 badge는 교실 학생 카드에 표시된다.
+- 학생 발신 새 메시지 badge는 교실 학생 카드에 표시된다.
+- 두 badge는 학생 상세의 쿠폰 영역 또는 메시지 영역으로 이동한다.
+- navbar notification/count/list는 아직 만들지 않는다.
+
+후속 후보:
+
 - 교사 navbar unread badge
 - 알림 클릭 시 해당 학생 페이지 또는 요청 위치로 이동
 
@@ -96,6 +69,20 @@ spec 승격 후보:
 spec 승격 후보:
 
 - `docs/specs/notifications.md`
+
+---
+
+## Completed / Archived
+
+### 학생 쿠폰 사용 요청
+
+상태: Implemented  
+현재 동작 문서: `docs/architecture/current_system.md`, `docs/architecture/coupons.md`, `docs/specs/student_portal_phase1_spec.md`
+
+- 학생은 자기 쿠폰에 대해 사용 요청을 만들 수 있다.
+- pending 중복 요청은 막는다.
+- teacher/admin은 요청을 승인하거나 쿠폰을 직접 사용 처리할 수 있다.
+- 쿠폰 요청 badge와 학생/관리 쿠폰 목록 Turbo Stream 갱신이 구현되어 있다.
 
 ---
 

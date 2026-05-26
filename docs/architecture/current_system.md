@@ -42,6 +42,7 @@
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
 - 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다.
+- `avatar_key`가 허용된 key라도 현재 asset 파일이 없으면 역할/성별 기본 avatar로 fallback한다.
 
 ## 칭찬
 
@@ -54,6 +55,8 @@
 ## 쿠폰
 
 - coupon template은 teacher personal template과 admin library template으로 구분된다.
+- coupon template은 Active Storage `image`가 있으면 이를 우선 표시하고, 없으면 유효한 `default_image_key` asset을 표시한다.
+- `default_image_key`가 비어 있거나 실제 asset이 없으면 쿠폰 썸네일 placeholder를 표시한다.
 - teacher는 library template을 읽고 personal template으로 adopt할 수 있다.
 - personal template에는 active/weight 불변식과 weight normalization 흐름이 있다.
 - teacher/admin은 교실 맥락에서 학생에게 coupon draw/issue를 수행할 수 있다.
@@ -75,6 +78,7 @@
 ## 메시지
 
 - 교실에는 `message_policy` 설정이 있으며 기본값은 `replies_only`다.
+- 기존 `student_initiated_messages_enabled` 컬럼은 호환을 위해 남아 있지만 현재 정책 판단 기준은 `message_policy`다.
 - `disabled`이면 학생/교사/admin 모두 해당 교실의 학생 메시지를 새로 작성하거나 답장할 수 없고, 학생 상세 메시지 영역과 새 메시지 badge를 표시하지 않는다.
 - `replies_only`이면 teacher/admin은 학생에게 새 root message를 보낼 수 있고, student는 기존 root thread에만 답장할 수 있다.
 - `student_initiated`이면 `replies_only` 흐름에 더해 student가 자기 소속 교실 teacher 전원에게 새 root message를 시작할 수 있다.
