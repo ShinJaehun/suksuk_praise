@@ -8,9 +8,13 @@
     <% end %>
 
     <% if current_user&.admin? %>
-      <%= link_to "관리자",
-            admin_teachers_path,
-            class: "px-3 py-2 hover:underline" %>
+      <%= link_to "교실 관리",
+            classrooms_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+    <% elsif current_user&.teacher? %>
+      <%= link_to "내 교실",
+            classrooms_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
 
     <% if can_manage_teachers? %>
@@ -31,16 +35,16 @@
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
 
-    <% if current_user %>
-      <%= link_to "마이페이지",
+    <% if current_user&.student? %>
+      <%= link_to "내 화면",
             user_path(current_user),
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+    <% end %>
 
-      <% unless current_user.student? %>
-        <%= link_to "내 정보 수정",
-              edit_user_registration_path,
-              class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
-      <% end %>
+    <% if current_user && !current_user.student? %>
+      <%= link_to "내 정보 수정",
+            edit_user_registration_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
   </div>
 
@@ -91,6 +95,16 @@
 
         <div class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md py-2 text-sm z-50">
 
+          <% if current_user.admin? %>
+            <%= link_to "교실 관리",
+                  classrooms_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% elsif current_user.teacher? %>
+            <%= link_to "내 교실",
+                  classrooms_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% end %>
+
           <% if can_manage_teachers? %>
             <%= link_to "교사 관리",
                   admin_teachers_path,
@@ -109,9 +123,11 @@
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% end %>
 
-          <%= link_to "마이페이지",
-                user_path(current_user),
-                class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% if current_user.student? %>
+            <%= link_to "내 화면",
+                  user_path(current_user),
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
+          <% end %>
 
           <% unless current_user.student? %>
             <%= link_to "내 정보 수정",
