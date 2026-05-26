@@ -85,7 +85,7 @@ class UserMessagesController < ApplicationController
     Classroom
       .where(
         id: classroom_ids,
-        student_initiated_messages_enabled: true
+        message_policy: "student_initiated"
       )
       .order(:id)
       .first
@@ -179,7 +179,7 @@ class UserMessagesController < ApplicationController
     User.teacher
       .joins(classroom_memberships: :classroom)
       .where(
-        classrooms: { student_initiated_messages_enabled: true },
+        classrooms: { message_policy: "student_initiated" },
         classroom_memberships: { classroom_id: classroom_ids, role: "teacher" }
       )
       .distinct

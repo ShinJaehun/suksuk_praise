@@ -10,7 +10,7 @@ RSpec.describe "Classroom student message badge", type: :request do
   let!(:teacher_membership) { create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher") }
 
   it "shows a message badge for unread student-sent messages" do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
     create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
     sign_in teacher
 
@@ -32,7 +32,7 @@ RSpec.describe "Classroom student message badge", type: :request do
   end
 
   it "marks unread student messages read when a teacher opens the managed student page" do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
     message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
     allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
     sign_in teacher
@@ -53,7 +53,7 @@ RSpec.describe "Classroom student message badge", type: :request do
   end
 
   it "marks all unread student messages for the student read as a shared classroom alert" do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
     other_teacher = create(:user, :teacher)
     create(:classroom_membership, user: other_teacher, classroom: classroom, role: "teacher")
     message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
@@ -68,7 +68,7 @@ RSpec.describe "Classroom student message badge", type: :request do
   end
 
   it "marks unread student messages read when an admin opens the managed student page" do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
     admin = create(:user, :admin)
     message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
     sign_in admin
@@ -80,7 +80,7 @@ RSpec.describe "Classroom student message badge", type: :request do
   end
 
   it "does not mark unread student messages read when the student opens their own page" do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
     message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
     sign_in student
 
@@ -88,5 +88,17 @@ RSpec.describe "Classroom student message badge", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(message.reload.read_at).to be_nil
+  end
+
+  it "does not show a message badge when classroom messages are disabled" do
+    classroom.update!(message_policy: "student_initiated")
+    create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "질문")
+    classroom.update!(message_policy: "disabled")
+    sign_in teacher
+
+    get classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include("새 메시지")
   end
 end

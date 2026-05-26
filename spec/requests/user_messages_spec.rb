@@ -46,6 +46,18 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.parent_message_id).to be_nil
     end
 
+    it "rejects a teacher root message when classroom messages are disabled" do
+      classroom.update!(message_policy: "disabled")
+      sign_in teacher
+
+      expect {
+        post classroom_student_messages_path(classroom, student),
+             params: { user_message: { body: "비활성 교실 메시지" } }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
+
     it "shows a teacher root and student replies in the same thread card" do
       root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "선생님 메시지")
       create(:user_message, classroom: classroom, sender: student, recipient: teacher, parent_message: root, body: "학생 댓글")
@@ -66,10 +78,10 @@ RSpec.describe "User messages", type: :request do
       expect(reply_index).to be < form_index
     end
 
-    it "shows a student reply form under a student root thread even when the classroom setting is off" do
-      classroom.update!(student_initiated_messages_enabled: true)
+    it "shows a student reply form under a student root thread when the classroom policy is replies only" do
+      classroom.update!(message_policy: "student_initiated")
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
-      classroom.update!(student_initiated_messages_enabled: false)
+      classroom.update!(message_policy: "replies_only")
       sign_in student
 
       get classroom_student_path(classroom, student)
@@ -81,7 +93,7 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).not_to include('name="user_message[recipient_id]"')
     end
 
-    it "does not show a student root message form when the classroom setting is off" do
+    it "does not show a student root message form when the classroom policy is replies only" do
       sign_in student
 
       get classroom_student_path(classroom, student)
@@ -90,8 +102,62 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).not_to include('name="user_message[recipient_id]"')
     end
 
-    it "shows a compact student root message form without choosing a teacher when the classroom setting is on" do
-      classroom.update!(student_initiated_messages_enabled: true)
+    it "hides the student message section when classroom messages are disabled" do
+      create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "숨겨질 메시지")
+      classroom.update!(message_policy: "disabled")
+      sign_in student
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("보유 쿠폰")
+      expect(response.body).to include("최근 발급 쿠폰")
+      expect(response.body).to include("칭찬 타임라인")
+      expect(response.body).not_to include("message_section")
+      expect(response.body).not_to include("user_message[body]")
+      expect(response.body).not_to include("reply_to_message_id")
+      expect(response.body).not_to include("아직 메시지가 없습니다.")
+      expect(response.body).not_to include("숨겨질 메시지")
+    end
+
+    it "hides the managed message section when classroom messages are disabled" do
+      create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "숨겨질 메시지")
+      classroom.update!(message_policy: "disabled")
+      sign_in teacher
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("보유 쿠폰")
+      expect(response.body).to include("최근 발급 쿠폰")
+      expect(response.body).to include("칭찬 타임라인")
+      expect(response.body).not_to include("message_section")
+      expect(response.body).not_to include("user_message[body]")
+      expect(response.body).not_to include("reply_to_message_id")
+      expect(response.body).not_to include("아직 메시지가 없습니다.")
+      expect(response.body).not_to include("숨겨질 메시지")
+    end
+
+    it "hides the managed message section from an admin when classroom messages are disabled" do
+      create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "숨겨질 메시지")
+      classroom.update!(message_policy: "disabled")
+      sign_in admin
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("보유 쿠폰")
+      expect(response.body).to include("최근 발급 쿠폰")
+      expect(response.body).to include("칭찬 타임라인")
+      expect(response.body).not_to include("message_section")
+      expect(response.body).not_to include("user_message[body]")
+      expect(response.body).not_to include("reply_to_message_id")
+      expect(response.body).not_to include("아직 메시지가 없습니다.")
+      expect(response.body).not_to include("숨겨질 메시지")
+    end
+
+    it "shows a compact student root message form without choosing a teacher when the classroom policy is student initiated" do
+      classroom.update!(message_policy: "student_initiated")
       outside_teacher = create(:user, :teacher, name: "다른 반 선생님")
       sign_in student
 
@@ -105,7 +171,7 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).not_to include(outside_teacher.name)
     end
 
-    it "rejects a student root message when the classroom setting is off" do
+    it "rejects a student root message when the classroom policy is replies only" do
       sign_in student
 
       expect {
@@ -120,8 +186,21 @@ RSpec.describe "User messages", type: :request do
       expect(response).to redirect_to(user_path(student))
     end
 
-    it "allows a student to start root messages to all classroom teachers when the classroom setting is on" do
-      classroom.update!(student_initiated_messages_enabled: true)
+    it "rejects a student root message when classroom messages are disabled" do
+      classroom.update!(message_policy: "disabled")
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          user_message: { body: "먼저 질문해도 될까요?" }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(user_path(student))
+    end
+
+    it "allows a student to start root messages to all classroom teachers when the classroom policy is student initiated" do
+      classroom.update!(message_policy: "student_initiated")
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
       sign_in student
 
@@ -153,7 +232,7 @@ RSpec.describe "User messages", type: :request do
     end
 
     it "ignores arbitrary recipient_id and still sends to all classroom teachers" do
-      classroom.update!(student_initiated_messages_enabled: true)
+      classroom.update!(message_policy: "student_initiated")
       outside_teacher = create(:user, :teacher)
       sign_in student
 
@@ -170,7 +249,7 @@ RSpec.describe "User messages", type: :request do
     end
 
     it "does not create an automatic root message to an admin" do
-      classroom.update!(student_initiated_messages_enabled: true)
+      classroom.update!(message_policy: "student_initiated")
       sign_in student
 
       expect {
@@ -186,7 +265,7 @@ RSpec.describe "User messages", type: :request do
     end
 
     it "does not create a student root message when the enabled classroom has no teachers" do
-      no_teacher_classroom = create(:classroom, student_initiated_messages_enabled: true)
+      no_teacher_classroom = create(:classroom, message_policy: "student_initiated")
       create(:classroom_membership, user: student, classroom: no_teacher_classroom, role: "student")
       sign_in student
 
@@ -218,6 +297,21 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.parent_message).to eq(incoming)
     end
 
+    it "rejects a student reply when classroom messages are disabled" do
+      incoming = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "질문 있어?")
+      classroom.update!(message_policy: "disabled")
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          reply_to_message_id: incoming.id,
+          user_message: { body: "네, 있어요." }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
+
     it "allows a student to reply under an admin root" do
       incoming = create(:user_message, classroom: classroom, sender: admin, recipient: student, body: "관리자 확인 부탁해.")
       sign_in student
@@ -235,10 +329,10 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.parent_message).to eq(incoming)
     end
 
-    it "allows a student to reply under a student root thread after the classroom setting is turned off" do
-      classroom.update!(student_initiated_messages_enabled: true)
+    it "allows a student to reply under a student root thread after the classroom policy changes to replies only" do
+      classroom.update!(message_policy: "student_initiated")
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
-      classroom.update!(student_initiated_messages_enabled: false)
+      classroom.update!(message_policy: "replies_only")
       sign_in student
 
       expect {
@@ -256,7 +350,7 @@ RSpec.describe "User messages", type: :request do
     end
 
     it "shows a managed reply form under a student root message" do
-      classroom.update!(student_initiated_messages_enabled: true)
+      classroom.update!(message_policy: "student_initiated")
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
       sign_in teacher
 
@@ -281,7 +375,7 @@ RSpec.describe "User messages", type: :request do
     end
 
     it "allows a teacher to reply under a student root message with turbo stream" do
-      classroom.update!(student_initiated_messages_enabled: true)
+      classroom.update!(message_policy: "student_initiated")
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
       sign_in teacher
@@ -331,7 +425,7 @@ RSpec.describe "User messages", type: :request do
     end
 
     it "allows an admin to reply under a student root message" do
-      classroom.update!(student_initiated_messages_enabled: true)
+      classroom.update!(message_policy: "student_initiated")
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
       sign_in admin
 

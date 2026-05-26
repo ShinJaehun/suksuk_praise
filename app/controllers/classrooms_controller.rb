@@ -295,7 +295,7 @@ class ClassroomsController < ApplicationController
       :daily_compliment_king_enabled,
       :weekly_compliment_king_enabled,
       :monthly_compliment_king_enabled,
-      :student_initiated_messages_enabled
+      :message_policy
     )
   end
 
@@ -325,6 +325,7 @@ class ClassroomsController < ApplicationController
 
   def student_ids_with_unread_student_messages
     return Set.new unless @can_manage_classroom
+    return Set.new unless @classroom.student_messages_enabled?
 
     Set.new(UserMessage
       .unread_student_messages

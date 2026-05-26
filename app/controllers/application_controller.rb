@@ -69,6 +69,8 @@ class ApplicationController < ActionController::Base
   end
 
   def unread_student_message_for?(classroom, student)
+    return false unless classroom.student_messages_enabled?
+
     UserMessage.unread_student_messages.exists?(classroom: classroom, sender: student)
   end
 

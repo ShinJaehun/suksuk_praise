@@ -11,8 +11,8 @@
 교사 또는 관리자가 특정 학생에게 칭찬/안내 메시지를 보내고,
 학생은 자기 페이지에서 해당 메시지를 확인한 뒤
 자신이 참여한 thread에 응답할 수 있다.
-학생이 선생님에게 먼저 메시지를 보내는 기능은 교실별 설정으로 제공하며,
-기본값은 꺼진 상태다.
+학생 메시지 기능은 교실별 `message_policy`로 제어하며,
+기본값은 `replies_only`다.
 
 이번 단계의 핵심은 **범용 notification 시스템**을 만드는 것이 아니라,
 현재 허용된 사용자 조합 안에서의 **직접적인 메시지 흐름**을 먼저 작고 명확하게 구현하는 것이다.
@@ -26,7 +26,7 @@
 1. 교사/admin이 학생에게 메시지 전송
 2. 학생이 자기 페이지에서 받은 메시지 확인
 3. 학생이 자신이 참여한 root thread에 응답 메시지 전송
-4. 교실 설정이 켜진 경우 학생이 자기 소속 교실의 teacher에게 새 메시지 전송
+4. 교실 정책이 `student_initiated`인 경우 학생이 자기 소속 교실의 teacher에게 새 메시지 전송
 5. 교사/admin이 학생 상세 페이지에서 해당 학생과의 메시지 확인
 6. root thread와 답글이 댓글처럼 보이도록 최소 구조 제공
 7. 전체 페이지 reload 대신 부분 갱신으로 새 메시지가 바로 보이도록 한다
@@ -56,9 +56,11 @@
 
 ### 2. 학생 → 선생님 새 메시지 / 발신자 응답
 
-- 교실의 `student_initiated_messages_enabled` 설정이 켜져 있으면 학생은 자기 페이지에서 소속 교실의 teacher들에게 새 메시지를 작성할 수 있다
+- 교실의 `message_policy`가 `disabled`이면 학생/교사/admin 메시지 영역을 표시하지 않고 새 작성/답장을 허용하지 않는다
+- 교실의 `message_policy`가 `replies_only`이면 교사/admin은 학생에게 새 메시지를 보낼 수 있고 학생은 기존 thread에 답장할 수 있지만, 학생이 먼저 새 root message를 시작할 수는 없다
+- 교실의 `message_policy`가 `student_initiated`이면 학생은 자기 페이지에서 소속 교실의 teacher들에게 새 메시지를 작성할 수 있다
 - 메시지를 작성해 parent message 없이 새 메시지를 시작할 수 있다
-- 기본값은 false이며, 꺼져 있으면 학생은 새 root message를 먼저 시작할 수 없다
+- 기본값은 `replies_only`이며, 이 상태에서는 학생은 새 root message를 먼저 시작할 수 없다
 - 수신자는 자기 소속 교실의 teacher 전원이며, teacher마다 별도 root message를 생성한다
 - 교실에 teacher가 없으면 학생 root message는 생성하지 않고 실패 처리한다
 - admin에게 학생이 먼저 보내는 흐름은 이번 단계에서 제외한다
@@ -71,11 +73,11 @@
 - 전송한 답글은 교사/admin이 학생 상세 페이지에서 같은 root thread 카드 안에서 확인할 수 있다
 
 중요:
-- 이번 단계에서는 설정이 켜진 교실에서만 학생이 **자기 소속 교실의 teacher 전원에게만** 새 메시지를 시작할 수 있다.
-- `student_initiated_messages_enabled`는 학생이 새 root message를 먼저 시작할 수 있는지만 제어한다.
-- 이미 존재하는 root thread에 대한 답글은 이 설정과 별개로, thread 참여/관리 권한 기준으로 허용한다.
+- 이번 단계에서는 `student_initiated` 교실에서만 학생이 **자기 소속 교실의 teacher 전원에게만** 새 메시지를 시작할 수 있다.
+- `message_policy`가 `disabled`이면 기존 메시지 데이터는 유지하지만 메시지 영역, 새 작성, 답장, 새 메시지 badge를 모두 비활성화한다.
+- 이미 존재하는 root thread에 대한 답글은 `disabled`가 아닌 교실에서 thread 참여/관리 권한 기준으로 허용한다.
 - 학생이 admin에게 먼저 보내거나 임의 사용자에게 보내는 구조는 만들지 않는다.
-- 기존 thread reply 흐름은 학생 시작 메시지 설정이 꺼져 있어도 유지한다.
+- 기존 thread reply 흐름은 `replies_only` 정책에서도 유지한다.
 
 ---
 
@@ -127,7 +129,7 @@
 ### 보낼 수 있는 사람
 
 - teacher/admin → 특정 학생에게 메시지 전송 가능
-- student → 교실 설정이 켜진 경우 자기 소속 교실 teacher 전원에게 새 메시지 전송 가능
+- student → `student_initiated` 정책인 경우 자기 소속 교실 teacher 전원에게 새 메시지 전송 가능
 - student → 자신이 참여한 root thread에 응답 가능
 - teacher/admin → 관리 권한이 있는 학생과 관련된 root thread에 응답 가능
 
@@ -136,7 +138,7 @@
 - 학생 → 다른 학생에게 메시지 전송 불가
 - 학생 → 임의의 다른 교사/admin에게 새 메시지 시작 불가
 - 학생 → admin에게 새 메시지 시작 불가
-- 학생 → 설정이 꺼진 교실에서 새 root message 시작 불가
+- 학생 → `disabled` 또는 `replies_only` 교실에서 새 root message 시작 불가
 - 학생 → 다른 학생의 메시지 열람 불가
 - 학생 → 자신이 참여하지 않은 thread에 답글 불가
 - 누구든 답글의 답글 작성 불가
@@ -169,12 +171,12 @@
 
 목적:
 - teacher/admin에게서 온 메시지 확인
-- 설정이 켜진 자기 소속 교실 teacher에게 새 메시지 작성
+- `student_initiated`인 자기 소속 교실 teacher에게 새 메시지 작성
 - 응답 작성
 
 이번 단계에서 포함할 UI 후보:
 - root thread 카드 목록
-- 교실 설정이 켜진 경우 기본 teacher에게 보내는 compact 새 메시지 입력 폼
+- `student_initiated` 교실에서 teacher에게 보내는 compact 새 메시지 입력 폼
 - 각 root thread 카드 아래의 답글 목록
 - 각 root thread 카드 아래의 응답 입력 폼
 - 전송 버튼
@@ -182,7 +184,7 @@
 중요:
 - 학생 페이지는 “내 메시지”만 보여야 한다
 - 다른 학생 메시지, 전체 교실 메시지 같은 개념은 넣지 않는다
-- 학생은 설정이 켜진 자기 소속 교실 teacher에게 새 메시지를 시작할 수 있어야 한다
+- 학생은 `student_initiated`인 자기 소속 교실 teacher에게 새 메시지를 시작할 수 있어야 한다
 - 학생은 자신이 참여한 thread에 응답할 수 있어야 한다
 - 학생이 답글을 여러 번 달아도 같은 root thread 카드 안에 누적되어야 한다
 
@@ -208,11 +210,12 @@
 
 ### 2. 학생은 “새 대화 시작”보다 “응답” 중심
 
-학생의 새 root message 시작은 교실별 설정으로 제어한다.
+학생의 새 root message 시작은 교실별 메시지 정책으로 제어한다.
 
-- 설정이 꺼져 있으면 학생은 새 root message를 먼저 시작할 수 없다.
-- 설정이 켜져 있으면 학생은 자기 소속 교실 teacher 전원에게 root message를 시작할 수 있다.
-- 설정값과 무관하게, 이미 존재하는 root thread에 대한 답글은 기존 권한 기준으로 유지한다.
+- `disabled`이면 메시지 영역과 작성/답장을 모두 사용하지 않는다.
+- `replies_only`이면 학생은 새 root message를 먼저 시작할 수 없다.
+- `student_initiated`이면 학생은 자기 소속 교실 teacher 전원에게 root message를 시작할 수 있다.
+- `disabled`가 아니면 이미 존재하는 root thread에 대한 답글은 기존 권한 기준으로 유지한다.
 
 ---
 
@@ -221,6 +224,7 @@
 이번 단계에서는 범용 notification 모델이나 navbar notification/count/list를 만들지 않는다.
 
 - 학생 발신 unread 메시지가 있으면 teacher/admin이 보는 교실 학생 카드에 새 메시지 badge를 표시한다.
+- `disabled` 교실에서는 학생 발신 unread 메시지가 남아 있어도 새 메시지 badge를 표시하지 않는다.
 - 새 메시지 badge는 teacher별 개인 inbox가 아니라 교실 단위 공동 처리 알림이다.
 - teacher/admin 중 누군가 학생 상세를 열거나 답변하면 해당 학생의 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
 - 학생 본인이 자기 화면을 여는 것은 read 처리 조건이 아니다.

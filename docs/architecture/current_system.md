@@ -74,11 +74,12 @@
 
 ## 메시지
 
-- 교실에는 `student_initiated_messages_enabled` 설정이 있으며 기본값은 false다.
-- 설정이 false이면 student는 새 root message를 먼저 시작할 수 없다.
-- 설정이 true이면 student는 자기 소속 교실 teacher 전원에게 새 root message를 시작할 수 있다.
+- 교실에는 `message_policy` 설정이 있으며 기본값은 `replies_only`다.
+- `disabled`이면 학생/교사/admin 모두 해당 교실의 학생 메시지를 새로 작성하거나 답장할 수 없고, 학생 상세 메시지 영역과 새 메시지 badge를 표시하지 않는다.
+- `replies_only`이면 teacher/admin은 학생에게 새 root message를 보낼 수 있고, student는 기존 root thread에만 답장할 수 있다.
+- `student_initiated`이면 `replies_only` 흐름에 더해 student가 자기 소속 교실 teacher 전원에게 새 root message를 시작할 수 있다.
 - student root message는 teacher마다 별도 root thread로 생성되며 admin에게는 자동 발송하지 않는다.
-- 기존 root thread reply는 `student_initiated_messages_enabled` 값과 별개로 thread 참여/관리 권한 기준으로 허용된다.
+- 기존 root thread reply는 `disabled`가 아닌 교실에서 thread 참여/관리 권한 기준으로 허용된다.
 - 답글의 답글은 허용하지 않는다.
 - teacher/admin은 관리 가능한 학생 상세 화면에서 thread별 reply를 작성할 수 있다.
 - 메시지 UI는 root/reply form과 compact thread display 구조를 사용한다.

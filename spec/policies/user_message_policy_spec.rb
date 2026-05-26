@@ -21,10 +21,24 @@ RSpec.describe UserMessagePolicy do
       expect(described_class.new(teacher, message).create?).to eq(true)
     end
 
+    it "rejects a teacher root message when classroom messages are disabled" do
+      classroom.update!(message_policy: "disabled")
+      message = build(:user_message, classroom: classroom, sender: teacher, recipient: student)
+
+      expect(described_class.new(teacher, message).create?).to eq(false)
+    end
+
     it "allows an admin to send a root message to a student" do
       message = build(:user_message, classroom: classroom, sender: admin, recipient: student)
 
       expect(described_class.new(admin, message).create?).to eq(true)
+    end
+
+    it "rejects an admin root message when classroom messages are disabled" do
+      classroom.update!(message_policy: "disabled")
+      message = build(:user_message, classroom: classroom, sender: admin, recipient: student)
+
+      expect(described_class.new(admin, message).create?).to eq(false)
     end
 
     it "rejects a teacher outside the classroom" do
@@ -40,6 +54,14 @@ RSpec.describe UserMessagePolicy do
       expect(described_class.new(student, reply).create?).to eq(true)
     end
 
+    it "rejects a student reply when classroom messages are disabled" do
+      root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "원글")
+      classroom.update!(message_policy: "disabled")
+      reply = build(:user_message, classroom: classroom, sender: student, recipient: teacher, parent_message: root, body: "학생 답장")
+
+      expect(described_class.new(student, reply).create?).to eq(false)
+    end
+
     it "allows a student to reply to an existing admin root" do
       root = create(:user_message, classroom: classroom, sender: admin, recipient: student, body: "관리자 메시지")
       reply = build(:user_message, classroom: classroom, sender: student, recipient: admin, parent_message: root, body: "학생 답장")
@@ -47,23 +69,23 @@ RSpec.describe UserMessagePolicy do
       expect(described_class.new(student, reply).create?).to eq(true)
     end
 
-    it "rejects a student starting a new conversation" do
+    it "rejects a student starting a new conversation when policy is replies only" do
       reply = build(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 보냄")
 
       expect(described_class.new(student, reply).create?).to eq(false)
     end
 
-    it "allows a student root message when classroom student initiated messages are enabled" do
-      classroom.update!(student_initiated_messages_enabled: true)
+    it "allows a student root message when classroom policy is student initiated" do
+      classroom.update!(message_policy: "student_initiated")
       message = build(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 보냄")
 
       expect(described_class.new(student, message).create?).to eq(true)
     end
 
-    it "allows a student to reply to an existing student-started root even when the setting is off" do
-      classroom.update!(student_initiated_messages_enabled: true)
+    it "allows a student to reply to an existing student-started root when policy changes to replies only" do
+      classroom.update!(message_policy: "student_initiated")
       root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "학생 원글")
-      classroom.update!(student_initiated_messages_enabled: false)
+      classroom.update!(message_policy: "replies_only")
       reply = build(:user_message, classroom: classroom, sender: student, recipient: teacher, parent_message: root, body: "추가 답장")
 
       expect(described_class.new(student, reply).create?).to eq(true)

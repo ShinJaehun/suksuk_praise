@@ -29,7 +29,7 @@ RSpec.describe UserMessage, type: :model do
   end
 
   it "keeps a new student-sent message unread" do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
 
     message = create(:user_message, classroom: classroom, sender: student, recipient: teacher)
 
@@ -58,7 +58,7 @@ RSpec.describe UserMessage, type: :model do
     expect(message).not_to be_valid
   end
 
-  it 'rejects a student root message when the classroom setting is off' do
+  it 'rejects a student root message when the classroom policy is replies only' do
     message = described_class.new(
       classroom: classroom,
       sender: student,
@@ -69,8 +69,8 @@ RSpec.describe UserMessage, type: :model do
     expect(message).not_to be_valid
   end
 
-  it 'allows a student root message to a classroom teacher when the classroom setting is on' do
-    classroom.update!(student_initiated_messages_enabled: true)
+  it 'allows a student root message to a classroom teacher when the classroom policy is student initiated' do
+    classroom.update!(message_policy: "student_initiated")
 
     message = described_class.new(
       classroom: classroom,
@@ -83,7 +83,7 @@ RSpec.describe UserMessage, type: :model do
   end
 
   it 'rejects a student root message to an admin' do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
 
     message = described_class.new(
       classroom: classroom,
@@ -108,10 +108,37 @@ RSpec.describe UserMessage, type: :model do
     expect(reply).to be_valid
   end
 
+  it 'rejects a teacher root message when classroom messages are disabled' do
+    classroom.update!(message_policy: "disabled")
+
+    message = described_class.new(
+      classroom: classroom,
+      sender: teacher,
+      recipient: student,
+      body: '교사 원글'
+    )
+
+    expect(message).not_to be_valid
+  end
+
+  it 'rejects a student reply when classroom messages are disabled' do
+    root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: '원글')
+    classroom.update!(message_policy: "disabled")
+    reply = described_class.new(
+      classroom: classroom,
+      sender: student,
+      recipient: teacher,
+      parent_message: root,
+      body: '답글'
+    )
+
+    expect(reply).not_to be_valid
+  end
+
   it 'allows a student reply under a student-started root message after the classroom setting is turned off' do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
     root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: '학생 원글')
-    classroom.update!(student_initiated_messages_enabled: false)
+    classroom.update!(message_policy: "replies_only")
 
     reply = described_class.new(
       classroom: classroom,
@@ -155,7 +182,7 @@ RSpec.describe UserMessage, type: :model do
   end
 
   it 'allows a student root message without parent_message to a classroom teacher when enabled' do
-    classroom.update!(student_initiated_messages_enabled: true)
+    classroom.update!(message_policy: "student_initiated")
 
     message = described_class.new(
       classroom: classroom,

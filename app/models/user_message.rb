@@ -21,6 +21,7 @@ class UserMessage < ApplicationRecord
   validates :body, presence: true, length: { maximum: 1000 }
 
   validate :participants_must_be_different
+  validate :classroom_message_policy_allows_message
   validate :exactly_one_student_participant_for_now
   validate :non_student_participant_must_be_teacher_or_admin
   validate :participants_must_match_classroom_context
@@ -41,6 +42,13 @@ class UserMessage < ApplicationRecord
     return unless sender_id == recipient_id
 
     errors.add(:recipient, "은 발신자와 같을 수 없습니다.")
+  end
+
+  def classroom_message_policy_allows_message
+    return if classroom.blank?
+    return if classroom.student_messages_enabled?
+
+    errors.add(:base, "메시지 기능을 사용하지 않는 교실입니다.")
   end
 
   def exactly_one_student_participant_for_now
@@ -82,7 +90,7 @@ class UserMessage < ApplicationRecord
     return if sender.blank? || recipient.blank?
     return unless sender.student?
 
-    unless classroom&.student_initiated_messages_enabled?
+    unless classroom&.student_can_start_messages?
       errors.add(:base, "학생 새 메시지가 허용되지 않은 교실입니다.")
       return
     end

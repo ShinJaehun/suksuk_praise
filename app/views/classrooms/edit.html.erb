@@ -76,14 +76,18 @@
         <h2 class="text-base font-semibold text-slate-900">메시지 관리</h2>
       </div>
 
-      <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
-        <%= f.check_box :student_initiated_messages_enabled,
-              class: "mt-1 rounded border-slate-300 text-sky-600 focus:ring-sky-500" %>
-        <span class="space-y-1">
-          <span class="block text-sm font-semibold text-slate-800">학생이 먼저 선생님에게 메시지를 보낼 수 있음</span>
-          <span class="block text-sm text-slate-500">꺼져 있으면 학생은 선생님 메시지에 답장만 할 수 있습니다.</span>
-        </span>
-      </label>
+      <div class="space-y-2">
+        <%= f.label :message_policy, "메시지 정책", class: "block text-sm font-semibold text-slate-800" %>
+        <%= f.select :message_policy,
+              [
+                ["메시지 사용 안 함", "disabled"],
+                ["답장만 허용", "replies_only"],
+                ["학생 먼저 메시지 허용", "student_initiated"]
+              ],
+              {},
+              class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 sm:max-w-md" %>
+        <p class="text-sm text-slate-500">학생 메시지 영역과 작성 권한을 교실별로 설정합니다.</p>
+      </div>
 
       <div class="mt-5 flex justify-end">
         <%= f.submit "메시지 설정 저장",

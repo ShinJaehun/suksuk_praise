@@ -110,7 +110,8 @@ class ClassroomStudentsController < ApplicationController
     @can_destroy_student = Pundit.policy!(current_user, @student).destroy_student?
     @can_create_compliment = policy(@classroom).create_compliment?
     @can_draw_coupon = policy(@classroom).draw_coupon?
-    read_count = mark_managed_student_messages_read
+    @student_messages_enabled = @classroom.student_messages_enabled?
+    read_count = @student_messages_enabled ? mark_managed_student_messages_read : 0
 
     load_user_show_data!(
       user: @student,
@@ -245,7 +246,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def student_message_teacher_options
-    return User.none unless current_user == @student && @classroom.student_initiated_messages_enabled?
+    return User.none unless current_user == @student && @classroom.student_can_start_messages?
 
     User.teacher
       .joins(:classroom_memberships)
