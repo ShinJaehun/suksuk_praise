@@ -34,13 +34,16 @@ RSpec.describe "Users::Registrations", type: :request do
       expect(response.body).not_to include("boy01")
     end
 
-    it "does not show avatar choices to admins" do
+    it "shows teacher avatar choices to admins" do
       sign_in admin
 
       get edit_user_registration_path
 
-      expect(response.body).not_to include('name="user[avatar_key]"')
+      expect(response.body).to include('name="user[avatar_key]"')
+      expect(response.body).to include("teacherM04")
+      expect(response.body).to include("teacherF06")
       expect(response.body).not_to include('name="user[avatar]"')
+      expect(response.body).not_to include("boy01")
     end
   end
 
@@ -69,7 +72,7 @@ RSpec.describe "Users::Registrations", type: :request do
         }
       }
 
-      expect(response).to redirect_to(user_path(teacher))
+      expect(response).to redirect_to(edit_user_registration_path)
       expect(teacher.reload.name).to eq("바뀐 교사 이름")
     end
 
@@ -85,7 +88,7 @@ RSpec.describe "Users::Registrations", type: :request do
         }
       }
 
-      expect(response).to redirect_to(user_path(teacher))
+      expect(response).to redirect_to(edit_user_registration_path)
       expect(teacher.reload.gender).to eq("female")
       expect(teacher.avatar_key).to eq("teacherF06")
     end
@@ -102,7 +105,7 @@ RSpec.describe "Users::Registrations", type: :request do
         }
       }
 
-      expect(response).to redirect_to(user_path(teacher))
+      expect(response).to redirect_to(edit_user_registration_path)
       expect(teacher.reload.avatar_key).to eq("teacherM04")
     end
 
@@ -116,11 +119,11 @@ RSpec.describe "Users::Registrations", type: :request do
         }
       }
 
-      expect(response).to redirect_to(user_path(admin))
+      expect(response).to redirect_to(edit_user_registration_path)
       expect(admin.reload.name).to eq("바뀐 관리자 이름")
     end
 
-    it "does not allow an admin to save a teacher avatar_key" do
+    it "updates admin avatar_key with a teacher avatar key" do
       admin.update!(avatar_key: "admin")
       sign_in admin
 
@@ -132,8 +135,24 @@ RSpec.describe "Users::Registrations", type: :request do
         }
       }
 
-      expect(response).to redirect_to(user_path(admin))
-      expect(admin.reload.avatar_key).to eq("admin")
+      expect(response).to redirect_to(edit_user_registration_path)
+      expect(admin.reload.avatar_key).to eq("teacherM04")
+    end
+
+    it "does not allow an admin to save a student avatar_key" do
+      admin.update!(avatar_key: "teacherF06")
+      sign_in admin
+
+      patch user_registration_path, params: {
+        user: {
+          name: admin.name,
+          email: admin.email,
+          avatar_key: "boy01"
+        }
+      }
+
+      expect(response).to redirect_to(edit_user_registration_path)
+      expect(admin.reload.avatar_key).to eq("teacherF06")
     end
   end
 

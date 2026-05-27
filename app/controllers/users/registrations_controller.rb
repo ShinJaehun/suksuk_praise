@@ -40,7 +40,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
   end
 
   def after_update_path_for(resource)
-    user_path(resource)
+    edit_user_registration_path
   end
 
   private
@@ -60,12 +60,11 @@ class Users::RegistrationsController < Devise::RegistrationsController
       params.delete(:avatar_key)
     end
 
-    params.delete(:gender) unless user.teacher? && User::GENDERS.include?(params[:gender])
+    params.delete(:gender) unless (user.teacher? || user.admin?) && %w[male female].include?(params[:gender])
   end
 
   def account_avatar_keys_for(user)
-    return User::TEACHER_MALE_AVATAR_KEYS + User::TEACHER_FEMALE_AVATAR_KEYS if user&.teacher?
-    return User::ADMIN_AVATAR_KEYS if user&.admin?
+    return User::TEACHER_MALE_AVATAR_KEYS + User::TEACHER_FEMALE_AVATAR_KEYS if user&.teacher? || user&.admin?
 
     []
   end
