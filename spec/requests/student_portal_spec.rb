@@ -54,6 +54,32 @@ RSpec.describe 'Student portal flow', type: :request do
       expect(response).to redirect_to(classroom_student_path(classroom, student))
     end
 
+    it 'redirects an admin from their own user show to dashboard' do
+      admin = create(:user, :admin)
+      sign_in admin
+
+      get user_path(admin)
+
+      expect(response).to redirect_to(dashboard_path)
+    end
+
+    it 'redirects a teacher from their own user show to dashboard' do
+      sign_in teacher
+
+      get user_path(teacher)
+
+      expect(response).to redirect_to(dashboard_path)
+    end
+
+    it 'redirects an admin from teacher user show to dashboard' do
+      admin = create(:user, :admin)
+      sign_in admin
+
+      get user_path(teacher)
+
+      expect(response).to redirect_to(dashboard_path)
+    end
+
     it 'allows a teacher to view the classroom-scoped student page' do
       sign_in teacher
 
