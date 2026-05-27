@@ -7,7 +7,7 @@ class UsersController < ApplicationController
 
   def show
     authorize @user, :show?
-    redirect_to(dashboard_path) and return unless @user.student?
+    redirect_to(role_landing_path) and return unless @user.student?
     redirect_student_self_to_classroom_context! and return if @user.student? && current_user == @user
     redirect_to_managed_student_page! and return if @user.student? && current_user != @user
 

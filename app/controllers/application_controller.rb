@@ -115,6 +115,16 @@ class ApplicationController < ActionController::Base
     classroom_student_login_path(classroom_id)
   end
 
+  def role_landing_path
+    return user_path(current_user) if current_user.student?
+    return classrooms_path if current_user.admin?
+
+    teacher_classrooms = ClassroomPolicy::Scope.new(current_user, Classroom).resolve.order(:id).limit(2).to_a
+    return classroom_path(teacher_classrooms.first) if teacher_classrooms.one?
+
+    classrooms_path
+  end
+
   # index가 아닌 액션에서는 authorize 검증, Devise 컨트롤러는 제외
   def skip_pundit_verify_authorized?
     devise_controller? || action_name == "index"
