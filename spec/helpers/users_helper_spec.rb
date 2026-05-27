@@ -14,6 +14,12 @@ RSpec.describe UsersHelper, type: :helper do
       expect(helper.user_avatar_path(user, size: 128)).to eq("avatars/admin.png")
     end
 
+    it "uses teacher avatar_key when the asset exists" do
+      user = build(:user, :teacher, gender: "female", avatar_key: "teacherF03")
+
+      expect(helper.user_avatar_path(user, size: 128)).to eq("avatars/teacherF03.png")
+    end
+
     it "falls back to a role and gender based static avatar key" do
       expect(helper.user_avatar_path(build(:user, :admin, avatar_key: nil), size: 128)).to eq("avatars/admin.png")
       expect(helper.user_avatar_path(build(:user, :teacher, gender: "female", avatar_key: nil), size: 128)).to eq("avatars/teacherF01.png")
@@ -23,9 +29,9 @@ RSpec.describe UsersHelper, type: :helper do
     end
 
     it "falls back when an allowed avatar key does not have an asset" do
-      expect(User::AVATAR_KEYS).to include("teacherF03")
+      expect(User::AVATAR_KEYS).to include("teacherF07")
 
-      user = build(:user, :teacher, gender: "female", avatar_key: "teacherF03")
+      user = build(:user, :teacher, gender: "female", avatar_key: "teacherF07")
 
       expect(helper.user_avatar_path(user, size: 128)).to eq("avatars/teacherF01.png")
     end

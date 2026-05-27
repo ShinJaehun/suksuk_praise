@@ -1,5 +1,6 @@
 class Users::RegistrationsController < Devise::RegistrationsController
   before_action :redirect_student_self_account_edit!, only: [:edit, :update, :edit_password, :update_password]
+  before_action :set_account_avatar_keys, only: [:edit, :update]
   before_action :authenticate_scope!, only: [:edit_password, :update_password]
 
   def edit
@@ -34,6 +35,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
     return super if password_change_params?(params)
 
     params.delete(:current_password)
+    filter_account_avatar_params!(resource, params)
     resource.update_without_password(params)
   end
 
@@ -47,6 +49,25 @@ class Users::RegistrationsController < Devise::RegistrationsController
     return unless current_user&.student?
 
     redirect_to user_path(current_user), alert: "학생 계정 정보는 선생님에게 요청해 주세요. PIN은 PIN 변경 페이지에서 바꿀 수 있습니다."
+  end
+
+  def set_account_avatar_keys
+    @account_avatar_keys = account_avatar_keys_for(current_user).select { |avatar_key| helpers.avatar_asset_key?(avatar_key) }
+  end
+
+  def filter_account_avatar_params!(user, params)
+    if params[:avatar_key].present? && !account_avatar_keys_for(user).include?(params[:avatar_key])
+      params.delete(:avatar_key)
+    end
+
+    params.delete(:gender) unless user.teacher? && User::GENDERS.include?(params[:gender])
+  end
+
+  def account_avatar_keys_for(user)
+    return User::TEACHER_MALE_AVATAR_KEYS + User::TEACHER_FEMALE_AVATAR_KEYS if user&.teacher?
+    return User::ADMIN_AVATAR_KEYS if user&.admin?
+
+    []
   end
 
   def password_change_params?(params)

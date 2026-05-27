@@ -10,22 +10,11 @@
               edit_account_password_path,
               data: { turbo_frame: "modal" },
               class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
-
-        <%= link_to "마이페이지로 돌아가기",
-              user_path(current_user),
-              class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
       </div>
     </div>
   </div>
 
   <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="mb-5">
-      <%= user_avatar_image(current_user,
-            size: 512,
-            class: "h-24 w-24 rounded-2xl object-cover border border-slate-200 bg-slate-100",
-            alt: "#{current_user.name} avatar") %>
-    </div>
-
     <%= simple_form_for(resource,
           as: resource_name,
           url: registration_path(resource_name),
@@ -33,6 +22,36 @@
       <%= f.error_notification %>
 
       <div class="space-y-5">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <% if current_user.teacher? && @account_avatar_keys.any? %>
+            <button type="button"
+                    class="group w-fit"
+                    onclick="document.getElementById('account-avatar-dialog').showModal()">
+              <%= user_avatar_image(current_user,
+                    size: 512,
+                    class: "h-24 w-24 rounded-2xl border border-slate-200 bg-slate-100 object-cover transition group-hover:border-blue-400",
+                    alt: "#{current_user.name} avatar") %>
+            </button>
+          <% else %>
+            <%= user_avatar_image(current_user,
+                  size: 512,
+                  class: "h-24 w-24 rounded-2xl border border-slate-200 bg-slate-100 object-cover",
+                  alt: "#{current_user.name} avatar") %>
+          <% end %>
+
+          <div class="space-y-2">
+            <p class="text-sm font-semibold text-slate-900">현재 아바타</p>
+
+            <% if current_user.teacher? && @account_avatar_keys.any? %>
+              <button type="button"
+                      class="inline-flex w-fit items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      onclick="document.getElementById('account-avatar-dialog').showModal()">
+                기본 아바타 변경
+              </button>
+            <% end %>
+          </div>
+        </div>
+
         <div class="grid gap-5 md:grid-cols-2">
           <%= f.input :name,
                 required: true,
@@ -50,6 +69,17 @@
                   class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 },
                 label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
+
+          <% if current_user.teacher? %>
+            <%= f.input :gender,
+                  collection: [["남성", "male"], ["여성", "female"]],
+                  include_blank: "선택해 주세요",
+                  label: "성별",
+                  input_html: {
+                    class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  },
+                  label_html: { class: "mb-2 block text-sm font-medium text-slate-700" } %>
+          <% end %>
         </div>
 
         <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
@@ -58,13 +88,42 @@
           </p>
         <% end %>
 
+        <% if current_user.teacher? && @account_avatar_keys.any? %>
+          <dialog id="account-avatar-dialog"
+            class="fixed inset-0 m-auto w-[min(42rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-black/50">
+            <div class="p-5">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-base font-semibold text-slate-900">아바타 선택</h3>
+              </div>
+
+              <div class="mt-4 grid max-h-[60vh] grid-cols-4 gap-3 overflow-y-auto sm:grid-cols-6 md:grid-cols-8">
+                <% @account_avatar_keys.each do |avatar_key| %>
+                  <label class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-slate-200 p-2 text-xs text-slate-600 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                    <%= f.radio_button :avatar_key, avatar_key, class: "sr-only" %>
+                    <%= image_tag "avatars/#{avatar_key}.png",
+                          class: "h-12 w-12 rounded-xl object-cover",
+                          alt: avatar_key %>
+                    <span><%= avatar_key %></span>
+                  </label>
+                <% end %>
+              </div>
+
+              <div class="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4">
+                <button type="button"
+                        class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        onclick="document.getElementById('account-avatar-dialog').close()">
+                  닫기
+                </button>
+                <%= f.button :submit,
+                      "저장하기",
+                      class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+              </div>
+            </div>
+          </dialog>
+        <% end %>
       </div>
 
-      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="text-sm text-slate-500">
-          프로필 정보 변경은 현재 비밀번호 없이 저장됩니다.
-        </div>
-
+      <div class="mt-6 flex justify-end">
         <%= f.button :submit,
               "저장하기",
               class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
