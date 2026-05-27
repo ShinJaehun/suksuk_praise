@@ -5,6 +5,6 @@ class HomeController < ApplicationController
   def index
     redirect_to(new_user_session_path) and return unless user_signed_in?
 
-    redirect_to(current_user.student? ? user_path(current_user) : classrooms_path)
+    redirect_to(current_user.student? ? user_path(current_user) : dashboard_path)
   end
 end

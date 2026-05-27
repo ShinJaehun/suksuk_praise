@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   patch "/student_pin", to: "student_pins#update", as: :student_pin
   get "/c/:student_login_token/login", to: "student_sessions#new", as: :public_student_login
   post "/c/:student_login_token/login", to: "student_sessions#create"
+  get "/dashboard", to: "dashboards#show", as: :dashboard
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

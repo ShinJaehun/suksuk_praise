@@ -12,20 +12,20 @@ RSpec.describe 'Home', type: :request do
     expect(response).to redirect_to(new_user_session_path)
   end
 
-  it 'redirects a signed-in teacher to classrooms' do
+  it 'redirects a signed-in teacher to dashboard' do
     sign_in teacher
 
     get root_path
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(dashboard_path)
   end
 
-  it 'redirects a signed-in admin to classrooms' do
+  it 'redirects a signed-in admin to dashboard' do
     sign_in admin
 
     get root_path
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(dashboard_path)
   end
 
   it 'sends a signed-in student through the existing canonical student redirect flow' do

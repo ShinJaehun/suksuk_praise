@@ -8,10 +8,16 @@
     <% end %>
 
     <% if current_user&.admin? %>
+      <%= link_to "한눈에 보기",
+            dashboard_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
       <%= link_to "교실 관리",
             classrooms_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% elsif current_user&.teacher? %>
+      <%= link_to "한눈에 보기",
+            dashboard_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
       <%= link_to "내 교실",
             classrooms_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
@@ -41,29 +47,40 @@
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
 
-    <% if current_user && !current_user.student? %>
-      <%= link_to "내 정보 수정",
-            edit_user_registration_path,
-            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
-    <% end %>
   </div>
 
   <!-- Right: User / Hamburger -->
   <div class="flex items-center gap-3">
     <% if current_user %>
       <!-- Desktop: 아바타 + 유저 정보 -->
-      <div class="hidden md:flex items-center gap-2">
-        <%= user_avatar_image(
-              current_user,
-              size: 128,
-              class: "h-10 w-10 rounded-xl object-cover border border-slate-200 bg-slate-100",
-              alt: "#{current_user.name.presence || current_user.email} avatar"
-            ) %>
-        <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
-          <span><%= current_user.name.presence || current_user.email %></span>
-          <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
+      <% if current_user.student? %>
+        <div class="hidden md:flex items-center gap-2">
+          <%= user_avatar_image(
+                current_user,
+                size: 128,
+                class: "h-10 w-10 rounded-xl object-cover border border-slate-200 bg-slate-100",
+                alt: "#{current_user.name.presence || current_user.email} avatar"
+              ) %>
+          <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
+            <span><%= current_user.name.presence || current_user.email %></span>
+            <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
+          </div>
         </div>
-      </div>
+      <% else %>
+        <%= link_to edit_user_registration_path,
+              class: "hidden md:flex items-center gap-2 rounded-xl hover:bg-slate-50" do %>
+          <%= user_avatar_image(
+                current_user,
+                size: 128,
+                class: "h-10 w-10 rounded-xl object-cover border border-slate-200 bg-slate-100",
+                alt: "#{current_user.name.presence || current_user.email} avatar"
+              ) %>
+          <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
+            <span><%= current_user.name.presence || current_user.email %></span>
+            <span class="text-[10px] text-gray-400"><%= current_user.role %></span>
+          </div>
+        <% end %>
+      <% end %>
 
       <!-- Desktop: Sign out -->
       <%= link_to current_user.student? ? "사용 끝내기" : "Sign out",
@@ -96,10 +113,16 @@
         <div class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md py-2 text-sm z-50">
 
           <% if current_user.admin? %>
+            <%= link_to "한눈에 보기",
+                  dashboard_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
             <%= link_to "교실 관리",
                   classrooms_path,
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% elsif current_user.teacher? %>
+            <%= link_to "한눈에 보기",
+                  dashboard_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
             <%= link_to "내 교실",
                   classrooms_path,
                   class: "block px-3 py-1 hover:bg-gray-50" %>
