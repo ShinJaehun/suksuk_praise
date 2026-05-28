@@ -11,7 +11,7 @@
       <%= link_to "한눈에 보기",
             dashboard_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
-      <%= link_to "교실 관리",
+      <%= link_to "교실",
             classrooms_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% elsif current_user&.teacher? %>
@@ -24,13 +24,13 @@
     <% end %>
 
     <% if can_manage_teachers? %>
-      <%= link_to "교사 관리",
+      <%= link_to "선생님",
             admin_teachers_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
 
     <% if can_manage_coupon_templates? %>
-      <%= link_to t("coupon_templates.index.title", default: "쿠폰 관리"),
+      <%= link_to "쿠폰",
             coupon_templates_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
@@ -116,7 +116,7 @@
             <%= link_to "한눈에 보기",
                   dashboard_path,
                   class: "block px-3 py-1 hover:bg-gray-50" %>
-            <%= link_to "교실 관리",
+            <%= link_to "교실",
                   classrooms_path,
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% elsif current_user.teacher? %>
@@ -129,13 +129,13 @@
           <% end %>
 
           <% if can_manage_teachers? %>
-            <%= link_to "교사 관리",
+            <%= link_to "선생님",
                   admin_teachers_path,
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% end %>
           
           <% if can_manage_coupon_templates? %>
-            <%= link_to t("coupon_templates.index.title", default: "쿠폰 관리"),
+            <%= link_to "쿠폰",
                   coupon_templates_path,
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% end %>
