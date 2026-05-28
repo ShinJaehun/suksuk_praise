@@ -29,6 +29,10 @@ class Admin::TeachersController < Admin::BaseController
     authorize @teacher
     @classrooms = policy_scope(Classroom).order(:created_at)
     @teacher_classroom_ids = @teacher.classroom_memberships.teacher.pluck(:classroom_id)
+    @teacher_classroom_names = @classrooms
+      .select { |classroom| @teacher_classroom_ids.include?(classroom.id) }
+      .map(&:name)
+    @teacher_classroom_count = @teacher_classroom_names.size
   end
 
   def update
