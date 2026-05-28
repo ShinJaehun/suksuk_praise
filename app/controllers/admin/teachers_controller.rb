@@ -5,24 +5,7 @@ class Admin::TeachersController < Admin::BaseController
   Row = Struct.new(:teacher, :homeroom_names, :classroom_count, keyword_init: true)
 
   def index
-    teachers = policy_scope(User)
-      .where(role: :teacher)
-      .includes(classroom_memberships: :classroom)   # N+1 예방
-      .order(:created_at)
-
-    @rows = teachers.map do |t|
-      homerooms =
-        t.classroom_memberships
-         .teacher
-         .map { |m| m.classroom&.name }
-         .compact
-
-      Row.new(
-        teacher:         t,
-        homeroom_names:  homerooms,
-        classroom_count: t.classrooms.size
-      )
-    end
+    redirect_to classrooms_path
   end
 
   def new
@@ -35,7 +18,7 @@ class Admin::TeachersController < Admin::BaseController
     authorize @teacher
 
     if @teacher.save
-      redirect_to admin_teachers_path, notice: t("admin.teachers.create.success")
+      redirect_to classrooms_path, notice: t("admin.teachers.create.success")
     else
       flash.now[:alert] = t("admin.teachers.create.failure")
       render :new, status: :unprocessable_entity
@@ -54,7 +37,7 @@ class Admin::TeachersController < Admin::BaseController
     # 개인 정보(name/email/password)는 Devise에서 각 교사가 직접 수정.
     # 여기서는 담임 교실 매핑만 관리한다.
     update_homeroom_memberships!
-    redirect_to admin_teachers_path, notice: t("admin.teachers.update.success")
+    redirect_to classrooms_path, notice: t("admin.teachers.update.success")
 
   end
 
