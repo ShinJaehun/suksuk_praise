@@ -23,12 +23,6 @@
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% end %>
 
-    <% if can_manage_teachers? %>
-      <%= link_to "선생님",
-            admin_teachers_path,
-            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
-    <% end %>
-
     <% if can_manage_coupon_templates? %>
       <%= link_to "쿠폰",
             coupon_templates_path,
@@ -128,12 +122,6 @@
                   class: "block px-3 py-1 hover:bg-gray-50" %>
           <% end %>
 
-          <% if can_manage_teachers? %>
-            <%= link_to "선생님",
-                  admin_teachers_path,
-                  class: "block px-3 py-1 hover:bg-gray-50" %>
-          <% end %>
-          
           <% if can_manage_coupon_templates? %>
             <%= link_to "쿠폰",
                   coupon_templates_path,
