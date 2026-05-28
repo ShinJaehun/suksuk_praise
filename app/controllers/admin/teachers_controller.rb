@@ -1,9 +1,6 @@
 class Admin::TeachersController < Admin::BaseController
   before_action :set_teacher, only: [:edit, :update]
 
-  # 뷰에서 쓸 프레젠테이션 행 데이터
-  Row = Struct.new(:teacher, :homeroom_names, :classroom_count, keyword_init: true)
-
   def index
     redirect_to classrooms_path
   end
