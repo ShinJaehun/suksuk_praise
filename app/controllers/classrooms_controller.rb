@@ -21,6 +21,7 @@ class ClassroomsController < ApplicationController
     @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", limit_per_classroom: 1)
     @classroom_student_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "student").group(:classroom_id).count
     @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 6)
+    @teacher_assignment_rows = teacher_assignment_rows if current_user.admin?
     @manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
@@ -342,6 +343,25 @@ class ClassroomsController < ApplicationController
       .order(:classroom_id, :created_at, :id)
       .group_by(&:classroom_id)
       .transform_values { |memberships| memberships.map(&:user) }
+  end
+
+  def teacher_assignment_rows
+    User.teacher
+      .with_attached_avatar
+      .includes(classroom_memberships: :classroom)
+      .order(:created_at)
+      .map do |teacher|
+        classroom_names = teacher.classroom_memberships
+          .select(&:teacher?)
+          .map { |membership| membership.classroom&.name }
+          .compact
+
+        {
+          teacher: teacher,
+          classroom_names: classroom_names,
+          classroom_count: classroom_names.size
+        }
+      end
   end
 
   def load_recent_issued_coupons!
