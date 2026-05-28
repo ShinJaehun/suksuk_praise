@@ -17,6 +17,10 @@ class ClassroomsController < ApplicationController
     @classrooms = policy_scope(Classroom).order(created_at: :desc)
     @classrooms_index_title = current_user.admin? ? "교실 관리" : "내 교실"
     classroom_ids = @classrooms.map(&:id)
+    @classroom_teacher_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "teacher").group(:classroom_id).count
+    @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", limit_per_classroom: 1)
+    @classroom_student_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "student").group(:classroom_id).count
+    @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 6)
     @manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
@@ -313,6 +317,31 @@ class ClassroomsController < ApplicationController
     return unless current_user&.student?
 
     redirect_to user_path(current_user)
+  end
+
+  def classroom_membership_previews(classroom_ids, role:, limit_per_classroom:)
+    return {} if classroom_ids.empty?
+
+    ranked_membership_ids = ClassroomMembership
+      .from(
+        ClassroomMembership
+          .where(classroom_id: classroom_ids, role: role)
+          .select(
+            "classroom_memberships.id, classroom_memberships.classroom_id, " \
+            "ROW_NUMBER() OVER (PARTITION BY classroom_memberships.classroom_id " \
+            "ORDER BY classroom_memberships.created_at ASC, classroom_memberships.id ASC) AS preview_position"
+          ),
+        :classroom_memberships
+      )
+      .where("preview_position <= ?", limit_per_classroom)
+      .pluck(:id)
+
+    ClassroomMembership
+      .where(id: ranked_membership_ids)
+      .includes(user: { avatar_attachment: :blob })
+      .order(:classroom_id, :created_at, :id)
+      .group_by(&:classroom_id)
+      .transform_values { |memberships| memberships.map(&:user) }
   end
 
   def load_recent_issued_coupons!
