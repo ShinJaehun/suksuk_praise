@@ -13,6 +13,8 @@ RSpec.describe "Classroom student login link", type: :request do
     get classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include("구성원 관리")
+    expect(response.body).to include(classroom_members_path(classroom))
     expect(response.body).not_to include("학생 로그인 주소")
     expect(response.body).not_to include("QR 코드 보기")
     expect(response.body).not_to include(classroom.student_login_token)

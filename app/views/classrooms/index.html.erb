@@ -68,11 +68,11 @@
           <div class="mt-6 flex items-center gap-2">
             <%= link_to "열기",
                   classroom_path(classroom),
-                  class: "inline-flex flex-1 items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+                  class: "inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
             <% if @manageable_classroom_ids.include?(classroom.id) %>
               <%= link_to "관리",
                     edit_classroom_path(classroom),
-                    class: "inline-flex flex-1 items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800" %>
+                    class: "inline-flex flex-1 items-center justify-center rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
             <% end %>
           </div>
         </article>

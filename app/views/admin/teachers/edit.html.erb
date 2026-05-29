@@ -1,4 +1,5 @@
 <% form_data = turbo_frame_request? ? { turbo_frame: "_top" } : {} %>
+<% return_link_data = turbo_frame_request? ? { turbo_frame: "_top" } : {} %>
 
 <% content = capture do %>
   <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">담임 교실 배정</h1>
@@ -69,6 +70,7 @@
                      class: "inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
         <%= link_to "교실로 돌아가기",
                     classrooms_path,
+                    data: return_link_data,
                     class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
       </div>
     <% end %>

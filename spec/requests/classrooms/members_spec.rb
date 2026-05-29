@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Classroom members", type: :request do
-  let(:classroom) { create(:classroom) }
+  let(:classroom) { create(:classroom, name: "2반") }
   let(:admin) { create(:user, :admin) }
   let(:teacher) { create(:user, :teacher, name: "담당 교사") }
   let(:other_teacher) { create(:user, :teacher, name: "추가 교사") }
@@ -14,6 +14,7 @@ RSpec.describe "Classroom members", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("구성원 관리")
+    expect(response.body).to include("2반")
     expect(response.body).to include("학생 로그인")
     expect(response.body).to include("QR 코드 보기")
     expect(response.body).to include("QR 코드 다운로드")
@@ -34,10 +35,14 @@ RSpec.describe "Classroom members", type: :request do
     get classroom_members_path(classroom)
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include("2반")
     expect(response.body).to include("담당 선생님 배정")
+    expect(response.body).to include("담당 선생님 저장")
+    expect(response.body).to include("1명 선택됨")
     expect(response.body).to include("classroom[teacher_ids][]")
     expect(response.body).to include(teacher.name)
     expect(response.body).to include(other_teacher.name)
+    expect(response.body).to include("#{teacher.name} avatar")
     expect(response.body).to include("학생 로그인")
     expect(response.body).to include("학생 관리")
   end
