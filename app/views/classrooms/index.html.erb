@@ -93,6 +93,7 @@
           <h2 class="text-base font-bold text-slate-900">선생님</h2>
           <%= link_to "새 선생님 추가",
                 new_admin_teacher_path,
+                data: { turbo_frame: "modal" },
                 class: "shrink-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50" %>
         </div>
 

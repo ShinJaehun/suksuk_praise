@@ -1,4 +1,6 @@
-<%= form_with model: teacher, url: admin_teachers_path, class: "space-y-4 max-w-md" do |f| %>
+<% form_data = local_assigns[:turbo_frame_target].present? ? { turbo_frame: local_assigns[:turbo_frame_target] } : {} %>
+
+<%= form_with model: teacher, url: admin_teachers_path, class: "space-y-4 max-w-md", data: form_data do |f| %>
   <div>
     <%= f.label :name, "이름", class: "block text-sm font-medium text-gray-700" %>
     <%= f.text_field :name, class: "mt-1 block w-full border rounded px-3 py-2" %>

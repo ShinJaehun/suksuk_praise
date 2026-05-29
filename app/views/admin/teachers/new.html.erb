@@ -1,9 +1,21 @@
-<section class="mx-auto w-full max-w-6xl pt-4">
-  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-4">새 교사 추가</h1>
-    <%= render "form", teacher: @teacher %>
-    <div class="mt-4">
-      <%= link_to "교실로 돌아가기", classrooms_path, class: "text-blue-600 hover:underline" %>
+<% if turbo_frame_request? %>
+  <%= turbo_frame_tag :modal do %>
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" data-controller="modal">
+      <div class="relative w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
+        <h1 class="mb-4 text-xl font-bold text-slate-900">새 교사 추가</h1>
+        <%= render "form", teacher: @teacher, turbo_frame_target: "_top" %>
+        <button type="button" data-action="modal#close" class="absolute right-2 top-2 text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+      </div>
     </div>
-  </div>
-</section>
+  <% end %>
+<% else %>
+  <section class="mx-auto w-full max-w-6xl pt-4">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 mb-4">새 교사 추가</h1>
+      <%= render "form", teacher: @teacher %>
+      <div class="mt-4">
+        <%= link_to "교실로 돌아가기", classrooms_path, class: "text-blue-600 hover:underline" %>
+      </div>
+    </div>
+  </section>
+<% end %>
