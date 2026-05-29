@@ -105,6 +105,7 @@
               <% visible_classroom_names = classroom_names.first(2) %>
 
               <a href="<%= edit_admin_teacher_path(teacher) %>"
+                 data-turbo-frame="modal"
                  class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 hover:bg-slate-100">
                 <%= user_avatar_image(
                       teacher,
