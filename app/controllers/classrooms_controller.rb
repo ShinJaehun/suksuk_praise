@@ -68,13 +68,15 @@ class ClassroomsController < ApplicationController
 
   def edit
     authorize @classroom
+    load_teacher_assignment_form if current_user.admin?
   end
 
   def update
     authorize @classroom
-    if @classroom.update(classroom_params)
+    if update_classroom_with_teacher_assignments
       redirect_to @classroom, notice: t("classrooms.update.success")
     else
+      load_teacher_assignment_form if current_user.admin?
       render :edit, status: :unprocessable_entity
     end
   end
@@ -312,6 +314,48 @@ class ClassroomsController < ApplicationController
       :monthly_compliment_king_enabled,
       :message_policy
     )
+  end
+
+  def update_classroom_with_teacher_assignments
+    Classroom.transaction do
+      next false unless @classroom.update(classroom_params)
+
+      sync_teacher_assignments if current_user.admin?
+      true
+    end
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+    false
+  end
+
+  def load_teacher_assignment_form
+    @assignable_teachers = User.teacher.order(:name, :id)
+    @assigned_teacher_ids = @classroom.classroom_memberships.teacher.pluck(:user_id)
+  end
+
+  def sync_teacher_assignments
+    assignable_teacher_ids = User.teacher.pluck(:id)
+    selected_teacher_ids = Array(params.dig(:classroom, :teacher_ids))
+      .reject(&:blank?)
+      .map(&:to_i) & assignable_teacher_ids
+
+    current_teacher_memberships = @classroom.classroom_memberships
+      .teacher
+      .joins(:user)
+      .where(users: { role: "teacher" })
+
+    current_teacher_ids = current_teacher_memberships.pluck(:user_id)
+    teacher_ids_to_add = selected_teacher_ids - current_teacher_ids
+    teacher_ids_to_remove = current_teacher_ids - selected_teacher_ids
+
+    teacher_ids_to_add.each do |teacher_id|
+      ClassroomMembership.find_or_create_by!(
+        classroom: @classroom,
+        user_id: teacher_id,
+        role: "teacher"
+      )
+    end
+
+    current_teacher_memberships.where(user_id: teacher_ids_to_remove).destroy_all
   end
 
   def redirect_students_to_mypage!
