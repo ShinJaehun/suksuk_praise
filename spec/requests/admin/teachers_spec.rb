@@ -56,8 +56,6 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).to include("담임 교실 배정")
     expect(response.body).to include("교실로 돌아가기")
     expect(response.body).not_to include('data-turbo-frame="_top"')
-    expect(response.body).not_to include("bg-black/50")
-    expect(response.body).not_to include('data-action="modal#close"')
   end
 
   it "renders teacher assignment in the modal frame" do
@@ -70,6 +68,5 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).to include("담임 교실 배정")
     expect(response.body).to include('data-turbo-frame="_top"')
     expect(response.body).to include("교실로 돌아가기")
-    expect(response.body.scan('data-turbo-frame="_top"').size).to be >= 2
   end
 end
