@@ -32,6 +32,8 @@ Rails.application.routes.draw do
   end
 
   resources :classrooms do
+    resource :members, only: :show, module: :classrooms
+
     get :student_login, to: "student_sessions#new", as: :student_login
     post :student_login, to: "student_sessions#create"
 
