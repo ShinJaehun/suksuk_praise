@@ -1,9 +1,7 @@
-<h2 class="text-xl font-bold mb-4">새 교실 만들기</h2>
+<section class="mx-auto w-full max-w-5xl space-y-6 pt-4">
+  <div class="space-y-1">
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">새 교실 만들기</h1>
+  </div>
 
-<%= form_with model: @classroom, local: true do |f| %>
-    <div class="mb-4">
-        <%= f.label :name, "교실 이름", class: "block font-semibold mb-1" %>
-        <%= f.text_field :name, class: "border px-2 py-1 w-full rounded" %>
-    </div>
-    <%= f.submit t('ui.buttons.new_classroom'), class: "bg-green-500 text-white px-4 py-2 rounded" %>
-<% end %>
+  <%= render "form", classroom: @classroom, submit_label: t("ui.buttons.new_classroom") %>
+</section>
