@@ -1,10 +1,6 @@
 class Admin::TeachersController < Admin::BaseController
   before_action :set_teacher, only: [:edit, :update]
 
-  def index
-    redirect_to classrooms_path
-  end
-
   def new
     @teacher = User.new
     authorize @teacher

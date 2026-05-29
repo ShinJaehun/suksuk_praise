@@ -104,8 +104,11 @@ Rails.application.routes.draw do
   resources :coupon_events, only: [:index]
 
   namespace :admin do
-    root to: "teachers#index"  # /admin 접속 시 교사 목록으로 바로 이동
-    resources :teachers, only: [:index, :new, :create, :edit, :update]
+    root to: redirect("/classrooms")
+
+    get "teachers", to: redirect("/classrooms"), as: nil
+    resources :teachers, only: [:new, :create, :edit, :update]
+
     resources :coupon_templates, except: [:show]
   end
 

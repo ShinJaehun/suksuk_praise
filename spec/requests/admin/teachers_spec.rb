@@ -4,6 +4,14 @@ RSpec.describe "Admin teachers", type: :request do
   let(:admin) { create(:user, :admin) }
   let(:teacher) { create(:user, :teacher, name: "담당 교사") }
 
+  it "redirects the retired teacher index to classrooms" do
+    sign_in admin
+
+    get "/admin/teachers"
+
+    expect(response).to redirect_to("/classrooms")
+  end
+
   it "opens the new teacher form from classrooms in the modal frame" do
     sign_in admin
 
