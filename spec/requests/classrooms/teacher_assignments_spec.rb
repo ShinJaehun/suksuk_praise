@@ -7,7 +7,7 @@ RSpec.describe "Classroom teacher assignments", type: :request do
   let(:other_teacher) { create(:user, :teacher, name: "추가 교사") }
 
   describe "GET /classrooms/:id/edit" do
-    it "shows teacher assignment controls to an admin" do
+    it "does not show teacher assignment controls to an admin" do
       create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
       other_teacher
       sign_in admin
@@ -15,10 +15,8 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       get edit_classroom_path(classroom)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("담당 선생님 배정")
-      expect(response.body).to include("classroom[teacher_ids][]")
-      expect(response.body).to include(teacher.name)
-      expect(response.body).to include(other_teacher.name)
+      expect(response.body).not_to include("담당 선생님 배정")
+      expect(response.body).not_to include("classroom[teacher_ids][]")
     end
 
     it "does not show teacher assignment controls to a teacher" do

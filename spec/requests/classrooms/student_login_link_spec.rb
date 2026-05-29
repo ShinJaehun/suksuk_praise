@@ -19,11 +19,11 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).not_to include(public_student_login_url(student_login_token: classroom.student_login_token))
   end
 
-  it "shows the token student login URL to a classroom teacher on the edit page" do
+  it "shows the token student login URL to a classroom teacher on the members page" do
     create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
     sign_in teacher
 
-    get edit_classroom_path(classroom)
+    get classroom_members_path(classroom)
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("학생 로그인 주소")
@@ -36,10 +36,10 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).to include("학생 로그인 주소 재발급")
   end
 
-  it "shows the token student login URL to an admin on the edit page" do
+  it "shows the token student login URL to an admin on the members page" do
     sign_in admin
 
-    get edit_classroom_path(classroom)
+    get classroom_members_path(classroom)
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
@@ -58,7 +58,7 @@ RSpec.describe "Classroom student login link", type: :request do
   it "does not allow a non-managing teacher to access token management" do
     sign_in teacher
 
-    get edit_classroom_path(classroom)
+    get classroom_members_path(classroom)
 
     expect(response).to redirect_to(root_path)
     expect(response.body).not_to include(classroom.student_login_token)
