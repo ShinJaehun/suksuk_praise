@@ -11,12 +11,20 @@
 
     <% section.winners.each do |king| %>
       <% issued = compliment_king_coupon_issued?(issued_winner_ids, king) %>
+      <% student_path = classroom_student_path(classroom, king) %>
       <div class="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2">
-        <%= user_avatar_image(king,
-              size: 128,
-              class: "h-10 w-10 rounded-xl border border-amber-200 bg-amber-100 object-cover",
-              alt: "#{display_name(king)} avatar") %>
-        <span class="font-bold text-slate-900"><%= display_name(king) %></span>
+        <%= link_to student_path,
+              data: { turbo: false },
+              aria: { label: "#{display_name(king)} 학생 상세 보기" } do %>
+          <%= user_avatar_image(king,
+                size: 128,
+                class: "h-10 w-10 rounded-xl border border-amber-200 bg-amber-100 object-cover",
+                alt: "#{display_name(king)} avatar") %>
+        <% end %>
+        <%= link_to display_name(king),
+              student_path,
+              data: { turbo: false },
+              class: "font-bold text-slate-900 hover:underline" %>
         <% if show_compliment_king_coupon_button?(classroom, period) %>
           <%= button_to t("ui.buttons.issue_coupon"),
                 draw_coupon_classroom_path(

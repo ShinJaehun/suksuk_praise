@@ -42,6 +42,14 @@ class ClassroomsController < ApplicationController
     @compliment_king_period_cards = build_compliment_king_period_cards(enabled_periods: @enabled_compliment_king_periods)
     @student_ids_with_pending_coupon_use_requests = student_ids_with_pending_coupon_use_requests
     @student_ids_with_unread_student_messages = student_ids_with_unread_student_messages
+    @today_compliment_counts_by_student_id = Compliment
+      .where(
+        classroom_id: @classroom.id,
+        receiver_id: @students.select(:id),
+        given_at: Time.zone.today.all_day
+      )
+      .group(:receiver_id)
+      .count
 
     load_recent_issued_coupons!
   end

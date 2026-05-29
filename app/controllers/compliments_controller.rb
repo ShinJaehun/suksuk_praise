@@ -27,6 +27,7 @@ class ComplimentsController < ApplicationController
           include_recent_issued: false,
           recent_in_classroom: true
         )
+        load_today_compliment_count_for_receiver
         message = t("compliments.create.duplicate")
         return respond_to do |f|
           f.html { redirect_back fallback_location: classroom_student_path(@classroom, @receiver),
@@ -56,6 +57,7 @@ class ComplimentsController < ApplicationController
       include_recent_issued: false,
       recent_in_classroom: true
     )
+    load_today_compliment_count_for_receiver
 
     respond_to do |f|
       f.html { redirect_to classroom_student_path(@classroom, @receiver), status: :see_other }
@@ -91,5 +93,13 @@ class ComplimentsController < ApplicationController
 
   def compliment_params
     params.require(:compliment).permit(:receiver_id)
+  end
+
+  def load_today_compliment_count_for_receiver
+    @today_compliment_count_for_receiver = Compliment.where(
+      classroom_id: @classroom.id,
+      receiver_id: @receiver.id,
+      given_at: Time.zone.today.all_day
+    ).count
   end
 end

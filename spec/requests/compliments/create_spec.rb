@@ -126,15 +126,22 @@ RSpec.describe "Compliments#create", type: :request do
     it "returns a turbo stream response on success" do
       sign_in teacher
 
-      expect {
-        post classroom_compliments_path(classroom),
-          params: { compliment: { receiver_id: student.id } },
-          headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
-      }.to change(Compliment, :count).by(1)
-        .and change { student.reload.points }.by(1)
+      travel_to Time.zone.local(2026, 4, 7, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: 1.day.ago)
+
+        expect {
+          post classroom_compliments_path(classroom),
+            params: { compliment: { receiver_id: student.id } },
+            headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+        }.to change(Compliment, :count).by(1)
+          .and change { student.reload.points }.by(1)
+      end
 
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include("오늘 칭찬")
+      expect(response.body).not_to include("칭찬(포인트)")
+      expect(response.body).to match(/오늘 칭찬.*text-2xl[^>]*>1<\/div>/m)
     end
 
     it "returns 409 for a duplicate request inside the duplicate window" do

@@ -1,6 +1,8 @@
 <%= turbo_frame_tag dom_id(user) do %>
   <% pending_coupon_request_ids = local_assigns.fetch(:student_ids_with_pending_coupon_use_requests, []) %>
   <% unread_student_message_ids = local_assigns.fetch(:student_ids_with_unread_student_messages, []) %>
+  <% today_compliment_counts = local_assigns.fetch(:today_compliment_counts_by_student_id, {}) %>
+  <% today_compliment_count = local_assigns.fetch(:today_compliment_count, today_compliment_counts[user.id] || 0) %>
   <% pending_coupon_request = pending_coupon_request_ids.include?(user.id) %>
   <% unread_student_message = unread_student_message_ids.include?(user.id) %>
   <div class="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -23,8 +25,8 @@
     </div>
 
     <div class="mt-3 rounded-lg bg-slate-50 px-3 py-2">
-      <div class="text-xs text-slate-500">칭찬(포인트)</div>
-      <div class="text-2xl font-extrabold text-slate-900"><%= user.points %></div>
+      <div class="text-xs text-slate-500">오늘 칭찬</div>
+      <div class="text-2xl font-extrabold text-slate-900"><%= today_compliment_count %></div>
     </div>
 
     <% if policy(classroom).create_compliment? %>
