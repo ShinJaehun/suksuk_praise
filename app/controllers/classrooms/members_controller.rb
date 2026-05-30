@@ -15,6 +15,10 @@ class Classrooms::MembersController < ApplicationController
 
   def load_teacher_assignment_form
     @assignable_teachers = User.teacher.order(:name, :id)
-    @assigned_teacher_ids = @classroom.classroom_memberships.teacher.pluck(:user_id)
+    @assigned_teacher_ids = @classroom.classroom_memberships
+      .teacher
+      .joins(:user)
+      .where(users: { role: "teacher" })
+      .pluck(:user_id)
   end
 end

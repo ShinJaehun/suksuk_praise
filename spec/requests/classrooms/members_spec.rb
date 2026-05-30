@@ -47,6 +47,28 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include("학생 관리")
   end
 
+  it "does not count a legacy admin teacher membership as an assigned teacher" do
+    create(:classroom_membership, classroom: classroom, user: admin, role: "teacher")
+    sign_in admin
+
+    get classroom_members_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("담당 선생님 배정")
+    expect(response.body).to include("0명 선택됨")
+    expect(response.body).not_to include('checked="checked"')
+  end
+
+  it "does not show a legacy admin teacher membership in the classrooms index preview" do
+    create(:classroom_membership, classroom: classroom, user: admin, role: "teacher")
+    sign_in admin
+
+    get classrooms_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("담당 선생님 없음")
+  end
+
   it "rejects a teacher who does not manage the classroom" do
     sign_in teacher
 

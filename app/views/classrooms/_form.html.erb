@@ -66,6 +66,15 @@
       </div>
     </section>
 
+    <% if current_user.admin? && classroom.new_record? %>
+      <%= render "classrooms/teacher_assignment_fields",
+            assignable_teachers: @assignable_teachers,
+            assigned_teacher_ids: @assigned_teacher_ids,
+            form: f,
+            show_details: false,
+            show_submit: false %>
+    <% end %>
+
     <div class="flex justify-end">
       <%= f.submit submit_label,
             class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700" %>

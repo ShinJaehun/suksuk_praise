@@ -17,8 +17,11 @@ class ClassroomsController < ApplicationController
     @classrooms = policy_scope(Classroom).order(created_at: :desc)
     @classrooms_index_title = current_user.admin? ? "교실 관리" : "내 교실"
     classroom_ids = @classrooms.map(&:id)
-    @classroom_teacher_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "teacher").group(:classroom_id).count
-    @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", limit_per_classroom: 1)
+    teacher_memberships = ClassroomMembership
+      .joins(:user)
+      .where(classroom_id: classroom_ids, role: "teacher", users: { role: "teacher" })
+    @classroom_teacher_counts = teacher_memberships.group(:classroom_id).count
+    @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", user_role: "teacher", limit_per_classroom: 1)
     @classroom_student_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "student").group(:classroom_id).count
     @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 6)
     @teacher_assignment_rows = teacher_assignment_rows if current_user.admin?
@@ -57,19 +60,16 @@ class ClassroomsController < ApplicationController
   def new
     authorize Classroom
     @classroom = Classroom.new
+    load_new_classroom_teacher_assignment_form if current_user.admin?
   end
 
   def create
     authorize Classroom
     @classroom = Classroom.new(classroom_params)
-    if @classroom.save
-      ClassroomMembership.create!(
-        classroom: @classroom,
-        user: current_user,
-        role: "teacher"
-      )
+    if create_classroom_with_teacher_assignments
       redirect_to classroom_path(@classroom), notice: t("classrooms.create.success")
     else
+      load_new_classroom_teacher_assignment_form if current_user.admin?
       render :new, status: :unprocessable_entity
     end
   end
@@ -337,15 +337,42 @@ class ClassroomsController < ApplicationController
 
   def load_teacher_assignment_form
     @assignable_teachers = User.teacher.order(:name, :id)
-    @assigned_teacher_ids = @classroom.classroom_memberships.teacher.pluck(:user_id)
+    @assigned_teacher_ids = @classroom.classroom_memberships
+      .teacher
+      .joins(:user)
+      .where(users: { role: "teacher" })
+      .pluck(:user_id)
+  end
+
+  def load_new_classroom_teacher_assignment_form
+    @assignable_teachers = User.teacher.order(:name, :id)
+    @assigned_teacher_ids = selected_teacher_ids
+  end
+
+  def create_classroom_with_teacher_assignments
+    Classroom.transaction do
+      if current_user.admin? && selected_teacher_ids.empty?
+        @classroom.errors.add(:base, "담당 선생님을 1명 이상 선택해 주세요.")
+        next false
+      end
+
+      next false unless @classroom.save
+
+      teacher_ids = current_user.admin? ? selected_teacher_ids : [current_user.id]
+      teacher_ids.each do |teacher_id|
+        ClassroomMembership.create!(
+          classroom: @classroom,
+          user_id: teacher_id,
+          role: "teacher"
+        )
+      end
+      true
+    end
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+    false
   end
 
   def sync_teacher_assignments
-    assignable_teacher_ids = User.teacher.pluck(:id)
-    selected_teacher_ids = Array(params.dig(:classroom, :teacher_ids))
-      .reject(&:blank?)
-      .map(&:to_i) & assignable_teacher_ids
-
     current_teacher_memberships = @classroom.classroom_memberships
       .teacher
       .joins(:user)
@@ -366,19 +393,27 @@ class ClassroomsController < ApplicationController
     current_teacher_memberships.where(user_id: teacher_ids_to_remove).destroy_all
   end
 
+  def selected_teacher_ids
+    Array(params.dig(:classroom, :teacher_ids))
+      .reject(&:blank?)
+      .map(&:to_i) & User.teacher.pluck(:id)
+  end
+
   def redirect_students_to_mypage!
     return unless current_user&.student?
 
     redirect_to user_path(current_user)
   end
 
-  def classroom_membership_previews(classroom_ids, role:, limit_per_classroom:)
+  def classroom_membership_previews(classroom_ids, role:, limit_per_classroom:, user_role: nil)
     return {} if classroom_ids.empty?
+
+    membership_scope = ClassroomMembership.where(classroom_id: classroom_ids, role: role)
+    membership_scope = membership_scope.joins(:user).where(users: { role: user_role }) if user_role
 
     ranked_membership_ids = ClassroomMembership
       .from(
-        ClassroomMembership
-          .where(classroom_id: classroom_ids, role: role)
+        membership_scope
           .select(
             "classroom_memberships.id, classroom_memberships.classroom_id, " \
             "ROW_NUMBER() OVER (PARTITION BY classroom_memberships.classroom_id " \
