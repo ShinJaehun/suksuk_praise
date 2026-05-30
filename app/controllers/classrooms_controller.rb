@@ -40,6 +40,11 @@ class ClassroomsController < ApplicationController
     authorize @classroom
     @can_manage_classroom = policy(@classroom).update?
     @students = @classroom.students.order(created_at: :asc)
+    @homeroom_teachers = User.teacher
+      .joins(:classroom_memberships)
+      .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
+      .with_attached_avatar
+      .order(:name, :id)
     @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
     @compliment_king_sections = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods)
     @compliment_king_period_cards = build_compliment_king_period_cards(enabled_periods: @enabled_compliment_king_periods)

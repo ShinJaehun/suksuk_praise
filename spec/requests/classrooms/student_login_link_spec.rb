@@ -21,6 +21,28 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).not_to include(public_student_login_url(student_login_token: classroom.student_login_token))
   end
 
+  it "shows actual homeroom teachers to an admin on the classroom show page" do
+    create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    sign_in admin
+
+    get classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(teacher.name)
+    expect(response.body).to include("#{teacher.name} avatar")
+  end
+
+  it "does not show a legacy admin teacher membership as a homeroom teacher" do
+    admin.update!(name: "레거시 관리자")
+    create(:classroom_membership, user: admin, classroom: classroom, role: "teacher")
+    sign_in admin
+
+    get classroom_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("담당 교사 없음")
+  end
+
   it "shows the token student login URL to a classroom teacher on the members page" do
     create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
     sign_in teacher

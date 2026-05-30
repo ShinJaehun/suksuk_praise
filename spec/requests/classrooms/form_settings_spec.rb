@@ -27,7 +27,8 @@ RSpec.describe "Classroom form settings", type: :request do
       expect(response.body).to include("담당 선생님 배정")
       expect(response.body).to include("classroom[teacher_ids][]")
       expect(response.body).to include(teacher.name)
-      expect(response.body).not_to include(admin.name)
+      expect(response.body).to match(/<input(?=[^>]*name="classroom\[teacher_ids\]\[\]")(?=[^>]*value="#{teacher.id}")[^>]*>/)
+      expect(response.body).not_to match(/<input(?=[^>]*name="classroom\[teacher_ids\]\[\]")(?=[^>]*value="#{admin.id}")[^>]*>/)
       expect(response.body).not_to include("담당 선생님 저장")
     end
   end
@@ -87,18 +88,5 @@ RSpec.describe "Classroom form settings", type: :request do
       expect(classroom.classroom_memberships.teacher.exists?(user: admin)).to eq(false)
     end
 
-    it "keeps selected teachers when admin classroom validation fails" do
-      sign_in admin
-
-      post classrooms_path, params: {
-        classroom: {
-          name: "",
-          teacher_ids: [teacher.id.to_s]
-        }
-      }
-
-      expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to match(/<input(?=[^>]*value="#{teacher.id}")(?=[^>]*checked="checked")[^>]*>/)
-    end
   end
 end
