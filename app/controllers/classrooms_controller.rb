@@ -23,7 +23,7 @@ class ClassroomsController < ApplicationController
     @classroom_teacher_counts = teacher_memberships.group(:classroom_id).count
     @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", user_role: "teacher", limit_per_classroom: 1)
     @classroom_student_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "student").group(:classroom_id).count
-    @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 6)
+    @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 5)
     @teacher_assignment_rows = teacher_assignment_rows if current_user.admin?
     @manageable_classroom_ids =
       if current_user.admin?

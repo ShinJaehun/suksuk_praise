@@ -20,8 +20,8 @@
         <% student_previews = @classroom_student_previews.fetch(classroom.id, []) %>
 
         <article class="flex min-h-64 flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="space-y-5">
-            <h2 class="break-words text-lg font-bold text-slate-900">
+          <div class="min-w-0 space-y-5">
+            <h2 class="truncate text-lg font-bold text-slate-900">
               <%= classroom.name %>
             </h2>
 
@@ -34,10 +34,10 @@
                         class: "h-12 w-12 shrink-0 rounded-xl border border-slate-200 bg-slate-100 object-cover",
                         alt: "#{display_name(teacher)} avatar"
                       ) %>
-                  <div class="min-w-0 text-sm">
-                    <span class="font-semibold text-slate-800"><%= display_name(teacher) %></span>
+                  <div class="flex min-w-0 items-center gap-1 text-sm">
+                    <span class="min-w-0 truncate font-semibold text-slate-800"><%= display_name(teacher) %></span>
                     <% if teacher_count > 1 %>
-                      <span class="text-slate-500">외 <%= teacher_count - 1 %>명</span>
+                      <span class="shrink-0 whitespace-nowrap text-slate-500">외 <%= teacher_count - 1 %>명</span>
                     <% end %>
                   </div>
                 </div>
@@ -47,7 +47,7 @@
 
               <% if student_count.positive? %>
                 <div class="flex min-w-0 items-center gap-3">
-                  <div class="flex max-w-40 shrink-0 -space-x-2 overflow-hidden">
+                  <div class="flex max-w-32 shrink-0 -space-x-2 overflow-hidden">
                     <% student_previews.each do |student| %>
                       <%= user_avatar_image(
                             student,
@@ -57,7 +57,7 @@
                           ) %>
                     <% end %>
                   </div>
-                  <span class="text-sm font-medium text-slate-600">학생 <%= student_count %>명</span>
+                  <span class="shrink-0 whitespace-nowrap text-sm font-medium text-slate-600">학생 <%= student_count %>명</span>
                 </div>
               <% else %>
                 <p class="text-sm text-slate-500">학생 없음</p>
@@ -115,10 +115,10 @@
                     ) %>
                 <div class="min-w-0 flex-1">
                   <div class="flex min-w-0 items-center justify-between gap-2">
-                    <span class="truncate text-sm font-semibold text-slate-900"><%= display_name(teacher) %></span>
-                    <span class="shrink-0 text-xs font-medium text-slate-500">담당 <%= row[:classroom_count] %>개</span>
+                    <span class="min-w-0 truncate text-sm font-semibold text-slate-900"><%= display_name(teacher) %></span>
+                    <span class="shrink-0 whitespace-nowrap text-xs font-medium text-slate-500">담당 <%= row[:classroom_count] %>개</span>
                   </div>
-                  <p class="mt-0.5 truncate text-xs text-slate-500">
+                  <p class="mt-0.5 min-w-0 truncate whitespace-nowrap text-xs text-slate-500">
                     <% if classroom_names.any? %>
                       <%= visible_classroom_names.join(", ") %>
                       <% if classroom_names.size > visible_classroom_names.size %>
