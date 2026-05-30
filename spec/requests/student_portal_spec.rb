@@ -180,6 +180,7 @@ RSpec.describe 'Student portal flow', type: :request do
       expect(response.body).to include('boy01')
       expect(response.body).to include('girl01')
       expect(response.body).not_to include('value="teacherM01"')
+      expect(response.body).not_to include('value="teacherF01"')
       expect(response.body).not_to include('value="admin"')
       expect(response.body).to include('PIN 설정')
       expect(response.body).to include('계정 삭제')
@@ -245,6 +246,22 @@ RSpec.describe 'Student portal flow', type: :request do
           name: student.name,
           email: student.email,
           avatar_key: 'unknown'
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.avatar_key).to eq(original_avatar_key)
+    end
+
+    it 'rejects teacher avatar_key values' do
+      original_avatar_key = student.avatar_key
+      sign_in teacher
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          email: student.email,
+          avatar_key: 'teacherM01'
         }
       }
 

@@ -11,14 +11,14 @@ module UsersHelper
   end
 
   def user_avatar_path(user, size:)
-    avatar_key = user.avatar_key if available_avatar_key?(user.avatar_key)
+    avatar_key = user.avatar_key if available_avatar_key_for?(user, user.avatar_key)
     "avatars/#{avatar_key.presence || existing_fallback_avatar_key(user)}.png"
   end
 
   def fallback_avatar_key(user)
     return "admin" if user.admin?
-    return user.gender == "female" ? "teacherF01" : "teacherM01" if user.teacher?
-    return user.gender == "girl" ? "girl01" : "boy01" if user.student?
+    return "teacherM01" if user.teacher?
+    return "boy01" if user.student?
 
     "boy01"
   end
@@ -26,6 +26,9 @@ module UsersHelper
   def existing_fallback_avatar_key(user)
     fallback_key = fallback_avatar_key(user)
     return fallback_key if avatar_asset_key?(fallback_key)
+
+    role_fallback_key = User.avatar_keys_for_role(user.role).find { |avatar_key| avatar_asset_key?(avatar_key) }
+    return role_fallback_key if role_fallback_key
 
     available_avatar_keys.include?(DEFAULT_AVATAR_KEY) ? DEFAULT_AVATAR_KEY : available_avatar_keys.first
   end
@@ -41,8 +44,8 @@ module UsersHelper
     image_tag(user_avatar_path(user, size: size), **options)
   end
 
-  def available_avatar_key?(avatar_key)
-    User::AVATAR_KEYS.include?(avatar_key) && avatar_asset_key?(avatar_key)
+  def available_avatar_key_for?(user, avatar_key)
+    User.avatar_keys_for_role(user.role).include?(avatar_key) && avatar_asset_key?(avatar_key)
   end
 
   def avatar_asset_key?(avatar_key)

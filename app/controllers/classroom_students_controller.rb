@@ -216,7 +216,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def student_avatar_keys
-    User.avatar_keys_for("boy") + User.avatar_keys_for("girl")
+    User.avatar_keys_for_role("student")
   end
 
   def bulk_student_genders

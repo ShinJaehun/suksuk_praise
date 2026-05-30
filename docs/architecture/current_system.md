@@ -42,7 +42,8 @@
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
 - 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다.
-- `avatar_key`가 허용된 key라도 현재 asset 파일이 없으면 역할/성별 기본 avatar로 fallback한다.
+- avatar 선택 목록은 역할별로 제한한다: student는 boy/girl, teacher는 teacherM/teacherF, admin은 admin과 teacherM/teacherF 계열을 사용한다.
+- `avatar_key`가 현재 역할에서 허용되지 않거나 asset 파일이 없으면 역할별 기본 avatar로 fallback한다: student는 `boy01`, teacher는 `teacherM01`, admin은 `admin`.
 
 ## 칭찬
 

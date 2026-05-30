@@ -64,9 +64,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
   end
 
   def account_avatar_keys_for(user)
-    return User::TEACHER_MALE_AVATAR_KEYS + User::TEACHER_FEMALE_AVATAR_KEYS if user&.teacher? || user&.admin?
-
-    []
+    User.avatar_keys_for_role(user&.role)
   end
 
   def password_change_params?(params)

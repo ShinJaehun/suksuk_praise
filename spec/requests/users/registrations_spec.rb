@@ -32,6 +32,8 @@ RSpec.describe "Users::Registrations", type: :request do
       expect(response.body).to include("teacherF06")
       expect(response.body).not_to include('name="user[avatar]"')
       expect(response.body).not_to include("boy01")
+      expect(response.body).not_to include('value="admin"')
+      expect(response.body).not_to include("teacherM09")
     end
 
     it "shows teacher avatar choices to admins" do
@@ -42,8 +44,10 @@ RSpec.describe "Users::Registrations", type: :request do
       expect(response.body).to include('name="user[avatar_key]"')
       expect(response.body).to include("teacherM04")
       expect(response.body).to include("teacherF06")
+      expect(response.body).to include('value="admin"')
       expect(response.body).not_to include('name="user[avatar]"')
       expect(response.body).not_to include("boy01")
+      expect(response.body).not_to include("teacherM09")
     end
   end
 
