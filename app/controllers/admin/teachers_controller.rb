@@ -3,11 +3,16 @@ class Admin::TeachersController < Admin::BaseController
 
   def new
     @teacher = User.new
+    @teacher.avatar_key = teacher_avatar_keys.sample
     authorize @teacher
   end
 
   def create
-    @teacher = User.new(teacher_params.merge(role: :teacher))
+    attrs = teacher_params
+    attrs[:gender] = nil unless %w[male female].include?(attrs[:gender])
+    @teacher = User.new(attrs.merge(role: :teacher))
+    pool = avatar_keys_for_gender(@teacher.gender)
+    @teacher.avatar_key = pool.sample unless pool.include?(@teacher.avatar_key)
     authorize @teacher
 
     if @teacher.save
@@ -45,7 +50,18 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def teacher_params
-    params.require(:user).permit(:name, :email, :password)
+    params.require(:user).permit(:name, :email, :password, :gender, :avatar_key)
+  end
+
+  def avatar_keys_for_gender(gender)
+    return User::TEACHER_MALE_AVATAR_KEYS if gender == "male"
+    return User::TEACHER_FEMALE_AVATAR_KEYS if gender == "female"
+
+    teacher_avatar_keys
+  end
+
+  def teacher_avatar_keys
+    User.avatar_keys_for_role("teacher")
   end
 
   def update_homeroom_memberships!

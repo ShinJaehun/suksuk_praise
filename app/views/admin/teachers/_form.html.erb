@@ -1,6 +1,25 @@
 <% form_data = local_assigns[:turbo_frame_target].present? ? { turbo_frame: local_assigns[:turbo_frame_target] } : {} %>
+<% teacher_avatar_keys = User.avatar_keys_for_role("teacher") %>
+<% avatar_image_sources = teacher_avatar_keys.index_with { |avatar_key| asset_path("avatars/#{avatar_key}.png") } %>
 
-<%= form_with model: teacher, url: admin_teachers_path, class: "space-y-4 max-w-md", data: form_data do |f| %>
+<%= form_with model: teacher,
+      url: admin_teachers_path,
+      class: "space-y-4 max-w-md",
+      data: form_data.merge(
+        controller: "teacher-avatar-preview",
+        teacher_avatar_preview_male_keys_value: User::TEACHER_MALE_AVATAR_KEYS,
+        teacher_avatar_preview_female_keys_value: User::TEACHER_FEMALE_AVATAR_KEYS,
+        teacher_avatar_preview_all_keys_value: teacher_avatar_keys,
+        teacher_avatar_preview_image_sources_value: avatar_image_sources
+      ) do |f| %>
+  <div class="flex justify-center">
+    <%= f.hidden_field :avatar_key, data: { teacher_avatar_preview_target: "avatarKey" } %>
+    <%= image_tag "avatars/#{teacher.avatar_key}.png",
+          class: "h-20 w-20 rounded-lg object-cover",
+          alt: "",
+          data: { teacher_avatar_preview_target: "image" } %>
+  </div>
+
   <div>
     <%= f.label :name, "이름", class: "block text-sm font-medium text-gray-700" %>
     <%= f.text_field :name, class: "mt-1 block w-full border rounded px-3 py-2" %>
@@ -14,6 +33,15 @@
   <div>
     <%= f.label :password, "초기 비밀번호", class: "block text-sm font-medium text-gray-700" %>
     <%= f.password_field :password, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :gender, "성별", class: "block text-sm font-medium text-gray-700" %>
+    <%= f.select :gender,
+          [["남자", "male"], ["여자", "female"]],
+          { include_blank: "선택해 주세요" },
+          class: "mt-1 block w-full border rounded px-3 py-2",
+          data: { action: "teacher-avatar-preview#update" } %>
   </div>
 
   <div>
