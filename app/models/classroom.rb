@@ -11,7 +11,7 @@ class Classroom < ApplicationRecord
     has_many :compliments, dependent: :destroy
 
     def students
-      users.merge(ClassroomMembership.where(role: "student"))
+      users.merge(ClassroomMembership.where(role: "student", status: "active"))
     end
 
     def enabled_compliment_king_periods

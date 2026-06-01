@@ -41,4 +41,16 @@ RSpec.describe Classroom, type: :model do
 
     expect(classroom).not_to be_valid
   end
+
+  it "returns only active student memberships from students" do
+    classroom = create(:classroom)
+    active_student = create(:user, :student)
+    inactive_student = create(:user, :student)
+    teacher = create(:user, :teacher)
+    create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+    create(:classroom_membership, classroom: classroom, user: inactive_student, role: "student", status: "inactive")
+    create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+
+    expect(classroom.students).to contain_exactly(active_student)
+  end
 end
