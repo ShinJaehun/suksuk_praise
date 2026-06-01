@@ -56,17 +56,32 @@
 
   <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <%= turbo_frame_tag "students_list_#{@classroom.id}" do %>
-      <div id="students_grid_<%= @classroom.id %>" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <%= render partial: "users/user",
-              collection: @students,
-              as: :user,
-              locals: {
-                classroom: @classroom,
-                student_ids_with_pending_coupon_use_requests: @student_ids_with_pending_coupon_use_requests,
-                student_ids_with_unread_student_messages: @student_ids_with_unread_student_messages,
-                today_compliment_counts_by_student_id: @today_compliment_counts_by_student_id
-              } %>
-      </div>
+      <% if @students.any? %>
+        <div id="students_grid_<%= @classroom.id %>" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <%= render partial: "users/user",
+                collection: @students,
+                as: :user,
+                locals: {
+                  classroom: @classroom,
+                  student_ids_with_pending_coupon_use_requests: @student_ids_with_pending_coupon_use_requests,
+                  student_ids_with_unread_student_messages: @student_ids_with_unread_student_messages,
+                  today_compliment_counts_by_student_id: @today_compliment_counts_by_student_id
+                } %>
+        </div>
+      <% else %>
+        <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
+          <h2 class="text-lg font-bold text-slate-900">아직 학생이 없습니다</h2>
+          <p class="mt-2 text-sm text-slate-600">
+            구성원 관리에서 학생을 추가하거나 여러 학생을 한 번에 생성할 수 있어요.
+          </p>
+          <div class="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+            <%= link_to "구성원 관리로 이동",
+                  classroom_members_path(@classroom, anchor: "student-management"),
+                  data: { turbo_frame: "_top" },
+                  class: "inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" %>
+          </div>
+        </div>
+      <% end %>
     <% end %>
   </section>
 </section>
