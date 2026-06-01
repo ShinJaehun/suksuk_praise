@@ -22,7 +22,7 @@
       <%= f.error_notification %>
 
       <div class="space-y-5">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div class="flex flex-col items-center gap-4">
           <% if @account_avatar_keys.any? %>
             <button type="button"
                     class="group w-fit"
@@ -39,14 +39,12 @@
                   alt: "#{current_user.name} avatar") %>
           <% end %>
 
-          <div class="space-y-2">
-            <p class="text-sm font-semibold text-slate-900">현재 아바타</p>
-
+          <div>
             <% if @account_avatar_keys.any? %>
               <button type="button"
                       class="inline-flex w-fit items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                       onclick="document.getElementById('account-avatar-dialog').showModal()">
-                기본 아바타 변경
+                아바타 변경
               </button>
             <% end %>
           </div>
