@@ -15,12 +15,32 @@
             classrooms_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
     <% elsif current_user&.teacher? %>
+      <% nav_classrooms = teacher_nav_classrooms %>
       <%= link_to "한눈에 보기",
             dashboard_path,
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
-      <%= link_to "내 교실",
-            classrooms_path,
-            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+      <% if nav_classrooms.one? %>
+        <%= link_to nav_classrooms.first.name,
+              classroom_path(nav_classrooms.first),
+              class: "hidden md:inline-block max-w-40 truncate align-bottom text-sm text-gray-700 hover:text-blue-700" %>
+      <% elsif nav_classrooms.many? %>
+        <details class="hidden md:block relative">
+          <summary class="list-none cursor-pointer text-sm text-gray-700 hover:text-blue-700">
+            교실
+          </summary>
+          <div class="absolute left-0 mt-2 w-48 bg-white border rounded shadow-md py-2 text-sm z-50">
+            <% nav_classrooms.each do |classroom| %>
+              <%= link_to classroom.name,
+                    classroom_path(classroom),
+                    class: "block truncate px-3 py-1 hover:bg-gray-50" %>
+            <% end %>
+          </div>
+        </details>
+      <% else %>
+        <%= link_to "교실",
+              classrooms_path,
+              class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
+      <% end %>
     <% end %>
 
     <% if can_manage_coupon_templates? %>

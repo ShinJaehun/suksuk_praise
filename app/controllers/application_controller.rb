@@ -3,6 +3,8 @@ class ApplicationController < ActionController::Base
 
   include Pundit::Authorization
   include Pagy::Method
+
+  helper_method :teacher_nav_classrooms
   
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :expire_student_session_if_inactive
@@ -40,6 +42,13 @@ class ApplicationController < ActionController::Base
 
 
   private
+
+  def teacher_nav_classrooms
+    return [] unless current_user&.teacher?
+    return @teacher_nav_classrooms if defined?(@teacher_nav_classrooms)
+
+    @teacher_nav_classrooms = current_user.classroom_memberships.teacher.includes(:classroom).map(&:classroom)
+  end
 
   def broadcast_student_card_alerts_for(classroom, student)
     Turbo::StreamsChannel.broadcast_replace_to(
