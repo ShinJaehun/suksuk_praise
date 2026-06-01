@@ -22,6 +22,10 @@
             <%= f.number_field :girl_count, value: 15, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
           </div>
         </div>
+        <div class="mb-4 text-sm text-slate-500">
+          <p>한 번에 최대 30명까지 생성할 수 있어요.</p>
+          <p>남학생 수와 여학생 수를 합한 인원 기준입니다.</p>
+        </div>
         <div class="mb-4">
           <%= f.label :student_pin, "공통 초기 PIN (선택, 4자리)" %>
           <%= f.password_field :student_pin,
