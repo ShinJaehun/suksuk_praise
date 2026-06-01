@@ -192,4 +192,61 @@ RSpec.describe "Classroom students", type: :request do
       expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
     end
   end
+
+  describe "DELETE /classrooms/:classroom_id/students/:id" do
+    it "hard deletes a student without activity or another classroom membership" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.to change(User, :count).by(-1)
+        .and change(ClassroomMembership, :count).by(-1)
+
+      expect(User.exists?(student.id)).to eq(false)
+      expect(ClassroomMembership.exists?(membership.id)).to eq(false)
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(flash[:notice]).to eq(I18n.t("students.destroy.hard_deleted"))
+    end
+
+    it "inactivates the membership when the student has activity in the classroom" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student)
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+      expect(flash[:notice]).to eq(I18n.t("students.destroy.inactivated"))
+    end
+
+    it "removes only the current membership when the student belongs to another classroom" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      other_membership = create(:classroom_membership, user: student, classroom: create(:classroom), role: "student")
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(ClassroomMembership.exists?(membership.id)).to eq(false)
+      expect(ClassroomMembership.exists?(other_membership.id)).to eq(true)
+      expect(flash[:notice]).to eq(I18n.t("students.destroy.removed_from_classroom"))
+    end
+
+    it "inactivates the membership when only global student activity exists" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:compliment, classroom: create(:classroom), giver: teacher, receiver: student)
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+      expect(flash[:notice]).to eq(I18n.t("students.destroy.inactivated"))
+    end
+  end
 end

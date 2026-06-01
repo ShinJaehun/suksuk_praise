@@ -72,6 +72,10 @@ ko:
     bulk_create:
       success: "%{count}명의 학생이 자동 생성되었습니다."
       failure: "생성 실패: %{detail}"
+    destroy:
+      hard_deleted: "학생 계정을 삭제했습니다."
+      inactivated: "기록이 있어 학생 자료는 삭제하지 않고 비활성 처리했습니다."
+      removed_from_classroom: "현재 교실에서만 학생을 제거했습니다."
 
   coupons:
     basis:

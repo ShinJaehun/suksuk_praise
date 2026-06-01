@@ -172,8 +172,25 @@ class ClassroomStudentsController < ApplicationController
   def destroy
     authorize @student, :destroy_student?
 
-    @student.destroy!
-    redirect_to classroom_path(@classroom), notice: "학생 계정을 삭제했습니다.", status: :see_other
+    notice_key = ApplicationRecord.transaction do
+      membership = @classroom.classroom_memberships.find_by!(user_id: @student.id)
+
+      if current_classroom_activity?
+        membership.inactive!
+        "students.destroy.inactivated"
+      elsif other_classroom_memberships?(membership)
+        membership.destroy!
+        "students.destroy.removed_from_classroom"
+      elsif global_student_activity?
+        membership.inactive!
+        "students.destroy.inactivated"
+      else
+        @student.destroy!
+        "students.destroy.hard_deleted"
+      end
+    end
+
+    redirect_to classroom_path(@classroom), notice: t(notice_key), status: :see_other
   end
 
   private
@@ -204,6 +221,32 @@ class ClassroomStudentsController < ApplicationController
 
   def authorize_manage!
     authorize @classroom, :manage_members?
+  end
+
+  def current_classroom_activity?
+    Compliment
+      .where(classroom_id: @classroom.id)
+      .where("giver_id = :student_id OR receiver_id = :student_id", student_id: @student.id)
+      .exists? ||
+      UserCoupon.exists?(classroom_id: @classroom.id, user_id: @student.id) ||
+      CouponUseRequest.exists?(classroom_id: @classroom.id, student_id: @student.id) ||
+      UserMessage
+        .where(classroom_id: @classroom.id)
+        .where("sender_id = :student_id OR recipient_id = :student_id", student_id: @student.id)
+        .exists?
+  end
+
+  def global_student_activity?
+    @student.given_compliments.exists? ||
+      @student.received_compliments.exists? ||
+      @student.user_coupons.exists? ||
+      CouponUseRequest.exists?(student_id: @student.id) ||
+      @student.sent_messages.exists? ||
+      @student.received_messages.exists?
+  end
+
+  def other_classroom_memberships?(membership)
+    @student.classroom_memberships.where.not(id: membership.id).exists?
   end
 
   def used_avatar_keys_in_classroom(excluding: nil)
