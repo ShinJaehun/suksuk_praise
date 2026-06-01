@@ -150,7 +150,12 @@ class ClassroomsController < ApplicationController
     
     # 0) 사전 검증: target_user_id가 있으면 해당 교실 소속인지 즉시 확인 (fail fast)
     if params[:user_id].present?
-      unless ClassroomMembership.exists?(user_id: params[:user_id], classroom_id: @classroom.id)
+      unless ClassroomMembership.exists?(
+        user_id: params[:user_id],
+        classroom_id: @classroom.id,
+        role: "student",
+        status: "active"
+      )
         message = t("errors.user_not_in_classroom")
         winner = nil
         winner_coupons = nil

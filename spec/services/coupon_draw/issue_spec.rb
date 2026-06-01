@@ -13,6 +13,23 @@ RSpec.describe CouponDraw::Issue, type: :service do
       }.to raise_error(CouponDraw::Issue::MissingUserIdError)
     end
 
+    it "rejects an inactive student target" do
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      classroom = create(:classroom)
+      create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+
+      expect {
+        described_class.call(
+          classroom: classroom,
+          basis: "manual",
+          mode: "default",
+          issued_by: teacher,
+          target_user_id: student.id
+        )
+      }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
     it "rejects a daily top target who is not today's compliment king" do
       teacher = create(:user, :teacher)
       student = create(:user, :student)

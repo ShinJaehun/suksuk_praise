@@ -137,6 +137,21 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       expect(json_body).to eq("ok" => false, "error" => "not_authorized")
     end
 
+    it "rejects an inactive student target" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      membership.inactive!
+      sign_in teacher
+
+      expect {
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "manual", mode: "default", user_id: student.id },
+          as: :json
+      }.not_to change(UserCoupon, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json_body).to eq("ok" => false, "error" => "user_not_in_classroom")
+    end
+
     it "creates a coupon and issued event on success" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       sign_in teacher

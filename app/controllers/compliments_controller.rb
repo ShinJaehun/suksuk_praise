@@ -10,7 +10,11 @@ class ComplimentsController < ApplicationController
     authorize @classroom, :show?
     authorize @classroom, :create_compliment?
     
-    @receiver = @classroom.classroom_memberships.find_by!(user_id: compliment_params[:receiver_id]).user
+    @receiver = @classroom.classroom_memberships.find_by!(
+      user_id: compliment_params[:receiver_id],
+      role: "student",
+      status: "active"
+    ).user
 
     now = Time.current
 

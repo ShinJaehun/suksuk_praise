@@ -106,6 +106,20 @@ RSpec.describe "Compliments#create", type: :request do
       expect(other_student.reload.points).to eq(0)
     end
 
+    it "rejects an inactive receiver" do
+      student_membership.inactive!
+      sign_in teacher
+
+      expect {
+        post classroom_compliments_path(classroom),
+          params: { compliment: { receiver_id: student.id } },
+          as: :json
+      }.not_to change(Compliment, :count)
+
+      expect(response).to have_http_status(:not_found)
+      expect(student.reload.points).to eq(0)
+    end
+
     it "increments the receiver points by one on success" do
       sign_in teacher
 
