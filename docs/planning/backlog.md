@@ -32,6 +32,15 @@
 
 ## P0. 다음 기능 후보
 
+### Classroom / 학생 관리 후속 작업
+
+- 학생 관리/삭제 정책
+- 학생 상세 통계
+- 복사/붙여넣기 학생 등록
+- dashboard 통계
+
+---
+
 ### Notification
 
 상태: Candidate  

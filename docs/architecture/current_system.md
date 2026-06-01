@@ -32,12 +32,19 @@
 ## 교실/학생 관리
 
 - 교사와 학생의 관계는 `ClassroomMembership`을 기준으로 한다.
+- `/classrooms`는 admin의 교실 + 선생님 관리 허브 역할을 한다.
+- `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.
+- teacher nav는 담당 교실이 1개이면 해당 교실로 직접 이동하고, 여러 개이면 dropdown으로 담당 교실 목록을 보여준다.
+- 교실 이름은 최대 50자로 제한한다.
 - teacher/admin은 교실 범위 학생 페이지에서 학생을 조회하고 관리한다.
 - 학생 canonical page는 `GET /classrooms/:classroom_id/students/:id`이다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
 - teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
-- teacher/admin은 `classrooms/:id/edit` 교실 관리 화면에서 학생 로그인 URL을 확인할 수 있다.
-- 교실 관리 화면에서는 학생 로그인 URL 복사, QR 코드 보기, QR 코드 다운로드가 가능하다.
+- 여러 학생 자동 생성은 한 번에 최대 30명까지 허용한다.
+- 여러 학생 자동 생성 제한을 초과하면 Turbo modal content-missing 없이 alert를 표시하고 modal을 닫는다.
+- 여러 학생 자동 생성 submit 중에는 modal 입력과 버튼 조작을 잠그고, 응답 실패 시 잠금을 복구한다.
+- teacher/admin은 `classrooms/:id/members` 구성원 관리 화면에서 학생 로그인 URL을 확인할 수 있다.
+- 구성원 관리 화면에서는 학생 로그인 URL 복사, QR 코드 보기, QR 코드 다운로드가 가능하다.
 - 학생 로그인 QR은 현재 token URL 기준으로 요청 시 생성하며 서버 파일로 저장하지 않는다.
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
