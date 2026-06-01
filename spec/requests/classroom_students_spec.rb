@@ -123,6 +123,37 @@ RSpec.describe "Classroom students", type: :request do
       expect(response).to redirect_to(classroom_path(classroom))
     end
 
+    it "returns a turbo stream alert without creating students when the requested count exceeds 30" do
+      expect {
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            boy_count: 30,
+            girl_count: 30
+          },
+          headers: turbo_headers
+      }.not_to change(User.student, :count)
+
+      expect(response).not_to be_redirect
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include('target="modal"')
+      expect(response.body).to include("한 번에 자동 생성할 수 있는 학생은 최대 30명입니다.")
+    end
+
+    it "creates students and updates the students list and modal with turbo stream" do
+      expect {
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            boy_count: 1,
+            girl_count: 1
+          },
+          headers: turbo_headers
+      }.to change(User.student, :count).by(2)
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include(%(target="students_list_#{classroom.id}"))
+      expect(response.body).to include('target="modal"')
+    end
+
     it "rejects a teacher outside the classroom" do
       outsider = create(:user, :teacher)
       sign_out teacher

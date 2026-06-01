@@ -98,9 +98,14 @@ class ClassroomStudentsController < ApplicationController
     end
 
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to @classroom,
-      alert: t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence),
-      status: :see_other
+    message = t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence)
+    respond_to do |f|
+      f.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
+      f.turbo_stream do
+        flash.now[:alert] = message
+        render :bulk_create_error, layout: "application"
+      end
+    end
   end
 
   def show
@@ -231,7 +236,7 @@ class ClassroomStudentsController < ApplicationController
     end
 
     if total_count < 1 || total_count > 30
-      raise ActiveRecord::RecordInvalid.new(User.new.tap { |user| user.errors.add(:base, "학생은 한 번에 30명까지 생성할 수 있습니다.") })
+      raise ActiveRecord::RecordInvalid.new(User.new.tap { |user| user.errors.add(:base, "한 번에 자동 생성할 수 있는 학생은 최대 30명입니다.") })
     end
 
     Array.new(boy_count, "boy") + Array.new(girl_count, "girl")
