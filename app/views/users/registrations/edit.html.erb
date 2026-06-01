@@ -22,7 +22,7 @@
       <%= f.error_notification %>
 
       <div class="space-y-5">
-        <div class="flex flex-col items-center gap-4">
+        <div class="flex flex-wrap items-center gap-4">
           <% if @account_avatar_keys.any? %>
             <button type="button"
                     class="group w-fit"
@@ -39,7 +39,7 @@
                   alt: "#{current_user.name} avatar") %>
           <% end %>
 
-          <div>
+          <div class="flex items-center">
             <% if @account_avatar_keys.any? %>
               <button type="button"
                       class="inline-flex w-fit items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
