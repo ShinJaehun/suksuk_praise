@@ -95,6 +95,13 @@ class ApplicationController < ActionController::Base
     return unless current_user&.student?
     return if student_session_ttl_exempt_controller?
 
+    classroom_id = session[:student_login_classroom_id]
+    if classroom_id.present? && !active_student_membership?(classroom_id)
+      sign_out(:user)
+      return redirect_to student_session_timeout_redirect_path(classroom_id),
+        alert: "사용 시간이 지나 자동으로 로그아웃되었습니다. 다시 로그인해 주세요."
+    end
+
     now = Time.current.to_i
     last_seen_at = session[:student_last_seen_at]
 
@@ -111,6 +118,15 @@ class ApplicationController < ActionController::Base
     else
       session[:student_last_seen_at] = now
     end
+  end
+
+  def active_student_membership?(classroom_id)
+    ClassroomMembership.exists?(
+      classroom_id: classroom_id,
+      user_id: current_user.id,
+      role: "student",
+      status: "active"
+    )
   end
 
   def student_session_ttl_exempt_controller?

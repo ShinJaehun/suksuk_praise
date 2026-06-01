@@ -80,7 +80,7 @@ class StudentSessionsController < ApplicationController
 
     student = User.find_by(id: params[:student_id])
     return nil unless student&.student?
-    return nil unless @classroom.classroom_memberships.exists?(user_id: student.id, role: 'student')
+    return nil unless @classroom.classroom_memberships.exists?(user_id: student.id, role: 'student', status: 'active')
 
     student
   end

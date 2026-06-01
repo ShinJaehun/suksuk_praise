@@ -49,6 +49,17 @@ RSpec.describe "Student PIN sessions", type: :request do
     expect(response.body).not_to include(other_student.name)
   end
 
+  it "does not show inactive students on the classroom login page" do
+    inactive_student = create(:user, :student, name: "비활성 학생", student_pin: "5678")
+    create(:classroom_membership, classroom: classroom, user: inactive_student, role: "student", status: "inactive")
+
+    get classroom_student_login_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(student.name)
+    expect(response.body).not_to include(inactive_student.name)
+  end
+
   it "shows only students from the token classroom login page" do
     other_classroom = create(:classroom)
     other_student = create(:user, :student, name: "다른 학생", student_pin: "5678")
@@ -214,6 +225,32 @@ RSpec.describe "Student PIN sessions", type: :request do
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("학생 PIN 로그인")
+  end
+
+  it "rejects an inactive student with a valid PIN" do
+    classroom.classroom_memberships.find_by!(user: student).inactive!
+
+    post classroom_student_login_path(classroom), params: {
+      student_id: student.id,
+      student_pin: "1234"
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("교실, 학생, PIN을 확인해 주세요.")
+    expect(controller.current_user).to be_nil
+  end
+
+  it "signs out a student whose membership becomes inactive after PIN login" do
+    post classroom_student_login_path(classroom), params: {
+      student_id: student.id,
+      student_pin: "1234"
+    }
+    classroom.classroom_memberships.find_by!(user: student).inactive!
+
+    get classroom_student_path(classroom, student)
+
+    expect(response).to redirect_to(classroom_student_login_path(classroom))
+    expect(controller.current_user).to be_nil
   end
 
   it "rejects a student outside the classroom" do
