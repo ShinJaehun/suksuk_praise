@@ -50,7 +50,11 @@ class ClassroomStudentMessagesController < ApplicationController
   def set_student
     @student = User.find(params[:student_id])
     raise ActiveRecord::RecordNotFound unless @student.student?
-    raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(user_id: @student.id, role: "student")
+    raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(
+      user_id: @student.id,
+      role: "student",
+      status: "active"
+    )
   end
 
   def message_params

@@ -81,7 +81,7 @@ class UserMessagesController < ApplicationController
   end
 
   def classroom_for_student_root_message
-    classroom_ids = current_user.classroom_memberships.where(role: "student").select(:classroom_id)
+    classroom_ids = current_user.classroom_memberships.where(role: "student", status: "active").select(:classroom_id)
     Classroom
       .where(
         id: classroom_ids,
@@ -175,7 +175,7 @@ class UserMessagesController < ApplicationController
   end
 
   def message_teacher_options
-    classroom_ids = current_user.classroom_memberships.where(role: "student").select(:classroom_id)
+    classroom_ids = current_user.classroom_memberships.where(role: "student", status: "active").select(:classroom_id)
     User.teacher
       .joins(classroom_memberships: :classroom)
       .where(

@@ -46,6 +46,22 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.parent_message_id).to be_nil
     end
 
+    it "rejects teacher and admin root messages to an inactive student" do
+      classroom.classroom_memberships.find_by!(user: student).inactive!
+
+      [teacher, admin].each do |sender|
+        sign_in sender
+
+        expect {
+          post classroom_student_messages_path(classroom, student),
+               params: { user_message: { body: "비활성 학생 대상 메시지" } }
+        }.not_to change(UserMessage, :count)
+
+        expect(response).to have_http_status(:not_found)
+        sign_out sender
+      end
+    end
+
     it "rejects a teacher root message when classroom messages are disabled" do
       classroom.update!(message_policy: "disabled")
       sign_in teacher
@@ -231,6 +247,20 @@ RSpec.describe "User messages", type: :request do
       )
     end
 
+    it "rejects an inactive student root message" do
+      classroom.update!(message_policy: "student_initiated")
+      classroom.classroom_memberships.find_by!(user: student).inactive!
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          user_message: { body: "비활성 학생 질문" }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(user_path(student))
+    end
+
     it "ignores arbitrary recipient_id and still sends to all classroom teachers" do
       classroom.update!(message_policy: "student_initiated")
       outside_teacher = create(:user, :teacher)
@@ -295,6 +325,21 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.sender).to eq(student)
       expect(UserMessage.last.recipient).to eq(teacher)
       expect(UserMessage.last.parent_message).to eq(incoming)
+    end
+
+    it "rejects an inactive student reply" do
+      incoming = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "질문 있어?")
+      classroom.classroom_memberships.find_by!(user: student).inactive!
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          reply_to_message_id: incoming.id,
+          user_message: { body: "비활성 학생 답글" }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(user_path(student))
     end
 
     it "rejects a student reply when classroom messages are disabled" do
@@ -372,6 +417,17 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).to include("선생님 원글")
       expect(response.body).to include("reply_to_message_id")
       expect(response.body).to include(%(value="#{teacher_root.id}"))
+    end
+
+    it "continues to show existing message threads for an inactive student" do
+      teacher_root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "기존 메시지")
+      classroom.classroom_memberships.find_by!(user: student).inactive!
+      sign_in teacher
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(teacher_root.body)
     end
 
     it "allows a teacher to reply under a student root message with turbo stream" do

@@ -47,6 +47,20 @@ RSpec.describe UserMessage, type: :model do
     expect(message).to be_valid
   end
 
+  it "rejects a new message with an inactive student participant" do
+    classroom.classroom_memberships.find_by!(user: student).inactive!
+
+    message = described_class.new(
+      classroom: classroom,
+      sender: teacher,
+      recipient: student,
+      body: "비활성 학생 대상"
+    )
+
+    expect(message).not_to be_valid
+    expect(message.errors[:base]).to include("비활성 학생에게는 새 메시지를 보낼 수 없습니다.")
+  end
+
   it 'rejects blank body' do
     message = described_class.new(
       classroom: classroom,
