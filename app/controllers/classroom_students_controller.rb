@@ -2,6 +2,8 @@ class ClassroomStudentsController < ApplicationController
   include UserShowDataLoader
   include ActionView::RecordIdentifier
 
+  MAX_BULK_STUDENTS = 30
+
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_create]
@@ -231,12 +233,12 @@ class ClassroomStudentsController < ApplicationController
 
     unless params.key?(:boy_count) || params.key?(:girl_count)
       count = params[:count].to_i
-      count = 30 if count <= 0 || count > 30
+      count = MAX_BULK_STUDENTS if count <= 0 || count > MAX_BULK_STUDENTS
       return Array.new(count, "boy")
     end
 
-    if total_count < 1 || total_count > 30
-      raise ActiveRecord::RecordInvalid.new(User.new.tap { |user| user.errors.add(:base, "한 번에 자동 생성할 수 있는 학생은 최대 30명입니다.") })
+    if total_count < 1 || total_count > MAX_BULK_STUDENTS
+      raise ActiveRecord::RecordInvalid.new(User.new.tap { |user| user.errors.add(:base, "한 번에 자동 생성할 수 있는 학생은 최대 #{MAX_BULK_STUDENTS}명입니다.") })
     end
 
     Array.new(boy_count, "boy") + Array.new(girl_count, "girl")

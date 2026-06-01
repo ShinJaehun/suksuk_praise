@@ -38,6 +38,8 @@ export default class extends Controller {
   //}
   showProgress(event) {
     this.element.setAttribute("aria-busy", "true")
+    // Keep submitted values in FormData: disable buttons, make inputs read-only,
+    // and block pointer interaction for selects and links without disabling them.
     this.disabledElements = Array.from(
       this.element.querySelectorAll("button:not(:disabled), input[type=submit]:not(:disabled)")
     )
