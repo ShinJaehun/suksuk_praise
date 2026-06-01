@@ -29,4 +29,16 @@ RSpec.describe Classroom, type: :model do
 
     expect(classroom.student_login_token).to be_present
   end
+
+  it "allows a name with 50 characters" do
+    classroom = described_class.new(name: "가" * 50)
+
+    expect(classroom).to be_valid
+  end
+
+  it "rejects a name with more than 50 characters" do
+    classroom = described_class.new(name: "가" * 51)
+
+    expect(classroom).not_to be_valid
+  end
 end

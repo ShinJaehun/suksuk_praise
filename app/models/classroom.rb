@@ -20,6 +20,7 @@ class Classroom < ApplicationRecord
       end
     end
 
+    validates :name, length: { maximum: 50 }
     validates :message_policy, inclusion: { in: MESSAGE_POLICIES }
 
     def messages_disabled?

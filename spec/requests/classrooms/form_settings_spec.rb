@@ -15,6 +15,7 @@ RSpec.describe "Classroom form settings", type: :request do
       expect(response.body).to include("칭찬왕 설정")
       expect(response.body).to include("메시지 관리")
       expect(response.body).to include("message_policy")
+      expect(response.body).to include("교실 이름은 50자 이내로 입력해 주세요.")
     end
 
     it "shows teacher assignment controls to an admin" do
@@ -54,6 +55,21 @@ RSpec.describe "Classroom form settings", type: :request do
       expect(classroom.monthly_compliment_king_enabled?).to eq(true)
       expect(classroom.message_policy).to eq("student_initiated")
       expect(classroom.classroom_memberships.teacher.exists?(user: teacher)).to eq(true)
+    end
+
+    it "rejects a classroom name with more than 50 characters" do
+      sign_in teacher
+
+      expect do
+        post classrooms_path, params: {
+          classroom: {
+            name: "가" * 51
+          }
+        }
+      end.not_to change(Classroom, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("50")
     end
 
     it "rejects an admin classroom without an assigned teacher" do
