@@ -222,6 +222,57 @@ RSpec.describe "Classroom students", type: :request do
       expect(flash[:notice]).to eq(I18n.t("students.destroy.inactivated"))
     end
 
+    it "inactivates the membership when the student has a coupon in the classroom" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:user_coupon, user: student, classroom: classroom)
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+    end
+
+    it "inactivates the membership when the student has a coupon use request in the classroom" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      coupon = create(:user_coupon, user: student, classroom: classroom)
+      create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+    end
+
+    it "inactivates the membership when the student has a message in the classroom" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:user_message, classroom: classroom, sender: teacher, recipient: student)
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+    end
+
+    it "inactivates the current membership when the student has current classroom activity and another membership" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      other_membership = create(:classroom_membership, user: student, classroom: create(:classroom), role: "student")
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student)
+
+      expect {
+        delete classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+      expect(other_membership.reload).to be_active
+    end
+
     it "removes only the current membership when the student belongs to another classroom" do
       student = create(:user, :student)
       membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
