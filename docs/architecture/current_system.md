@@ -123,6 +123,13 @@
 - student에게는 관리 버튼과 교실로 돌아가기 버튼이 노출되지 않는다.
 - 역할별 노출은 controller/helper/partial 흐름을 통해 관리한다.
 
+## 학생 dashboard
+
+- 학생 dashboard는 PIN 로그인 세션의 active classroom membership을 기준으로 학생 전용 `한눈에 보기` 화면을 보여준다.
+- 이번 주 월요일부터 금요일까지 현재 학생이 현재 교실에서 받은 칭찬 수를 그래프로 표시한다.
+- 다른 교실, 다른 학생, 주말 칭찬은 집계에서 제외한다.
+- 학생 상세 페이지는 쿠폰, 메시지, 칭찬 타임라인 등 상세 기록 중심으로 유지한다.
+
 ## 테스트 상태
 
 - student PIN/auth, student portal, classroom student management, message, coupon, compliment, policy/scope, Turbo/HTML 핵심 흐름에 대한 RSpec 파일이 존재한다.

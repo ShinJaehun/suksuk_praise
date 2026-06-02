@@ -43,7 +43,8 @@
 - 교실 archive 정책
 - 학생 상세 통계
 - 복사/붙여넣기 학생 등록
-- dashboard 통계
+- 학생 dashboard 주간 요약 polish
+- 학생 dashboard 쿠폰/칭찬 요약 확장 검토
 
 ---
 
