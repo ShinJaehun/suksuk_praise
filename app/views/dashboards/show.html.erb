@@ -8,16 +8,26 @@
       <h2 class="text-lg font-bold text-slate-900">이번 주 받은 칭찬</h2>
       <p class="mt-1 text-sm text-slate-500"><%= @classroom.name %></p>
 
-      <div class="mt-5 space-y-3">
-        <% @weekly_praise_counts.each do |weekday| %>
-          <div class="grid grid-cols-[1.5rem_1fr_2rem] items-center gap-3" data-weekday="<%= weekday[:label] %>" data-count="<%= weekday[:count] %>">
-            <span class="text-sm font-semibold text-slate-600"><%= weekday[:label] %></span>
-            <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-              <div class="h-full rounded-full bg-blue-500" style="width: <%= weekday[:percentage] %>%"></div>
-            </div>
-            <span class="text-right text-sm font-bold text-slate-900"><%= weekday[:count] %></span>
-          </div>
-        <% end %>
+      <div class="mt-5">
+        <svg viewBox="0 0 200 110" class="h-auto w-full" role="img" aria-label="월요일부터 금요일까지 받은 칭찬 수 꺾은선 그래프">
+          <line x1="20" y1="82" x2="180" y2="82" class="stroke-slate-200" stroke-width="1" />
+          <path
+            d="<%= @weekly_praise_path %>"
+            fill="none"
+            class="stroke-blue-500"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <% @weekly_praise_counts.each do |weekday| %>
+            <g data-weekday="<%= weekday[:label] %>" data-count="<%= weekday[:count] %>">
+              <circle cx="<%= weekday[:x] %>" cy="<%= weekday[:y] %>" r="4" class="fill-blue-500 stroke-white" stroke-width="2" />
+              <text x="<%= weekday[:x] %>" y="<%= weekday[:y] - 8 %>" text-anchor="middle" class="fill-slate-900 text-[8px] font-bold"><%= weekday[:count] %></text>
+              <text x="<%= weekday[:x] %>" y="100" text-anchor="middle" class="fill-slate-600 text-[8px] font-semibold"><%= weekday[:label] %></text>
+            </g>
+          <% end %>
+        </svg>
       </div>
     </article>
   <% elsif current_user.admin? %>

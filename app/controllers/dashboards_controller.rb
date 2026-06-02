@@ -34,10 +34,22 @@ class DashboardsController < ApplicationController
         .each_with_object(Hash.new(0)) { |given_at, counts| counts[given_at.to_date] += 1 }
     max_count = [compliment_counts_by_date.values.max.to_i, 1].max
 
-    @weekly_praise_counts = weekdays.zip(%w[월 화 수 목 금]).map do |date, label|
+    @weekly_praise_counts = weekdays.zip(%w[월 화 수 목 금]).each_with_index.map do |(date, label), index|
       count = compliment_counts_by_date[date]
-      { label: label, count: count, percentage: (count.fdiv(max_count) * 100).round }
+      {
+        label: label,
+        count: count,
+        x: 20 + (index * 40),
+        y: 82 - (count.fdiv(max_count) * 56).round
+      }
     end
+
+    first_point = @weekly_praise_counts.first
+    curve_segments = @weekly_praise_counts.each_cons(2).map do |start_point, end_point|
+      midpoint_x = (start_point[:x] + end_point[:x]) / 2
+      "C #{midpoint_x} #{start_point[:y]}, #{midpoint_x} #{end_point[:y]}, #{end_point[:x]} #{end_point[:y]}"
+    end
+    @weekly_praise_path = ["M #{first_point[:x]} #{first_point[:y]}", *curve_segments].join(" ")
   end
 
   def load_admin_dashboard

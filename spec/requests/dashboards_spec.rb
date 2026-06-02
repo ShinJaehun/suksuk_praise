@@ -61,6 +61,7 @@ RSpec.describe "Dashboards", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("이번 주 받은 칭찬")
+      expect(response.body).to include("<path")
       expect(response.body).to include('data-weekday="월" data-count="2"')
       expect(response.body).to include('data-weekday="화" data-count="0"')
       expect(response.body).to include('data-weekday="수" data-count="1"')
