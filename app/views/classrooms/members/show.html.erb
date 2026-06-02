@@ -91,6 +91,24 @@
             data: { turbo_frame: "modal" },
             class: "inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700" %>
     </div>
+
+    <% if current_user.admin? %>
+      <div class="mt-5 space-y-2">
+        <% @student_memberships.each do |membership| %>
+          <div class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 <%= "opacity-50" if membership.inactive? %>">
+            <%= link_to display_name(membership.user),
+                  classroom_student_path(@classroom, membership.user),
+                  class: "min-w-0 truncate text-sm font-semibold text-sky-700 hover:underline" %>
+
+            <% if membership.inactive? %>
+              <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                <%= t("ui.inactive") %>
+              </span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
   </section>
 
   <% if current_user.admin? %>

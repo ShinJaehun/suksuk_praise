@@ -47,6 +47,23 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include("학생 관리")
   end
 
+  it "shows active and inactive students to an admin" do
+    active_student = create(:user, :student, name: "활성 학생")
+    inactive_student = create(:user, :student, name: "비활성 학생")
+    create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+    create(:classroom_membership, classroom: classroom, user: inactive_student, role: "student", status: "inactive")
+    sign_in admin
+
+    get classroom_members_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(active_student.name)
+    expect(response.body).to include(inactive_student.name)
+    expect(response.body).to include(classroom_student_path(classroom, inactive_student))
+    expect(response.body).to include("opacity-50")
+    expect(response.body).to include(I18n.t("ui.inactive"))
+  end
+
   it "does not count a legacy admin teacher membership as an assigned teacher" do
     create(:classroom_membership, classroom: classroom, user: admin, role: "teacher")
     sign_in admin

@@ -4,13 +4,23 @@ class Classrooms::MembersController < ApplicationController
 
   def show
     authorize @classroom, :update?
-    load_teacher_assignment_form if current_user.admin?
+    if current_user.admin?
+      load_student_memberships
+      load_teacher_assignment_form
+    end
   end
 
   private
 
   def set_classroom
     @classroom = Classroom.find(params[:classroom_id])
+  end
+
+  def load_student_memberships
+    @student_memberships = @classroom.classroom_memberships
+      .student
+      .includes(:user)
+      .order(:created_at, :id)
   end
 
   def load_teacher_assignment_form

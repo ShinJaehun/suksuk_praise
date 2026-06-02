@@ -12,6 +12,7 @@ ko:
     actions: "작업"
     on: "활성"
     off: "비활성"
+    inactive: "비활성"
     save: "저장"
     cancel: "취소"
     edit: "수정"
