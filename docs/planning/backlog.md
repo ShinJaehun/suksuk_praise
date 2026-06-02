@@ -34,7 +34,13 @@
 
 ### Classroom / 학생 관리 후속 작업
 
-- 학생 관리/삭제 정책
+- 학생 membership lifecycle 후속 검토
+  - inactive 학생 복구
+  - `inactive_reason` 또는 간단 메모 필드 추가
+  - `pending` 상태 도입
+  - 구성원 관리 화면 active/inactive/all 필터
+  - 구성원 관리 화면 compact list/table 고도화
+- 교실 archive 정책
 - 학생 상세 통계
 - 복사/붙여넣기 학생 등록
 - dashboard 통계
