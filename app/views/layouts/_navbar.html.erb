@@ -56,6 +56,9 @@
     <% end %>
 
     <% if current_user&.student? %>
+      <%= link_to "한눈에 보기",
+            dashboard_path,
+            class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
       <%= link_to "내 칭찬통장",
             user_path(current_user),
             class: "hidden md:inline-block text-sm text-gray-700 hover:text-blue-700" %>
@@ -175,6 +178,9 @@
           <% end %>
 
           <% if current_user.student? %>
+            <%= link_to "한눈에 보기",
+                  dashboard_path,
+                  class: "block px-3 py-1 hover:bg-gray-50" %>
             <%= link_to "내 칭찬통장",
                   user_path(current_user),
                   class: "block px-3 py-1 hover:bg-gray-50" %>

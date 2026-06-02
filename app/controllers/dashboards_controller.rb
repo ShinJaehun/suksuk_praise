@@ -4,9 +4,9 @@ class DashboardsController < ApplicationController
   skip_after_action :verify_policy_scoped
 
   def show
-    redirect_to(user_path(current_user)) and return if current_user.student?
-
-    if current_user.admin?
+    if current_user.student?
+      load_student_dashboard
+    elsif current_user.admin?
       load_admin_dashboard
     else
       load_teacher_dashboard
@@ -14,6 +14,31 @@ class DashboardsController < ApplicationController
   end
 
   private
+
+  def load_student_dashboard
+    classroom_id = session[:student_login_classroom_id]
+    membership = current_user.classroom_memberships.active.student.includes(:classroom).find_by(classroom_id: classroom_id)
+
+    unless membership
+      sign_out(:user)
+      return redirect_to student_session_timeout_redirect_path(classroom_id),
+        alert: "사용 시간이 지나 자동으로 로그아웃되었습니다. 다시 로그인해 주세요."
+    end
+
+    @classroom = membership.classroom
+    weekdays = (0..4).map { |day_offset| Time.zone.today.beginning_of_week(:monday) + day_offset.days }
+    compliment_counts_by_date =
+      Compliment
+        .where(classroom: @classroom, receiver: current_user, given_at: weekdays.first.beginning_of_day..weekdays.last.end_of_day)
+        .pluck(:given_at)
+        .each_with_object(Hash.new(0)) { |given_at, counts| counts[given_at.to_date] += 1 }
+    max_count = [compliment_counts_by_date.values.max.to_i, 1].max
+
+    @weekly_praise_counts = weekdays.zip(%w[월 화 수 목 금]).map do |date, label|
+      count = compliment_counts_by_date[date]
+      { label: label, count: count, percentage: (count.fdiv(max_count) * 100).round }
+    end
+  end
 
   def load_admin_dashboard
     @total_classroom_count = Classroom.count
