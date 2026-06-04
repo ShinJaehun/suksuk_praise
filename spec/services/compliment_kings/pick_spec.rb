@@ -69,5 +69,22 @@ RSpec.describe ComplimentKings::Pick, type: :service do
       expect(result.winners).to eq([first, second])
       expect(result.compliment_count).to eq(1)
     end
+
+    it "excludes inactive students from winners even when they have more compliments" do
+      classroom = create(:classroom)
+      teacher = create(:user, :teacher)
+      active_student = create(:user, :student)
+      inactive_student = create(:user, :student)
+      create(:classroom_membership, user: active_student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: inactive_student, classroom: classroom, role: "student", status: "inactive")
+
+      create(:compliment, classroom: classroom, giver: teacher, receiver: active_student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+      create(:compliment, classroom: classroom, giver: teacher, receiver: inactive_student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+      create(:compliment, classroom: classroom, giver: teacher, receiver: inactive_student, given_at: Time.zone.local(2026, 4, 7, 11, 0, 0))
+
+      result = described_class.call(classroom: classroom, period: "daily", now: Time.zone.local(2026, 4, 7, 12, 0, 0))
+
+      expect(result.winners).to eq([active_student])
+    end
   end
 end

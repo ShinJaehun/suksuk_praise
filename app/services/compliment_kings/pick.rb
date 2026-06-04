@@ -4,13 +4,17 @@ module ComplimentKings
 
     def self.call(classroom:, period:, now: Time.zone.now)
       range = range_for(period, now: now)
-      counts = Compliment.where(classroom: classroom, given_at: range).group(:receiver_id).count
+      active_students = classroom.students
+      counts = Compliment
+        .where(classroom: classroom, receiver_id: active_students.select(:id), given_at: range)
+        .group(:receiver_id)
+        .count
 
       return Result.new(period: period.to_s, winners: [], compliment_count: 0) if counts.blank?
 
       max = counts.values.max
       candidate_ids = counts.select { |_, value| value == max }.keys
-      winners = classroom.students.where(id: candidate_ids).order(:id).to_a
+      winners = active_students.where(id: candidate_ids).order(:id).to_a
 
       Result.new(
         period: period.to_s,

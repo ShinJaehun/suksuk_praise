@@ -63,5 +63,16 @@ RSpec.describe "Classrooms compliment kings", type: :request do
       expect(response.body).not_to include("칭찬(포인트)")
       expect(response.body).to match(/오늘 칭찬.*text-2xl[^>]*>1<\/div>/m)
     end
+
+    it "shows active students and hides inactive students on the classroom page" do
+      inactive_student = create(:user, :student, name: "비활성 학생")
+      create(:classroom_membership, user: inactive_student, classroom: classroom, role: "student", status: "inactive")
+
+      get classroom_path(classroom)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(student.name)
+      expect(response.body).not_to include(inactive_student.name)
+    end
   end
 end
