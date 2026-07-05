@@ -59,6 +59,7 @@
 - 학생 로그인 QR은 현재 token URL 기준으로 요청 시 생성하며 서버 파일로 저장하지 않는다.
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
+- 학생 PIN 로그인 화면에서 학생을 선택하면 해당 학생의 avatar와 이름을 preview로 표시한다.
 - 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다.
 - avatar 선택 목록은 역할별로 제한한다: student는 boy/girl, teacher는 teacherM/teacherF, admin은 admin과 teacherM/teacherF 계열을 사용한다.
 - `avatar_key`가 현재 역할에서 허용되지 않거나 asset 파일이 없으면 역할별 기본 avatar로 fallback한다: student는 `boy01`, teacher는 `teacherM01`, admin은 `admin`.
@@ -114,6 +115,8 @@
 - 쿠폰 요청 badge와 메시지 badge는 `users/_student_card_alerts.html.erb` alert 영역을 공유한다.
 - 실시간 갱신은 Turbo Streams broadcast로 해당 학생의 alert 영역만 replace한다.
 - 새 메시지 badge는 학생 상세의 메시지 영역으로 이동한다.
+- 현재 학생 카드 알림은 pending 쿠폰 사용 요청과 학생 발신 unread 메시지만 다룬다.
+- 별도 Notification 모델, 알림 목록, teacher별 개인 inbox, navbar 알림은 구현되어 있지 않다.
 - 특정 쿠폰 요청이나 특정 메시지 item으로 이동하는 deep link는 아직 MVP 범위 밖이다.
 
 ## 학생 상세 화면
@@ -123,11 +126,13 @@
 - student에게는 관리 버튼과 교실로 돌아가기 버튼이 노출되지 않는다.
 - 역할별 노출은 controller/helper/partial 흐름을 통해 관리한다.
 
-## 학생 dashboard
+## dashboard
 
-- 학생 dashboard는 PIN 로그인 세션의 active classroom membership을 기준으로 학생 전용 `한눈에 보기` 화면을 보여준다.
-- 이번 주 월요일부터 금요일까지 현재 학생이 현재 교실에서 받은 칭찬 수를 그래프로 표시한다.
-- 다른 교실, 다른 학생, 주말 칭찬은 집계에서 제외한다.
+- dashboard는 `GET /dashboard`의 `한눈에 보기` 화면이며 현재 사용자 role에 따라 내용을 나눈다.
+- student dashboard는 PIN 로그인 세션의 active classroom membership을 기준으로 현재 교실에서 이번 주 월요일부터 금요일까지 받은 칭찬 수를 그래프로 표시한다.
+- student dashboard 집계에서는 다른 교실, 다른 학생, 주말 칭찬을 제외한다.
+- teacher dashboard는 담당 교실별 학생 수, 오늘 칭찬 수, pending 쿠폰 요청 수, 학생 발신 unread 메시지 수와 교실 이동 링크를 표시한다.
+- admin dashboard는 전체 교실 수, 교사 수, 학생 수, pending 쿠폰 요청 수를 표시한다.
 - 학생 상세 페이지는 쿠폰, 메시지, 칭찬 타임라인 등 상세 기록 중심으로 유지한다.
 
 ## 테스트 상태

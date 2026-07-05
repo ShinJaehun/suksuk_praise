@@ -43,8 +43,14 @@
 - 교실 archive 정책
 - 학생 상세 통계
 - 복사/붙여넣기 학생 등록
-- 학생 dashboard 주간 요약 polish
-- 학생 dashboard 쿠폰/칭찬 요약 확장 검토
+- 구성원 관리 화면을 전체 학생 table로 정리하고 active/inactive/all 필터 제공
+- 구성원 관리 화면에서 학생을 선택해 일괄 비활성화하는 기능
+- 학생 dashboard의 주간 칭찬 그래프를 주간 활동 요약으로 개선하고 쿠폰 받음/사용 이벤트를 함께 표시
+- 학생 상세 페이지를 학생 정보와 빠른 작업 중심으로 정리
+- 학생 상세의 긴 쿠폰 로그, 칭찬 로그, 메시지 thread를 dashboard, 활동 기록, 대화 페이지로 분리
+- 학생별 대화 페이지를 분리하고 `message_policy`가 `disabled`인 교실에서는 링크 자체를 숨기는 방향
+- teacher dashboard를 교실별 운영 상황판으로 확장
+- admin dashboard를 교실별 운영 요약 table로 확장
 
 ---
 
@@ -61,26 +67,22 @@
 - 학생 쿠폰 사용 요청 badge는 교실 학생 카드에 표시된다.
 - 학생 발신 새 메시지 badge는 교실 학생 카드에 표시된다.
 - 두 badge는 학생 상세의 쿠폰 영역 또는 메시지 영역으로 이동한다.
+- badge 상태는 교실 단위로 처리되며 해당 학생 카드 alert 영역을 Turbo Streams로 갱신한다.
 - navbar notification/count/list는 아직 만들지 않는다.
 
 후속 후보:
 
 - 교사 navbar unread badge
-- 알림 클릭 시 해당 학생 페이지 또는 요청 위치로 이동
+- 특정 쿠폰 요청이나 메시지로 이동하는 deep link
+- teacher별 개인 unread 상태가 필요한지 검토
+- 학생 대상 알림이 필요한지 검토
 
-검토할 내용:
+현재 방향:
 
-- 직접 구현할지, gem을 사용할지
-- 읽음/안 읽음 상태를 어떻게 관리할지
-- 알림 대상자를 message recipient와 분리할지
-- 한 교실에 여러 teacher가 있을 때 누구에게 알릴지
-- 학생에게도 알림을 보여줄지
-
-초기 정책 후보:
-
-- message recipient는 대표 teacher 1명으로 둔다.
-- notification 대상은 같은 교실 teacher 전체로 확장할 수 있다.
-- 담임/부담임 정책은 notification 설계 시 함께 검토한다.
+- 현재 필요한 알림은 기존 `CouponUseRequest`, `UserMessage.read_at`, 학생 카드 badge 흐름으로 처리한다.
+- 지금은 새 Notification 모델이나 notification gem을 도입하지 않는다.
+- 범용 알림 목록, 사용자별 읽음 상태 등 현재 구조로 감당하기 어려운 요구가 구체화될 때 모델 또는 gem 도입을 다시 검토한다.
+- teacher별 알림 정책은 담임/부담임 또는 primary teacher 정책과 함께 결정한다.
 
 spec 승격 후보:
 
@@ -89,6 +91,16 @@ spec 승격 후보:
 ---
 
 ## Completed / Archived
+
+### 학생 로그인 화면 썸네일 preview
+
+상태: Implemented  
+현재 동작 문서: `docs/architecture/current_system.md`
+
+- 학생 PIN 로그인 화면에서 학생을 선택하면 해당 학생의 avatar와 이름을 표시한다.
+- 선택 전에는 기본 안내 이미지를 표시한다.
+
+---
 
 ### 학생 쿠폰 사용 요청
 
@@ -181,37 +193,6 @@ spec 승격 후보:
 ---
 
 ## P2. 학생 UX 개선
-
-### 학생 로그인 화면 썸네일 preview
-
-상태: Candidate  
-확정 여부: Likely  
-우선순위: 중간
-
-학생 PIN 로그인 화면에서 학생을 선택하면 해당 학생의 썸네일을 보여준다.
-
-목적:
-
-- 공용 태블릿 환경에서 학생 선택 실수 감소
-- 학생이 자기 계정을 더 쉽게 확인
-- 이름이 비슷한 학생이 있을 때 혼동 감소
-
-검토할 내용:
-
-- select 변경 시 썸네일 preview 표시
-- JavaScript 없이 기본 렌더링으로 가능한지
-- Stimulus controller가 필요한지
-- 선택 전 기본 안내 표시
-- 접근성/모바일 화면 크기
-
-구현 전 확인:
-
-- `StudentSessionsController`
-- `app/views/student_sessions/new.html.erb`
-- avatar helper
-- 학생 PIN 로그인 request spec
-
----
 
 ### 하루 점수 / 전체 점수 분리
 
