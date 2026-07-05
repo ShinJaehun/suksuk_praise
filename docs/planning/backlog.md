@@ -45,9 +45,11 @@
 - 복사/붙여넣기 학생 등록
 - 구성원 관리 화면을 전체 학생 table로 정리하고 active/inactive/all 필터 제공
 - 구성원 관리 화면에서 학생을 선택해 일괄 비활성화하는 기능
-- 학생 dashboard의 주간 칭찬 그래프를 주간 활동 요약으로 개선하고 쿠폰 받음/사용 이벤트를 함께 표시
+- 학생 dashboard 그래프 point의 hover tooltip
+- 학생 dashboard 월간/누적 활동 추이
 - 학생 상세 페이지를 학생 정보와 빠른 작업 중심으로 정리
 - 학생 상세의 긴 쿠폰 로그, 칭찬 로그, 메시지 thread를 dashboard, 활동 기록, 대화 페이지로 분리
+- 학생별 활동 기록 페이지 분리
 - 학생별 대화 페이지를 분리하고 `message_policy`가 `disabled`인 교실에서는 링크 자체를 숨기는 방향
 - teacher dashboard를 교실별 운영 상황판으로 확장
 - admin dashboard를 교실별 운영 요약 table로 확장
@@ -91,6 +93,19 @@ spec 승격 후보:
 ---
 
 ## Completed / Archived
+
+### 학생 dashboard 주간 활동 요약
+
+상태: Implemented
+현재 동작 문서: `docs/architecture/current_system.md`
+
+- `week_offset`으로 선택한 주의 월요일부터 금요일까지 이동하고 활동을 집계한다.
+- 지금까지 받은 칭찬, 선택 주 칭찬, 보유 쿠폰, 선택 주 쿠폰 발급/사용 수를 한 줄 summary panel로 표시한다.
+- 날짜별 칭찬 수를 자동 y축 눈금의 곡선형 SVG 그래프로 표시한다.
+- 쿠폰 발급일에는 `🎁`, 사용일에는 `✅` marker를 표시한다.
+- 활동이 없는 주에는 데이터 선, 점, marker, y축 숫자를 숨긴 빈 그래프를 표시한다.
+
+---
 
 ### 학생 로그인 화면 썸네일 preview
 

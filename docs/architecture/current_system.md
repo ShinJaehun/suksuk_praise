@@ -129,8 +129,13 @@
 ## dashboard
 
 - dashboard는 `GET /dashboard`의 `한눈에 보기` 화면이며 현재 사용자 role에 따라 내용을 나눈다.
-- student dashboard는 PIN 로그인 세션의 active classroom membership을 기준으로 현재 교실에서 이번 주 월요일부터 금요일까지 받은 칭찬 수를 그래프로 표시한다.
-- student dashboard 집계에서는 다른 교실, 다른 학생, 주말 칭찬을 제외한다.
+- student dashboard는 PIN 로그인 세션의 active classroom membership을 기준으로 현재 교실의 활동을 표시한다.
+- student dashboard는 `week_offset` query parameter로 이전 주와 다음 주를 이동하며, 선택한 주의 월요일부터 금요일까지를 집계 범위로 사용한다.
+- student dashboard 상단에는 현재 교실에서 지금까지 받은 칭찬, 선택한 주에 받은 칭찬, 현재 보유 쿠폰, 선택한 주에 발급받은 쿠폰과 사용한 쿠폰 수를 5칸 summary panel로 표시한다.
+- 선택한 주의 날짜별 칭찬 수는 자동 조정되는 y축 눈금과 곡선형 SVG 그래프로 표시한다.
+- 선택한 주에 쿠폰을 발급받은 날은 `🎁`, 쿠폰을 사용한 날은 `✅` marker를 해당 날짜의 그래프 점 근처에 표시한다.
+- 선택한 주에 칭찬과 쿠폰 발급/사용 활동이 모두 없으면 데이터 선, 점, marker, y축 숫자를 표시하지 않고 요일과 날짜가 있는 빈 그래프 배경을 유지한다.
+- student dashboard의 주간 집계에서는 다른 교실, 다른 학생, 주말 활동을 제외한다.
 - teacher dashboard는 담당 교실별 학생 수, 오늘 칭찬 수, pending 쿠폰 요청 수, 학생 발신 unread 메시지 수와 교실 이동 링크를 표시한다.
 - admin dashboard는 전체 교실 수, 교사 수, 학생 수, pending 쿠폰 요청 수를 표시한다.
 - 학생 상세 페이지는 쿠폰, 메시지, 칭찬 타임라인 등 상세 기록 중심으로 유지한다.
