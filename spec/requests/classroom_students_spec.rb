@@ -179,6 +179,8 @@ RSpec.describe "Classroom students", type: :request do
     end
 
     it "shows the shared student profile card, navigation, and teacher operations" do
+      create(:coupon_template, created_by: teacher, active: true)
+
       get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
@@ -190,8 +192,16 @@ RSpec.describe "Classroom students", type: :request do
       expect(response.body).to include("한눈에 보기")
       expect(response.body).to include("학생 정보·PIN 수정")
       expect(response.body).to include("칭찬하기")
-      expect(response.body).to include("쿠폰 직접 뽑기")
       expect(response.body).to include("교실로 돌아가기")
+      expect(response.body).to include("쿠폰 지급")
+      profile_card = document.at_css("[data-student-profile-card]")
+      expect(profile_card.text).to include("쿠폰 지급")
+      assignment_link = profile_card.at_css(
+        %(a[href="#{coupon_assignment_classroom_student_path(classroom, student)}"])
+      )
+      expect(assignment_link["data-turbo-frame"]).to eq(dom_id(student, :coupon_assignment))
+      expect(response.body).not_to include("활성 쿠폰 중 하나를 가중치에 따라 랜덤으로 지급합니다.")
+      expect(response.body).not_to include("선택한 쿠폰 지급")
       expect(response.body).to include(classroom_student_messages_path(classroom, student))
       expect(response.body).to include(dashboard_classroom_student_path(classroom, student))
       expect(response.body).to include(activity_classroom_student_path(classroom, student))
@@ -247,8 +257,8 @@ RSpec.describe "Classroom students", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("학생 정보·PIN 수정")
       expect(response.body).to include("칭찬하기")
-      expect(response.body).to include("쿠폰 직접 뽑기")
       expect(response.body).to include("교실로 돌아가기")
+      expect(response.body).to include("쿠폰 지급")
       expect(response.body).to include(classroom_student_messages_path(classroom, student))
       expect(response.body).to include(activity_classroom_student_path(classroom, student))
     end
@@ -262,11 +272,43 @@ RSpec.describe "Classroom students", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include("학생 정보·PIN 수정")
       expect(response.body).not_to include("칭찬하기")
-      expect(response.body).not_to include("쿠폰 직접 뽑기")
+      expect(response.body).not_to include("쿠폰 지급")
+      expect(response.body).not_to include("선택한 쿠폰 지급")
       expect(response.body).not_to include("교실로 돌아가기")
       expect(response.body).to include("한눈에 보기")
       expect(response.body).to include(classroom_student_messages_path(classroom, student))
       expect(response.body).to include(activity_classroom_student_path(classroom, student))
+    end
+
+    it "renders the coupon assignment card in its turbo frame" do
+      create(:coupon_template, created_by: teacher, active: true)
+
+      get coupon_assignment_classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(dom_id(student, :coupon_assignment))
+      expect(response.body).to include("활성 쿠폰 중 하나를 가중치에 따라 랜덤으로 지급합니다.")
+      expect(response.body).to include("쿠폰 뽑기")
+      expect(response.body).to include("선택한 쿠폰 지급")
+      expect(response.body).to match(/value="쿠폰 지급"/)
+    end
+
+    it "shows an empty assignment state when the teacher has no active templates" do
+      get coupon_assignment_classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("쿠폰 지급")
+      expect(response.body).to include("지급 가능한 활성 쿠폰 템플릿이 없습니다.")
+      expect(response.body).not_to include(classroom_student_coupons_path(classroom, student))
+    end
+
+    it "rejects the student from loading the coupon assignment card" do
+      sign_out teacher
+      sign_in student
+
+      get coupon_assignment_classroom_student_path(classroom, student)
+
+      expect(response).to redirect_to(root_path)
     end
 
     it "shows coupon and compliment history on the activity page" do
@@ -295,6 +337,9 @@ RSpec.describe "Classroom students", type: :request do
       expect(response.body).to include("칭찬 타임라인")
       expect(response.body).to include(dom_id(student, :recent_issued_coupons))
       expect(response.body).to include(dom_id(student, :compliments))
+      expect(response.body).not_to include("쿠폰 지급")
+      expect(response.body).not_to include("쿠폰 뽑기")
+      expect(response.body).not_to include("선택한 쿠폰 지급")
     end
 
     it "allows the student to view their own activity page" do

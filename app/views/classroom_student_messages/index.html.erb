@@ -7,7 +7,7 @@
         student_messages_enabled: @student_messages_enabled,
         can_manage_student: @can_manage_student,
         can_create_compliment: @can_create_compliment,
-        can_draw_coupon: @can_draw_coupon %>
+        can_issue_coupon: false %>
 
   <% if current_user.student? && current_user == @user %>
     <%= render "user_messages/self_frame",

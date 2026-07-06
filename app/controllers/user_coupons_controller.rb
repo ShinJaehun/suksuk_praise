@@ -1,6 +1,48 @@
 class UserCouponsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_user, only: [:index, :use]
+  before_action :set_classroom_and_student, only: :create
+
+  def create
+    authorize @classroom, :draw_coupon?
+
+    template = policy_scope(CouponTemplate)
+      .active
+      .find(params.require(:coupon_template_id))
+
+    @coupon = UserCoupons::Issue.call!(
+      user: @user,
+      classroom: @classroom,
+      template: template,
+      issued_by: current_user,
+      issuance_basis: "manual",
+      period_start_on: UserCoupon.period_start_for("manual"),
+      basis_tag: "selected"
+    )
+
+    load_use_stream_data!(user: @user, classroom_id: @classroom.id)
+    @pending_coupon_use_requests_by_coupon_id = CouponUseRequest
+      .pending
+      .where(user_coupon_id: @coupons.select(:id))
+      .index_by(&:user_coupon_id)
+    broadcast_student_coupon_lists
+    message = t("coupons.assign.success", title: template.title)
+
+    respond_to do |format|
+      format.html do
+        redirect_to classroom_student_path(@classroom, @user),
+          notice: message,
+          status: :see_other
+      end
+      format.turbo_stream do
+        flash.now[:notice] = message
+        render :create, layout: "application"
+      end
+      format.json do
+        render json: { coupon_id: @coupon.id, user_id: @user.id }, status: :created
+      end
+    end
+  end
 
   def index
     @coupons = policy_scope(UserCoupon)
@@ -62,6 +104,16 @@ class UserCouponsController < ApplicationController
   def set_user
     @user = User.find(params[:user_id])
     authorize @user, :show?  # 학생 상세/자원 접근 권한
+  end
+
+  def set_classroom_and_student
+    @classroom = Classroom.find(params[:classroom_id])
+    membership = @classroom.classroom_memberships.find_by!(
+      user_id: params[:student_id],
+      role: "student",
+      status: "active"
+    )
+    @user = membership.user
   end
 
   def load_use_stream_data!(user:, classroom_id:)

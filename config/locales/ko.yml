@@ -23,6 +23,8 @@ ko:
     buttons:
       compliment: "칭찬하기 🥳"
       issue_coupon: "쿠폰 발급 🎟️"
+      draw_random_coupon: "쿠폰 뽑기"
+      assign_selected_coupon: "쿠폰 지급"
       use_coupon: "사용하기"
       create_student: "학생 추가"
       back_to_classroom: "⬅ %{name} 교실로 돌아가기"
@@ -31,7 +33,6 @@ ko:
       edit_classroom: "교실 정보 수정 ✏️"
       delete_classroom: "교실 삭제 🗑"
       confirm_delete_classroom: "정말 이 교실을 삭제할까요? 이 작업은 되돌릴 수 없습니다."
-      issue_coupon_manual: "쿠폰 직접 뽑기"
       refresh_king_for:
         daily: "오늘의 칭찬왕"
         weekly: "이번 주 칭찬왕"
@@ -82,6 +83,13 @@ ko:
       coupons:
         title: "쿠폰 관리"
         status_hint: "현재 보유 쿠폰"
+      coupon_assignment:
+        title: "쿠폰 지급"
+        random_title: "쿠폰 뽑기"
+        random_description: "활성 쿠폰 중 하나를 가중치에 따라 랜덤으로 지급합니다."
+        selected_title: "선택한 쿠폰 지급"
+        template_label: "쿠폰 선택"
+        empty: "지급 가능한 활성 쿠폰 템플릿이 없습니다."
       messages:
         title: "학생 메시지"
         description: "새 메시지를 보내거나 지난 대화를 확인할 수 있습니다."
@@ -101,6 +109,8 @@ ko:
       removed_from_classroom: "현재 교실에서만 학생을 제거했습니다."
 
   coupons:
+    assign:
+      success: "%{title} 쿠폰을 지급했습니다."
     basis:
       daily: "일일"
       weekly: "주간"

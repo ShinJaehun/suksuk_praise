@@ -1,0 +1,14 @@
+<%= turbo_stream.update dom_id(@user, :coupons) do %>
+  <%= render partial: "user_coupons/list",
+        locals: {
+          coupons: @coupons,
+          user: @user,
+          viewer: current_user,
+          pending_coupon_use_requests_by_coupon_id: @pending_coupon_use_requests_by_coupon_id
+        } %>
+<% end %>
+
+<%= turbo_stream.update dom_id(@user, :kpis) do %>
+  <%= render partial: "users/kpi_chips",
+        locals: { user: @user, kpi_counts: @kpi_counts } %>
+<% end %>

@@ -8,7 +8,7 @@ class ClassroomStudentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_create]
-  before_action :set_student, only: [:show, :dashboard, :activity, :edit, :update, :destroy, :reset_password]
+  before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :reset_password]
 
   def new
     @user = User.new
@@ -125,6 +125,7 @@ class ClassroomStudentsController < ApplicationController
       recent_in_classroom: true
     )
     @pending_coupon_use_request_count = @pending_coupon_use_requests_by_coupon_id.size
+    @can_issue_coupon = @can_draw_coupon && active_student_in_classroom?
 
     broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
 
@@ -156,6 +157,22 @@ class ClassroomStudentsController < ApplicationController
       recent_in_classroom: true
     )
     load_student_weekly_dashboard!(student: @student, classroom: @classroom)
+  end
+
+  def coupon_assignment
+    authorize @student, :show?
+    authorize @classroom, :draw_coupon?
+    raise ActiveRecord::RecordNotFound unless active_student_in_classroom?
+
+    @user = @student
+    @available_coupon_templates = policy_scope(CouponTemplate).active.ordered_by_title
+
+    render partial: "classroom_students/coupon_assignment_card",
+      locals: {
+        classroom: @classroom,
+        user: @user,
+        available_coupon_templates: @available_coupon_templates
+      }
   end
 
   def edit
@@ -328,5 +345,13 @@ class ClassroomStudentsController < ApplicationController
     @can_create_compliment = policy(@classroom).create_compliment?
     @can_draw_coupon = policy(@classroom).draw_coupon?
     @student_messages_enabled = @classroom.student_messages_enabled?
+  end
+
+  def active_student_in_classroom?
+    @classroom.classroom_memberships.exists?(
+      user_id: @student.id,
+      role: "student",
+      status: "active"
+    )
   end
 end

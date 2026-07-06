@@ -13,7 +13,11 @@
         student_messages_enabled: @student_messages_enabled,
         can_manage_student: @can_manage_student,
         can_create_compliment: @can_create_compliment,
-        can_draw_coupon: @can_draw_coupon %>
+        can_issue_coupon: @can_issue_coupon %>
+
+  <% if @can_issue_coupon %>
+    <%= turbo_frame_tag dom_id(@user, :coupon_assignment) %>
+  <% end %>
 
   <% if !current_user.student? && @pending_coupon_use_request_count.positive? %>
     <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">

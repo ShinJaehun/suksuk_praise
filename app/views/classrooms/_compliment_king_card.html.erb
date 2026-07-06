@@ -26,7 +26,7 @@
               data: { turbo: false },
               class: "font-bold text-slate-900 hover:underline" %>
         <% if show_compliment_king_coupon_button?(classroom, period) %>
-          <%= button_to t("ui.buttons.issue_coupon"),
+          <%= button_to t("ui.buttons.draw_random_coupon"),
                 draw_coupon_classroom_path(
                   classroom,
                   basis: compliment_king_coupon_basis(period),

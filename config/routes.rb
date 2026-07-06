@@ -46,6 +46,7 @@ Rails.application.routes.draw do
 
     resources :students, controller: "classroom_students", only: [:new, :create, :show, :edit, :update, :destroy] do
       resources :messages, only: [:index, :create], controller: "classroom_student_messages"
+      resources :coupons, only: :create, controller: "user_coupons"
       collection do
         get :bulk_new
         post :bulk_create
@@ -53,6 +54,7 @@ Rails.application.routes.draw do
       member do
         get :activity
         get :dashboard
+        get :coupon_assignment
         patch :reset_password
       end
     end

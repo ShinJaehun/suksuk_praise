@@ -37,6 +37,9 @@ RSpec.describe "Classroom student dashboards", type: :request do
     expect(response.body).to include(student.name)
     expect(response.body).to include(classroom.name)
     expect(response.body).to include("한눈에 보기")
+    expect(response.body).not_to include("쿠폰 지급")
+    expect(response.body).not_to include("쿠폰 뽑기")
+    expect(response.body).not_to include("선택한 쿠폰 지급")
     expect(response.body).to include("2026.04.06 ~ 2026.04.10")
     expect(document.at_css('[data-summary="weekly-praise"]')["data-count"]).to eq("1")
     expect(document.at_css('[data-summary="weekly-issued-coupons"]')["data-count"]).to eq("1")
@@ -76,7 +79,9 @@ RSpec.describe "Classroom student dashboards", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("한눈에 보기")
     expect(response.body).not_to include("학생 정보·PIN 수정")
-    expect(response.body).not_to include("쿠폰 직접 뽑기")
+    expect(response.body).not_to include("쿠폰 지급")
+    expect(response.body).not_to include("쿠폰 뽑기")
+    expect(response.body).not_to include("선택한 쿠폰 지급")
   end
 
   it "rejects another student" do

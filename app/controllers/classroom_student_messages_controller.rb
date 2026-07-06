@@ -26,7 +26,6 @@ class ClassroomStudentMessagesController < ApplicationController
     @message_section_dom_id = dom_id(@student, :message_section)
     @can_manage_student = Pundit.policy!(current_user, @student).manage_student_account?
     @can_create_compliment = policy(@classroom).create_compliment?
-    @can_draw_coupon = policy(@classroom).draw_coupon?
     @student_messages_enabled = true
     broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
   end

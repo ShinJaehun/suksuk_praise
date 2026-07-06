@@ -21,6 +21,8 @@ RSpec.describe "Classrooms compliment kings", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("오늘의 칭찬왕")
+      expect(response.body).not_to include("쿠폰 뽑기")
+      expect(response.body).not_to include("선택한 쿠폰 지급")
       expect(response.body).to include("href=\"#{classroom_student_path(classroom, student)}\"")
       expect(response.body).not_to include("이번 주 칭찬왕")
       expect(response.body).not_to include("이번 달 칭찬왕")

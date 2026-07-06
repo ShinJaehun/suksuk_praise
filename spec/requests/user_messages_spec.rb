@@ -61,6 +61,9 @@ RSpec.describe "User messages", type: :request do
       expect(message_navigation["class"]).to include("border-blue-500")
       expect(response.body).to include("학생 메시지")
       expect(response.body).to include("보내기")
+      expect(response.body).not_to include("쿠폰 지급")
+      expect(response.body).not_to include("쿠폰 뽑기")
+      expect(response.body).not_to include("선택한 쿠폰 지급")
     end
 
     it "rejects a teacher outside the classroom from the student message page" do

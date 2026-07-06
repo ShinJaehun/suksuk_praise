@@ -57,33 +57,15 @@ module CouponDraw
       raise NoActiveTemplateError.new("coupons.draw.no_active_template") unless template
 
       # 5) 발급 + 이벤트 로그 (원자성 보장)
-      ApplicationRecord.transaction do
-        issued = UserCoupon.issue!(
-          user:             user,
-          classroom:        classroom,
-          template:         template,
-          issued_by:        issued_by,
-          issuance_basis:   basis,
-          period_start_on:  period_start,
-          basis_tag:        mode
-        )
-
-        CouponEvent.create!(
-          action: "issued",
-          actor: issued_by,
-          user_coupon: issued,
-          classroom: classroom,
-          coupon_template: template,
-          metadata: {
-            basis: issued.issuance_basis,
-            mode:  issued.basis_tag,
-            target_user_id: issued.user_id,
-            target_user_name: user.name
-          }
-        )
-
-        issued
-      end
+      UserCoupons::Issue.call!(
+        user: user,
+        classroom: classroom,
+        template: template,
+        issued_by: issued_by,
+        issuance_basis: basis,
+        period_start_on: period_start,
+        basis_tag: mode
+      )
     end
 
     # --- helpers ---

@@ -24,6 +24,8 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
         expect(response).to have_http_status(:ok)
         expect(response.body).to include("오늘의 칭찬왕")
         expect(response.body).to include(student.name)
+        expect(response.body).to include("쿠폰 뽑기")
+        expect(response.body).not_to include("랜덤 쿠폰 뽑기")
       end
     end
 
