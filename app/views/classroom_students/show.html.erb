@@ -16,7 +16,7 @@
         can_issue_coupon: @can_issue_coupon %>
 
   <% if @can_issue_coupon %>
-    <%= turbo_frame_tag dom_id(@user, :coupon_assignment) %>
+    <%= turbo_frame_tag dom_id(@user, :coupon_assignment), class: "block empty:hidden" %>
   <% end %>
 
   <% if !current_user.student? && @pending_coupon_use_request_count.positive? %>
