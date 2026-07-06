@@ -1,5 +1,6 @@
 class ClassroomStudentsController < ApplicationController
   include UserShowDataLoader
+  include StudentWeeklyDashboardLoader
   include ActionView::RecordIdentifier
 
   MAX_BULK_STUDENTS = 30
@@ -7,7 +8,7 @@ class ClassroomStudentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_create]
-  before_action :set_student, only: [:show, :edit, :update, :destroy, :reset_password]
+  before_action :set_student, only: [:show, :dashboard, :activity, :edit, :update, :destroy, :reset_password]
 
   def new
     @user = User.new
@@ -114,26 +115,47 @@ class ClassroomStudentsController < ApplicationController
     authorize @student, :show?
 
     @user = @student
-    @can_destroy_student = Pundit.policy!(current_user, @student).destroy_student?
-    @can_create_compliment = policy(@classroom).create_compliment?
-    @can_draw_coupon = policy(@classroom).draw_coupon?
-    @student_messages_enabled = @classroom.student_messages_enabled?
+    load_student_profile_permissions!
     read_count = @student_messages_enabled ? mark_managed_student_messages_read : 0
 
+    load_user_show_data!(
+      user: @student,
+      classroom: @classroom,
+      include_recent_issued: false,
+      recent_in_classroom: true
+    )
+    @pending_coupon_use_request_count = @pending_coupon_use_requests_by_coupon_id.size
+
+    broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
+
+    render "classroom_students/show"
+  end
+
+  def activity
+    authorize @student, :show?
+
+    @user = @student
+    load_student_profile_permissions!
     load_user_show_data!(
       user: @student,
       classroom: @classroom,
       include_recent_issued: true,
       recent_in_classroom: true
     )
+  end
 
-    @new_message = UserMessage.new
-    @reply_message = UserMessage.new
-    @message_teacher_options = student_message_teacher_options
-    @message_section_dom_id = dom_id(@user, :message_section)
-    broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
+  def dashboard
+    authorize @student, :show?
 
-    render "classroom_students/show"
+    @user = @student
+    load_student_profile_permissions!
+    load_user_show_data!(
+      user: @student,
+      classroom: @classroom,
+      include_recent_issued: false,
+      recent_in_classroom: true
+    )
+    load_student_weekly_dashboard!(student: @student, classroom: @classroom)
   end
 
   def edit
@@ -295,19 +317,16 @@ class ClassroomStudentsController < ApplicationController
       !@student.avatar.attached?
   end
 
-  def student_message_teacher_options
-    return User.none unless current_user == @student && @classroom.student_can_start_messages?
-
-    User.teacher
-      .joins(:classroom_memberships)
-      .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
-      .distinct
-      .order(:name, :id)
-  end
-
   def mark_managed_student_messages_read
     return 0 unless current_user.admin? || current_user.teacher?
 
     mark_unread_student_messages_read_for(@classroom, @student)
+  end
+
+  def load_student_profile_permissions!
+    @can_manage_student = Pundit.policy!(current_user, @student).manage_student_account?
+    @can_create_compliment = policy(@classroom).create_compliment?
+    @can_draw_coupon = policy(@classroom).draw_coupon?
+    @student_messages_enabled = @classroom.student_messages_enabled?
   end
 end

@@ -1,0 +1,29 @@
+<section class="mx-auto w-full max-w-6xl space-y-4 pt-4">
+  <%= render "classroom_students/student_profile_card",
+        classroom: @classroom,
+        user: @user,
+        kpi_counts: @kpi_counts,
+        current_section: :messages,
+        student_messages_enabled: @student_messages_enabled,
+        can_manage_student: @can_manage_student,
+        can_create_compliment: @can_create_compliment,
+        can_draw_coupon: @can_draw_coupon %>
+
+  <% if current_user.student? && current_user == @user %>
+    <%= render "user_messages/self_frame",
+          dom_id: @message_section_dom_id,
+          threads: @message_threads,
+          new_message: @new_message,
+          teacher_options: @message_teacher_options,
+          reply_message: @reply_message,
+          user: @user %>
+  <% else %>
+    <%= render "user_messages/managed_frame",
+          dom_id: @message_section_dom_id,
+          threads: @message_threads,
+          message: @new_message,
+          reply_message: @reply_message,
+          user: @user,
+          form_url: classroom_student_messages_path(@classroom, @user) %>
+  <% end %>
+</section>

@@ -5,78 +5,30 @@
     <%= turbo_stream_from @user, :managed_coupons %>
   <% end %>
 
-  <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-      <div class="flex items-center gap-4">
-        <%= user_avatar_image(@user, size: 512,
-              class: "h-24 w-24 rounded-2xl object-cover border border-slate-200 bg-slate-100",
-              alt: "#{@user.name} avatar") %>
-        <div>
-          <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
-              <%= @user.name %>
-              <span class="ml-2 text-sm font-medium text-slate-500"><%= @classroom.name %></span>
-            </h1>
-            <% if @can_destroy_student %>
-              <%= link_to "계정 관리",
-                    edit_classroom_student_path(@classroom, @user),
-                    class: "inline-flex items-center rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>
-            <% end %>
-          </div>
-          <%= turbo_frame_tag dom_id(@user, :kpis) do %>
-            <%= render partial: "users/kpi_chips", locals: { user: @user, kpi_counts: @kpi_counts } %>
-          <% end %>
-        </div>
-      </div>
-      <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-        <% unless current_user.student? %>
-          <%= link_to "교실로 돌아가기",
-                      classroom_path(@classroom),
-                      class: "inline-flex items-center rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700 hover:bg-slate-200" %>
-        <% end %>
-        <% if @can_create_compliment %>
-          <%= button_to t("ui.buttons.compliment"),
-                classroom_compliments_path(@classroom),
-                method: :post,
-                params: { compliment: { receiver_id: @user.id } },
-                form: {
-                  data: {
-                    controller: "disable-on-submit",
-                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
-                    turbo_submits_with: t("ui.processing")
-                  },
-                  aria: { busy: "false" }
-                },
-                class: "inline-flex items-center rounded-lg bg-amber-300 px-3 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-400" %>
-        <% end %>
-        <% if @can_draw_coupon %>
-          <%= button_to t("ui.buttons.issue_coupon_manual"),
-                draw_coupon_classroom_path(
-                  @classroom,
-                  basis: "manual",
-                  mode: "default",
-                  user_id: @user.id
-                ),
-                method: :post,
-                form: {
-                  data: {
-                    controller: "disable-on-submit",
-                    action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
-                    turbo_submits_with: t("ui.processing")
-                  },
-                  aria: { busy: "false" }
-                },
-                class: "inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" %>
-        <% end %>
-      </div>
-    </div>
-  </div>
+  <%= render "classroom_students/student_profile_card",
+        classroom: @classroom,
+        user: @user,
+        kpi_counts: @kpi_counts,
+        current_section: :coupons,
+        student_messages_enabled: @student_messages_enabled,
+        can_manage_student: @can_manage_student,
+        can_create_compliment: @can_create_compliment,
+        can_draw_coupon: @can_draw_coupon %>
+
+  <% if !current_user.student? && @pending_coupon_use_request_count.positive? %>
+    <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
+      <p class="text-xs font-semibold uppercase tracking-wide text-amber-700"><%= t("students.show.pending.title") %></p>
+      <%= link_to t("students.show.pending.coupon_use_requests", count: @pending_coupon_use_request_count),
+            "##{dom_id(@user, :coupons)}",
+            class: "mt-1 inline-flex text-sm font-bold text-amber-900 underline decoration-amber-400 underline-offset-2" %>
+    </section>
+  <% end %>
 
   <div class="space-y-6">
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div class="flex items-center justify-between">
-        <h2 class="text-base font-semibold text-slate-900">보유 쿠폰 (사용하기)</h2>
-        <span class="text-xs text-slate-500">issued 기준</span>
+        <h2 class="text-base font-semibold text-slate-900"><%= t("students.show.coupons.title") %></h2>
+        <span class="text-xs text-slate-500"><%= t("students.show.coupons.status_hint") %></span>
       </div>
       <div class="mt-3">
         <%= turbo_frame_tag dom_id(@user, :coupons), class: "scroll-mt-24" do %>
@@ -91,53 +43,5 @@
       </div>
     </section>
 
-    <% if @student_messages_enabled %>
-      <% if current_user == @user && current_user.student? %>
-        <%= render "user_messages/self_frame",
-              dom_id: @message_section_dom_id,
-              threads: @message_threads,
-              new_message: @new_message,
-              teacher_options: @message_teacher_options,
-              reply_message: @reply_message,
-              user: @user %>
-      <% else %>
-        <%= render "user_messages/managed_frame",
-              dom_id: @message_section_dom_id,
-              threads: @message_threads,
-              message: @new_message,
-              reply_message: @reply_message,
-              user: @user,
-              form_url: classroom_student_messages_path(@classroom, @user) %>
-      <% end %>
-    <% end %>
-
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-semibold text-slate-900">
-            <%= t("titles.recent_issued_coupons_for_user", default: "최근 발급 쿠폰") %>
-          </h2>
-          <span class="text-xs text-slate-500">최신 순</span>
-        </div>
-        <div class="mt-3 max-h-[20rem] overflow-y-auto md:h-[28rem]">
-          <%= turbo_frame_tag dom_id(@user, :recent_issued_coupons) do %>
-            <%= render partial: "user_coupons/issued_coupons",
-              locals: { coupons: @recent_issued_coupons, show_user: false } %>
-          <% end %>
-        </div>
-      </section>
-
-      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-semibold text-slate-900">칭찬 타임라인</h2>
-          <span class="text-xs text-slate-500">최근순</span>
-        </div>
-        <div class="mt-3 max-h-[20rem] overflow-y-auto md:h-[28rem]">
-          <%= turbo_frame_tag dom_id(@user, :compliments) do %>
-            <%= render partial: "users/compliments_timeline", locals: { compliments: @compliments } %>
-          <% end %>
-        </div>
-      </section>
-    </div>
   </div>
 </section>

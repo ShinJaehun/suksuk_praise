@@ -1,0 +1,23 @@
+<section class="mx-auto w-full max-w-6xl space-y-6 pt-4">
+  <%= render "classroom_students/student_profile_card",
+        classroom: @classroom,
+        user: @user,
+        kpi_counts: @kpi_counts,
+        current_section: :dashboard,
+        student_messages_enabled: @student_messages_enabled,
+        can_manage_student: @can_manage_student,
+        can_create_compliment: @can_create_compliment,
+        can_draw_coupon: @can_draw_coupon %>
+
+  <%= render "dashboards/student_weekly_activity",
+        previous_week_path: dashboard_classroom_student_path(
+          @classroom,
+          @user,
+          week_offset: @week_offset - 1
+        ),
+        next_week_path: dashboard_classroom_student_path(
+          @classroom,
+          @user,
+          week_offset: @week_offset + 1
+        ) %>
+</section>

@@ -96,7 +96,7 @@ RSpec.describe 'Student portal flow', type: :request do
       get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('계정 관리')
+      expect(response.body).to include('학생 정보·PIN 수정')
       expect(response.body).to include('교실로 돌아가기')
       expect(response.body).not_to include("#{classroom.name} 교실로 돌아가기")
       expect(response.body).to include(classroom.name)

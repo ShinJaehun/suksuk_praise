@@ -67,6 +67,28 @@ ko:
         monthly: "이번 달 칭찬왕"
 
   students:
+    show:
+      actions:
+        navigation: "학생 페이지"
+        coupon_management: "쿠폰 관리"
+        dashboard: "한눈에 보기"
+        edit_profile_and_pin: "학생 정보·PIN 수정"
+        check_messages: "학생 메시지"
+        check_activity: "활동 기록"
+        back_to_classroom: "교실로 돌아가기"
+      pending:
+        title: "처리할 일"
+        coupon_use_requests: "쿠폰 사용 요청 %{count}건"
+      coupons:
+        title: "쿠폰 관리"
+        status_hint: "현재 보유 쿠폰"
+      messages:
+        title: "학생 메시지"
+        description: "새 메시지를 보내거나 지난 대화를 확인할 수 있습니다."
+      activity:
+        title: "최근 기록"
+        recent_coupons: "최근 발급 쿠폰"
+        compliments: "칭찬 타임라인"
     create:
       success: "학생이 추가되었습니다."
       failure_fallback: "이름과 이메일을 확인해주세요."

@@ -46,6 +46,45 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.parent_message_id).to be_nil
     end
 
+    it "allows an admin to open the managed student message page" do
+      sign_in admin
+
+      get classroom_student_messages_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      expect(response.body).to include(student.name)
+      expect(response.body).to include("한눈에 보기")
+      expect(response.body).to include(dashboard_classroom_student_path(classroom, student))
+      expect(response.body).to include(activity_classroom_student_path(classroom, student))
+      message_navigation = document.at_css(%(a[href="#{classroom_student_messages_path(classroom, student)}"]))
+      expect(message_navigation["class"]).to include("border-blue-500")
+      expect(response.body).to include("학생 메시지")
+      expect(response.body).to include("보내기")
+    end
+
+    it "rejects a teacher outside the classroom from the student message page" do
+      outsider = create(:user, :teacher)
+      sign_in outsider
+
+      get classroom_student_messages_path(classroom, student)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "marks student-sent unread messages read when a teacher opens the message page" do
+      classroom.update!(message_policy: "student_initiated")
+      message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "확인할 질문")
+      allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+      sign_in teacher
+
+      get classroom_student_messages_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(message.reload.read_at).to be_present
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to)
+    end
+
     it "rejects teacher and admin root messages to an inactive student" do
       classroom.classroom_memberships.find_by!(user: student).inactive!
 
@@ -79,7 +118,7 @@ RSpec.describe "User messages", type: :request do
       create(:user_message, classroom: classroom, sender: student, recipient: teacher, parent_message: root, body: "학생 댓글")
       sign_in student
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("선생님 메시지")
@@ -100,7 +139,7 @@ RSpec.describe "User messages", type: :request do
       classroom.update!(message_policy: "replies_only")
       sign_in student
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("먼저 질문")
@@ -112,64 +151,40 @@ RSpec.describe "User messages", type: :request do
     it "does not show a student root message form when the classroom policy is replies only" do
       sign_in student
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include('name="user_message[recipient_id]"')
     end
 
-    it "hides the student message section when classroom messages are disabled" do
+    it "rejects the student message page when classroom messages are disabled" do
       create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "숨겨질 메시지")
       classroom.update!(message_policy: "disabled")
       sign_in student
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("보유 쿠폰")
-      expect(response.body).to include("최근 발급 쿠폰")
-      expect(response.body).to include("칭찬 타임라인")
-      expect(response.body).not_to include("message_section")
-      expect(response.body).not_to include("user_message[body]")
-      expect(response.body).not_to include("reply_to_message_id")
-      expect(response.body).not_to include("아직 메시지가 없습니다.")
-      expect(response.body).not_to include("숨겨질 메시지")
+      expect(response).to redirect_to(root_path)
     end
 
-    it "hides the managed message section when classroom messages are disabled" do
+    it "rejects the managed message page when classroom messages are disabled" do
       create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "숨겨질 메시지")
       classroom.update!(message_policy: "disabled")
       sign_in teacher
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("보유 쿠폰")
-      expect(response.body).to include("최근 발급 쿠폰")
-      expect(response.body).to include("칭찬 타임라인")
-      expect(response.body).not_to include("message_section")
-      expect(response.body).not_to include("user_message[body]")
-      expect(response.body).not_to include("reply_to_message_id")
-      expect(response.body).not_to include("아직 메시지가 없습니다.")
-      expect(response.body).not_to include("숨겨질 메시지")
+      expect(response).to redirect_to(root_path)
     end
 
-    it "hides the managed message section from an admin when classroom messages are disabled" do
+    it "rejects the managed message page from an admin when classroom messages are disabled" do
       create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "숨겨질 메시지")
       classroom.update!(message_policy: "disabled")
       sign_in admin
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("보유 쿠폰")
-      expect(response.body).to include("최근 발급 쿠폰")
-      expect(response.body).to include("칭찬 타임라인")
-      expect(response.body).not_to include("message_section")
-      expect(response.body).not_to include("user_message[body]")
-      expect(response.body).not_to include("reply_to_message_id")
-      expect(response.body).not_to include("아직 메시지가 없습니다.")
-      expect(response.body).not_to include("숨겨질 메시지")
+      expect(response).to redirect_to(root_path)
     end
 
     it "shows a compact student root message form without choosing a teacher when the classroom policy is student initiated" do
@@ -177,7 +192,7 @@ RSpec.describe "User messages", type: :request do
       outside_teacher = create(:user, :teacher, name: "다른 반 선생님")
       sign_in student
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include('name="user_message[recipient_id]"')
@@ -399,7 +414,7 @@ RSpec.describe "User messages", type: :request do
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")
       sign_in teacher
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("먼저 질문")
@@ -411,7 +426,7 @@ RSpec.describe "User messages", type: :request do
       teacher_root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "선생님 원글")
       sign_in teacher
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("선생님 원글")
@@ -424,7 +439,7 @@ RSpec.describe "User messages", type: :request do
       classroom.classroom_memberships.find_by!(user: student).inactive!
       sign_in teacher
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(teacher_root.body)
@@ -563,19 +578,16 @@ RSpec.describe "User messages", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it "shows managed student sections in the expected order" do
+    it "shows messages on the dedicated managed student message page" do
       sign_in teacher
 
-      get classroom_student_path(classroom, student)
+      get classroom_student_messages_path(classroom, student)
 
-      coupon_index = response.body.index("보유 쿠폰")
-      message_index = response.body.index("보내기")
-      recent_index = response.body.index("최근 발급 쿠폰")
-      compliment_index = response.body.index("칭찬 타임라인")
-
-      expect(coupon_index).to be < message_index
-      expect(message_index).to be < recent_index
-      expect(message_index).to be < compliment_index
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("학생 메시지")
+      expect(response.body).to include("보내기")
+      expect(response.body).not_to include("최근 발급 쿠폰")
+      expect(response.body).not_to include("칭찬 타임라인")
     end
 
     it "re-renders the managed message section with inline errors on turbo failure" do

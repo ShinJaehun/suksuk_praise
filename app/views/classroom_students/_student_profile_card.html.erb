@@ -1,0 +1,105 @@
+<%# locals: (classroom:, user:, kpi_counts:, current_section:, student_messages_enabled:, can_manage_student:, can_create_compliment:, can_draw_coupon:) %>
+<%
+  navigation_button_class = lambda do |section|
+    base = "inline-flex items-center rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm transition"
+    state =
+      if current_section == section
+        "border-blue-500 bg-blue-50 text-blue-700"
+      else
+        "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+      end
+    "#{base} #{state}"
+  end
+%>
+
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+    <%= user_avatar_image(
+          user,
+          size: 512,
+          class: "h-24 w-24 shrink-0 rounded-2xl border border-slate-200 bg-slate-100 object-cover",
+          alt: "#{user.name} avatar"
+        ) %>
+
+    <div class="min-w-0 flex-1">
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= user.name %></h1>
+      <p class="mt-1 text-sm font-medium text-slate-500"><%= classroom.name %></p>
+
+      <%= turbo_frame_tag dom_id(user, :kpis) do %>
+        <%= render partial: "users/kpi_chips", locals: { user: user, kpi_counts: kpi_counts } %>
+      <% end %>
+
+      <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 lg:flex-row lg:items-center lg:justify-between">
+        <nav class="flex flex-wrap gap-2" aria-label="<%= t("students.show.actions.navigation") %>">
+          <%= link_to t("students.show.actions.coupon_management"),
+                classroom_student_path(classroom, user),
+                class: navigation_button_class.call(:coupons),
+                aria: { current: current_section == :coupons ? "page" : nil } %>
+          <%= link_to t("students.show.actions.dashboard"),
+                dashboard_classroom_student_path(classroom, user),
+                class: navigation_button_class.call(:dashboard),
+                aria: { current: current_section == :dashboard ? "page" : nil } %>
+          <%= link_to t("students.show.actions.check_activity"),
+                activity_classroom_student_path(classroom, user),
+                class: navigation_button_class.call(:activity),
+                aria: { current: current_section == :activity ? "page" : nil } %>
+          <% if student_messages_enabled %>
+            <%= link_to t("students.show.actions.check_messages"),
+                  classroom_student_messages_path(classroom, user),
+                  class: navigation_button_class.call(:messages),
+                  aria: { current: current_section == :messages ? "page" : nil } %>
+          <% end %>
+        </nav>
+
+        <% if can_manage_student || can_create_compliment || can_draw_coupon %>
+          <div class="flex flex-wrap gap-2 lg:justify-end">
+            <% if can_manage_student %>
+              <%= link_to t("students.show.actions.edit_profile_and_pin"),
+                    edit_classroom_student_path(classroom, user),
+                    class: "inline-flex items-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 shadow-sm transition hover:border-rose-400 hover:bg-rose-50" %>
+            <% end %>
+            <% if can_create_compliment %>
+              <%= button_to t("ui.buttons.compliment"),
+                    classroom_compliments_path(classroom),
+                    method: :post,
+                    params: { compliment: { receiver_id: user.id } },
+                    form: {
+                      class: "inline-flex",
+                      data: {
+                        controller: "disable-on-submit",
+                        action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
+                        turbo_submits_with: t("ui.processing")
+                      },
+                      aria: { busy: "false" }
+                    },
+                    class: "inline-flex items-center rounded-lg border border-amber-400 bg-amber-300 px-3 py-2 text-sm font-semibold text-amber-950 shadow-sm transition hover:bg-amber-400" %>
+            <% end %>
+            <% if can_draw_coupon %>
+              <%= button_to t("ui.buttons.issue_coupon_manual"),
+                    draw_coupon_classroom_path(
+                      classroom,
+                      basis: "manual",
+                      mode: "default",
+                      user_id: user.id
+                    ),
+                    method: :post,
+                    form: {
+                      class: "inline-flex",
+                      data: {
+                        controller: "disable-on-submit",
+                        action: "turbo:submit-start->disable-on-submit#onSubmit turbo:submit-end->disable-on-submit#onTurboSubmitEnd",
+                        turbo_submits_with: t("ui.processing")
+                      },
+                      aria: { busy: "false" }
+                    },
+                    class: "inline-flex items-center rounded-lg border border-blue-600 bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700" %>
+            <% end %>
+            <%= link_to t("students.show.actions.back_to_classroom"),
+                  classroom_path(classroom),
+                  class: "inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</section>

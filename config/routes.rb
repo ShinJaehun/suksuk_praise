@@ -45,12 +45,14 @@ Rails.application.routes.draw do
     end
 
     resources :students, controller: "classroom_students", only: [:new, :create, :show, :edit, :update, :destroy] do
-      resources :messages, only: [:create], controller: "classroom_student_messages"
+      resources :messages, only: [:index, :create], controller: "classroom_student_messages"
       collection do
         get :bulk_new
         post :bulk_create
       end
       member do
+        get :activity
+        get :dashboard
         patch :reset_password
       end
     end

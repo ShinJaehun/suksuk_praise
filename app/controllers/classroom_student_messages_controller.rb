@@ -5,6 +5,31 @@ class ClassroomStudentMessagesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :set_student
+  before_action :ensure_active_student!, only: :create
+
+  def index
+    authorize @student, :show?
+    raise Pundit::NotAuthorizedError unless @classroom.student_messages_enabled?
+
+    read_count = mark_managed_student_messages_read
+    load_user_show_data!(
+      user: @student,
+      classroom: @classroom,
+      include_recent_issued: false,
+      recent_in_classroom: true
+    )
+
+    @user = @student
+    @new_message = UserMessage.new
+    @reply_message = UserMessage.new
+    @message_teacher_options = student_message_teacher_options
+    @message_section_dom_id = dom_id(@student, :message_section)
+    @can_manage_student = Pundit.policy!(current_user, @student).manage_student_account?
+    @can_create_compliment = policy(@classroom).create_compliment?
+    @can_draw_coupon = policy(@classroom).draw_coupon?
+    @student_messages_enabled = true
+    broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
+  end
 
   def create
     replied_message = find_repliable_student_root_message if params[:reply_to_message_id].present?
@@ -50,6 +75,13 @@ class ClassroomStudentMessagesController < ApplicationController
   def set_student
     @student = User.find(params[:student_id])
     raise ActiveRecord::RecordNotFound unless @student.student?
+    raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(
+      user_id: @student.id,
+      role: "student"
+    )
+  end
+
+  def ensure_active_student!
     raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(
       user_id: @student.id,
       role: "student",
@@ -115,5 +147,21 @@ class ClassroomStudentMessagesController < ApplicationController
     @reply_message = reply_message || UserMessage.new
     @active_reply_thread_id = active_reply_thread_id
     @message_section_dom_id = dom_id(@student, :message_section)
+  end
+
+  def student_message_teacher_options
+    return User.none unless current_user == @student && @classroom.student_can_start_messages?
+
+    User.teacher
+      .joins(:classroom_memberships)
+      .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
+      .distinct
+      .order(:name, :id)
+  end
+
+  def mark_managed_student_messages_read
+    return 0 unless current_user.admin? || current_user.teacher?
+
+    mark_unread_student_messages_read_for(@classroom, @student)
   end
 end

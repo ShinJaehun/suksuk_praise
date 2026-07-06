@@ -1,13 +1,20 @@
-<%= render "user_messages/thread",
-      threads: threads,
-      reply_message: reply_message,
-      user: user,
-      form_url: form_url,
-      active_reply_thread_id: active_reply_thread_id %>
+<div>
+  <h2 class="text-base font-semibold text-slate-900"><%= t("students.show.messages.title") %></h2>
+  <p class="mt-1 text-sm text-slate-500"><%= t("students.show.messages.description") %></p>
+</div>
 
-<div class="mt-4 border-t border-slate-100 pt-4">
+<div class="mt-4">
   <%= render "user_messages/message_form",
         message: message,
         form_url: form_url,
         sender: current_user %>
+</div>
+
+<div class="mt-4 border-t border-slate-100 pt-4">
+  <%= render "user_messages/thread",
+        threads: threads,
+        reply_message: reply_message,
+        user: user,
+        form_url: form_url,
+        active_reply_thread_id: active_reply_thread_id %>
 </div>

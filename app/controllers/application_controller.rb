@@ -88,7 +88,7 @@ class ApplicationController < ActionController::Base
   end
 
   def student_card_message_alert_path(classroom, student)
-    classroom_student_path(classroom, student, anchor: view_context.dom_id(student, :message_section))
+    classroom_student_messages_path(classroom, student)
   end
 
   def expire_student_session_if_inactive
