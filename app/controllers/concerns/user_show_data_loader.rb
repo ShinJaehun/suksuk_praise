@@ -16,14 +16,14 @@ module UserShowDataLoader
           .where(sender_id: user.id)
           .or(classroom_messages_scope.where(recipient_id: user.id))
           .includes(:sender, :recipient, replies: [:sender, :recipient])
-          .order(created_at: :asc)
+          .order(created_at: :desc, id: :desc)
       else
         root_messages_scope = messages_scope.root_messages
         root_messages_scope
           .where(sender_id: user.id)
           .or(root_messages_scope.where(recipient_id: user.id))
           .includes(:sender, :recipient, replies: [:sender, :recipient])
-          .order(created_at: :asc)
+          .order(created_at: :desc, id: :desc)
       end
 
     coupons_scope = policy_scope(UserCoupon).where(user_id: user.id)

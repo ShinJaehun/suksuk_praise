@@ -133,6 +133,89 @@ RSpec.describe "User messages", type: :request do
       expect(reply_index).to be < form_index
     end
 
+    it "shows the newest root threads first and replies oldest first on the student page" do
+      older_root = create(
+        :user_message,
+        classroom: classroom,
+        sender: teacher,
+        recipient: student,
+        body: "오래된 원글",
+        created_at: 2.days.ago
+      )
+      first_latest_root = create(
+        :user_message,
+        classroom: classroom,
+        sender: teacher,
+        recipient: student,
+        body: "같은 시각의 첫 원글",
+        created_at: 1.day.ago
+      )
+      second_latest_root = create(
+        :user_message,
+        classroom: classroom,
+        sender: teacher,
+        recipient: student,
+        body: "같은 시각의 둘째 원글",
+        created_at: first_latest_root.created_at
+      )
+      first_reply = create(
+        :user_message,
+        classroom: classroom,
+        sender: student,
+        recipient: teacher,
+        parent_message: second_latest_root,
+        body: "같은 시각의 첫 답글",
+        created_at: 1.hour.ago
+      )
+      create(
+        :user_message,
+        classroom: classroom,
+        sender: teacher,
+        recipient: student,
+        parent_message: second_latest_root,
+        body: "같은 시각의 둘째 답글",
+        created_at: first_reply.created_at
+      )
+      sign_in student
+
+      get classroom_student_messages_path(classroom, student)
+
+      second_root_index = response.body.index("같은 시각의 둘째 원글")
+      first_root_index = response.body.index("같은 시각의 첫 원글")
+      older_root_index = response.body.index(older_root.body)
+      first_reply_index = response.body.index("같은 시각의 첫 답글")
+      second_reply_index = response.body.index("같은 시각의 둘째 답글")
+
+      expect(second_root_index).to be < first_root_index
+      expect(first_root_index).to be < older_root_index
+      expect(first_reply_index).to be < second_reply_index
+    end
+
+    it "shows the newest root threads first on the managed student page" do
+      classroom.update!(message_policy: "student_initiated")
+      first_root = create(
+        :user_message,
+        classroom: classroom,
+        sender: student,
+        recipient: teacher,
+        body: "관리 화면 첫 원글",
+        created_at: 1.day.ago
+      )
+      create(
+        :user_message,
+        classroom: classroom,
+        sender: student,
+        recipient: teacher,
+        body: "관리 화면 둘째 원글",
+        created_at: first_root.created_at
+      )
+      sign_in teacher
+
+      get classroom_student_messages_path(classroom, student)
+
+      expect(response.body.index("관리 화면 둘째 원글")).to be < response.body.index("관리 화면 첫 원글")
+    end
+
     it "shows a student reply form under a student root thread when the classroom policy is replies only" do
       classroom.update!(message_policy: "student_initiated")
       student_root = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "먼저 질문")

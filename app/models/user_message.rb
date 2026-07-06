@@ -5,7 +5,7 @@ class UserMessage < ApplicationRecord
   belongs_to :parent_message, class_name: "UserMessage", optional: true
 
   has_many :replies,
-           -> { order(created_at: :asc) },
+           -> { order(created_at: :asc, id: :asc) },
            class_name: "UserMessage",
            foreign_key: :parent_message_id,
            dependent: :nullify,
