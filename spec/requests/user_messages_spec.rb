@@ -230,7 +230,7 @@ RSpec.describe "User messages", type: :request do
       expect(response).to redirect_to(user_path(student))
     end
 
-    it "allows a student to start root messages to all classroom teachers when the classroom policy is student initiated" do
+    it "creates one student root message when the classroom policy is student initiated" do
       classroom.update!(message_policy: "student_initiated")
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
       sign_in student
@@ -244,13 +244,14 @@ RSpec.describe "User messages", type: :request do
                }
              },
              headers: turbo_headers
-      }.to change(UserMessage, :count).by(2)
+      }.to change(UserMessage, :count).by(1)
 
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
-      messages = UserMessage.where(sender: student, parent_message_id: nil).order(:recipient_id)
-      expect(messages.map(&:recipient)).to contain_exactly(teacher, other_teacher)
-      expect(messages.map(&:body).uniq).to eq(["먼저 질문해도 될까요?"])
-      expect(messages.map(&:read_at)).to all(be_nil)
+      message = UserMessage.find_by!(sender: student, parent_message_id: nil)
+      expect([teacher, other_teacher]).to include(message.recipient)
+      expect(message.body).to eq("먼저 질문해도 될까요?")
+      expect(message.read_at).to be_nil
+      expect(response.body.scan("먼저 질문해도 될까요?").size).to eq(1)
       expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
         classroom,
         :student_card_alerts,
@@ -276,7 +277,7 @@ RSpec.describe "User messages", type: :request do
       expect(response).to redirect_to(user_path(student))
     end
 
-    it "ignores arbitrary recipient_id and still sends to all classroom teachers" do
+    it "ignores arbitrary recipient_id and creates one message for a classroom teacher" do
       classroom.update!(message_policy: "student_initiated")
       outside_teacher = create(:user, :teacher)
       sign_in student
@@ -288,9 +289,11 @@ RSpec.describe "User messages", type: :request do
             body: "다른 반 선생님께 질문"
           }
         }
-      }.to change(UserMessage, :count).by(2)
+      }.to change(UserMessage, :count).by(1)
 
-      expect(UserMessage.where(sender: student).map(&:recipient)).to contain_exactly(teacher, other_teacher)
+      message = UserMessage.find_by!(sender: student)
+      expect([teacher, other_teacher]).to include(message.recipient)
+      expect(message.recipient).not_to eq(outside_teacher)
     end
 
     it "does not create an automatic root message to an admin" do
@@ -304,9 +307,56 @@ RSpec.describe "User messages", type: :request do
             body: "관리자에게 질문"
           }
         }
-      }.to change(UserMessage, :count).by(2)
+      }.to change(UserMessage, :count).by(1)
 
-      expect(UserMessage.where(sender: student).map(&:recipient)).not_to include(admin)
+      expect(UserMessage.find_by!(sender: student).recipient).not_to eq(admin)
+    end
+
+    it "allows a non-recipient classroom teacher to view the single student root thread" do
+      classroom.update!(message_policy: "student_initiated")
+      sign_in student
+
+      post user_messages_path(student), params: {
+        user_message: { body: "함께 확인할 질문" }
+      }
+
+      root_message = UserMessage.find_by!(sender: student, parent_message_id: nil)
+      non_recipient_teacher = ([teacher, other_teacher] - [root_message.recipient]).first
+      sign_out student
+      sign_in non_recipient_teacher
+
+      get classroom_student_messages_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body.scan("함께 확인할 질문").size).to eq(1)
+    end
+
+    it "allows a non-recipient classroom teacher to reply to the single student root thread" do
+      classroom.update!(message_policy: "student_initiated")
+      sign_in student
+
+      post user_messages_path(student), params: {
+        user_message: { body: "공동 답변이 필요한 질문" }
+      }
+
+      root_message = UserMessage.find_by!(sender: student, parent_message_id: nil)
+      non_recipient_teacher = ([teacher, other_teacher] - [root_message.recipient]).first
+      sign_out student
+      sign_in non_recipient_teacher
+
+      expect {
+        post classroom_student_messages_path(classroom, student),
+          params: {
+            reply_to_message_id: root_message.id,
+            user_message: { body: "다른 선생님의 답변" }
+          },
+          headers: turbo_headers
+      }.to change(UserMessage, :count).by(1)
+
+      reply = UserMessage.order(:id).last
+      expect(reply.sender).to eq(non_recipient_teacher)
+      expect(reply.recipient).to eq(student)
+      expect(reply.parent_message).to eq(root_message)
     end
 
     it "does not create a student root message when the enabled classroom has no teachers" do

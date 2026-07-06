@@ -11,7 +11,7 @@ class UserMessagesController < ApplicationController
 
     @message = replied_message ? build_reply_message(replied_message) : build_first_root_message
 
-    if replied_message ? save_reply_message : save_root_messages
+    if replied_message ? save_reply_message : save_root_message
       broadcast_student_card_alerts_for(@message.classroom, @message.sender) if @message.sender.student?
       load_self_message_section!
 
@@ -96,38 +96,14 @@ class UserMessagesController < ApplicationController
     @message.save
   end
 
-  def save_root_messages
-    root_messages = root_messages_for_classroom
-    @message = root_messages.first || @message
-
-    if root_messages.empty?
+  def save_root_message
+    if @message.recipient.blank?
       @message.errors.add(:base, "메시지를 받을 선생님이 없습니다.")
       return false
     end
 
-    root_messages.each { |message| authorize message }
-
-    UserMessage.transaction do
-      root_messages.each(&:save!)
-    end
-
-    true
-  rescue ActiveRecord::RecordInvalid => e
-    @message = e.record if e.record.is_a?(UserMessage)
-    false
-  end
-
-  def root_messages_for_classroom
-    classroom = classroom_for_student_root_message
-
-    classroom_teachers_for(classroom).map do |teacher|
-      UserMessage.new(
-        classroom: classroom,
-        sender: current_user,
-        recipient: teacher,
-        body: message_params[:body]
-      )
-    end
+    authorize @message
+    @message.save
   end
 
   def classroom_teachers_for(classroom)

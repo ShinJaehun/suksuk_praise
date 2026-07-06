@@ -103,7 +103,8 @@
 - `disabled`인 교실의 학생 메시지 페이지에 직접 접근하는 것도 차단한다.
 - `replies_only`이면 teacher/admin은 학생에게 새 root message를 보낼 수 있고, student는 기존 root thread에만 답장할 수 있다.
 - `student_initiated`이면 `replies_only` 흐름에 더해 student가 자기 소속 교실 teacher 전원에게 새 root message를 시작할 수 있다.
-- student root message는 teacher마다 별도 root thread로 생성되며 admin에게는 자동 발송하지 않는다.
+- student root message는 전송 1회당 단일 root thread로 생성된다. 필수 recipient에는 교실 teacher 중 정렬상 첫 teacher를 사용하며 admin에게 자동 발송하지 않는다.
+- 같은 교실의 teacher와 admin은 root message의 recipient 여부와 관계없이 학생의 단일 thread를 공동 조회하고 답변할 수 있다.
 - 기존 root thread reply는 `disabled`가 아닌 교실에서 thread 참여/관리 권한 기준으로 허용된다.
 - 답글의 답글은 허용하지 않는다.
 - teacher/admin은 관리 가능한 학생의 메시지 전용 페이지에서 thread별 reply를 작성할 수 있다.
