@@ -70,7 +70,7 @@
 - student, guest, 담당 범위 밖 teacher는 compliment를 생성할 수 없다.
 - compliment 생성 시 receiver 학생의 points가 증가한다.
 - 짧은 시간 안의 같은 giver/receiver/classroom 중복 요청은 차단된다.
-- 칭찬 목록과 타임라인은 학생 상세 화면에서 교실/권한 범위에 맞게 로드된다.
+- 칭찬 목록과 타임라인은 학생 활동 기록 페이지에서 교실/권한 범위에 맞게 로드된다.
 
 ## 쿠폰
 
@@ -83,7 +83,7 @@
 - 학생은 본인의 보유 coupon을 확인할 수 있다.
 - `UserCoupon`은 issued/used 상태 전이를 가진다.
 - coupon 발급/사용 이벤트는 `CouponEvent`로 기록된다.
-- 최근 발급 쿠폰과 보유 쿠폰 카드는 학생 상세 화면에 표시된다.
+- 보유 쿠폰은 기본 학생 상세 페이지인 쿠폰 관리 화면에 표시되고, 최근 발급 쿠폰은 학생 활동 기록 페이지에 표시된다.
 - 학생은 쿠폰을 직접 사용 처리하지 않고 쿠폰 사용 요청을 보낸다.
 - teacher/admin은 학생의 쿠폰 사용 요청을 승인하거나 학생 쿠폰을 직접 사용 처리할 수 있다.
 - 쿠폰 사용 요청 또는 직접 사용 처리 성공 시 학생 화면과 관리 화면의 쿠폰 목록을 Turbo Streams로 갱신한다.
@@ -99,32 +99,40 @@
 
 - 교실에는 `message_policy` 설정이 있으며 기본값은 `replies_only`다.
 - 과거 boolean 설정은 `message_policy`로 이관 완료되었고, 기존 boolean 컬럼은 제거되었다.
-- `disabled`이면 학생/교사/admin 모두 해당 교실의 학생 메시지를 새로 작성하거나 답장할 수 없고, 학생 상세 메시지 영역과 새 메시지 badge를 표시하지 않는다.
+- `disabled`이면 학생/교사/admin 모두 해당 교실의 학생 메시지를 새로 작성하거나 답장할 수 없고, 공통 학생 정보 카드의 학생 메시지 버튼과 교실 학생 카드의 새 메시지 badge를 표시하지 않는다.
+- `disabled`인 교실의 학생 메시지 페이지에 직접 접근하는 것도 차단한다.
 - `replies_only`이면 teacher/admin은 학생에게 새 root message를 보낼 수 있고, student는 기존 root thread에만 답장할 수 있다.
 - `student_initiated`이면 `replies_only` 흐름에 더해 student가 자기 소속 교실 teacher 전원에게 새 root message를 시작할 수 있다.
 - student root message는 teacher마다 별도 root thread로 생성되며 admin에게는 자동 발송하지 않는다.
 - 기존 root thread reply는 `disabled`가 아닌 교실에서 thread 참여/관리 권한 기준으로 허용된다.
 - 답글의 답글은 허용하지 않는다.
-- teacher/admin은 관리 가능한 학생 상세 화면에서 thread별 reply를 작성할 수 있다.
+- teacher/admin은 관리 가능한 학생의 메시지 전용 페이지에서 thread별 reply를 작성할 수 있다.
 - 메시지 UI는 root/reply form과 compact thread display 구조를 사용한다.
 - 일반 SNS식 navbar notification/count/list는 제공하지 않는다.
 - 학생 발신 미확인 메시지가 있으면 teacher/admin이 보는 교실 학생 카드에 새 메시지 badge를 표시한다.
 - 새 메시지 badge/read 처리는 teacher별 개인 inbox가 아니라 교실 단위 공동 처리 상태다.
-- teacher/admin 중 누군가 학생 상세를 열거나 메시지에 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
+- teacher/admin 중 누군가 학생 상세나 메시지 전용 페이지를 열거나 메시지에 답변하면 학생 발신 unread 메시지를 read 처리해 badge가 사라진다.
 - 학생 본인이 자기 화면을 여는 것은 학생 발신 unread 메시지를 read 처리하지 않는다.
 - 쿠폰 요청 badge와 메시지 badge는 `users/_student_card_alerts.html.erb` alert 영역을 공유한다.
 - 실시간 갱신은 Turbo Streams broadcast로 해당 학생의 alert 영역만 replace한다.
-- 새 메시지 badge는 학생 상세의 메시지 영역으로 이동한다.
+- 새 메시지 badge는 해당 학생의 메시지 전용 페이지로 이동한다.
 - 현재 학생 카드 알림은 pending 쿠폰 사용 요청과 학생 발신 unread 메시지만 다룬다.
 - 별도 Notification 모델, 알림 목록, teacher별 개인 inbox, navbar 알림은 구현되어 있지 않다.
 - 특정 쿠폰 요청이나 특정 메시지 item으로 이동하는 deep link는 아직 MVP 범위 밖이다.
 
 ## 학생 상세 화면
 
-- 학생 상세 화면은 개인정보/요약, 보유 쿠폰, 메시지, 최근 발급 쿠폰, 칭찬 타임라인을 함께 보여준다.
-- teacher/admin에게는 학생 관리, 칭찬, 쿠폰 관련 버튼이 노출된다.
-- student에게는 관리 버튼과 교실로 돌아가기 버튼이 노출되지 않는다.
-- 역할별 노출은 controller/helper/partial 흐름을 통해 관리한다.
+- 교실 범위 학생 화면은 하나의 긴 화면이 아니라 별도 route/page 구조로 나뉜다.
+- 기본 학생 상세 페이지 `GET /classrooms/:classroom_id/students/:id`는 쿠폰 관리 화면이다. 학생 정보 카드와 KPI, 보유 쿠폰, pending 쿠폰 사용 요청 및 teacher/admin의 승인 흐름을 보여준다.
+- 특정 학생 한눈에 보기 `GET /classrooms/:classroom_id/students/:id/dashboard`는 URL의 classroom과 student를 기준으로 선택한 주의 활동을 보여준다.
+- 학생 활동 기록 `GET /classrooms/:classroom_id/students/:id/activity`는 최근 발급 쿠폰과 칭찬 타임라인을 보여준다.
+- 학생 메시지 `GET /classrooms/:classroom_id/students/:student_id/messages`는 메시지 작성 폼과 기존 thread를 보여주며 기존 POST 메시지 흐름을 유지한다.
+- 네 페이지는 학생 avatar, 이름, 반 이름, KPI badge와 하위 페이지 이동 nav pills를 포함한 공통 학생 정보 카드를 사용한다.
+- nav pills는 쿠폰 관리, 한눈에 보기, 활동 기록, 학생 메시지 순서이며 현재 페이지를 active 상태로 표시한다.
+- 학생도 하위 페이지 이동 nav pills를 사용할 수 있다. `message_policy`가 `disabled`이면 학생 메시지 버튼은 표시하지 않는다.
+- teacher/admin에게는 학생 정보·PIN 수정, 칭찬하기, 쿠폰 직접 뽑기, 교실로 돌아가기 관리 버튼이 추가로 노출된다.
+- student에게는 teacher/admin 관리 버튼이 노출되지 않는다.
+- 담당 범위 밖 teacher의 접근은 차단하고 admin은 전역 범위에서 접근할 수 있다.
 
 ## dashboard
 
@@ -136,9 +144,11 @@
 - 선택한 주에 쿠폰을 발급받은 날은 `🎁`, 쿠폰을 사용한 날은 `✅` marker를 해당 날짜의 그래프 점 근처에 표시한다.
 - 선택한 주에 칭찬과 쿠폰 발급/사용 활동이 모두 없으면 데이터 선, 점, marker, y축 숫자를 표시하지 않고 요일과 날짜가 있는 빈 그래프 배경을 유지한다.
 - student dashboard의 주간 집계에서는 다른 교실, 다른 학생, 주말 활동을 제외한다.
+- 기존 학생 로그인용 `GET /dashboard`는 유지된다.
+- 특정 학생 한눈에 보기 `GET /classrooms/:classroom_id/students/:id/dashboard`는 기존 student dashboard와 같은 주간 집계와 화면을 재사용하되, `current_user`가 아니라 URL의 classroom과 student를 집계 대상으로 사용한다.
+- 특정 학생 한눈에 보기도 `week_offset`, 월요일부터 금요일까지의 집계, 5칸 summary panel, 자동 y축 눈금, 곡선형 SVG 그래프, 쿠폰 발급/사용 marker와 활동 없는 주 표시를 지원한다.
 - teacher dashboard는 담당 교실별 학생 수, 오늘 칭찬 수, pending 쿠폰 요청 수, 학생 발신 unread 메시지 수와 교실 이동 링크를 표시한다.
 - admin dashboard는 전체 교실 수, 교사 수, 학생 수, pending 쿠폰 요청 수를 표시한다.
-- 학생 상세 페이지는 쿠폰, 메시지, 칭찬 타임라인 등 상세 기록 중심으로 유지한다.
 
 ## 테스트 상태
 
