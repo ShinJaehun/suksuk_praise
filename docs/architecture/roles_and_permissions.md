@@ -57,6 +57,7 @@
 | `ClassroomsController#destroy` | `ClassroomPolicy#destroy?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `destroy?`는 `update?` 위임 |
 | `ClassroomsController#refresh_compliment_king` | `ClassroomPolicy#show?` | 가능 | membership 교실이면 가능 | membership 교실이면 가능 | 읽기 액션으로 동작 |
 | `ClassroomsController#draw_coupon` | `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `CouponDraw::Issue`가 대상 학생 소속, daily king, 중복 발급을 추가 검증 |
+| `ClassroomStudentsController#coupon_assignment` | `UserPolicy#show?` + `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실의 active 학생만 가능 | 불가 | Turbo Frame용 지급 카드이며 `policy_scope(CouponTemplate).active` template만 표시 |
 | `ClassroomStudentsController#new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
 | `ClassroomStudentsController#create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 새 user는 항상 `role: student` |
 | `ClassroomStudentsController#bulk_new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
@@ -101,6 +102,7 @@
 
 | 리소스/액션 | 정책 기준 | admin | teacher | student | 비고 |
 |---|---|---|---|---|---|
+| `UserCouponsController#create` | `ClassroomPolicy#draw_coupon?` + `policy_scope(CouponTemplate)` | 가능 | 해당 교실의 active 학생에게만 가능 | 불가 | active template 선택 지급만 허용하며 `manual/selected`로 기록 |
 | `UserCouponsController#index` | `UserPolicy#show?` + `policy_scope(UserCoupon)` | 가능 | 가능 | 본인만 가능 | teacher scope가 classroom으로 제한되지 않음 |
 | `UserCouponsController#use` | `UserCouponPolicy#use?` | 가능 | 해당 coupon classroom의 teacher membership이면 가능 | 본인 coupon만 가능 | `UserCoupons::Use`가 상태 전이와 이벤트 생성을 처리 |
 | `CouponEventsController#index` | `CouponEventPolicy#index?` + `policy_scope(CouponEvent)` | 가능 | 가능 | 불가 | teacher는 담당 교실 이벤트와 본인이 actor인 이벤트 조회 |

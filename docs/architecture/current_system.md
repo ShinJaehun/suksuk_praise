@@ -80,6 +80,12 @@
 - teacher는 library template을 읽고 personal template으로 adopt할 수 있다.
 - personal template에는 active/weight 불변식과 weight normalization 흐름이 있다.
 - teacher/admin은 교실 맥락에서 학생에게 coupon draw/issue를 수행할 수 있다.
+- 기본 학생 상세 페이지의 공통 학생 정보 카드에는 쿠폰 관리 페이지에서만 teacher/admin용 `쿠폰 지급` 버튼이 표시된다. 한눈에 보기, 활동 기록, 학생 메시지 페이지에는 이 버튼이 반복 노출되지 않는다.
+- `쿠폰 지급` 버튼은 Turbo Frame으로 쿠폰 지급 카드를 로드하며, 학생 본인에게는 버튼과 카드가 표시되지 않는다.
+- 쿠폰 지급 카드의 `쿠폰 뽑기`는 `policy_scope(CouponTemplate).active` 범위에서 가중치에 따라 template 하나를 뽑아 `issuance_basis: manual`, `basis_tag: default`로 발급한다.
+- 쿠폰 지급 카드의 `쿠폰 지급`은 같은 active template 범위에서 선택한 template을 `issuance_basis: manual`, `basis_tag: selected`로 발급한다.
+- 담당 teacher는 자기 교실의 active 학생에게만 쿠폰을 지급할 수 있고, admin은 접근 가능한 학생에게 지급할 수 있다. 외부 teacher, student, inactive 학생, 접근할 수 없거나 inactive인 template은 차단된다.
+- 교실 페이지의 칭찬왕 쿠폰 발급은 기존처럼 가중치 기반 `쿠폰 뽑기`만 제공하며 선택 지급 UI는 제공하지 않는다.
 - 학생은 본인의 보유 coupon을 확인할 수 있다.
 - `UserCoupon`은 issued/used 상태 전이를 가진다.
 - coupon 발급/사용 이벤트는 `CouponEvent`로 기록된다.
@@ -131,7 +137,7 @@
 - 네 페이지는 학생 avatar, 이름, 반 이름, KPI badge와 하위 페이지 이동 nav pills를 포함한 공통 학생 정보 카드를 사용한다.
 - nav pills는 쿠폰 관리, 한눈에 보기, 활동 기록, 학생 메시지 순서이며 현재 페이지를 active 상태로 표시한다.
 - 학생도 하위 페이지 이동 nav pills를 사용할 수 있다. `message_policy`가 `disabled`이면 학생 메시지 버튼은 표시하지 않는다.
-- teacher/admin에게는 학생 정보·PIN 수정, 칭찬하기, 쿠폰 직접 뽑기, 교실로 돌아가기 관리 버튼이 추가로 노출된다.
+- teacher/admin에게는 학생 정보·PIN 수정, 칭찬하기, 교실로 돌아가기 관리 버튼이 추가로 노출된다. 쿠폰 지급 버튼은 쿠폰 관리 페이지에서 권한이 있을 때만 표시된다.
 - student에게는 teacher/admin 관리 버튼이 노출되지 않는다.
 - 담당 범위 밖 teacher의 접근은 차단하고 admin은 전역 범위에서 접근할 수 있다.
 

@@ -92,6 +92,17 @@ spec 승격 후보:
 
 ## Completed / Archived
 
+### 학생별 쿠폰 직접 지급
+
+상태: Implemented
+현재 동작 문서: `docs/architecture/current_system.md`, `docs/architecture/roles_and_permissions.md`
+
+- 학생 쿠폰 관리 페이지에서 권한이 있는 teacher/admin에게만 `쿠폰 지급` 버튼을 표시한다.
+- 버튼은 Turbo Frame으로 쿠폰 지급 카드를 로드하며, 카드에서 가중치 기반 `쿠폰 뽑기`와 template 선택 `쿠폰 지급`을 제공한다.
+- 선택 지급은 `issuance_basis: manual`, `basis_tag: selected`로 기록하고 기존 랜덤 학생 발급은 `manual/default` 흐름을 유지한다.
+- 담당 teacher는 자기 교실의 active 학생에게만 지급할 수 있다. 외부 teacher, student, inactive 학생, 접근 불가 또는 inactive template은 차단한다.
+- 교실 칭찬왕 발급은 선택 지급 없이 기존 랜덤 `쿠폰 뽑기`만 유지한다.
+
 ### 학생 상세 하위 페이지 재구성
 
 상태: Implemented
