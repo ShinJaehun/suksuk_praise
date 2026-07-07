@@ -18,7 +18,7 @@ inactive 학생은 교사 일반 운영 화면, 칭찬 대상, 쿠폰 추첨 대
 새 메시지 대상에서 제외한다.
 
 teacher/admin 구성원 관리 화면에서는 active, inactive, all 필터로 학생을 확인할 수 있다.
-inactive 학생은 흐린 스타일과 `비활성` badge로 active 학생과 구분한다.
+inactive 학생은 흐린 스타일과 복구 action으로 active 학생과 구분한다.
 
 ## 비활성화/복구 정책
 

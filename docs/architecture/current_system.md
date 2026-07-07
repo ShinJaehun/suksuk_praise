@@ -50,7 +50,7 @@
 - inactive 학생은 칭찬, 쿠폰 발급, 새 메시지 발신/수신 대상에서 제외된다.
 - inactive 처리 후에도 기존 메시지 thread와 과거 칭찬/쿠폰 기록 조회는 유지된다.
 - teacher/admin은 inactive 학생 상세와 활동 기록을 조회할 수 있으며, inactive 학생 상세에서는 `비활성` badge를 표시하고 칭찬하기, 쿠폰 지급, 새 메시지 작성 UI를 숨긴다.
-- 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 `비활성` badge를 붙인다.
+- 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 복구 action을 제공한다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
 - teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
 - 여러 학생 자동 생성은 한 번에 최대 30명까지 허용한다.
