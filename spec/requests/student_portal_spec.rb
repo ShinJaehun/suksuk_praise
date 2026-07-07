@@ -153,7 +153,7 @@ RSpec.describe 'Student portal flow', type: :request do
         delete classroom_student_path(classroom, student)
       end.not_to change(User, :count)
 
-      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
+      expect(response).to redirect_to(classroom_members_path(classroom))
       expect(classroom.classroom_memberships.find_by!(user: student)).to be_inactive
     end
   end

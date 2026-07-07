@@ -18,9 +18,6 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include("구성원 관리")
     expect(response.body).to include("2반")
     expect(response.body).to include("학생 관리")
-    expect(response.body).to include("활성")
-    expect(response.body).to include("비활성")
-    expect(response.body).to include("전체")
     expect(response.body).to include(student.name)
     expect(response.body).to include('alt="활성 학생 avatar"')
     expect(response.body).to include('form="student_names_form"')
@@ -30,6 +27,8 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include(bulk_new_classroom_students_path(classroom))
     expect(response.body).to include(bulk_new_classroom_students_path(classroom, return_to: "members"))
     expect(response.body).to include(classroom_member_student_names_path(classroom))
+    expect(response.body).to include(classroom_edit_member_student_pin_path(classroom))
+    expect(response.body).to include("활성 학생 PIN 재설정")
     expect(response.body).to include(edit_classroom_student_path(classroom, student))
     expect(response.body).not_to include(public_student_login_url(student_login_token: classroom.student_login_token))
     expect(response.body).not_to include("QR 코드 보기")
@@ -55,7 +54,7 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).not_to include("학생 로그인 주소 재발급")
   end
 
-  it "filters students by active, inactive, and all status" do
+  it "shows active and inactive students together with matching row actions" do
     active_student = create(:user, :student, name: "김활동")
     inactive_student = create(:user, :student, name: "박휴식")
     create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
@@ -68,24 +67,10 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include(active_student.name)
     expect(response.body).to include(edit_classroom_student_path(classroom, active_student))
     expect(response.body).to include(deactivate_classroom_student_path(classroom, active_student))
-    expect(response.body).not_to include(inactive_student.name)
-
-    get classroom_members_path(classroom, status: "inactive")
-
-    expect(response).to have_http_status(:ok)
-    expect(response.body).not_to include(active_student.name)
     expect(response.body).to include(inactive_student.name)
     expect(response.body).to include(edit_classroom_student_path(classroom, inactive_student))
     expect(response.body).to include(reactivate_classroom_student_path(classroom, inactive_student))
-
-    get classroom_members_path(classroom, status: "all")
-
-    expect(response).to have_http_status(:ok)
-    expect(response.body).to include(active_student.name)
-    expect(response.body).to include(inactive_student.name)
-    expect(response.body).to include(classroom_student_path(classroom, inactive_student))
-    expect(response.body).to include(deactivate_classroom_student_path(classroom, active_student))
-    expect(response.body).to include(reactivate_classroom_student_path(classroom, inactive_student))
+    expect(response.body).to include("비활성 학생")
   end
 
   it "does not count a legacy admin teacher membership as an assigned teacher" do
@@ -126,31 +111,29 @@ RSpec.describe "Classroom members", type: :request do
       sign_in teacher
 
       patch classroom_member_student_names_path(classroom), params: {
-        status: "active",
         students: {
           membership.id => { name: "새 이름" }
         }
       }
 
-      expect(response).to redirect_to(classroom_members_path(classroom, status: "active"))
+      expect(response).to redirect_to(classroom_members_path(classroom))
       expect(flash[:notice]).to eq(I18n.t("students.members.update_names.success"))
       expect(student.reload.name).to eq("새 이름")
     end
 
-    it "lets a classroom teacher update inactive student names while keeping the inactive filter" do
+    it "lets a classroom teacher update inactive student names" do
       create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
       student = create(:user, :student, name: "쉬는 학생")
       membership = create(:classroom_membership, classroom: classroom, user: student, role: "student", status: "inactive")
       sign_in teacher
 
       patch classroom_member_student_names_path(classroom), params: {
-        status: "inactive",
         students: {
           membership.id => { name: "돌아올 학생" }
         }
       }
 
-      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
+      expect(response).to redirect_to(classroom_members_path(classroom))
       expect(student.reload.name).to eq("돌아올 학생")
     end
 
@@ -165,7 +148,7 @@ RSpec.describe "Classroom members", type: :request do
         }
       }
 
-      expect(response).to redirect_to(classroom_members_path(classroom, status: "active"))
+      expect(response).to redirect_to(classroom_members_path(classroom))
       expect(student.reload.name).to eq("관리 후")
     end
 
@@ -240,6 +223,117 @@ RSpec.describe "Classroom members", type: :request do
       expect(response.body).to include("저장되면 안 됨")
       expect(valid_student.reload.name).to eq("유효 학생")
       expect(invalid_student.reload.name).to eq("무효 학생")
+    end
+  end
+
+  describe "student PIN reset" do
+    let(:turbo_headers) { { "ACCEPT" => "text/vnd.turbo-stream.html" } }
+
+    it "shows the PIN reset modal form" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      sign_in teacher
+
+      get classroom_edit_member_student_pin_path(classroom)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("활성 학생 PIN 재설정")
+      expect(response.body).to include("새 PIN")
+      expect(response.body).to include("PIN 재설정 적용")
+      expect(response.body).to include(classroom_member_student_pin_path(classroom))
+      expect(response.body).to include('name="student_pin"')
+      expect(response.body).to include('type="password"')
+      expect(response.body).to include('type="submit"')
+      expect(response.body).to include('data-testid="active-student-pin-reset-submit"')
+      expect(response.body).not_to include("1234")
+    end
+
+    it "lets a classroom teacher reset active student PINs without changing inactive students" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      active_student = create(:user, :student, student_pin: "1234")
+      second_active_student = create(:user, :student, student_pin: "2345")
+      inactive_student = create(:user, :student, student_pin: "3456")
+      create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+      create(:classroom_membership, classroom: classroom, user: second_active_student, role: "student")
+      create(:classroom_membership, classroom: classroom, user: inactive_student, role: "student", status: "inactive")
+      sign_in teacher
+
+      patch classroom_member_student_pin_path(classroom),
+        params: { student_pin: "4321" },
+        headers: turbo_headers
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include('target="modal"')
+      expect(response.body).to include('target="flash"')
+      expect(flash[:notice]).to eq(I18n.t("students.members.pin_reset.success", count: 2))
+      expect(active_student.reload.authenticate_student_pin("4321")).to be_truthy
+      expect(active_student.authenticate_student_pin("1234")).to be_falsey
+      expect(second_active_student.reload.authenticate_student_pin("4321")).to be_truthy
+      expect(inactive_student.reload.authenticate_student_pin("3456")).to be_truthy
+      expect(inactive_student.authenticate_student_pin("4321")).to be_falsey
+    end
+
+    it "lets an admin reset active student PINs" do
+      active_student = create(:user, :student, student_pin: "1234")
+      create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+      sign_in admin
+
+      patch classroom_member_student_pin_path(classroom), params: { student_pin: "6789" }
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(active_student.reload.authenticate_student_pin("6789")).to be_truthy
+    end
+
+    it "rejects a teacher who does not manage the classroom" do
+      active_student = create(:user, :student, student_pin: "1234")
+      create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_pin_path(classroom), params: { student_pin: "4321" }
+
+      expect(response).to redirect_to(root_path)
+      expect(active_student.reload.authenticate_student_pin("1234")).to be_truthy
+    end
+
+    it "rejects a student" do
+      active_student = create(:user, :student, student_pin: "1234")
+      create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+      sign_in active_student
+
+      patch classroom_member_student_pin_path(classroom), params: { student_pin: "4321" }
+
+      expect(response).to redirect_to(root_path)
+      expect(active_student.reload.authenticate_student_pin("1234")).to be_truthy
+    end
+
+    it "keeps the modal open when PIN is blank" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      active_student = create(:user, :student, student_pin: "1234")
+      create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_pin_path(classroom),
+        params: { student_pin: "" },
+        headers: turbo_headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include(I18n.t("students.members.pin_reset.blank"))
+      expect(response.body).to include('id="modal"')
+      expect(active_student.reload.authenticate_student_pin("1234")).to be_truthy
+    end
+
+    it "keeps the modal open when PIN is not four digits" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      active_student = create(:user, :student, student_pin: "1234")
+      create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_pin_path(classroom),
+        params: { student_pin: "12ab" },
+        headers: turbo_headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include(I18n.t("students.members.pin_reset.invalid"))
+      expect(active_student.reload.authenticate_student_pin("1234")).to be_truthy
     end
   end
 end

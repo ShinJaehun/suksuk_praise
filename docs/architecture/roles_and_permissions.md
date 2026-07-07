@@ -67,6 +67,7 @@
 | `ClassroomStudentsController#reactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 inactive student membership을 active로 복구 |
 | `ClassroomStudentsController#destroy` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 직접 DELETE 요청도 hard delete 대신 현재 교실 student membership을 inactive 처리 |
 | `Classrooms::MembersController#update_student_names` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 student membership id 기준으로 학생 이름을 일괄 수정하며 실패 시 전체 rollback |
+| `Classrooms::MembersController#edit_student_pin`, `#update_student_pin` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 active student membership만 대상으로 PIN을 일괄 재설정하며 inactive 학생은 제외 |
 
 ### User
 

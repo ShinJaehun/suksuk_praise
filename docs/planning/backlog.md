@@ -37,7 +37,6 @@
 - 학생 membership lifecycle 후속 검토
   - `inactive_reason` 또는 간단 메모 필드 추가
   - `pending` 상태 도입
-  - 구성원 관리 화면 compact list/table 고도화
   - 구성원 관리 화면에서 학생을 선택해 일괄 비활성화하는 기능
     - 한 반 규모에서는 단건 비활성화로 충분하므로 우선순위 낮음
     - 학년말 전체 정리나 교실 archive 기능과 함께 재검토
@@ -48,7 +47,6 @@
 - 교실 archive 정책
 - 학생 상세 통계
 - 복사/붙여넣기 학생 등록
-- 구성원 관리 화면을 전체 학생 table로 정리
 - 학생 dashboard 그래프 point의 hover tooltip
 - 학생 dashboard 월간/누적 활동 추이
 - 쿠폰 이벤트 로그의 학생별 세부 필터
@@ -101,9 +99,20 @@ spec 승격 후보:
 상태: Implemented
 현재 동작 문서: `docs/architecture/current_system.md`, `docs/architecture/roles_and_permissions.md`
 
-- teacher/admin은 구성원 관리 화면에서 현재 필터에 표시된 학생 이름을 한 번에 저장할 수 있다.
+- teacher/admin은 구성원 관리 화면에서 학생 이름을 한 번에 저장할 수 있다.
 - 수정 대상은 현재 교실의 student membership id 기준으로 제한한다.
 - 하나라도 유효하지 않은 이름이 있거나 현재 교실 학생 membership이 아닌 id가 제출되면 전체 저장을 rollback한다.
+
+### 구성원 관리 전체 학생 목록과 active PIN 일괄 재설정
+
+상태: Implemented
+현재 동작 문서: `docs/architecture/current_system.md`, `docs/architecture/roles_and_permissions.md`, `docs/specs/student_membership_lifecycle.md`
+
+- 구성원 관리 화면은 active/inactive 학생을 한 목록으로 보여준다.
+- inactive 학생은 흐리게 표시하고 복구 action을 제공한다.
+- teacher/admin은 현재 교실의 active 학생 PIN을 한 번에 재설정할 수 있다.
+- inactive 학생 PIN은 일괄 재설정 대상에서 제외한다.
+- 일괄 비활성화, 계정 hard delete는 구현하지 않았다.
 
 ### 학생별 쿠폰 직접 지급
 

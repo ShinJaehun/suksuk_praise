@@ -44,7 +44,7 @@
 - 학생은 운영 UI에서 기본적으로 삭제하지 않고 현재 교실 membership을 inactive 처리한다.
 - 직접 `DELETE /classrooms/:classroom_id/students/:id` 요청이 들어와도 `User` hard delete 대신 현재 membership을 inactive 처리한다.
 - teacher/admin은 구성원 관리 화면에서 학생을 비활성화하거나 inactive 학생을 복구할 수 있다.
-- 구성원 관리 화면은 active, inactive, all 필터로 학생 membership을 나누어 볼 수 있다.
+- 구성원 관리 화면은 active/inactive 학생 membership을 한 목록에 보여준다.
 - inactive 학생은 teacher 기본 교실 화면과 PIN 로그인 목록에서 제외된다.
 - 이미 로그인한 학생이 inactive가 되면 다음 요청에서 로그아웃 후 학생 로그인 화면으로 redirect된다.
 - inactive 학생은 칭찬, 쿠폰 발급, 새 메시지 발신/수신 대상에서 제외된다.
@@ -53,13 +53,14 @@
 - 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 복구 action을 제공한다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
 - teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
+- teacher/admin은 구성원 관리 화면에서 현재 교실의 active 학생 PIN을 한 번에 재설정할 수 있다. inactive 학생 PIN은 일괄 재설정 대상에서 제외하며 기존 PIN 값은 화면에 표시하지 않는다.
 - 여러 학생 자동 생성은 한 번에 최대 30명까지 허용한다.
 - 여러 학생 자동 생성 제한을 초과하면 Turbo modal content-missing 없이 alert를 표시하고 modal을 닫는다.
 - 여러 학생 자동 생성 submit 중에는 modal 입력과 버튼 조작을 잠그고, 응답 실패 시 잠금을 복구한다.
 - teacher/admin은 교실 화면에서 학생 로그인 modal을 열어 학생 로그인 URL을 확인할 수 있다.
 - 학생 로그인 modal에서는 학생 로그인 URL 복사, QR 코드 보기, QR 코드 다운로드, 학생 로그인 주소 재발급이 가능하다.
 - 구성원 관리 화면은 학생 관리 전용으로 사용하며 학생 로그인 URL/QR/재발급 UI와 담당 선생님 배정 form을 표시하지 않는다.
-- teacher/admin은 구성원 관리 화면의 현재 active/inactive/all 필터 안에서 여러 학생 이름을 한 번에 수정할 수 있다.
+- teacher/admin은 구성원 관리 화면에서 여러 학생 이름을 한 번에 수정할 수 있다.
 - 학생 이름 일괄 수정은 현재 교실의 student membership id 기준으로 대상을 제한하며, 하나라도 유효하지 않으면 전체 저장을 rollback한다.
 - 학생 로그인 QR은 현재 token URL 기준으로 요청 시 생성하며 서버 파일로 저장하지 않는다.
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.

@@ -25,7 +25,8 @@ class ClassroomStudentsController < ApplicationController
     used_avatar_keys = used_avatar_keys_in_classroom
     attrs = user_params.merge(
       role: "student",
-      points: 0
+      points: 0,
+      password: student_devise_password
     )
     attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys)
     @user = User.new(attrs)
@@ -83,7 +84,7 @@ class ClassroomStudentsController < ApplicationController
         attrs = {
           name: name,
           email: email,
-          password: "123456",
+          password: student_devise_password,
           role: "student",
           points: 0,
           gender: gender,
@@ -222,7 +223,7 @@ class ClassroomStudentsController < ApplicationController
     authorize @classroom, :manage_members?
     student_membership.inactive!
 
-    redirect_to classroom_members_path(@classroom, status: "inactive"),
+    redirect_to classroom_members_path(@classroom),
       notice: t("students.deactivate.success"),
       status: :see_other
   end
@@ -231,7 +232,7 @@ class ClassroomStudentsController < ApplicationController
     authorize @classroom, :manage_members?
     student_membership.inactive!
 
-    redirect_to classroom_members_path(@classroom, status: "inactive"),
+    redirect_to classroom_members_path(@classroom),
       notice: t("students.deactivate.success"),
       status: :see_other
   end
@@ -240,7 +241,7 @@ class ClassroomStudentsController < ApplicationController
     authorize @classroom, :manage_members?
     student_membership.active!
 
-    redirect_to classroom_members_path(@classroom, status: "active"),
+    redirect_to classroom_members_path(@classroom),
       notice: t("students.reactivate.success"),
       status: :see_other
   end
@@ -252,7 +253,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :student_pin, :gender)
+    params.require(:user).permit(:name, :email, :student_pin, :gender)
   end
 
   def set_student
@@ -295,6 +296,10 @@ class ClassroomStudentsController < ApplicationController
     authorize @classroom, :manage_members?
   end
 
+  def student_devise_password
+    Devise.friendly_token.first(24)
+  end
+
   def return_to_context
     params[:return_to].presence_in(%w[members])
   end
@@ -304,18 +309,16 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def create_success_path
-    return classroom_members_path(@classroom, status: "active") if members_return_to?
+    return classroom_members_path(@classroom) if members_return_to?
 
     classroom_path(@classroom)
   end
 
   def load_members_student_management!
-    @membership_status_filter = "active"
     @student_memberships = @classroom.classroom_memberships
       .student
       .includes(:user)
-      .where(status: "active")
-      .order(:created_at, :id)
+      .order(:status, :created_at, :id)
   end
 
   def used_avatar_keys_in_classroom(excluding: nil)

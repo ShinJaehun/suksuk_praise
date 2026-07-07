@@ -12,6 +12,18 @@ RSpec.describe "Classroom students", type: :request do
     sign_in teacher
   end
 
+  describe "GET /classrooms/:classroom_id/students/new" do
+    it "shows PIN fields without student password inputs" do
+      get new_classroom_student_path(classroom)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("학생 개별 추가")
+      expect(response.body).to include('name="user[student_pin]"')
+      expect(response.body).not_to include('name="user[password]"')
+      expect(response.body).not_to include('name="user[password_confirmation]"')
+    end
+  end
+
   describe "POST /classrooms/:classroom_id/students" do
     it "assigns a gendered avatar_key without reusing available keys in the classroom" do
       User::BOY_AVATAR_KEYS.first(22).each do |avatar_key|
@@ -23,7 +35,7 @@ RSpec.describe "Classroom students", type: :request do
         user: {
           name: "새 학생",
           email: "new-student@example.com",
-          password: "password123",
+          student_pin: "1234",
           gender: "boy"
         }
       }
@@ -31,17 +43,18 @@ RSpec.describe "Classroom students", type: :request do
       student = User.find_by!(email: "new-student@example.com")
       expect(student.gender).to eq("boy")
       expect(student.avatar_key).to eq("boy23")
+      expect(student.authenticate_student_pin("1234")).to be_truthy
       expect(response).to redirect_to(classroom_path(classroom))
     end
 
-    it "creates a student and classroom membership with turbo stream" do
+    it "creates a student and classroom membership without a password param with turbo stream" do
       expect {
         post classroom_students_path(classroom),
           params: {
             user: {
               name: "터보 학생",
               email: "turbo-student@example.com",
-              password: "password123",
+              student_pin: "2345",
               gender: "girl"
             }
           },
@@ -54,9 +67,13 @@ RSpec.describe "Classroom students", type: :request do
       expect(response.body).to include(%(target="students_grid_#{classroom.id}"))
       expect(response.body).not_to include('target="student-management"')
       expect(classroom.classroom_memberships.exists?(user: student, role: "student")).to eq(true)
+      expect(student.authenticate_student_pin("2345")).to be_truthy
     end
 
     it "creates a student and refreshes member management when submitted from members" do
+      inactive_student = create(:user, :student, name: "기존 비활성 학생")
+      create(:classroom_membership, user: inactive_student, classroom: classroom, role: "student", status: "inactive")
+
       expect {
         post classroom_students_path(classroom),
           params: {
@@ -64,7 +81,7 @@ RSpec.describe "Classroom students", type: :request do
             user: {
               name: "구성원 학생",
               email: "member-student@example.com",
-              password: "password123",
+              student_pin: "3456",
               gender: "girl"
             }
           },
@@ -74,10 +91,13 @@ RSpec.describe "Classroom students", type: :request do
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
       expect(response.body).to include('target="student-management"')
       expect(response.body).to include("구성원 학생")
+      expect(response.body).to include("기존 비활성 학생")
+      expect(response.body).to include(reactivate_classroom_student_path(classroom, inactive_student))
       expect(response.body).to include(classroom_member_student_names_path(classroom))
       expect(response.body).to include(edit_classroom_student_path(classroom, User.find_by!(email: "member-student@example.com")))
       expect(response.body).to include(deactivate_classroom_student_path(classroom, User.find_by!(email: "member-student@example.com")))
       expect(response.body).to include('target="modal"')
+      expect(User.find_by!(email: "member-student@example.com").authenticate_student_pin("3456")).to be_truthy
     end
 
     it "returns 422 with turbo stream when the student is invalid" do
@@ -87,7 +107,7 @@ RSpec.describe "Classroom students", type: :request do
             user: {
               name: "",
               email: "invalid-student@example.com",
-              password: "password123",
+              student_pin: "1234",
               gender: "boy"
             }
           },
@@ -108,7 +128,7 @@ RSpec.describe "Classroom students", type: :request do
             user: {
               name: "",
               email: "member-invalid@example.com",
-              password: "password123",
+              student_pin: "1234",
               gender: "boy"
             }
           },
@@ -133,7 +153,7 @@ RSpec.describe "Classroom students", type: :request do
           user: {
             name: "외부 생성",
             email: "outside-create@example.com",
-            password: "password123",
+            student_pin: "1234",
             gender: "boy"
           }
         }
@@ -153,7 +173,7 @@ RSpec.describe "Classroom students", type: :request do
           user: {
             name: "학생 생성",
             email: "student-create@example.com",
-            password: "password123",
+            student_pin: "1234",
             gender: "girl"
           }
         }
@@ -208,6 +228,9 @@ RSpec.describe "Classroom students", type: :request do
     end
 
     it "creates students and refreshes member management when submitted from members" do
+      inactive_student = create(:user, :student, name: "기존 쉬는 학생")
+      create(:classroom_membership, user: inactive_student, classroom: classroom, role: "student", status: "inactive")
+
       expect {
         post bulk_create_classroom_students_path(classroom),
           params: {
@@ -223,6 +246,8 @@ RSpec.describe "Classroom students", type: :request do
       expect(response.body).to include('target="student-management"')
       expect(response.body).to include(created_students.first.name)
       expect(response.body).to include(created_students.second.name)
+      expect(response.body).to include("기존 쉬는 학생")
+      expect(response.body).to include(reactivate_classroom_student_path(classroom, inactive_student))
       expect(response.body).to include(classroom_member_student_names_path(classroom))
       expect(response.body).to include('target="modal"')
     end
@@ -480,6 +505,20 @@ RSpec.describe "Classroom students", type: :request do
     end
   end
 
+  describe "GET /classrooms/:classroom_id/students/:id/edit" do
+    it "shows student PIN management without password inputs" do
+      student = create(:user, :student)
+      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+
+      get edit_classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('name="user[student_pin]"')
+      expect(response.body).not_to include('name="user[password]"')
+      expect(response.body).not_to include('name="user[password_confirmation]"')
+    end
+  end
+
   describe "PATCH /classrooms/:classroom_id/students/:id" do
     it "reassigns avatar_key when gender changes and no custom avatar is attached" do
       student = create(:user, :student, gender: "boy", avatar_key: "boy01")
@@ -515,7 +554,7 @@ RSpec.describe "Classroom students", type: :request do
 
       expect(membership.reload).to be_inactive
       expect(student.received_compliments.exists?).to eq(true)
-      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
+      expect(response).to redirect_to(classroom_members_path(classroom))
       expect(flash[:notice]).to eq(I18n.t("students.deactivate.success"))
     end
 
@@ -571,7 +610,7 @@ RSpec.describe "Classroom students", type: :request do
       patch reactivate_classroom_student_path(classroom, student)
 
       expect(membership.reload).to be_active
-      expect(response).to redirect_to(classroom_members_path(classroom, status: "active"))
+      expect(response).to redirect_to(classroom_members_path(classroom))
       expect(flash[:notice]).to eq(I18n.t("students.reactivate.success"))
     end
 
@@ -623,7 +662,7 @@ RSpec.describe "Classroom students", type: :request do
       }.not_to change(User, :count)
 
       expect(membership.reload).to be_inactive
-      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
+      expect(response).to redirect_to(classroom_members_path(classroom))
     end
   end
 end

@@ -35,9 +35,52 @@ class Classrooms::MembersController < ApplicationController
       memberships_by_id.each_value { |membership| membership.user.save! }
     end
 
-    redirect_to classroom_members_path(@classroom, status: normalized_status_filter),
+    redirect_to classroom_members_path(@classroom),
       notice: t("students.members.update_names.success"),
       status: :see_other
+  end
+
+  def edit_student_pin
+    authorize @classroom, :manage_members?
+    @student_pin = ""
+
+    render :edit_student_pin, layout: false
+  end
+
+  def update_student_pin
+    authorize @classroom, :manage_members?
+
+    @student_pin = params[:student_pin].to_s
+    @student_pin_error = student_pin_error_message(@student_pin)
+    return render_student_pin_error if @student_pin_error.present?
+
+    memberships = active_student_memberships.to_a
+    if memberships.empty?
+      @student_pin_error = t("students.members.pin_reset.no_active_students")
+      return render_student_pin_error
+    end
+
+    ApplicationRecord.transaction do
+      memberships.each { |membership| membership.user.update!(student_pin: @student_pin) }
+    end
+
+    respond_to do |format|
+      format.html do
+        redirect_to classroom_members_path(@classroom),
+          notice: t("students.members.pin_reset.success", count: memberships.size),
+          status: :see_other
+      end
+      format.turbo_stream do
+        flash.now[:notice] = t("students.members.pin_reset.success", count: memberships.size)
+        render :update_student_pin, layout: false
+      end
+    end
+  rescue ActiveRecord::RecordInvalid => e
+    @student_pin_error = t(
+      "students.members.pin_reset.failure",
+      detail: e.record.errors.full_messages.to_sentence
+    )
+    render_student_pin_error
   end
 
   private
@@ -47,20 +90,42 @@ class Classrooms::MembersController < ApplicationController
   end
 
   def load_student_memberships
-    @membership_status_filter = normalized_status_filter
     @student_memberships = @classroom.classroom_memberships
       .student
       .includes(:user)
-      .order(:created_at, :id)
-    @student_memberships = @student_memberships.where(status: @membership_status_filter) unless @membership_status_filter == "all"
-  end
-
-  def normalized_status_filter
-    params[:status].presence_in(%w[active inactive all]) || "active"
+      .order(:status, :created_at, :id)
   end
 
   def load_members_page!
     load_student_memberships
+  end
+
+  def active_student_memberships
+    @classroom.classroom_memberships
+      .student
+      .active
+      .includes(:user)
+      .order(:created_at, :id)
+  end
+
+  def student_pin_error_message(pin)
+    return t("students.members.pin_reset.blank") if pin.blank?
+    return t("students.members.pin_reset.invalid") unless pin.match?(/\A\d{4}\z/)
+
+    nil
+  end
+
+  def render_student_pin_error
+    respond_to do |format|
+      format.html do
+        flash.now[:alert] = @student_pin_error
+        render :edit_student_pin, status: :unprocessable_entity
+      end
+      format.turbo_stream do
+        flash.now[:alert] = @student_pin_error
+        render :edit_student_pin, formats: :html, layout: false, status: :unprocessable_entity
+      end
+    end
   end
 
   def student_name_params

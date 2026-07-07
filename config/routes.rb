@@ -36,6 +36,12 @@ Rails.application.routes.draw do
     patch "members/students/name",
       to: "classrooms/members#update_student_names",
       as: :member_student_names
+    get "members/students/pin/edit",
+      to: "classrooms/members#edit_student_pin",
+      as: :edit_member_student_pin
+    patch "members/students/pin",
+      to: "classrooms/members#update_student_pin",
+      as: :member_student_pin
 
     get :student_login, to: "student_sessions#new", as: :student_login
     post :student_login, to: "student_sessions#create"
