@@ -42,6 +42,7 @@ Rails.application.routes.draw do
 
     member do
       post :refresh_compliment_king
+      get :student_login_info
       get :student_login_qr
       get "student_login_qr/download", to: "classrooms#download_student_login_qr", as: :download_student_login_qr
       patch :regenerate_student_login_token

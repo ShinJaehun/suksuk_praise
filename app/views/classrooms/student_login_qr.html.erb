@@ -8,8 +8,8 @@
       </p>
     </div>
 
-    <%= link_to "교실 관리로 돌아가기",
-          edit_classroom_path(@classroom),
+    <%= link_to "교실로 돌아가기",
+          classroom_path(@classroom),
           class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
   </div>
 
@@ -28,8 +28,8 @@
       <%= link_to "QR 코드 다운로드",
             download_student_login_qr_classroom_path(@classroom),
             class: "inline-flex items-center justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700" %>
-      <%= link_to "교실 관리로 돌아가기",
-            edit_classroom_path(@classroom),
+      <%= link_to "교실로 돌아가기",
+            classroom_path(@classroom),
             class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
     </div>
   </section>

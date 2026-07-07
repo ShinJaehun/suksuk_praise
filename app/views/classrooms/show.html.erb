@@ -15,6 +15,10 @@
         <% end %>
 
         <% if @can_manage_classroom %>
+          <%= link_to "학생 로그인",
+                student_login_info_classroom_path(@classroom),
+                data: { turbo_frame: "modal" },
+                class: "w-full rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 sm:w-auto" %>
           <%= link_to "교실 관리",
                 edit_classroom_path(@classroom),
                 class: "w-full rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 sm:w-auto" %>

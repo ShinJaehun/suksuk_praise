@@ -6,7 +6,7 @@ class ClassroomsController < ApplicationController
   before_action :authenticate_user!
   before_action :redirect_students_to_mypage!, only: [:index, :show]
   before_action :set_classroom, only: [
-    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon, :student_login_qr, :download_student_login_qr, :regenerate_student_login_token
+    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon, :student_login_info, :student_login_qr, :download_student_login_qr, :regenerate_student_login_token
   ]
   
   # 더블클릭/중복요청 소프트 가드(2초)
@@ -100,15 +100,21 @@ class ClassroomsController < ApplicationController
     redirect_to classrooms_path, notice: t("classrooms.destroy.success")
   end
 
+  def student_login_info
+    authorize @classroom, :manage_members?
+
+    @student_login_url = public_student_login_url(student_login_token: @classroom.student_login_token)
+  end
+
   def student_login_qr
-    authorize @classroom, :update?
+    authorize @classroom, :manage_members?
 
     @student_login_url = public_student_login_url(student_login_token: @classroom.student_login_token)
     @student_login_qr_png_data_url = qr_png_data_url(@student_login_url)
   end
 
   def download_student_login_qr
-    authorize @classroom, :update?
+    authorize @classroom, :manage_members?
 
     student_login_url = public_student_login_url(student_login_token: @classroom.student_login_token)
     send_data qr_png_binary(student_login_url),
@@ -118,10 +124,10 @@ class ClassroomsController < ApplicationController
   end
 
   def regenerate_student_login_token
-    authorize @classroom, :update?
+    authorize @classroom, :manage_members?
 
     @classroom.regenerate_student_login_token
-    redirect_to edit_classroom_path(@classroom),
+    redirect_to classroom_path(@classroom),
       notice: "학생 로그인 주소를 재발급했습니다. 기존에 복사해 둔 주소와 기존 QR 코드는 더 이상 사용할 수 없습니다. 아래 새 주소를 다시 복사하거나 QR 코드를 다시 안내하세요.",
       status: :see_other
   end

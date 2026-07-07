@@ -17,11 +17,6 @@ RSpec.describe "Classroom members", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("구성원 관리")
     expect(response.body).to include("2반")
-    expect(response.body).to include("학생 로그인")
-    expect(response.body).to include("QR 코드 보기")
-    expect(response.body).to include("QR 코드 다운로드")
-    expect(response.body).to include("학생 로그인 주소 재발급")
-    expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
     expect(response.body).to include("학생 관리")
     expect(response.body).to include("활성")
     expect(response.body).to include("비활성")
@@ -30,11 +25,17 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include(deactivate_classroom_student_path(classroom, student))
     expect(response.body).to include(new_classroom_student_path(classroom))
     expect(response.body).to include(bulk_new_classroom_students_path(classroom))
+    expect(response.body).to include(classroom_member_student_names_path(classroom))
+    expect(response.body).to include(edit_classroom_student_path(classroom, student))
+    expect(response.body).not_to include(public_student_login_url(student_login_token: classroom.student_login_token))
+    expect(response.body).not_to include("QR 코드 보기")
+    expect(response.body).not_to include("QR 코드 다운로드")
+    expect(response.body).not_to include("학생 로그인 주소 재발급")
     expect(response.body).not_to include("담당 선생님 배정")
     expect(response.body).not_to include("classroom[teacher_ids][]")
   end
 
-  it "shows teacher assignment controls to an admin" do
+  it "does not show teacher assignment controls to an admin" do
     create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
     other_teacher
     sign_in admin
@@ -43,15 +44,11 @@ RSpec.describe "Classroom members", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("2반")
-    expect(response.body).to include("담당 선생님 배정")
-    expect(response.body).to include("담당 선생님 저장")
-    expect(response.body).to include("1명 선택됨")
-    expect(response.body).to include("classroom[teacher_ids][]")
-    expect(response.body).to include(teacher.name)
-    expect(response.body).to include(other_teacher.name)
-    expect(response.body).to include("#{teacher.name} avatar")
-    expect(response.body).to include("학생 로그인")
     expect(response.body).to include("학생 관리")
+    expect(response.body).not_to include("담당 선생님 배정")
+    expect(response.body).not_to include("담당 선생님 저장")
+    expect(response.body).not_to include("classroom[teacher_ids][]")
+    expect(response.body).not_to include("학생 로그인 주소 재발급")
   end
 
   it "filters students by active, inactive, and all status" do
@@ -95,8 +92,8 @@ RSpec.describe "Classroom members", type: :request do
     get classroom_members_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("담당 선생님 배정")
-    expect(response.body).to include("0명 선택됨")
+    expect(response.body).not_to include("담당 선생님 배정")
+    expect(response.body).not_to include("0명 선택됨")
     expect(response.body).not_to include('checked="checked"')
   end
 

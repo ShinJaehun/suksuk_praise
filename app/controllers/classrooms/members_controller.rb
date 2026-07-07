@@ -61,7 +61,6 @@ class Classrooms::MembersController < ApplicationController
 
   def load_members_page!
     load_student_memberships
-    load_teacher_assignment_form if current_user.admin?
   end
 
   def student_name_params
@@ -88,12 +87,4 @@ class Classrooms::MembersController < ApplicationController
     end
   end
 
-  def load_teacher_assignment_form
-    @assignable_teachers = User.teacher.order(:name, :id)
-    @assigned_teacher_ids = @classroom.classroom_memberships
-      .teacher
-      .joins(:user)
-      .where(users: { role: "teacher" })
-      .pluck(:user_id)
-  end
 end

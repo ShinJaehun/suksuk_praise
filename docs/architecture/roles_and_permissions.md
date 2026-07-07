@@ -56,6 +56,7 @@
 | `ClassroomsController#update` | `ClassroomPolicy#update?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
 | `ClassroomsController#destroy` | `ClassroomPolicy#destroy?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `destroy?`는 `update?` 위임 |
 | `ClassroomsController#refresh_compliment_king` | `ClassroomPolicy#show?` | 가능 | membership 교실이면 가능 | membership 교실이면 가능 | 읽기 액션으로 동작 |
+| `ClassroomsController#student_login_info` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 학생 로그인 URL/QR/재발급 modal |
 | `ClassroomsController#draw_coupon` | `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `CouponDraw::Issue`가 대상 학생 소속, daily king, 중복 발급을 추가 검증 |
 | `ClassroomStudentsController#coupon_assignment` | `UserPolicy#show?` + `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실의 active 학생만 가능 | 불가 | Turbo Frame용 지급 카드이며 `policy_scope(CouponTemplate).active` template만 표시 |
 | `ClassroomStudentsController#new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |

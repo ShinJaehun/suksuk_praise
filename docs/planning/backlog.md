@@ -38,6 +38,9 @@
   - `inactive_reason` 또는 간단 메모 필드 추가
   - `pending` 상태 도입
   - 구성원 관리 화면 compact list/table 고도화
+- 교실·교사 관리 IA 후속 검토
+  - 담당 선생님 배정을 admin 전용 교실·교사 관리 흐름으로 정리
+  - School/Grade/Classroom 구조 설계
 - 구성원 관리 화면에서 학생을 선택해 일괄 비활성화하는 기능
   - 활동 이력이 전혀 없는 학생에 한해 hard delete를 허용할지 검토
 - 교실 archive 정책

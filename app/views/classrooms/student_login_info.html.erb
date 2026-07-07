@@ -1,0 +1,68 @@
+<%= turbo_frame_tag :modal do %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" data-controller="modal" role="dialog" aria-modal="true">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+      <button type="button"
+              data-action="modal#close"
+              class="absolute right-3 top-3 text-2xl leading-none text-slate-400 hover:text-slate-600">
+        &times;
+      </button>
+
+      <div class="space-y-5">
+        <div>
+          <p class="text-sm font-semibold text-slate-500"><%= @classroom.name %></p>
+          <h1 class="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">학생 로그인</h1>
+        </div>
+
+        <section data-controller="clipboard" class="space-y-3">
+          <div class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center">
+            <p data-clipboard-target="source"
+               class="min-w-0 flex-1 break-all text-sm font-medium text-slate-800">
+              <%= @student_login_url %>
+            </p>
+
+            <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+              <button type="button"
+                      data-action="clipboard#copy"
+                      class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                URL 복사
+              </button>
+              <span data-clipboard-target="status" class="text-sm text-slate-500 sm:max-w-52" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2 sm:flex-row">
+            <%= link_to "QR 코드 보기",
+                  student_login_qr_classroom_path(@classroom),
+                  data: { turbo_frame: "_top" },
+                  class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+            <%= link_to "QR 코드 다운로드",
+                  download_student_login_qr_classroom_path(@classroom),
+                  data: { turbo_frame: "_top" },
+                  class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+          </div>
+        </section>
+
+        <section class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
+          <p class="text-sm font-semibold text-rose-900">학생 로그인 주소 재발급</p>
+          <p class="mt-1 text-sm text-rose-700">
+            학생 로그인 주소가 외부에 노출되었거나 새 주소를 다시 안내해야 할 때만 재발급하세요.
+          </p>
+          <p class="mt-1 text-sm text-rose-700">
+            재발급 후에는 기존 주소로 학생 로그인 화면에 접근할 수 없습니다.
+          </p>
+
+          <div class="mt-3">
+            <%= button_to "학생 로그인 주소 재발급",
+                  regenerate_student_login_token_classroom_path(@classroom),
+                  method: :patch,
+                  form: {
+                    data: { turbo: false },
+                    onsubmit: "return confirm('학생 로그인 주소를 재발급하면 기존에 배포한 주소는 더 이상 사용할 수 없습니다. 계속할까요?')"
+                  },
+                  class: "inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100" %>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+<% end %>
