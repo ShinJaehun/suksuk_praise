@@ -33,6 +33,9 @@ Rails.application.routes.draw do
 
   resources :classrooms do
     resource :members, only: :show, module: :classrooms
+    patch "members/students/name",
+      to: "classrooms/members#update_student_names",
+      as: :member_student_names
 
     get :student_login, to: "student_sessions#new", as: :student_login
     post :student_login, to: "student_sessions#create"

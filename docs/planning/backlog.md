@@ -91,6 +91,15 @@ spec 승격 후보:
 
 ## Completed / Archived
 
+### 구성원 관리 학생 이름 일괄 수정
+
+상태: Implemented
+현재 동작 문서: `docs/architecture/current_system.md`, `docs/architecture/roles_and_permissions.md`
+
+- teacher/admin은 구성원 관리 화면에서 현재 필터에 표시된 학생 이름을 한 번에 저장할 수 있다.
+- 수정 대상은 현재 교실의 student membership id 기준으로 제한한다.
+- 하나라도 유효하지 않은 이름이 있거나 현재 교실 학생 membership이 아닌 id가 제출되면 전체 저장을 rollback한다.
+
 ### 학생별 쿠폰 직접 지급
 
 상태: Implemented

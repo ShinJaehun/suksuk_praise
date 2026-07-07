@@ -58,6 +58,8 @@
 - 여러 학생 자동 생성 submit 중에는 modal 입력과 버튼 조작을 잠그고, 응답 실패 시 잠금을 복구한다.
 - teacher/admin은 `classrooms/:id/members` 구성원 관리 화면에서 학생 로그인 URL을 확인할 수 있다.
 - 구성원 관리 화면에서는 학생 로그인 URL 복사, QR 코드 보기, QR 코드 다운로드가 가능하다.
+- teacher/admin은 구성원 관리 화면의 현재 active/inactive/all 필터 안에서 여러 학생 이름을 한 번에 수정할 수 있다.
+- 학생 이름 일괄 수정은 현재 교실의 student membership id 기준으로 대상을 제한하며, 하나라도 유효하지 않으면 전체 저장을 rollback한다.
 - 학생 로그인 QR은 현재 token URL 기준으로 요청 시 생성하며 서버 파일로 저장하지 않는다.
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.

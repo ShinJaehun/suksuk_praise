@@ -117,4 +117,129 @@ RSpec.describe "Classroom members", type: :request do
 
     expect(response).to redirect_to(root_path)
   end
+
+  describe "PATCH /classrooms/:classroom_id/members/students/name" do
+    it "lets a classroom teacher update active student names" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      student = create(:user, :student, name: "이전 이름")
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_names_path(classroom), params: {
+        status: "active",
+        students: {
+          membership.id => { name: "새 이름" }
+        }
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom, status: "active"))
+      expect(flash[:notice]).to eq(I18n.t("students.members.update_names.success"))
+      expect(student.reload.name).to eq("새 이름")
+    end
+
+    it "lets a classroom teacher update inactive student names while keeping the inactive filter" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      student = create(:user, :student, name: "쉬는 학생")
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: "student", status: "inactive")
+      sign_in teacher
+
+      patch classroom_member_student_names_path(classroom), params: {
+        status: "inactive",
+        students: {
+          membership.id => { name: "돌아올 학생" }
+        }
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
+      expect(student.reload.name).to eq("돌아올 학생")
+    end
+
+    it "lets an admin update student names" do
+      student = create(:user, :student, name: "관리 전")
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => { name: "관리 후" }
+        }
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom, status: "active"))
+      expect(student.reload.name).to eq("관리 후")
+    end
+
+    it "rejects a teacher who does not manage the classroom" do
+      student = create(:user, :student, name: "유지")
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => { name: "변경 시도" }
+        }
+      }
+
+      expect(response).to redirect_to(root_path)
+      expect(student.reload.name).to eq("유지")
+    end
+
+    it "rejects a student" do
+      student = create(:user, :student, name: "본인")
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")
+      sign_in student
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => { name: "변경 시도" }
+        }
+      }
+
+      expect(response).to redirect_to(root_path)
+      expect(student.reload.name).to eq("본인")
+    end
+
+    it "fails when a membership outside the classroom is submitted" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      student = create(:user, :student, name: "내 학생")
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")
+      other_student = create(:user, :student, name: "다른 학생")
+      other_membership = create(:classroom_membership, classroom: create(:classroom), user: other_student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => { name: "변경 실패" },
+          other_membership.id => { name: "변경되면 안 됨" }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include(I18n.t("students.members.update_names.invalid_membership"))
+      expect(student.reload.name).to eq("내 학생")
+      expect(other_student.reload.name).to eq("다른 학생")
+    end
+
+    it "rolls back all changes and shows row errors when any name is invalid" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      valid_student = create(:user, :student, name: "유효 학생")
+      invalid_student = create(:user, :student, name: "무효 학생")
+      valid_membership = create(:classroom_membership, classroom: classroom, user: valid_student, role: "student")
+      invalid_membership = create(:classroom_membership, classroom: classroom, user: invalid_student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          valid_membership.id => { name: "저장되면 안 됨" },
+          invalid_membership.id => { name: "" }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("이름을 확인해 주세요")
+      expect(response.body).to include("저장되면 안 됨")
+      expect(valid_student.reload.name).to eq("유효 학생")
+      expect(invalid_student.reload.name).to eq("무효 학생")
+    end
+  end
 end
