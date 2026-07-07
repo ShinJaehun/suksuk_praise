@@ -51,7 +51,33 @@ RSpec.describe "Classroom students", type: :request do
 
       student = User.find_by!(email: "turbo-student@example.com")
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include(%(target="students_grid_#{classroom.id}"))
+      expect(response.body).not_to include('target="student-management"')
       expect(classroom.classroom_memberships.exists?(user: student, role: "student")).to eq(true)
+    end
+
+    it "creates a student and refreshes member management when submitted from members" do
+      expect {
+        post classroom_students_path(classroom),
+          params: {
+            return_to: "members",
+            user: {
+              name: "구성원 학생",
+              email: "member-student@example.com",
+              password: "password123",
+              gender: "girl"
+            }
+          },
+          headers: turbo_headers
+      }.to change(User.student, :count).by(1)
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include('target="student-management"')
+      expect(response.body).to include("구성원 학생")
+      expect(response.body).to include(classroom_member_student_names_path(classroom))
+      expect(response.body).to include(edit_classroom_student_path(classroom, User.find_by!(email: "member-student@example.com")))
+      expect(response.body).to include(deactivate_classroom_student_path(classroom, User.find_by!(email: "member-student@example.com")))
+      expect(response.body).to include('target="modal"')
     end
 
     it "returns 422 with turbo stream when the student is invalid" do
@@ -70,6 +96,31 @@ RSpec.describe "Classroom students", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include('target="modal"')
+      expect(response.body).to include("이름")
+    end
+
+    it "keeps validation errors inside the modal when submitted from members" do
+      expect {
+        post classroom_students_path(classroom),
+          params: {
+            return_to: "members",
+            user: {
+              name: "",
+              email: "member-invalid@example.com",
+              password: "password123",
+              gender: "boy"
+            }
+          },
+          headers: turbo_headers
+      }.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include('target="modal"')
+      expect(response.body).to include('name="return_to"')
+      expect(response.body).to include('value="members"')
+      expect(response.body).to include("이름")
     end
 
     it "rejects a teacher outside the classroom" do
@@ -154,6 +205,45 @@ RSpec.describe "Classroom students", type: :request do
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
       expect(response.body).to include(%(target="students_list_#{classroom.id}"))
       expect(response.body).to include('target="modal"')
+    end
+
+    it "creates students and refreshes member management when submitted from members" do
+      expect {
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            return_to: "members",
+            boy_count: 1,
+            girl_count: 1
+          },
+          headers: turbo_headers
+      }.to change(User.student, :count).by(2)
+
+      created_students = classroom.students.order(:created_at).last(2)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include('target="student-management"')
+      expect(response.body).to include(created_students.first.name)
+      expect(response.body).to include(created_students.second.name)
+      expect(response.body).to include(classroom_member_student_names_path(classroom))
+      expect(response.body).to include('target="modal"')
+    end
+
+    it "keeps bulk validation errors inside the modal when submitted from members" do
+      expect {
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            return_to: "members",
+            boy_count: 30,
+            girl_count: 30
+          },
+          headers: turbo_headers
+      }.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(response.body).to include('target="modal"')
+      expect(response.body).to include('name="return_to"')
+      expect(response.body).to include('value="members"')
+      expect(response.body).to include("한 번에 자동 생성할 수 있는 학생은 최대 30명입니다.")
     end
 
     it "rejects a teacher outside the classroom" do

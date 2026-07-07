@@ -1,6 +1,8 @@
-<%#= turbo_stream.update "flash" do %>
-  <%#= render "layouts/alerts" %>
-<%# end %>
-
-<%= turbo_stream.update "modal" do %>
+<%= turbo_stream.replace "modal" do %>
+  <%= render partial: "classroom_students/form",
+        locals: {
+          classroom: @classroom,
+          user: @user,
+          return_to: return_to_context
+        } %>
 <% end %>

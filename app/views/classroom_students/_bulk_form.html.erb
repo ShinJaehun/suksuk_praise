@@ -7,19 +7,27 @@
     <!-- 모달 컨테이너 -->
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-8 relative">
       <h2 class="text-xl font-bold mb-4">여러 명 학생 자동생성</h2>
+      <% boy_count_value = local_assigns.fetch(:boy_count, 15) %>
+      <% girl_count_value = local_assigns.fetch(:girl_count, 15) %>
       <%= form_with url: bulk_create_classroom_students_path(classroom),
           method: :post,
           data: { turbo_frame: :modal, 
             action: "submit->modal#showProgress",
             turbo_submits_with: "처리중..." } do |f| %>
+        <%= hidden_field_tag :return_to, return_to if local_assigns[:return_to].present? %>
+        <% if local_assigns[:error_message].present? %>
+          <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+            <%= error_message %>
+          </div>
+        <% end %>
         <div class="mb-4 grid grid-cols-2 gap-3">
           <div>
             <%= f.label :boy_count, "남학생 수" %>
-            <%= f.number_field :boy_count, value: 15, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
+            <%= f.number_field :boy_count, value: boy_count_value, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
           </div>
           <div>
             <%= f.label :girl_count, "여학생 수" %>
-            <%= f.number_field :girl_count, value: 15, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
+            <%= f.number_field :girl_count, value: girl_count_value, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
           </div>
         </div>
         <div class="mb-4 text-sm text-slate-500">

@@ -3,7 +3,13 @@
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-8 relative">
         <%= form_with model: user, url: classroom_students_path(classroom),
             data: { turbo_submits_with: "처리중..." } do |f| %>
+            <%= hidden_field_tag :return_to, return_to if local_assigns[:return_to].present? %>
             <h2 class="text-xl font-bold mb-4">학생 개별 추가</h2>
+            <% if user.errors.any? %>
+              <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+                <%= user.errors.full_messages.to_sentence %>
+              </div>
+            <% end %>
             <div class="mb-2">
                 <%= f.label :name, t('ui.user_labels.name') %>
                 <%= f.text_field :name, class: "border px-2 py-1 rounded w-full" %>

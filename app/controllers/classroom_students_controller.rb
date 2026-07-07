@@ -4,6 +4,7 @@ class ClassroomStudentsController < ApplicationController
   include ActionView::RecordIdentifier
 
   MAX_BULK_STUDENTS = 30
+  helper_method :return_to_context
 
   before_action :authenticate_user!
   before_action :set_classroom
@@ -14,9 +15,9 @@ class ClassroomStudentsController < ApplicationController
   def new
     @user = User.new
     respond_to do |f|
-      f.html { render partial: "classroom_students/form", locals: { classroom: @classroom, user: @user } }
+      f.html { render partial: "classroom_students/form", locals: { classroom: @classroom, user: @user, return_to: return_to_context } }
       f.turbo_stream { render partial: "classroom_students/form",
-        locals: { classroom: @classroom, user: @user } }
+        locals: { classroom: @classroom, user: @user, return_to: return_to_context } }
     end
   end
 
@@ -32,10 +33,15 @@ class ClassroomStudentsController < ApplicationController
       @classroom.classroom_memberships.create!(user: @user, role: "student")
 
       respond_to do |f|
-        f.html { redirect_to @classroom, notice: t("students.create.success"), status: :see_other }
+        f.html { redirect_to create_success_path, notice: t("students.create.success"), status: :see_other }
         f.turbo_stream do
-          flash.now[:notice] = t("students.create.success")          
-          render :create, layout: "application"
+          flash.now[:notice] = t("students.create.success")
+          if members_return_to?
+            load_members_student_management!
+            render :create_for_members, layout: "application"
+          else
+            render :create, layout: "application"
+          end
         end
       end
     else
@@ -43,9 +49,9 @@ class ClassroomStudentsController < ApplicationController
         t("students.create.failure_fallback")
 
       respond_to do |f|
-        f.html { redirect_to @classroom, alert: message, status: :see_other }
+        f.html { redirect_to create_success_path, alert: message, status: :see_other }
         f.turbo_stream do
-          flash.now[:alert] = message          
+          flash.now[:alert] = message
           render "classroom_students/create_error", layout: "application",
             status: :unprocessable_entity
         end
@@ -55,8 +61,8 @@ class ClassroomStudentsController < ApplicationController
 
   def bulk_new
     respond_to do |f|
-      f.html { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom } }
-      f.turbo_stream { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom } }
+      f.html { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom, return_to: return_to_context } }
+      f.turbo_stream { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom, return_to: return_to_context } }
     end
   end
 
@@ -94,20 +100,25 @@ class ClassroomStudentsController < ApplicationController
 
     message = t("students.bulk_create.success", count: created.size)
     respond_to do |f|
-      f.html { redirect_to @classroom, notice: message, status: :see_other }
+      f.html { redirect_to create_success_path, notice: message, status: :see_other }
       f.turbo_stream do
         flash.now[:notice] = message
-        render :bulk_create, layout: "application" 
+        if members_return_to?
+          load_members_student_management!
+          render :bulk_create_for_members, layout: "application"
+        else
+          render :bulk_create, layout: "application"
+        end
       end
     end
 
   rescue ActiveRecord::RecordInvalid => e
     message = t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence)
     respond_to do |f|
-      f.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
+      f.html { redirect_to create_success_path, alert: message, status: :see_other }
       f.turbo_stream do
         flash.now[:alert] = message
-        render :bulk_create_error, layout: "application"
+        render :bulk_create_error, layout: "application", status: :unprocessable_entity
       end
     end
   end
@@ -282,6 +293,29 @@ class ClassroomStudentsController < ApplicationController
 
   def authorize_manage!
     authorize @classroom, :manage_members?
+  end
+
+  def return_to_context
+    params[:return_to].presence_in(%w[members])
+  end
+
+  def members_return_to?
+    return_to_context == "members"
+  end
+
+  def create_success_path
+    return classroom_members_path(@classroom, status: "active") if members_return_to?
+
+    classroom_path(@classroom)
+  end
+
+  def load_members_student_management!
+    @membership_status_filter = "active"
+    @student_memberships = @classroom.classroom_memberships
+      .student
+      .includes(:user)
+      .where(status: "active")
+      .order(:created_at, :id)
   end
 
   def used_avatar_keys_in_classroom(excluding: nil)

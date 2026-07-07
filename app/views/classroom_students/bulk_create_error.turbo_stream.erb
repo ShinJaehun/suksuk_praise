@@ -1,2 +1,10 @@
-<%= turbo_stream.update :modal do %>
+<%= turbo_stream.replace :modal do %>
+  <%= render partial: "classroom_students/bulk_form",
+        locals: {
+          classroom: @classroom,
+          return_to: return_to_context,
+          error_message: flash.now[:alert],
+          boy_count: params[:boy_count],
+          girl_count: params[:girl_count]
+        } %>
 <% end %>
