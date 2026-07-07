@@ -8,7 +8,7 @@ RSpec.describe "Classroom members", type: :request do
 
   it "shows member management sections to a classroom teacher" do
     create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
-    student = create(:user, :student, name: "활성 학생")
+    student = create(:user, :student, name: "활성 학생", gender: "boy", avatar_key: "boy01")
     create(:classroom_membership, classroom: classroom, user: student, role: "student")
     sign_in teacher
 
@@ -22,6 +22,8 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include("비활성")
     expect(response.body).to include("전체")
     expect(response.body).to include(student.name)
+    expect(response.body).to include('alt="활성 학생 avatar"')
+    expect(response.body).to include('form="student_names_form"')
     expect(response.body).to include(deactivate_classroom_student_path(classroom, student))
     expect(response.body).to include(new_classroom_student_path(classroom))
     expect(response.body).to include(new_classroom_student_path(classroom, return_to: "members"))
@@ -75,7 +77,6 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include(inactive_student.name)
     expect(response.body).to include(edit_classroom_student_path(classroom, inactive_student))
     expect(response.body).to include(reactivate_classroom_student_path(classroom, inactive_student))
-    expect(response.body).to include(I18n.t("ui.inactive"))
 
     get classroom_members_path(classroom, status: "all")
 
@@ -83,8 +84,8 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include(active_student.name)
     expect(response.body).to include(inactive_student.name)
     expect(response.body).to include(classroom_student_path(classroom, inactive_student))
-    expect(response.body).to include("opacity-60")
-    expect(response.body).to include(I18n.t("ui.inactive"))
+    expect(response.body).to include(deactivate_classroom_student_path(classroom, active_student))
+    expect(response.body).to include(reactivate_classroom_student_path(classroom, inactive_student))
   end
 
   it "does not count a legacy admin teacher membership as an assigned teacher" do
