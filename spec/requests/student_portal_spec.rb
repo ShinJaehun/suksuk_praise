@@ -146,14 +146,15 @@ RSpec.describe 'Student portal flow', type: :request do
       expect(response).to redirect_to(root_path)
     end
 
-    it 'allows a classroom teacher to delete a student from the managed page' do
+    it 'keeps direct teacher delete calls from hard deleting the account' do
       sign_in teacher
 
       expect do
         delete classroom_student_path(classroom, student)
-      end.to change(User, :count).by(-1)
+      end.not_to change(User, :count)
 
-      expect(response).to redirect_to(classroom_path(classroom))
+      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
+      expect(classroom.classroom_memberships.find_by!(user: student)).to be_inactive
     end
   end
 
@@ -183,7 +184,9 @@ RSpec.describe 'Student portal flow', type: :request do
       expect(response.body).not_to include('value="teacherF01"')
       expect(response.body).not_to include('value="admin"')
       expect(response.body).to include('PIN 설정')
-      expect(response.body).to include('계정 삭제')
+      expect(response.body).to include('운영 상태')
+      expect(response.body).to include('비활성화')
+      expect(response.body).not_to include('계정 삭제')
       expect(response.body).not_to include('비밀번호 재설정')
       expect(response.body).not_to include('name="user[password]"')
       expect(response.body).not_to include('name="user[password_confirmation]"')

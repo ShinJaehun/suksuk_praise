@@ -5,6 +5,7 @@ class ClassroomStudentMessagesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :set_student
+  before_action :ensure_active_self_student!, only: :index
   before_action :ensure_active_student!, only: :create
 
   def index
@@ -24,8 +25,9 @@ class ClassroomStudentMessagesController < ApplicationController
     @reply_message = UserMessage.new
     @message_teacher_options = student_message_teacher_options
     @message_section_dom_id = dom_id(@student, :message_section)
-    @can_manage_student = Pundit.policy!(current_user, @student).manage_student_account?
-    @can_create_compliment = policy(@classroom).create_compliment?
+    @can_manage_student = policy(@classroom).manage_members?
+    @student_active_in_classroom = active_student_in_classroom?
+    @can_create_compliment = policy(@classroom).create_compliment? && @student_active_in_classroom
     @student_messages_enabled = true
     broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
   end
@@ -82,6 +84,21 @@ class ClassroomStudentMessagesController < ApplicationController
 
   def ensure_active_student!
     raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(
+      user_id: @student.id,
+      role: "student",
+      status: "active"
+    )
+  end
+
+  def ensure_active_self_student!
+    return unless current_user&.student? && current_user.id == @student.id
+    return if active_student_in_classroom?
+
+    raise ActiveRecord::RecordNotFound
+  end
+
+  def active_student_in_classroom?
+    @classroom.classroom_memberships.exists?(
       user_id: @student.id,
       role: "student",
       status: "active"

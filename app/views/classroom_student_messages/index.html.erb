@@ -7,7 +7,8 @@
         student_messages_enabled: @student_messages_enabled,
         can_manage_student: @can_manage_student,
         can_create_compliment: @can_create_compliment,
-        can_issue_coupon: false %>
+        can_issue_coupon: false,
+        student_active: @student_active_in_classroom %>
 
   <% if current_user.student? && current_user == @user %>
     <%= render "user_messages/self_frame",
@@ -16,7 +17,8 @@
           new_message: @new_message,
           teacher_options: @message_teacher_options,
           reply_message: @reply_message,
-          user: @user %>
+          user: @user,
+          can_write_messages: @student_active_in_classroom %>
   <% else %>
     <%= render "user_messages/managed_frame",
           dom_id: @message_section_dom_id,
@@ -24,6 +26,7 @@
           message: @new_message,
           reply_message: @reply_message,
           user: @user,
-          form_url: classroom_student_messages_path(@classroom, @user) %>
+          form_url: classroom_student_messages_path(@classroom, @user),
+          can_write_messages: @student_active_in_classroom %>
   <% end %>
 </section>

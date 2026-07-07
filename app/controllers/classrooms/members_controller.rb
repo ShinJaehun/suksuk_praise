@@ -3,9 +3,9 @@ class Classrooms::MembersController < ApplicationController
   before_action :set_classroom
 
   def show
-    authorize @classroom, :update?
+    authorize @classroom, :manage_members?
+    load_student_memberships
     if current_user.admin?
-      load_student_memberships
       load_teacher_assignment_form
     end
   end
@@ -17,10 +17,16 @@ class Classrooms::MembersController < ApplicationController
   end
 
   def load_student_memberships
+    @membership_status_filter = normalized_status_filter
     @student_memberships = @classroom.classroom_memberships
       .student
       .includes(:user)
       .order(:created_at, :id)
+    @student_memberships = @student_memberships.where(status: @membership_status_filter) unless @membership_status_filter == "all"
+  end
+
+  def normalized_status_filter
+    params[:status].presence_in(%w[active inactive all]) || "active"
   end
 
   def load_teacher_assignment_form

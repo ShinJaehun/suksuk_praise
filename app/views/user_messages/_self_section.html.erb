@@ -1,4 +1,4 @@
-<% if teacher_options.any? %>
+<% if local_assigns.fetch(:can_write_messages, true) && teacher_options.any? %>
   <%= render "user_messages/message_form",
         message: new_message,
         form_url: user_messages_path(user),
@@ -9,4 +9,5 @@
       threads: threads,
       reply_message: reply_message,
       user: user,
+      can_write_messages: local_assigns.fetch(:can_write_messages, true),
       active_reply_thread_id: active_reply_thread_id %>

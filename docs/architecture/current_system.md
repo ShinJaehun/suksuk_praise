@@ -41,14 +41,16 @@
 - 학생의 교실 활동 상태는 `User`가 아니라 `ClassroomMembership.status`로 관리하며, 허용값은 `active`, `inactive`, 기본값은 `active`다.
 - `Classroom#students`는 일반 운영 화면에서 사용하는 active 학생 목록이다.
 - teacher 교실 화면, 학생 PIN 로그인 목록, 칭찬 대상, 쿠폰 발급 대상, 새 메시지 생성 대상은 active 학생 기준이다.
-- 기록 없는 단일 소속 학생 삭제 요청은 `User` hard delete로 처리한다.
-- 현재 교실 기록이 있는 학생 삭제 요청은 `User`를 삭제하지 않고 현재 membership을 inactive 처리한다.
-- 다른 교실 소속이 있는 학생은 `User`를 삭제하지 않고 현재 membership만 제거하며, 현재 교실 기록이 있으면 inactive 처리한다.
+- 학생은 운영 UI에서 기본적으로 삭제하지 않고 현재 교실 membership을 inactive 처리한다.
+- 직접 `DELETE /classrooms/:classroom_id/students/:id` 요청이 들어와도 `User` hard delete 대신 현재 membership을 inactive 처리한다.
+- teacher/admin은 구성원 관리 화면에서 학생을 비활성화하거나 inactive 학생을 복구할 수 있다.
+- 구성원 관리 화면은 active, inactive, all 필터로 학생 membership을 나누어 볼 수 있다.
 - inactive 학생은 teacher 기본 교실 화면과 PIN 로그인 목록에서 제외된다.
 - 이미 로그인한 학생이 inactive가 되면 다음 요청에서 로그아웃 후 학생 로그인 화면으로 redirect된다.
 - inactive 학생은 칭찬, 쿠폰 발급, 새 메시지 발신/수신 대상에서 제외된다.
 - inactive 처리 후에도 기존 메시지 thread와 과거 칭찬/쿠폰 기록 조회는 유지된다.
-- admin 구성원 관리 화면에서는 inactive 학생도 흐리게 표시하고 `비활성` badge를 붙인다.
+- teacher/admin은 inactive 학생 상세와 활동 기록을 조회할 수 있으며, inactive 학생 상세에서는 `비활성` badge를 표시하고 칭찬하기, 쿠폰 지급, 새 메시지 작성 UI를 숨긴다.
+- 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 `비활성` badge를 붙인다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
 - teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
 - 여러 학생 자동 생성은 한 번에 최대 30명까지 허용한다.

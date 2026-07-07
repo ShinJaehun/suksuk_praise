@@ -6,6 +6,7 @@
           reply_message: reply_message,
           user: user,
           form_url: form_url,
+          can_write_messages: local_assigns.fetch(:can_write_messages, true),
           active_reply_thread_id: local_assigns[:active_reply_thread_id] %>
   </section>
 <% end %>

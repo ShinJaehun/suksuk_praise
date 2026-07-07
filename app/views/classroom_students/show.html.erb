@@ -13,7 +13,8 @@
         student_messages_enabled: @student_messages_enabled,
         can_manage_student: @can_manage_student,
         can_create_compliment: @can_create_compliment,
-        can_issue_coupon: @can_issue_coupon %>
+        can_issue_coupon: @can_issue_coupon,
+        student_active: @student_active_in_classroom %>
 
   <% if @can_issue_coupon %>
     <%= turbo_frame_tag dom_id(@user, :coupon_assignment), class: "block empty:hidden" %>

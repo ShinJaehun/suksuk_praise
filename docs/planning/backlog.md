@@ -35,16 +35,15 @@
 ### Classroom / 학생 관리 후속 작업
 
 - 학생 membership lifecycle 후속 검토
-  - inactive 학생 복구
   - `inactive_reason` 또는 간단 메모 필드 추가
   - `pending` 상태 도입
-  - 구성원 관리 화면 active/inactive/all 필터
   - 구성원 관리 화면 compact list/table 고도화
+- 구성원 관리 화면에서 학생을 선택해 일괄 비활성화하는 기능
+  - 활동 이력이 전혀 없는 학생에 한해 hard delete를 허용할지 검토
 - 교실 archive 정책
 - 학생 상세 통계
 - 복사/붙여넣기 학생 등록
-- 구성원 관리 화면을 전체 학생 table로 정리하고 active/inactive/all 필터 제공
-- 구성원 관리 화면에서 학생을 선택해 일괄 비활성화하는 기능
+- 구성원 관리 화면을 전체 학생 table로 정리
 - 학생 dashboard 그래프 point의 hover tooltip
 - 학생 dashboard 월간/누적 활동 추이
 - 쿠폰 이벤트 로그의 학생별 세부 필터

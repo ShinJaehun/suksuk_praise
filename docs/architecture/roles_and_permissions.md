@@ -62,6 +62,9 @@
 | `ClassroomStudentsController#create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 새 user는 항상 `role: student` |
 | `ClassroomStudentsController#bulk_new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
 | `ClassroomStudentsController#bulk_create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 벌크 생성도 동일한 membership 기준 |
+| `ClassroomStudentsController#deactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `User`를 삭제하지 않고 현재 교실 student membership을 inactive 처리 |
+| `ClassroomStudentsController#reactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 inactive student membership을 active로 복구 |
+| `ClassroomStudentsController#destroy` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 직접 DELETE 요청도 hard delete 대신 현재 교실 student membership을 inactive 처리 |
 
 ### User
 

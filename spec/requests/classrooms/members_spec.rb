@@ -8,6 +8,8 @@ RSpec.describe "Classroom members", type: :request do
 
   it "shows member management sections to a classroom teacher" do
     create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+    student = create(:user, :student, name: "활성 학생")
+    create(:classroom_membership, classroom: classroom, user: student, role: "student")
     sign_in teacher
 
     get classroom_members_path(classroom)
@@ -21,6 +23,11 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include("학생 로그인 주소 재발급")
     expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
     expect(response.body).to include("학생 관리")
+    expect(response.body).to include("활성")
+    expect(response.body).to include("비활성")
+    expect(response.body).to include("전체")
+    expect(response.body).to include(student.name)
+    expect(response.body).to include(deactivate_classroom_student_path(classroom, student))
     expect(response.body).to include(new_classroom_student_path(classroom))
     expect(response.body).to include(bulk_new_classroom_students_path(classroom))
     expect(response.body).not_to include("담당 선생님 배정")
@@ -47,9 +54,9 @@ RSpec.describe "Classroom members", type: :request do
     expect(response.body).to include("학생 관리")
   end
 
-  it "shows active and inactive students to an admin" do
-    active_student = create(:user, :student, name: "활성 학생")
-    inactive_student = create(:user, :student, name: "비활성 학생")
+  it "filters students by active, inactive, and all status" do
+    active_student = create(:user, :student, name: "김활동")
+    inactive_student = create(:user, :student, name: "박휴식")
     create(:classroom_membership, classroom: classroom, user: active_student, role: "student")
     create(:classroom_membership, classroom: classroom, user: inactive_student, role: "student", status: "inactive")
     sign_in admin
@@ -58,9 +65,26 @@ RSpec.describe "Classroom members", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(active_student.name)
+    expect(response.body).to include(edit_classroom_student_path(classroom, active_student))
+    expect(response.body).to include(deactivate_classroom_student_path(classroom, active_student))
+    expect(response.body).not_to include(inactive_student.name)
+
+    get classroom_members_path(classroom, status: "inactive")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include(active_student.name)
+    expect(response.body).to include(inactive_student.name)
+    expect(response.body).to include(edit_classroom_student_path(classroom, inactive_student))
+    expect(response.body).to include(reactivate_classroom_student_path(classroom, inactive_student))
+    expect(response.body).to include(I18n.t("ui.inactive"))
+
+    get classroom_members_path(classroom, status: "all")
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(active_student.name)
     expect(response.body).to include(inactive_student.name)
     expect(response.body).to include(classroom_student_path(classroom, inactive_student))
-    expect(response.body).to include("opacity-50")
+    expect(response.body).to include("opacity-60")
     expect(response.body).to include(I18n.t("ui.inactive"))
   end
 

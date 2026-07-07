@@ -23,7 +23,7 @@
     </div>
   <% end %>
 
-  <% if show_user_message_reply_form?(thread, user) %>
+  <% if local_assigns.fetch(:can_write_messages, true) && show_user_message_reply_form?(thread, user) %>
     <div class="mt-4 border-t border-slate-200 pt-4">
       <%= render "user_messages/reply_form",
             thread: thread,

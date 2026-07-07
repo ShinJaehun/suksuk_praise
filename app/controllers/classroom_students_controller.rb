@@ -8,7 +8,8 @@ class ClassroomStudentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_create]
-  before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :reset_password]
+  before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :deactivate, :reactivate, :reset_password]
+  before_action :ensure_active_self_student!, only: [:show, :dashboard, :activity]
 
   def new
     @user = User.new
@@ -125,7 +126,7 @@ class ClassroomStudentsController < ApplicationController
       recent_in_classroom: true
     )
     @pending_coupon_use_request_count = @pending_coupon_use_requests_by_coupon_id.size
-    @can_issue_coupon = @can_draw_coupon && active_student_in_classroom?
+    @can_issue_coupon = @can_draw_coupon && @student_active_in_classroom
 
     broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
 
@@ -176,14 +177,13 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def edit
-    authorize @student, :manage_student_account?
-    @user = @student
-    @student_avatar_keys = student_avatar_keys
+    authorize @classroom, :manage_members?
+    load_student_edit_form!
   end
 
   def update
-    authorize @student, :manage_student_account?
-    @user = @student
+    authorize @classroom, :manage_members?
+    load_student_edit_form!
     attrs = managed_student_params
     if reassign_avatar_key?(attrs)
       attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys_in_classroom(excluding: @student))
@@ -192,14 +192,13 @@ class ClassroomStudentsController < ApplicationController
     if @student.update(attrs)
       redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 계정 정보를 수정했습니다."
     else
-      @student_avatar_keys = student_avatar_keys
       render :edit, status: :unprocessable_entity
     end
   end
 
   def reset_password
-    authorize @student, :manage_student_password?
-    @user = @student
+    authorize @classroom, :manage_members?
+    load_student_edit_form!
 
     if @student.update(password_reset_params)
       redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 비밀번호를 재설정했습니다."
@@ -209,27 +208,30 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def destroy
-    authorize @student, :destroy_student?
+    authorize @classroom, :manage_members?
+    student_membership.inactive!
 
-    notice_key = ApplicationRecord.transaction do
-      membership = @classroom.classroom_memberships.find_by!(user_id: @student.id)
+    redirect_to classroom_members_path(@classroom, status: "inactive"),
+      notice: t("students.deactivate.success"),
+      status: :see_other
+  end
 
-      if current_classroom_activity?
-        membership.inactive!
-        "students.destroy.inactivated"
-      elsif other_classroom_memberships?(membership)
-        membership.destroy!
-        "students.destroy.removed_from_classroom"
-      elsif global_student_activity?
-        membership.inactive!
-        "students.destroy.inactivated"
-      else
-        @student.destroy!
-        "students.destroy.hard_deleted"
-      end
-    end
+  def deactivate
+    authorize @classroom, :manage_members?
+    student_membership.inactive!
 
-    redirect_to classroom_path(@classroom), notice: t(notice_key), status: :see_other
+    redirect_to classroom_members_path(@classroom, status: "inactive"),
+      notice: t("students.deactivate.success"),
+      status: :see_other
+  end
+
+  def reactivate
+    authorize @classroom, :manage_members?
+    student_membership.active!
+
+    redirect_to classroom_members_path(@classroom, status: "active"),
+      notice: t("students.reactivate.success"),
+      status: :see_other
   end
 
   private
@@ -248,6 +250,26 @@ class ClassroomStudentsController < ApplicationController
     raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(user_id: @student.id)
   end
 
+  def student_membership
+    @student_membership ||= @classroom.classroom_memberships.find_by!(
+      user_id: @student.id,
+      role: "student"
+    )
+  end
+
+  def load_student_edit_form!
+    @user = @student
+    @student_membership = student_membership
+    @student_avatar_keys = student_avatar_keys
+  end
+
+  def ensure_active_self_student!
+    return unless current_user&.student? && current_user.id == @student.id
+    return if active_student_in_classroom?
+
+    raise ActiveRecord::RecordNotFound
+  end
+
   def managed_student_params
     params.require(:user).permit(:name, :email, :student_pin, :gender, :avatar_key).tap do |permitted|
       permitted.delete(:student_pin) if permitted[:student_pin].blank?
@@ -260,32 +282,6 @@ class ClassroomStudentsController < ApplicationController
 
   def authorize_manage!
     authorize @classroom, :manage_members?
-  end
-
-  def current_classroom_activity?
-    Compliment
-      .where(classroom_id: @classroom.id)
-      .where("giver_id = :student_id OR receiver_id = :student_id", student_id: @student.id)
-      .exists? ||
-      UserCoupon.exists?(classroom_id: @classroom.id, user_id: @student.id) ||
-      CouponUseRequest.exists?(classroom_id: @classroom.id, student_id: @student.id) ||
-      UserMessage
-        .where(classroom_id: @classroom.id)
-        .where("sender_id = :student_id OR recipient_id = :student_id", student_id: @student.id)
-        .exists?
-  end
-
-  def global_student_activity?
-    @student.given_compliments.exists? ||
-      @student.received_compliments.exists? ||
-      @student.user_coupons.exists? ||
-      CouponUseRequest.exists?(student_id: @student.id) ||
-      @student.sent_messages.exists? ||
-      @student.received_messages.exists?
-  end
-
-  def other_classroom_memberships?(membership)
-    @student.classroom_memberships.where.not(id: membership.id).exists?
   end
 
   def used_avatar_keys_in_classroom(excluding: nil)
@@ -341,8 +337,9 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def load_student_profile_permissions!
-    @can_manage_student = Pundit.policy!(current_user, @student).manage_student_account?
-    @can_create_compliment = policy(@classroom).create_compliment?
+    @can_manage_student = policy(@classroom).manage_members?
+    @student_active_in_classroom = active_student_in_classroom?
+    @can_create_compliment = policy(@classroom).create_compliment? && @student_active_in_classroom
     @can_draw_coupon = policy(@classroom).draw_coupon?
     @student_messages_enabled = @classroom.student_messages_enabled?
   end

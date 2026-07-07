@@ -579,6 +579,8 @@ RSpec.describe "User messages", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(teacher_root.body)
+      expect(response.body).not_to include("user_message[body]")
+      expect(response.body).not_to include("reply_to_message_id")
     end
 
     it "allows a teacher to reply under a student root message with turbo stream" do

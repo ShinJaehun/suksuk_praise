@@ -212,6 +212,31 @@ RSpec.describe "Classroom students", type: :request do
       expect(response.body).not_to include("칭찬 타임라인")
     end
 
+    it "shows inactive status and hides operating actions for an inactive student" do
+      student_membership.inactive!
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(I18n.t("ui.inactive"))
+      expect(response.body).to include("쿠폰 관리")
+      expect(response.body).to include("한눈에 보기")
+      expect(response.body).to include("활동 기록")
+      expect(response.body).to include("학생 정보·PIN 수정")
+      expect(response.body).not_to include("칭찬하기")
+      expect(response.body).not_to include("쿠폰 지급")
+    end
+
+    it "does not allow an inactive student to view their own classroom detail" do
+      student_membership.inactive!
+      sign_out teacher
+      sign_in student
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:not_found)
+    end
+
     it "shows pending coupon use requests as work to process" do
       template = create(:coupon_template, created_by: teacher)
       coupon = create(
@@ -388,111 +413,127 @@ RSpec.describe "Classroom students", type: :request do
     end
   end
 
+  describe "PATCH /classrooms/:classroom_id/students/:id/deactivate" do
+    it "lets the classroom teacher deactivate a student without deleting records" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student)
+
+      expect {
+        patch deactivate_classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+      expect(student.received_compliments.exists?).to eq(true)
+      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
+      expect(flash[:notice]).to eq(I18n.t("students.deactivate.success"))
+    end
+
+    it "lets an admin deactivate a student" do
+      admin = create(:user, :admin)
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      sign_out teacher
+      sign_in admin
+
+      expect {
+        patch deactivate_classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(membership.reload).to be_inactive
+    end
+
+    it "rejects a teacher outside the classroom" do
+      outsider = create(:user, :teacher)
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      sign_out teacher
+      sign_in outsider
+
+      expect {
+        patch deactivate_classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(response).to redirect_to(root_path)
+      expect(membership.reload).to be_active
+    end
+
+    it "rejects a student" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      sign_out teacher
+      sign_in student
+
+      expect {
+        patch deactivate_classroom_student_path(classroom, student)
+      }.not_to change(User, :count)
+
+      expect(response).to redirect_to(root_path)
+      expect(membership.reload).to be_active
+    end
+  end
+
+  describe "PATCH /classrooms/:classroom_id/students/:id/reactivate" do
+    it "lets the classroom teacher reactivate an inactive student" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(membership.reload).to be_active
+      expect(response).to redirect_to(classroom_members_path(classroom, status: "active"))
+      expect(flash[:notice]).to eq(I18n.t("students.reactivate.success"))
+    end
+
+    it "lets an admin reactivate an inactive student" do
+      admin = create(:user, :admin)
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+      sign_out teacher
+      sign_in admin
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(membership.reload).to be_active
+    end
+
+    it "rejects a teacher outside the classroom" do
+      outsider = create(:user, :teacher)
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+      sign_out teacher
+      sign_in outsider
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(membership.reload).to be_inactive
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "rejects a student" do
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+      sign_out teacher
+      sign_in student
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(membership.reload).to be_inactive
+      expect(response).to redirect_to(root_path)
+    end
+  end
+
   describe "DELETE /classrooms/:classroom_id/students/:id" do
-    it "hard deletes a student without activity or another classroom membership" do
+    it "keeps direct delete calls from hard deleting a student" do
       student = create(:user, :student)
       membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-
-      expect {
-        delete classroom_student_path(classroom, student)
-      }.to change(User, :count).by(-1)
-        .and change(ClassroomMembership, :count).by(-1)
-
-      expect(User.exists?(student.id)).to eq(false)
-      expect(ClassroomMembership.exists?(membership.id)).to eq(false)
-      expect(response).to redirect_to(classroom_path(classroom))
-      expect(flash[:notice]).to eq(I18n.t("students.destroy.hard_deleted"))
-    end
-
-    it "inactivates the membership when the student has activity in the classroom" do
-      student = create(:user, :student)
-      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student)
 
       expect {
         delete classroom_student_path(classroom, student)
       }.not_to change(User, :count)
 
       expect(membership.reload).to be_inactive
-      expect(flash[:notice]).to eq(I18n.t("students.destroy.inactivated"))
-    end
-
-    it "inactivates the membership when the student has a coupon in the classroom" do
-      student = create(:user, :student)
-      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:user_coupon, user: student, classroom: classroom)
-
-      expect {
-        delete classroom_student_path(classroom, student)
-      }.not_to change(User, :count)
-
-      expect(membership.reload).to be_inactive
-    end
-
-    it "inactivates the membership when the student has a coupon use request in the classroom" do
-      student = create(:user, :student)
-      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      coupon = create(:user_coupon, user: student, classroom: classroom)
-      create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
-
-      expect {
-        delete classroom_student_path(classroom, student)
-      }.not_to change(User, :count)
-
-      expect(membership.reload).to be_inactive
-    end
-
-    it "inactivates the membership when the student has a message in the classroom" do
-      student = create(:user, :student)
-      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:user_message, classroom: classroom, sender: teacher, recipient: student)
-
-      expect {
-        delete classroom_student_path(classroom, student)
-      }.not_to change(User, :count)
-
-      expect(membership.reload).to be_inactive
-    end
-
-    it "inactivates the current membership when the student has current classroom activity and another membership" do
-      student = create(:user, :student)
-      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      other_membership = create(:classroom_membership, user: student, classroom: create(:classroom), role: "student")
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student)
-
-      expect {
-        delete classroom_student_path(classroom, student)
-      }.not_to change(User, :count)
-
-      expect(membership.reload).to be_inactive
-      expect(other_membership.reload).to be_active
-    end
-
-    it "removes only the current membership when the student belongs to another classroom" do
-      student = create(:user, :student)
-      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      other_membership = create(:classroom_membership, user: student, classroom: create(:classroom), role: "student")
-
-      expect {
-        delete classroom_student_path(classroom, student)
-      }.not_to change(User, :count)
-
-      expect(ClassroomMembership.exists?(membership.id)).to eq(false)
-      expect(ClassroomMembership.exists?(other_membership.id)).to eq(true)
-      expect(flash[:notice]).to eq(I18n.t("students.destroy.removed_from_classroom"))
-    end
-
-    it "inactivates the membership when only global student activity exists" do
-      student = create(:user, :student)
-      membership = create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:compliment, classroom: create(:classroom), giver: teacher, receiver: student)
-
-      expect {
-        delete classroom_student_path(classroom, student)
-      }.not_to change(User, :count)
-
-      expect(membership.reload).to be_inactive
-      expect(flash[:notice]).to eq(I18n.t("students.destroy.inactivated"))
+      expect(response).to redirect_to(classroom_members_path(classroom, status: "inactive"))
     end
   end
 end

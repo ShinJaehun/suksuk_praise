@@ -1,9 +1,11 @@
-<div class="mt-4">
-  <%= render "user_messages/message_form",
-        message: message,
-        form_url: form_url,
-        sender: current_user %>
-</div>
+<% if local_assigns.fetch(:can_write_messages, true) %>
+  <div class="mt-4">
+    <%= render "user_messages/message_form",
+          message: message,
+          form_url: form_url,
+          sender: current_user %>
+  </div>
+<% end %>
 
 <div class="mt-4">
   <%= render "user_messages/thread",
@@ -11,5 +13,6 @@
         reply_message: reply_message,
         user: user,
         form_url: form_url,
+        can_write_messages: local_assigns.fetch(:can_write_messages, true),
         active_reply_thread_id: active_reply_thread_id %>
 </div>

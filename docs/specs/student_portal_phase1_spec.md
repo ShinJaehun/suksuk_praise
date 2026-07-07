@@ -50,7 +50,7 @@
    - 이름 수정
    - 이메일 수정
    - 비밀번호 재설정
-   - 계정 삭제
+   - 운영 상태 관리(비활성화/복구)
 6. 학생 self page / 교사·관리자용 학생 상세의 역할 분리 강화
 7. 교사↔학생 메시지 기능을 수용할 수 있는 구조 정리
 
@@ -111,7 +111,7 @@
 - 자기 avatar 직접 업로드/수정
 - 교사/관리자용 학생 상세 경로 접근
 - 교사/관리자용 학생 계정 관리 경로 접근
-- 학생 비밀번호 재설정/계정 삭제 같은 관리 액션 수행
+- 학생 비밀번호 재설정/비활성화/복구 같은 관리 액션 수행
 
 학생이 `classrooms#index`, `classrooms#show` 같은 기존 교실 중심 화면으로 직접 접근하더라도,
 이번 단계에서는 학생 마이페이지 중심 구조를 우선하므로 자기 마이페이지로 유도하는 방향을 우선 검토한다.
@@ -125,7 +125,8 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 - `GET /classrooms/:classroom_id/students/:id/edit`
 - `PATCH /classrooms/:classroom_id/students/:id`
 - `PATCH /classrooms/:classroom_id/students/:id/reset_password`
-- `DELETE /classrooms/:classroom_id/students/:id`
+- `PATCH /classrooms/:classroom_id/students/:id/deactivate`
+- `PATCH /classrooms/:classroom_id/students/:id/reactivate`
 
 ---
 
@@ -154,7 +155,7 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 - 이름 수정
 - 이메일 수정
 - 임시 비밀번호 직접 재설정
-- 계정 삭제
+- 운영 상태 관리(비활성화/복구)
 - 향후:
   - 쿠폰 사용 승인/처리
   - 개별 메시지 보내기
@@ -177,7 +178,7 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 
 주의:
 - 학생 본인용 마이페이지와 자기 정보 수정 화면에는 계정 삭제 기능을 두지 않는다.
-- 계정 삭제는 교사/관리자용 학생 관리 액션으로만 제공한다.
+- 학생 운영 상태 변경은 교사/관리자용 학생 관리 액션으로만 제공한다.
 
 중요:
 - 교사용 학생 상세와 학생 본인용 페이지를 **억지로 완전히 같은 화면으로 만들려고 하지 말 것**
@@ -311,11 +312,11 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 - 이름 수정
 - 이메일 수정
 - 비밀번호 재설정
-- 계정 삭제
+- 운영 상태 관리(비활성화/복구)
 
 원칙:
 - 관리용 학생 상세(`classroom_student_path`)는 조회 중심으로 유지한다.
-- 실제 계정 수정/비밀번호 재설정/삭제는 `classrooms/:classroom_id/students/:id/edit` 에서 처리한다.
+- 실제 계정 수정/비밀번호 재설정/운영 상태 변경은 `classrooms/:classroom_id/students/:id/edit` 에서 처리한다.
 - 교사/관리자는 학생 비밀번호를 메일 reset 이 아니라 임시 비밀번호를 직접 설정하는 방식으로 관리한다.
 
 ### 6단계. 학생 self page / 교사·관리자용 학생 상세 view 분리
