@@ -124,6 +124,7 @@ Rails.application.routes.draw do
 
     get "teachers", to: redirect("/classrooms"), as: nil
     resources :teachers, only: [:new, :create, :edit, :update]
+    resources :schools, only: %i[new create edit update]
 
     resources :coupon_templates, except: [:show]
   end

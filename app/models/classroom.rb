@@ -23,6 +23,7 @@ class Classroom < ApplicationRecord
     end
 
     validates :name, length: { maximum: 50 }
+    validates :school, presence: true, if: -> { school_id.present? }
     validates :grade, numericality: {
       only_integer: true,
       greater_than_or_equal_to: 1,

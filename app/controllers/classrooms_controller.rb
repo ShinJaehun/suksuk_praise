@@ -14,7 +14,7 @@ class ClassroomsController < ApplicationController
 
   def index
     # index는 policy_scope만 요구(verify_policy_scoped 훅 통과)
-    @classrooms = policy_scope(Classroom).order(created_at: :desc)
+    @classrooms = policy_scope(Classroom).includes(:school).order(created_at: :desc)
     @classrooms_index_title = current_user.admin? ? "교실 관리" : "내 교실"
     classroom_ids = @classrooms.map(&:id)
     teacher_memberships = ClassroomMembership
@@ -24,7 +24,11 @@ class ClassroomsController < ApplicationController
     @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", user_role: "teacher", limit_per_classroom: 1)
     @classroom_student_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "student").group(:classroom_id).count
     @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 5)
-    @teacher_assignment_rows = teacher_assignment_rows if current_user.admin?
+    if current_user.admin?
+      @teacher_assignment_rows = teacher_assignment_rows
+      @schools = policy_scope(School).order(:name, :id).load
+      @school_classroom_counts = Classroom.where(school_id: @schools.map(&:id)).group(:school_id).count
+    end
     @manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
@@ -65,7 +69,10 @@ class ClassroomsController < ApplicationController
   def new
     authorize Classroom
     @classroom = Classroom.new
-    load_new_classroom_teacher_assignment_form if current_user.admin?
+    if current_user.admin?
+      load_school_options
+      load_new_classroom_teacher_assignment_form
+    end
   end
 
   def create
@@ -74,14 +81,20 @@ class ClassroomsController < ApplicationController
     if create_classroom_with_teacher_assignments
       redirect_to classroom_path(@classroom), notice: t("classrooms.create.success")
     else
-      load_new_classroom_teacher_assignment_form if current_user.admin?
+      if current_user.admin?
+        load_school_options
+        load_new_classroom_teacher_assignment_form
+      end
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
     authorize @classroom
-    load_teacher_assignment_form if current_user.admin?
+    if current_user.admin?
+      load_school_options
+      load_teacher_assignment_form
+    end
   end
 
   def update
@@ -89,7 +102,10 @@ class ClassroomsController < ApplicationController
     if update_classroom_with_teacher_assignments
       redirect_to @classroom, notice: t("classrooms.update.success")
     else
-      load_teacher_assignment_form if current_user.admin?
+      if current_user.admin?
+        load_school_options
+        load_teacher_assignment_form
+      end
       render :edit, status: :unprocessable_entity
     end
   end
@@ -331,20 +347,23 @@ class ClassroomsController < ApplicationController
   end
 
   def classroom_params
-    params.require(:classroom).permit(
+    permitted = [
       :name,
       :daily_compliment_king_enabled,
       :weekly_compliment_king_enabled,
       :monthly_compliment_king_enabled,
       :message_policy
-    )
+    ]
+    permitted.concat(%i[school_id grade]) if current_user.admin?
+
+    params.require(:classroom).permit(*permitted)
   end
 
   def update_classroom_with_teacher_assignments
     Classroom.transaction do
       next false unless @classroom.update(classroom_params)
 
-      sync_teacher_assignments if current_user.admin?
+      sync_teacher_assignments if current_user.admin? && teacher_assignment_params_submitted?
       true
     end
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
@@ -358,6 +377,10 @@ class ClassroomsController < ApplicationController
       .joins(:user)
       .where(users: { role: "teacher" })
       .pluck(:user_id)
+  end
+
+  def load_school_options
+    @school_options = policy_scope(School).order(:name, :id)
   end
 
   def load_new_classroom_teacher_assignment_form
@@ -413,6 +436,10 @@ class ClassroomsController < ApplicationController
     Array(params.dig(:classroom, :teacher_ids))
       .reject(&:blank?)
       .map(&:to_i) & User.teacher.pluck(:id)
+  end
+
+  def teacher_assignment_params_submitted?
+    params.require(:classroom).key?(:teacher_ids)
   end
 
   def redirect_students_to_mypage!

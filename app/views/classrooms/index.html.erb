@@ -24,6 +24,13 @@
             <h2 class="truncate text-lg font-bold text-slate-900">
               <%= classroom.name %>
             </h2>
+            <p class="text-xs font-medium text-slate-500">
+              <% if classroom.school.nil? && classroom.grade.nil? %>
+                미지정
+              <% else %>
+                <%= classroom.school&.name || "학교 미지정" %> · <%= classroom.grade ? "#{classroom.grade}학년" : "학년 미지정" %>
+              <% end %>
+            </p>
 
             <div class="space-y-3">
               <% if teacher %>
@@ -140,4 +147,35 @@
       </aside>
     <% end %>
   </div>
+
+  <% if current_user.admin? %>
+    <section class="mt-6 border-t border-slate-200 pt-6">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <h2 class="text-lg font-bold text-slate-900">학교</h2>
+        <%= link_to "학교 추가",
+              new_admin_school_path,
+              data: { turbo_frame: "modal" },
+              class: "shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      </div>
+
+      <% if @schools.any? %>
+        <div class="divide-y divide-slate-200 border-y border-slate-200">
+          <% @schools.each do |school| %>
+            <div class="flex items-center justify-between gap-4 py-3">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-slate-900"><%= school.name %></p>
+                <p class="mt-0.5 text-xs text-slate-500">소속 교실 <%= @school_classroom_counts.fetch(school.id, 0) %>개</p>
+              </div>
+              <%= link_to "수정",
+                    edit_admin_school_path(school),
+                    data: { turbo_frame: "modal" },
+                    class: "shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50" %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="border-y border-slate-200 py-6 text-center text-sm text-slate-500">등록된 학교가 없습니다.</p>
+      <% end %>
+    </section>
+  <% end %>
 </section>

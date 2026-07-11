@@ -44,6 +44,19 @@ RSpec.describe Classroom, type: :model do
     expect(classroom).to be_valid
   end
 
+  it "allows a blank school during the transition" do
+    classroom = build(:classroom, school: nil)
+
+    expect(classroom).to be_valid
+  end
+
+  it "rejects a school id that does not exist" do
+    classroom = build(:classroom, school: nil, school_id: School.maximum(:id).to_i + 10_000)
+
+    expect(classroom).not_to be_valid
+    expect(classroom.errors[:school]).to be_present
+  end
+
   it "allows grades from 1 to 6" do
     (1..6).each do |grade|
       classroom = build(:classroom, grade: grade)

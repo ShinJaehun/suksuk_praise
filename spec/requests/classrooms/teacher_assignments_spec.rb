@@ -56,6 +56,33 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       expect(classroom.classroom_memberships.teacher.exists?(user: other_teacher)).to eq(true)
     end
 
+    it "keeps teacher assignments when teacher_ids is not submitted" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      school = create(:school)
+      sign_in admin
+
+      patch classroom_path(classroom), params: {
+        classroom: classroom_update_params.merge(school_id: school.id, grade: 4)
+      }
+
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(classroom.classroom_memberships.teacher.exists?(user: teacher)).to eq(true)
+      expect(classroom.reload.school).to eq(school)
+      expect(classroom.grade).to eq(4)
+    end
+
+    it "removes all teacher assignments when an admin explicitly submits an empty teacher_ids array" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      sign_in admin
+
+      patch classroom_path(classroom), params: {
+        classroom: classroom_update_params.merge(teacher_ids: [])
+      }
+
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(classroom.classroom_memberships.teacher).to be_empty
+    end
+
     it "does not change student or admin memberships when syncing teacher assignments" do
       student = create(:user, :student)
       student_membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")

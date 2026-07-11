@@ -50,10 +50,10 @@
 |---|---|---|---|---|---|
 | `ClassroomsController#index` | `policy_scope(Classroom)` | 가능 | 가능 | 가능 | role별 classroom scope 적용 |
 | `ClassroomsController#show` | `ClassroomPolicy#show?` | 가능 | 본인 teacher/student membership 교실만 가능 | 본인 membership 교실만 가능 |  |
-| `ClassroomsController#new` | `ClassroomPolicy#create?` | 가능 | 가능 | 불가 |  |
-| `ClassroomsController#create` | `ClassroomPolicy#create?` | 가능 | 가능 | 불가 | 생성 성공 시 생성자를 teacher membership으로 추가 |
+| `ClassroomsController#new` | `ClassroomPolicy#create?` | 가능 | 가능 | 불가 | 학교·학년 입력은 admin에게만 표시 |
+| `ClassroomsController#create` | `ClassroomPolicy#create?` | 가능 | 가능 | 불가 | admin만 학교·학년 지정 가능. teacher 생성 성공 시 생성자를 teacher membership으로 추가 |
 | `ClassroomsController#edit` | `ClassroomPolicy#update?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
-| `ClassroomsController#update` | `ClassroomPolicy#update?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
+| `ClassroomsController#update` | `ClassroomPolicy#update?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | admin만 학교·학년 변경 가능. 담당 교사 배정은 `teacher_ids`가 명시된 경우에만 변경 |
 | `ClassroomsController#destroy` | `ClassroomPolicy#destroy?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `destroy?`는 `update?` 위임 |
 | `ClassroomsController#refresh_compliment_king` | `ClassroomPolicy#show?` | 가능 | membership 교실이면 가능 | membership 교실이면 가능 | 읽기 액션으로 동작 |
 | `ClassroomsController#student_login_info` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 학생 로그인 URL/QR/재발급 modal |
@@ -79,6 +79,15 @@
 | `Admin::TeachersController#create` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 새 계정은 항상 `role: teacher` |
 | `Admin::TeachersController#edit` | `UserPolicy#update?` | 가능 | 불가 | 불가 | 대상 teacher의 homeroom membership 관리 |
 | `Admin::TeachersController#update` | `UserPolicy#update?` | 가능 | 불가 | 불가 | teacher classroom membership만 수정 |
+
+### School
+
+| 리소스/액션 | 정책 기준 | admin | teacher | student | 비고 |
+|---|---|---|---|---|---|
+| `Admin::SchoolsController#new`, `#create` | `SchoolPolicy#create?` | 가능 | 불가 | 불가 | `/classrooms` 관리 허브에서 진입 |
+| `Admin::SchoolsController#edit`, `#update` | `SchoolPolicy#update?` | 가능 | 불가 | 불가 | 학교 이름만 수정 가능 |
+
+학교 삭제, school admin 권한, teacher 학교 소속 scope는 아직 구현하지 않았다.
 
 ### Compliment
 
