@@ -2,6 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
   include ActiveSupport::Testing::TimeHelpers
+  include ActionView::RecordIdentifier
 
   describe "POST /classrooms/:id/refresh_compliment_king" do
     let(:turbo_headers) { { "ACCEPT" => "text/vnd.turbo-stream.html" } }
@@ -26,6 +27,10 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
         expect(response.body).to include(student.name)
         expect(response.body).to include("쿠폰 뽑기")
         expect(response.body).not_to include("랜덤 쿠폰 뽑기")
+        fragment = Nokogiri::HTML.fragment(response.body)
+        frame = fragment.at_css(%(turbo-frame##{dom_id(classroom, :compliment_king_daily)}))
+        expect(frame).to be_present
+        expect(frame.key?("hidden")).to eq(false)
       end
     end
 

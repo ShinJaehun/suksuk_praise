@@ -2,6 +2,7 @@ require "rails_helper"
 
 RSpec.describe "Classrooms compliment kings", type: :request do
   include ActiveSupport::Testing::TimeHelpers
+  include ActionView::RecordIdentifier
 
   describe "GET /classrooms/:id" do
     let(:classroom) { create(:classroom) }
@@ -48,6 +49,28 @@ RSpec.describe "Classrooms compliment kings", type: :request do
       expect(response.body).to include("오늘의 칭찬왕")
       expect(response.body).to include("이번 달 칭찬왕")
       expect(response.body).not_to include("이번 주 칭찬왕")
+    end
+
+    it "renders compliment king toggle wiring for each enabled period" do
+      classroom.update!(weekly_compliment_king_enabled: true, monthly_compliment_king_enabled: true)
+
+      get classroom_path(classroom)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      expect(document.at_css('[data-controller="compliment-king-toggle"]')).to be_present
+
+      %w[daily weekly monthly].each do |period|
+        frame_id = dom_id(classroom, :"compliment_king_#{period}")
+        button = document.at_css(%(button[aria-controls="#{frame_id}"]))
+        frame = document.at_css(%(turbo-frame##{frame_id}))
+
+        expect(button).to be_present
+        expect(button["aria-expanded"]).to eq("false")
+        expect(button.ancestors("form").first["data-action"]).to eq("submit->compliment-king-toggle#submit")
+        expect(frame).to be_present
+        expect(frame.key?("hidden")).to eq(true)
+      end
     end
 
     it "shows today's compliment count on student cards instead of total points" do

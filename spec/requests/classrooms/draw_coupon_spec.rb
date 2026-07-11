@@ -109,6 +109,26 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
     end
 
+    it "returns a visible compliment king frame after drawing a weekly king coupon" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      classroom.update!(weekly_compliment_king_enabled: true)
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "weekly", mode: "weekly_top", user_id: student.id },
+          headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+      end
+
+      expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      fragment = Nokogiri::HTML.fragment(response.body)
+      frame = fragment.at_css(%(turbo-frame##{dom_id(classroom, :compliment_king_weekly)}))
+      expect(frame).to be_present
+      expect(frame.key?("hidden")).to eq(false)
+    end
+
     it "rejects a student" do
       sign_in student
 
