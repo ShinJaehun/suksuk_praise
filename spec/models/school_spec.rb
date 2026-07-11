@@ -28,4 +28,12 @@ RSpec.describe School, type: :model do
     expect { school.destroy }.not_to change(Classroom, :count)
     expect(school).not_to be_destroyed
   end
+
+  it "exposes teachers through school memberships" do
+    school = create(:school)
+    teacher = create(:user, :teacher)
+    create(:school_membership, school: school, user: teacher)
+
+    expect(school.teachers).to contain_exactly(teacher)
+  end
 end

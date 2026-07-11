@@ -200,11 +200,13 @@ ko:
       update:
         success: "학교 이름을 수정했습니다."
     teachers:
+      errors:
+        school_not_found: "선택한 학교를 찾을 수 없습니다."
       create:
         success: "새 교사 계정이 생성되었습니다."
         failure: "교사 계정 생성에 실패했습니다."
       update:
-        success: "담임 교실 설정을 저장했습니다."
+        success: "교사 소속과 담당 교실을 저장했습니다."
 
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."

@@ -39,6 +39,8 @@ class User < ApplicationRecord
   # 교실 멤버십은 유저 삭제 시 같이 삭제(조인 테이블)
   has_many :classroom_memberships, dependent: :destroy
   has_many :classrooms, through: :classroom_memberships
+  has_one :school_membership, dependent: :destroy
+  has_one :school, through: :school_membership
 
   # 받았던 칭찬도 유저 삭제 시 함께 삭제
   has_many :given_compliments,

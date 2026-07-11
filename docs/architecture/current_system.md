@@ -35,7 +35,12 @@
 - `School`은 학교 조직의 기준 모델이며, `Classroom`은 전환 기간 동안 optional `school`과 nullable `grade`를 가질 수 있다.
 - `Classroom#grade`는 초등학교 기준 1~6 정수만 허용하되, 기존 데이터 이전을 위해 아직 비어 있을 수 있다.
 - 전체 admin은 `/classrooms` 관리 허브에서 학교를 추가하고 이름을 수정할 수 있으며, 교실 생성·수정 시 학교와 학년을 지정할 수 있다.
-- teacher가 보낸 교실 `school_id`, `grade` 변경값은 허용하지 않는다. 교사 학교 소속과 교실 생성 시 학교 자동 지정은 아직 구현하지 않았다.
+- teacher의 학교 소속은 `SchoolMembership`으로 관리하며, 현재 교사당 한 학교만 허용한다. 학교 미지정 teacher는 허용하고 global admin과 student는 SchoolMembership을 갖지 않는다.
+- 담당 학급의 기준은 기존 teacher 역할 `ClassroomMembership`이며, 담당 학년은 연결된 Classroom의 `grade`를 통해 계산하고 별도로 저장하지 않는다.
+- 전체 admin은 교사 생성·수정 modal에서 학교 소속과 담당 교실을 관리한다. 학교 소속과 담당 교실의 학교가 달라도 전환 기간에는 저장을 허용하며 별도 경고 badge는 표시하지 않는다.
+- SchoolMembership은 담당 교실이나 교실의 학교 변경에 따라 자동 생성·변경·삭제되지 않으며 담당 교사를 자동 해제하지도 않는다.
+- teacher가 보낸 교실 `school_id`, `grade` 변경값은 허용하지 않는다. teacher 교실 생성 시 소속 학교 자동 지정은 아직 구현하지 않았다.
+- 기존 teacher의 SchoolMembership backfill은 아직 수행하지 않았다.
 - 학교 삭제와 school admin 권한은 아직 구현하지 않았다.
 - 교실 담당 교사 배정은 admin이 `teacher_ids` 파라미터를 명시적으로 제출했을 때만 변경한다.
 - 향후 학교 일정(`SchoolCalendarEvent`)은 `School`을 기준으로 연결할 계획이다.

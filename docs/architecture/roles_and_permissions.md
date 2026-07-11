@@ -4,7 +4,7 @@
 
 - 서버측 권한 판단의 중심은 Pundit policy와 `policy_scope`이다.
 - 모든 비-`index` 액션은 `ApplicationController`의 `verify_authorized`, `index` 액션은 `verify_policy_scoped` 대상으로 관리된다.
-- 실제 권한 경계는 전역 `User#role`(`admin`, `teacher`, `student`)과 교실 단위 `ClassroomMembership#role`(`teacher`, `student`)의 조합으로 형성된다.
+- 실제 권한 경계는 전역 `User#role`(`admin`, `teacher`, `student`)과 교실 단위 `ClassroomMembership#role`(`teacher`, `student`)의 조합으로 형성된다. `SchoolMembership`은 teacher의 단일 학교 소속을 나타내지만 아직 권한 scope로 사용하지 않는다.
 - `teacher` 권한은 전역 role만으로 충분하지 않고, 대부분의 교실 관련 쓰기 권한은 "해당 classroom의 teacher membership"이 있어야 허용된다.
 - 일부 리소스는 policy 외에 controller/service guard가 추가로 있다.
   - `UsersController#show`의 classroom membership 확인
@@ -75,10 +75,10 @@
 |---|---|---|---|---|---|
 | `UsersController#show` | `UserPolicy#show?` | 가능 | 자신이 teacher인 교실에 속한 학생만 가능 | 본인만 가능 | `classroom_id`가 있으면 classroom `show?`와 대상 user membership을 추가 확인 |
 | `Admin::TeachersController#index` | `policy_scope(User)` | 가능 | 불가 | 불가 | `Admin::BaseController#require_admin!`도 필요 |
-| `Admin::TeachersController#new` | `UserPolicy#create?` | 가능 | 불가 | 불가 |  |
-| `Admin::TeachersController#create` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 새 계정은 항상 `role: teacher` |
-| `Admin::TeachersController#edit` | `UserPolicy#update?` | 가능 | 불가 | 불가 | 대상 teacher의 homeroom membership 관리 |
-| `Admin::TeachersController#update` | `UserPolicy#update?` | 가능 | 불가 | 불가 | teacher classroom membership만 수정 |
+| `Admin::TeachersController#new` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 선택적으로 단일 학교 소속 지정 |
+| `Admin::TeachersController#create` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 새 계정은 항상 `role: teacher`; User와 SchoolMembership을 한 transaction으로 생성 |
+| `Admin::TeachersController#edit` | `UserPolicy#update?` | 가능 | 불가 | 불가 | 대상 teacher의 학교 소속과 담당 교실 관리 |
+| `Admin::TeachersController#update` | `UserPolicy#update?` | 가능 | 불가 | 불가 | SchoolMembership과 teacher ClassroomMembership을 한 transaction으로 변경 |
 
 ### School
 
@@ -88,6 +88,8 @@
 | `Admin::SchoolsController#edit`, `#update` | `SchoolPolicy#update?` | 가능 | 불가 | 불가 | 학교 이름만 수정 가능 |
 
 학교 삭제, school admin 권한, teacher 학교 소속 scope는 아직 구현하지 않았다.
+
+`SchoolMembership`은 teacher만 가질 수 있고 교사당 한 학교로 제한한다. global admin과 student는 membership을 가질 수 없다. 학교 소속과 담당 Classroom의 학교가 달라도 전환 기간에는 저장을 허용하고 별도 경고 badge는 표시하지 않으며, membership 자동 동기화나 담당 교사 자동 해제는 수행하지 않는다.
 
 ### Compliment
 

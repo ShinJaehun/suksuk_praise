@@ -43,9 +43,10 @@ RSpec.describe "Admin teachers", type: :request do
     get new_admin_teacher_path, headers: { "Turbo-Frame" => "modal" }
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('<turbo-frame id="modal"')
+    expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include("새 교사 추가")
     expect(response.body).to include('data-turbo-frame="_top"')
+    expect(response.body).not_to include("<!DOCTYPE html>")
     expect(response.body).to match(%r{src="[^"]*avatars/teacher[MF]\d{2}[^"]*\.png"})
     expect(response.body).to include('name="user[gender]"')
     expect(response.body).to include('name="user[avatar_key]"')
@@ -152,9 +153,9 @@ RSpec.describe "Admin teachers", type: :request do
     get edit_admin_teacher_path(teacher)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("담임 교실 배정")
+    expect(response.body).to include("교사 소속 및 담당 교실")
     expect(response.body).to include("교실로 돌아가기")
-    expect(response.body).not_to include('data-turbo-frame="_top"')
+    expect(response.body).to include('data-turbo-frame="_top"')
   end
 
   it "renders teacher assignment in the modal frame" do
@@ -163,9 +164,10 @@ RSpec.describe "Admin teachers", type: :request do
     get edit_admin_teacher_path(teacher), headers: { "Turbo-Frame" => "modal" }
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('<turbo-frame id="modal"')
-    expect(response.body).to include("담임 교실 배정")
+    expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
+    expect(response.body).to include("교사 소속 및 담당 교실")
     expect(response.body).to include('data-turbo-frame="_top"')
+    expect(response.body).not_to include("<!DOCTYPE html>")
     expect(response.body).to include("교실로 돌아가기")
   end
 end

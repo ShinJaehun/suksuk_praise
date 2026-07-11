@@ -1,10 +1,13 @@
 class Admin::TeachersController < Admin::BaseController
-  before_action :set_teacher, only: [:edit, :update]
+  before_action :set_teacher, only: %i[edit update]
+  layout -> { turbo_frame_request? ? false : "application" }
 
   def new
     @teacher = User.new
     @teacher.avatar_key = teacher_avatar_keys.sample
     authorize @teacher
+    load_school_options
+    load_selected_school
   end
 
   def create
@@ -15,32 +18,34 @@ class Admin::TeachersController < Admin::BaseController
     @teacher.avatar_key = pool.sample unless pool.include?(@teacher.avatar_key)
     authorize @teacher
 
-    if @teacher.save
-      redirect_to classrooms_path, notice: t("admin.teachers.create.success")
+    if create_teacher_with_school_membership
+      redirect_to classrooms_path,
+        notice: t("admin.teachers.create.success"),
+        status: :see_other
     else
       flash.now[:alert] = t("admin.teachers.create.failure")
-      render :new, status: :unprocessable_entity
+      load_school_options
+      load_selected_school
+      render_teacher_form(:new)
     end
   end
 
   def edit
     authorize @teacher
-    @classrooms = policy_scope(Classroom).order(:created_at)
-    @teacher_classroom_ids = @teacher.classroom_memberships.teacher.pluck(:classroom_id)
-    @teacher_classroom_names = @classrooms
-      .select { |classroom| @teacher_classroom_ids.include?(classroom.id) }
-      .map(&:name)
-    @teacher_classroom_count = @teacher_classroom_names.size
+    load_edit_form
   end
 
   def update
     authorize @teacher
 
-    # 개인 정보(name/email/password)는 Devise에서 각 교사가 직접 수정.
-    # 여기서는 담임 교실 매핑만 관리한다.
-    update_homeroom_memberships!
-    redirect_to classrooms_path, notice: t("admin.teachers.update.success")
-
+    if update_teacher_assignments
+      redirect_to classrooms_path,
+        notice: t("admin.teachers.update.success"),
+        status: :see_other
+    else
+      load_edit_form
+      render_teacher_form(:edit)
+    end
   end
 
   private
@@ -50,6 +55,10 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def teacher_params
+    params.require(:user).permit(:name, :email, :password, :gender, :avatar_key)
+  end
+
+  def teacher_update_params
     params.require(:user).permit(:name, :email, :password, :gender, :avatar_key)
   end
 
@@ -64,29 +73,136 @@ class Admin::TeachersController < Admin::BaseController
     User.avatar_keys_for_role("teacher")
   end
 
-  def update_homeroom_memberships!
-    ids = Array(params[:classroom_ids]).reject(&:blank?).map(&:to_i)
+  def create_teacher_with_school_membership
+    school = selected_school
+    return false if school_selection_invalid?
 
-    # 기존 teacher memberships
-    current_ids = @teacher.classroom_memberships.teacher.pluck(:classroom_id)
+    User.transaction do
+      @teacher.save!
+      SchoolMembership.create!(user: @teacher, school: school) if school
+    end
+    true
+  rescue ActiveRecord::RecordInvalid => error
+    copy_membership_errors(error.record)
+    false
+  end
 
-    # 추가해야 할 classrooms
+  def update_teacher_assignments
+    school = selected_school if school_selection_submitted?
+    return false if school_selection_invalid?
+
+    User.transaction do
+      @teacher.update!(teacher_update_params) if params[:user].present?
+      sync_school_membership!(school) if school_selection_submitted?
+      sync_homeroom_memberships! if classroom_assignments_submitted?
+    end
+    true
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
+    copy_membership_errors(error.record) if error.respond_to?(:record)
+    false
+  end
+
+  def sync_school_membership!(school)
+    membership = @teacher.school_membership
+
+    if school.nil?
+      membership&.destroy!
+    elsif membership
+      membership.update!(school: school)
+    else
+      SchoolMembership.create!(user: @teacher, school: school)
+    end
+  end
+
+  def sync_homeroom_memberships!
+    ids = selected_classroom_ids
+    current_memberships = @teacher.classroom_memberships.teacher
+    current_ids = current_memberships.pluck(:classroom_id)
+
     (ids - current_ids).each do |classroom_id|
       ClassroomMembership.find_or_create_by!(
         user_id: @teacher.id,
         classroom_id: classroom_id,
-        role: 'teacher'
+        role: "teacher"
       )
     end
 
-    # 제거해야 할 classrooms
-    (current_ids - ids).each do |classroom_id|
-      membership = ClassroomMembership.find_by(
-        user_id: @teacher.id,
-        classroom_id: classroom_id,
-        role: 'teacher'
-      )
-      membership&.destroy!
+    current_memberships.where(classroom_id: current_ids - ids).destroy_all
+  end
+
+  def selected_school
+    return nil if params[:school_id].blank?
+
+    @selected_school = School.find_by(id: params[:school_id])
+    return @selected_school if @selected_school
+
+    @school_selection_invalid = true
+    @teacher.errors.add(:base, t("admin.teachers.errors.school_not_found"))
+    nil
+  end
+
+  def school_selection_invalid?
+    @school_selection_invalid == true
+  end
+
+  def school_selection_submitted?
+    params.key?(:school_id)
+  end
+
+  def classroom_assignments_submitted?
+    params.key?(:classroom_ids)
+  end
+
+  def selected_classroom_ids
+    submitted_ids = Array(params[:classroom_ids]).reject(&:blank?).map(&:to_i)
+    Classroom.where(id: submitted_ids).pluck(:id)
+  end
+
+  def load_edit_form
+    load_school_options
+    load_selected_school
+    @classrooms = policy_scope(Classroom).includes(:school).order(:created_at).load
+    @teacher_classroom_ids =
+      if classroom_assignments_submitted?
+        selected_classroom_ids
+      else
+        @teacher.classroom_memberships.teacher.pluck(:classroom_id)
+      end
+    selected_classrooms = @classrooms.select { |classroom| @teacher_classroom_ids.include?(classroom.id) }
+    @teacher_classroom_names = selected_classrooms.map(&:name)
+    @teacher_classroom_count = selected_classrooms.size
+  end
+
+  def load_school_options
+    @schools = School.order(:name, :id)
+  end
+
+  def load_selected_school
+    @selected_school_id =
+      if school_selection_submitted?
+        params[:school_id].presence&.to_i
+      else
+        @teacher.school_membership&.school_id
+      end
+  end
+
+  def copy_membership_errors(record)
+    return unless record.is_a?(SchoolMembership)
+
+    record.errors.full_messages.each { |message| @teacher.errors.add(:base, message) }
+  end
+
+  def render_teacher_form(template)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "modal",
+          partial: "admin/teachers/#{template}_modal"
+        ), status: :unprocessable_entity
+      end
+      format.html do
+        render template, formats: :html, status: :unprocessable_entity
+      end
     end
   end
 end

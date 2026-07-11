@@ -478,16 +478,20 @@ class ClassroomsController < ApplicationController
   def teacher_assignment_rows
     User.teacher
       .with_attached_avatar
-      .includes(classroom_memberships: :classroom)
+      .includes(school_membership: :school, classroom_memberships: :classroom)
       .order(:created_at)
       .map do |teacher|
-        classroom_names = teacher.classroom_memberships
+        classrooms = teacher.classroom_memberships
           .select(&:teacher?)
-          .map { |membership| membership.classroom&.name }
+          .map(&:classroom)
           .compact
+        classroom_names = classrooms.map(&:name)
+        grades = classrooms.filter_map(&:grade).uniq.sort
 
         {
           teacher: teacher,
+          school_name: teacher.school_membership&.school&.name || "학교 미지정",
+          grade_label: grades.any? ? "#{grades.join(', ')}학년" : "학년 미지정",
           classroom_names: classroom_names,
           classroom_count: classroom_names.size
         }

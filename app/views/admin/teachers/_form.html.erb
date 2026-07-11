@@ -1,17 +1,23 @@
-<% form_data = local_assigns[:turbo_frame_target].present? ? { turbo_frame: local_assigns[:turbo_frame_target] } : {} %>
 <% teacher_avatar_keys = User.avatar_keys_for_role("teacher") %>
 <% avatar_image_sources = teacher_avatar_keys.index_with { |avatar_key| asset_path("avatars/#{avatar_key}.png") } %>
 
 <%= form_with model: teacher,
       url: admin_teachers_path,
       class: "space-y-4 max-w-md",
-      data: form_data.merge(
+      data: {
+        turbo_frame: "_top",
         controller: "teacher-avatar-preview",
         teacher_avatar_preview_male_keys_value: User::TEACHER_MALE_AVATAR_KEYS,
         teacher_avatar_preview_female_keys_value: User::TEACHER_FEMALE_AVATAR_KEYS,
         teacher_avatar_preview_all_keys_value: teacher_avatar_keys,
         teacher_avatar_preview_image_sources_value: avatar_image_sources
-      ) do |f| %>
+      } do |f| %>
+  <% if teacher.errors.any? %>
+    <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+      <%= teacher.errors.full_messages.to_sentence %>
+    </div>
+  <% end %>
+
   <div class="flex justify-center">
     <%= f.hidden_field :avatar_key, data: { teacher_avatar_preview_target: "avatarKey" } %>
     <%= image_tag "avatars/#{teacher.avatar_key}.png",
@@ -42,6 +48,14 @@
           { include_blank: "선택해 주세요" },
           class: "mt-1 block w-full border rounded px-3 py-2",
           data: { action: "teacher-avatar-preview#update" } %>
+  </div>
+
+  <div>
+    <%= label_tag :school_id, "학교", class: "block text-sm font-medium text-gray-700" %>
+    <%= select_tag :school_id,
+          options_from_collection_for_select(@schools, :id, :name, @selected_school_id),
+          include_blank: "학교 미지정",
+          class: "mt-1 block w-full rounded border border-gray-300 px-3 py-2" %>
   </div>
 
   <div>
