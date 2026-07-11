@@ -570,6 +570,35 @@ RSpec.describe "User messages", type: :request do
       expect(response.body).to include(%(value="#{teacher_root.id}"))
     end
 
+    it "renders reply forms collapsed with per-thread toggle controls" do
+      teacher_root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "선생님 원글")
+      admin_root = create(:user_message, classroom: classroom, sender: admin, recipient: student, body: "관리자 원글")
+      sign_in teacher
+
+      get classroom_student_messages_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      toggle_buttons = document.css('button[data-action="message-reply-toggle#toggle"]')
+
+      expect(document.css('[data-controller="message-reply-toggle"]').count).to eq(2)
+      expect(toggle_buttons.count).to eq(2)
+
+      [teacher_root, admin_root].each do |root|
+        reply_form_id = dom_id(root, :reply_form)
+        button = document.at_css(%(button[aria-controls="#{reply_form_id}"]))
+        reply_form = document.at_css(%(##{reply_form_id}))
+
+        expect(button).to be_present
+        expect(button.text.strip).to eq("답글하기")
+        expect(button["aria-expanded"]).to eq("false")
+        expect(reply_form).to be_present
+        expect(reply_form.key?("hidden")).to eq(true)
+        expect(reply_form["data-message-reply-toggle-target"]).to eq("form")
+        expect(reply_form.at_css(%(input[name="reply_to_message_id"][value="#{root.id}"]))).to be_present
+      end
+    end
+
     it "continues to show existing message threads for an inactive student" do
       teacher_root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "기존 메시지")
       classroom.classroom_memberships.find_by!(user: student).inactive!
@@ -603,6 +632,8 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.recipient).to eq(student)
       expect(UserMessage.last.parent_message).to eq(student_root)
       expect(student_root.reload.read_at).to be_present
+      document = Nokogiri::HTML(response.body)
+      expect(document.at_css(%(##{dom_id(student_root, :reply_form)})).key?("hidden")).to eq(true)
       expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
         classroom,
         :student_card_alerts,
@@ -759,6 +790,14 @@ RSpec.describe "User messages", type: :request do
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
       expect(response.body).to include("reply_to_message_id")
       expect(response.body).to include("message_section")
+
+      document = Nokogiri::HTML(response.body)
+      button = document.at_css(%(button[aria-controls="#{dom_id(incoming, :reply_form)}"]))
+      reply_form = document.at_css(%(##{dom_id(incoming, :reply_form)}))
+
+      expect(button.text.strip).to eq("답글 닫기")
+      expect(button["aria-expanded"]).to eq("true")
+      expect(reply_form.key?("hidden")).to eq(false)
     end
   end
 end

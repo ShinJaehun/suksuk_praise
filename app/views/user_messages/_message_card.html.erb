@@ -1,4 +1,14 @@
-<article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+<% show_reply_form = local_assigns.fetch(:can_write_messages, true) && show_user_message_reply_form?(thread, user) %>
+<% reply_form_active = local_assigns[:active_reply_thread_id] == thread.id %>
+<% reply_form_dom_id = dom_id(thread, :reply_form) %>
+
+<article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm"
+         <% if show_reply_form %>
+           data-controller="message-reply-toggle"
+           data-message-reply-toggle-open-label-value="답글 닫기"
+           data-message-reply-toggle-closed-label-value="답글하기"
+         <% end %>>
+
   <div class="flex items-start gap-3">
     <%= user_avatar_image(
           thread.sender,
@@ -23,14 +33,28 @@
     </div>
   <% end %>
 
-  <% if local_assigns.fetch(:can_write_messages, true) && show_user_message_reply_form?(thread, user) %>
+  <% if show_reply_form %>
     <div class="mt-4 border-t border-slate-200 pt-4">
-      <%= render "user_messages/reply_form",
-            thread: thread,
-            reply_message: reply_message,
-            form_url: local_assigns[:form_url],
-            user: user,
-            active: active_reply_thread_id == thread.id %>
+      <button type="button"
+              class="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-200"
+              aria-expanded="<%= reply_form_active %>"
+              aria-controls="<%= reply_form_dom_id %>"
+              data-message-reply-toggle-target="button"
+              data-action="message-reply-toggle#toggle">
+        <%= reply_form_active ? "답글 닫기" : "답글하기" %>
+      </button>
+
+      <div id="<%= reply_form_dom_id %>"
+           class="mt-3"
+           data-message-reply-toggle-target="form"
+           <%= "hidden" unless reply_form_active %>>
+        <%= render "user_messages/reply_form",
+              thread: thread,
+              reply_message: reply_message,
+              form_url: local_assigns[:form_url],
+              user: user,
+              active: reply_form_active %>
+      </div>
     </div>
   <% end %>
 </article>
