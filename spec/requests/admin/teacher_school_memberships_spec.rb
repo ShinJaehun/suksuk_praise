@@ -2,7 +2,17 @@ require "rails_helper"
 
 RSpec.describe "Admin teacher school memberships", type: :request do
   let(:admin) { create(:user, :admin) }
-  let(:teacher) { create(:user, :teacher, name: "담당 교사") }
+  let(:teacher) do
+    create(
+      :user,
+      :teacher,
+      name: "담당 교사",
+      email: "teacher@example.com",
+      password: "original-password",
+      gender: "male",
+      avatar_key: "teacherM01"
+    )
+  end
   let(:school) { create(:school, name: "가온초등학교") }
   let(:other_school) { create(:school, name: "나래초등학교") }
 
@@ -112,7 +122,10 @@ RSpec.describe "Admin teacher school memberships", type: :request do
     sign_in admin
 
     patch admin_teacher_path(teacher),
-      params: { user: { name: "" }, school_id: other_school.id, classroom_ids: [classroom.id] },
+      params: {
+        school_id: other_school.id,
+        classroom_ids: [classroom.id, Classroom.maximum(:id).to_i + 10_000]
+      },
       headers: { "Accept" => Mime[:turbo_stream].to_s }
 
     expect(response).to have_http_status(:unprocessable_entity)
@@ -120,6 +133,7 @@ RSpec.describe "Admin teacher school memberships", type: :request do
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to match(/<option selected="selected" value="#{other_school.id}">#{other_school.name}<\/option>/)
     expect(response.body).to match(/<input(?=[^>]*name="classroom_ids\[\]")(?=[^>]*value="#{classroom.id}")(?=[^>]*checked="checked")[^>]*>/)
+    expect(response.body).to include("선택한 교실을 찾을 수 없습니다.")
     expect(response.body).not_to include("<!DOCTYPE html>")
     expect(teacher.reload.school).to eq(school)
   end
@@ -188,22 +202,98 @@ RSpec.describe "Admin teacher school memberships", type: :request do
     expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to eq([next_classroom.id])
   end
 
-  it "rolls back all assignment changes when the user update is invalid" do
+  it "rolls back school and classroom changes for a classroom id that does not exist" do
     classroom = create(:classroom, school: school)
     other_classroom = create(:classroom, school: other_school)
+    missing_id = Classroom.maximum(:id).to_i + 10_000
     create(:school_membership, user: teacher, school: school)
     create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
     sign_in admin
 
     patch admin_teacher_path(teacher), params: {
-      user: { name: "" },
       school_id: other_school.id,
-      classroom_ids: [other_classroom.id]
+      classroom_ids: [missing_id]
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(teacher.reload.school).to eq(school)
     expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to eq([classroom.id])
+    expect(teacher.classroom_memberships.teacher.exists?(classroom: other_classroom)).to eq(false)
+  end
+
+  it "rejects a mixture of valid and missing classroom ids without changing assignments" do
+    classroom = create(:classroom, school: school)
+    valid_classroom = create(:classroom, school: other_school)
+    missing_id = Classroom.maximum(:id).to_i + 10_000
+    create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      classroom_ids: [valid_classroom.id, missing_id]
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to eq([classroom.id])
+    expect(teacher.classroom_memberships.teacher.exists?(classroom: valid_classroom)).to eq(false)
+  end
+
+  it "rejects a non-numeric classroom id and shows an error" do
+    classroom = create(:classroom, school: school)
+    create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+    sign_in admin
+
+    patch admin_teacher_path(teacher),
+      params: { classroom_ids: ["abc"] },
+      headers: { "Accept" => Mime[:turbo_stream].to_s }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("선택한 교실을 찾을 수 없습니다.")
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to eq([classroom.id])
+  end
+
+  it "ignores user account params while applying school and classroom changes" do
+    classroom = create(:classroom, school: other_school)
+    original_attributes = teacher.attributes.slice(
+      "name", "email", "encrypted_password", "gender", "avatar_key"
+    )
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      user: {
+        name: "변조된 이름",
+        email: "changed@example.com",
+        password: "changed-password",
+        gender: "female",
+        avatar_key: "teacherF01"
+      },
+      school_id: other_school.id,
+      classroom_ids: [classroom.id]
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(teacher.reload.attributes.slice(*original_attributes.keys)).to eq(original_attributes)
+    expect(teacher.school).to eq(other_school)
+    expect(teacher.classroom_memberships.teacher.exists?(classroom: classroom)).to eq(true)
+  end
+
+  it "ignores user account params when no assignment params are submitted" do
+    original_attributes = teacher.attributes.slice(
+      "name", "email", "encrypted_password", "gender", "avatar_key"
+    )
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      user: {
+        name: "변조된 이름",
+        email: "changed@example.com",
+        password: "changed-password",
+        gender: "female",
+        avatar_key: "teacherF01"
+      }
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(teacher.reload.attributes.slice(*original_attributes.keys)).to eq(original_attributes)
   end
 
   it "keeps existing assignments for an invalid school id" do

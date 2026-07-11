@@ -58,10 +58,6 @@ class Admin::TeachersController < Admin::BaseController
     params.require(:user).permit(:name, :email, :password, :gender, :avatar_key)
   end
 
-  def teacher_update_params
-    params.require(:user).permit(:name, :email, :password, :gender, :avatar_key)
-  end
-
   def avatar_keys_for_gender(gender)
     return User::TEACHER_MALE_AVATAR_KEYS if gender == "male"
     return User::TEACHER_FEMALE_AVATAR_KEYS if gender == "female"
@@ -89,10 +85,10 @@ class Admin::TeachersController < Admin::BaseController
 
   def update_teacher_assignments
     school = selected_school if school_selection_submitted?
-    return false if school_selection_invalid?
+    selected_classroom_ids if classroom_assignments_submitted?
+    return false if school_selection_invalid? || classroom_assignments_invalid?
 
     User.transaction do
-      @teacher.update!(teacher_update_params) if params[:user].present?
       sync_school_membership!(school) if school_selection_submitted?
       sync_homeroom_memberships! if classroom_assignments_submitted?
     end
@@ -154,8 +150,26 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def selected_classroom_ids
-    submitted_ids = Array(params[:classroom_ids]).reject(&:blank?).map(&:to_i)
-    Classroom.where(id: submitted_ids).pluck(:id)
+    return @selected_classroom_ids if defined?(@selected_classroom_ids)
+
+    raw_ids = Array(params[:classroom_ids]).reject(&:blank?)
+    valid_raw_ids = raw_ids.select { |value| value.to_s.match?(/\A[1-9]\d*\z/) }
+    requested_ids = valid_raw_ids.map(&:to_i).uniq
+    @selected_classroom_ids = policy_scope(Classroom).where(id: requested_ids).pluck(:id)
+    if valid_raw_ids.size != raw_ids.size || @selected_classroom_ids.sort != requested_ids.sort
+      invalid_classroom_assignment(@selected_classroom_ids)
+    end
+    @selected_classroom_ids
+  end
+
+  def invalid_classroom_assignment(selected_ids)
+    @classroom_assignments_invalid = true
+    @teacher.errors.add(:base, t("admin.teachers.errors.classroom_not_found"))
+    @selected_classroom_ids = selected_ids
+  end
+
+  def classroom_assignments_invalid?
+    @classroom_assignments_invalid == true
   end
 
   def load_edit_form

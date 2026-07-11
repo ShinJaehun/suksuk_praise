@@ -202,6 +202,7 @@ ko:
     teachers:
       errors:
         school_not_found: "선택한 학교를 찾을 수 없습니다."
+        classroom_not_found: "선택한 교실을 찾을 수 없습니다."
       create:
         success: "새 교사 계정이 생성되었습니다."
         failure: "교사 계정 생성에 실패했습니다."
