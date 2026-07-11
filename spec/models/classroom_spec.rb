@@ -36,6 +36,36 @@ RSpec.describe Classroom, type: :model do
     expect(classroom).to be_valid
   end
 
+  it "can belong to a school" do
+    school = create(:school)
+    classroom = build(:classroom, school: school)
+
+    expect(classroom.school).to eq(school)
+    expect(classroom).to be_valid
+  end
+
+  it "allows grades from 1 to 6" do
+    (1..6).each do |grade|
+      classroom = build(:classroom, grade: grade)
+
+      expect(classroom).to be_valid
+    end
+  end
+
+  it "allows a blank grade during the transition" do
+    classroom = build(:classroom, grade: nil)
+
+    expect(classroom).to be_valid
+  end
+
+  it "rejects grades outside the elementary range" do
+    [0, 7].each do |grade|
+      classroom = build(:classroom, grade: grade)
+
+      expect(classroom).not_to be_valid
+    end
+  end
+
   it "rejects a name with more than 50 characters" do
     classroom = described_class.new(name: "가" * 51)
 

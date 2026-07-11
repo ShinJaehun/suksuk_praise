@@ -32,6 +32,10 @@
 ## 교실/학생 관리
 
 - 교사와 학생의 관계는 `ClassroomMembership`을 기준으로 한다.
+- `School`은 학교 조직의 기준 모델이며, `Classroom`은 전환 기간 동안 optional `school`과 nullable `grade`를 가질 수 있다.
+- `Classroom#grade`는 초등학교 기준 1~6 정수만 허용하되, 기존 데이터 이전을 위해 아직 비어 있을 수 있다.
+- 교사 학교 소속, school admin 권한, 학교 관리 UI는 아직 구현하지 않았다.
+- 향후 학교 일정(`SchoolCalendarEvent`)은 `School`을 기준으로 연결할 계획이다.
 - `/classrooms`는 admin의 교실 + 선생님 관리 허브 역할을 한다.
 - `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.
 - teacher nav는 담당 교실이 1개이면 해당 교실로 직접 이동하고, 여러 개이면 dropdown으로 담당 교실 목록을 보여준다.

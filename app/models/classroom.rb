@@ -4,6 +4,8 @@ class Classroom < ApplicationRecord
 
     has_secure_token :student_login_token
 
+    belongs_to :school, optional: true
+
     # 교실 삭제 시 관련 칭찬/쿠폰도 함께 삭제
     has_many :classroom_memberships, dependent: :destroy
     has_many :users, through: :classroom_memberships
@@ -21,6 +23,11 @@ class Classroom < ApplicationRecord
     end
 
     validates :name, length: { maximum: 50 }
+    validates :grade, numericality: {
+      only_integer: true,
+      greater_than_or_equal_to: 1,
+      less_than_or_equal_to: 6
+    }, allow_nil: true
     validates :message_policy, inclusion: { in: MESSAGE_POLICIES }
 
     def messages_disabled?

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_01_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_11_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -65,6 +65,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_01_000000) do
     t.boolean "monthly_compliment_king_enabled", default: false, null: false
     t.string "student_login_token", null: false
     t.string "message_policy", default: "replies_only", null: false
+    t.bigint "school_id"
+    t.integer "grade"
+    t.index ["school_id"], name: "index_classrooms_on_school_id"
     t.index ["student_login_token"], name: "index_classrooms_on_student_login_token", unique: true
   end
 
@@ -133,6 +136,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_01_000000) do
     t.index ["student_id"], name: "index_coupon_use_requests_on_student_id"
     t.index ["user_coupon_id"], name: "idx_coupon_use_requests_pending_unique", unique: true, where: "(status = 0)"
     t.index ["user_coupon_id"], name: "index_coupon_use_requests_on_user_coupon_id"
+  end
+
+  create_table "schools", force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "user_coupons", force: :cascade do |t|
@@ -204,6 +213,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_01_000000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "classroom_memberships", "classrooms", on_delete: :cascade
   add_foreign_key "classroom_memberships", "users", on_delete: :cascade
+  add_foreign_key "classrooms", "schools"
   add_foreign_key "compliments", "classrooms"
   add_foreign_key "compliments", "users", column: "giver_id"
   add_foreign_key "compliments", "users", column: "receiver_id"

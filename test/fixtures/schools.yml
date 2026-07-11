@@ -1,11 +1,7 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  name: MyString
-  school: one
-  grade: 4
+  name: School One
 
 two:
-  name: MyString
-  school: two
-  grade: 5
+  name: School Two
