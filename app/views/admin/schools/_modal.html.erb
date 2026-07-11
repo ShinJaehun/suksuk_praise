@@ -1,0 +1,10 @@
+<%= turbo_frame_tag :modal do %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" data-controller="modal">
+    <div class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <button type="button" data-action="modal#close" class="absolute right-2 top-2 text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+      <div class="space-y-4">
+        <%= render "content", school: school, title: title, submit_label: submit_label %>
+      </div>
+    </div>
+  </div>
+<% end %>

@@ -12,7 +12,9 @@ class Admin::SchoolsController < Admin::BaseController
     authorize @school
 
     if @school.save
-      respond_with_success(t("admin.schools.create.success"))
+      redirect_to classrooms_path,
+        notice: t("admin.schools.create.success"),
+        status: :see_other
     else
       render_school_form(:new)
     end
@@ -26,7 +28,9 @@ class Admin::SchoolsController < Admin::BaseController
     authorize @school
 
     if @school.update(school_params)
-      respond_with_success(t("admin.schools.update.success"))
+      redirect_to classrooms_path,
+        notice: t("admin.schools.update.success"),
+        status: :see_other
     else
       render_school_form(:edit)
     end
@@ -42,16 +46,26 @@ class Admin::SchoolsController < Admin::BaseController
     params.require(:school).permit(:name)
   end
 
-  def respond_with_success(message)
-    if turbo_frame_request?
-      flash[:notice] = message
-      render turbo_stream: turbo_stream.refresh
-    else
-      redirect_to classrooms_path, notice: message
+  def render_school_form(template)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "modal",
+          partial: "admin/schools/modal",
+          locals: modal_locals(template)
+        ), status: :unprocessable_entity
+      end
+      format.html do
+        render template, formats: :html, status: :unprocessable_entity
+      end
     end
   end
 
-  def render_school_form(template)
-    render template, formats: :html, status: :unprocessable_entity
+  def modal_locals(template)
+    if template == :new
+      { school: @school, title: "새 학교 등록", submit_label: "학교 등록" }
+    else
+      { school: @school, title: "학교 이름 수정", submit_label: "변경 저장" }
+    end
   end
 end

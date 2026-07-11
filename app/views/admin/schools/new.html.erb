@@ -1,21 +1,11 @@
-<% content = capture do %>
-  <h1 class="text-xl font-bold text-slate-900">새 학교 등록</h1>
-  <%= render "form", school: @school, submit_label: "학교 등록" %>
-<% end %>
-
 <% if turbo_frame_request? %>
-  <%= turbo_frame_tag :modal do %>
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" data-controller="modal">
-      <div class="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <button type="button" data-action="modal#close" class="absolute right-2 top-2 text-2xl text-gray-400 hover:text-gray-600">&times;</button>
-        <div class="space-y-4"><%= content %></div>
-      </div>
-    </div>
-  <% end %>
+  <%= render "modal", school: @school, title: "새 학교 등록", submit_label: "학교 등록" %>
 <% else %>
   <section class="mx-auto w-full max-w-xl space-y-4 pt-4">
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="space-y-4"><%= content %></div>
+      <div class="space-y-4">
+        <%= render "content", school: @school, title: "새 학교 등록", submit_label: "학교 등록" %>
+      </div>
       <%= link_to "교실로 돌아가기", classrooms_path, class: "mt-4 inline-block text-sm text-blue-600 hover:underline" %>
     </div>
   </section>

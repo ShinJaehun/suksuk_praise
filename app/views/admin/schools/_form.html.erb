@@ -1,4 +1,6 @@
-<%= form_with model: [:admin, school], class: "space-y-4" do |f| %>
+<%= form_with model: [:admin, school],
+      class: "space-y-4",
+      data: { turbo_frame: "_top" } do |f| %>
   <div>
     <% name_has_errors = school.errors[:name].any? %>
     <%= f.label :name, "학교 이름", class: "block text-sm font-semibold text-slate-800" %>
@@ -14,6 +16,7 @@
 
   <div class="flex justify-end">
     <%= f.submit submit_label,
+          data: { turbo_submits_with: school.new_record? ? "등록 중..." : "저장 중..." },
           class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
   </div>
 <% end %>

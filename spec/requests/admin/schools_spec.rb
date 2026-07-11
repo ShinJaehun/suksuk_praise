@@ -50,7 +50,8 @@ RSpec.describe "Admin schools", type: :request do
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include('name="school[name]"')
     expect(response.body).not_to include("<!DOCTYPE html>")
-    expect(response.body).not_to include('data-turbo-frame="_top"')
+    expect(response.body).to include('data-turbo-frame="_top"')
+    expect(response.body).to include('data-turbo-submits-with="등록 중..."')
   end
 
   it "renders the edit school form in one modal frame without the application layout" do
@@ -61,6 +62,8 @@ RSpec.describe "Admin schools", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include('name="school[name]"')
+    expect(response.body).to include('data-turbo-frame="_top"')
+    expect(response.body).to include('data-turbo-submits-with="저장 중..."')
     expect(response.body).not_to include("<!DOCTYPE html>")
   end
 
@@ -75,16 +78,18 @@ RSpec.describe "Admin schools", type: :request do
     expect(School.find_by!(name: "푸른초등학교")).to be_present
   end
 
-  it "refreshes the classrooms hub after a successful modal create" do
+  it "redirects the top frame after a successful modal create" do
     sign_in admin
 
-    post admin_schools_path,
-      params: { school: { name: "모달초등학교" } },
-      headers: { "Turbo-Frame" => "modal" }
+    expect do
+      post admin_schools_path,
+        params: { school: { name: "모달초등학교" } },
+        headers: { "Accept" => Mime[:turbo_stream].to_s }
+    end.to change(School, :count).by(1)
 
-    expect(response).to have_http_status(:ok)
-    expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-    expect(response.body).to include('turbo-stream action="refresh"')
+    expect(response).to have_http_status(:see_other)
+    expect(response).to redirect_to(classrooms_path)
+    expect(response.body).not_to include('turbo-stream action="refresh"')
     expect(School.find_by!(name: "모달초등학교")).to be_present
   end
 
@@ -93,13 +98,15 @@ RSpec.describe "Admin schools", type: :request do
 
     expect do
       post admin_schools_path,
-        params: { school: { name: "" } },
-        headers: { "Turbo-Frame" => "modal" }
+        params: { school: { name: " " } },
+        headers: { "Accept" => Mime[:turbo_stream].to_s }
     end.not_to change(School, :count)
 
     expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('turbo-stream action="replace" target="modal"')
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include('name="school[name]"')
+    expect(response.body).to include('value=" "')
     expect(response.body).to include("학교 이름을 입력해 주세요.")
     expect(response.body).to include("새 학교 등록")
     expect(response.body).not_to include("<!DOCTYPE html>")
@@ -116,12 +123,16 @@ RSpec.describe "Admin schools", type: :request do
     expect(response.body).to include("교실로 돌아가기")
   end
 
-  it "updates a school name" do
+  it "redirects the top frame after a successful modal update" do
     sign_in admin
 
-    patch admin_school_path(school), params: { school: { name: "튼튼초등학교" } }
+    patch admin_school_path(school),
+      params: { school: { name: "튼튼초등학교" } },
+      headers: { "Accept" => Mime[:turbo_stream].to_s }
 
+    expect(response).to have_http_status(:see_other)
     expect(response).to redirect_to(classrooms_path)
+    expect(response.body).not_to include('turbo-stream action="refresh"')
     expect(school.reload.name).to eq("튼튼초등학교")
   end
 
@@ -130,9 +141,10 @@ RSpec.describe "Admin schools", type: :request do
 
     patch admin_school_path(school),
       params: { school: { name: "" } },
-      headers: { "Turbo-Frame" => "modal" }
+      headers: { "Accept" => Mime[:turbo_stream].to_s }
 
     expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('turbo-stream action="replace" target="modal"')
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include('name="school[name]"')
     expect(response.body).to include("학교 이름을 입력해 주세요.")
