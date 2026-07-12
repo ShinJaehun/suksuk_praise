@@ -76,7 +76,7 @@
 | `UsersController#show` | `UserPolicy#show?` | 가능 | 자신이 teacher인 교실에 속한 학생만 가능 | 본인만 가능 | `classroom_id`가 있으면 classroom `show?`와 대상 user membership을 추가 확인 |
 | `Admin::TeachersController#index` | `policy_scope(User)` | 가능 | 불가 | 불가 | `Admin::BaseController#require_admin!`도 필요 |
 | `Admin::TeachersController#new` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 선택적으로 단일 학교 소속 지정 |
-| `Admin::TeachersController#create` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 새 계정은 항상 `role: teacher`; User와 SchoolMembership을 한 transaction으로 생성 |
+| `Admin::TeachersController#create` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 새 계정은 항상 `role: teacher`; User 생성 transaction 안에서 기본 개인 쿠폰을 준비하고 선택적 SchoolMembership까지 한 transaction으로 처리하며 하나라도 실패하면 전체 rollback |
 | `Admin::TeachersController#edit` | `UserPolicy#update?` | 가능 | 불가 | 불가 | 대상 teacher의 학교 소속과 담당 교실 관리 |
 | `Admin::TeachersController#update` | `UserPolicy#update?` | 가능 | 불가 | 불가 | SchoolMembership과 teacher ClassroomMembership만 한 transaction으로 변경. 계정 속성은 변경하지 않으며, 담당 교실 ID가 하나라도 없거나 policy scope 밖이면 전체 거부 |
 

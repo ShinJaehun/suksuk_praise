@@ -70,7 +70,7 @@ class User < ApplicationRecord
            dependent: :destroy,
            inverse_of: :recipient
 
-  after_commit :setup_default_coupons_for_teacher, on: :create
+  after_create :setup_default_coupons_for_teacher
 
   def self.avatar_keys_for(gender)
     AVATAR_KEYS_BY_GENDER.fetch(gender.to_s, [])

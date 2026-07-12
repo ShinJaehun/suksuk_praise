@@ -32,6 +32,13 @@ RSpec.describe "Admin teacher school memberships", type: :request do
   end
 
   it "creates a teacher with a school membership" do
+    library_template = create(
+      :coupon_template,
+      created_by: admin,
+      bucket: "library",
+      active: true,
+      title: "칭찬 쿠폰"
+    )
     sign_in admin
 
     post admin_teachers_path, params: {
@@ -40,8 +47,10 @@ RSpec.describe "Admin teacher school memberships", type: :request do
     }
 
     created_teacher = User.teacher.find_by!(email: valid_teacher_params[:email])
+    expect(response).to have_http_status(:see_other)
     expect(response).to redirect_to(classrooms_path)
     expect(created_teacher.school).to eq(school)
+    expect(CouponTemplate.personal_for(created_teacher).find_by(title: library_template.title)).to be_present
   end
 
   it "creates a teacher without a school" do
@@ -71,6 +80,72 @@ RSpec.describe "Admin teacher school memberships", type: :request do
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include("선택한 학교를 찾을 수 없습니다.")
     expect(response.body).not_to include("<!DOCTYPE html>")
+  end
+
+  it "rolls back teacher creation when default coupon validation fails" do
+    invalid_template = CouponTemplate.new
+    invalid_template.errors.add(:title, :blank)
+    error = ActiveRecord::RecordInvalid.new(invalid_template)
+    allow(CouponTemplates::AutoAdopter).to receive(:setup_for_teacher!).and_raise(error)
+    sign_in admin
+
+    expect do
+      post admin_teachers_path,
+        params: { user: valid_teacher_params, school_id: school.id },
+        headers: { "Accept" => Mime[:turbo_stream].to_s }
+    end.not_to change { [User.count, SchoolMembership.count, CouponTemplate.count] }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('turbo-stream action="replace" target="modal"')
+    expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
+    expect(response.body).to include("교사 계정의 기본 쿠폰을 준비하지 못했습니다.")
+    expect(response.body).not_to include("<!DOCTYPE html>")
+    expect(User.find_by(email: valid_teacher_params[:email])).to be_nil
+    expect(CouponTemplate.where(bucket: "personal")).to be_empty
+  end
+
+  it "rolls back the teacher and default coupons when school membership validation fails" do
+    create(
+      :coupon_template,
+      created_by: admin,
+      bucket: "library",
+      active: true,
+      title: "기본 쿠폰"
+    )
+    invalid_membership = SchoolMembership.new
+    invalid_membership.errors.add(:base, "학교 소속을 저장하지 못했습니다.")
+    error = ActiveRecord::RecordInvalid.new(invalid_membership)
+    allow(SchoolMembership).to receive(:create!).and_raise(error)
+    expect(CouponTemplates::AutoAdopter).to receive(:setup_for_teacher!).and_call_original
+    sign_in admin
+
+    expect do
+      post admin_teachers_path,
+        params: { user: valid_teacher_params, school_id: school.id },
+        headers: { "Accept" => Mime[:turbo_stream].to_s }
+    end.not_to change { [User.count, SchoolMembership.count, CouponTemplate.count] }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("학교 소속을 저장하지 못했습니다.")
+    expect(User.find_by(email: valid_teacher_params[:email])).to be_nil
+    expect(CouponTemplate.where(bucket: "personal")).to be_empty
+  end
+
+  it "rolls back teacher creation and re-raises an unexpected coupon service error" do
+    allow(CouponTemplates::AutoAdopter).to receive(:setup_for_teacher!)
+      .and_raise("unexpected coupon failure")
+    sign_in admin
+
+    expect do
+      expect do
+        post admin_teachers_path, params: {
+          user: valid_teacher_params,
+          school_id: school.id
+        }
+      end.to raise_error(RuntimeError, "unexpected coupon failure")
+    end.not_to change { [User.count, SchoolMembership.count, CouponTemplate.count] }
+
+    expect(User.find_by(email: valid_teacher_params[:email])).to be_nil
   end
 
   it "keeps a failed create and its selected school in the modal" do

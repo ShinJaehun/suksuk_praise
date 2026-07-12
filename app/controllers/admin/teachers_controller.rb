@@ -79,8 +79,7 @@ class Admin::TeachersController < Admin::BaseController
     end
     true
   rescue ActiveRecord::RecordInvalid => error
-    copy_membership_errors(error.record)
-    false
+    handle_teacher_creation_error(error)
   end
 
   def update_teacher_assignments
@@ -204,6 +203,22 @@ class Admin::TeachersController < Admin::BaseController
     return unless record.is_a?(SchoolMembership)
 
     record.errors.full_messages.each { |message| @teacher.errors.add(:base, message) }
+  end
+
+  def handle_teacher_creation_error(error)
+    record = error.record
+
+    if record.equal?(@teacher)
+      false
+    elsif record.is_a?(SchoolMembership)
+      copy_membership_errors(record)
+      false
+    elsif record.is_a?(CouponTemplate)
+      @teacher.errors.add(:base, t("admin.teachers.errors.default_coupons_failed"))
+      false
+    else
+      raise error
+    end
   end
 
   def render_teacher_form(template)

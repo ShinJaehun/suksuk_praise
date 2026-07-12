@@ -37,6 +37,7 @@
 - 전체 admin은 `/classrooms` 관리 허브에서 학교를 추가하고 이름을 수정할 수 있으며, 교실 생성·수정 시 학교와 학년을 지정할 수 있다.
 - teacher의 학교 소속은 `SchoolMembership`으로 관리하며, 현재 교사당 한 학교만 허용한다. 학교 미지정 teacher는 허용하고 global admin과 student는 SchoolMembership을 갖지 않는다.
 - 담당 학급의 기준은 기존 teacher 역할 `ClassroomMembership`이며, 담당 학년은 연결된 Classroom의 `grade`를 통해 계산하고 별도로 저장하지 않는다.
+- teacher 생성 시 기본 개인 쿠폰 준비는 User 생성 transaction 안에서 동기적으로 수행하며, 생성 후 비동기 보정이 아닌 teacher 생성 불변식으로 취급한다. 전체 admin의 교사 생성에서는 User, 기본 개인 쿠폰, 선택적 SchoolMembership을 하나의 transaction으로 처리해 어느 하나라도 실패하면 전체 rollback한다.
 - 전체 admin은 교사 생성 modal에서 계정과 학교 소속을 생성하고, 수정 modal에서는 SchoolMembership과 teacher 역할 ClassroomMembership만 관리한다. 수정 endpoint는 이름·이메일·비밀번호·성별·아바타를 변경하지 않는다.
 - 교사 수정 시 제출된 담당 교실 ID가 하나라도 존재하지 않거나 admin의 정책 범위 밖이면 학교와 담당 교실 변경 전체를 거부하며, 두 소속 변경은 하나의 transaction으로 처리한다. 학교 소속과 담당 교실의 학교가 달라도 전환 기간에는 저장을 허용하며 별도 경고 badge는 표시하지 않는다.
 - SchoolMembership은 담당 교실이나 교실의 학교 변경에 따라 자동 생성·변경·삭제되지 않으며 담당 교사를 자동 해제하지도 않는다.
