@@ -15,6 +15,7 @@ module CouponDraw
     class DuplicatePeriodError     < Error; end                     # 409
     class NoActiveTemplateError    < Error; end                     # 422
     class NotComplimentKingToday   < Error; end                     # 403
+    class DisabledComplimentKingPeriodError < Error; end            # 422
 
     # 반환: UserCoupon
     def self.call(classroom:, basis:, mode:, issued_by:, target_user_id: nil)
@@ -22,6 +23,10 @@ module CouponDraw
 
       basis = normalize_basis(basis)
       mode  = normalize_mode(basis, mode)
+
+      if top_mode?(basis, mode) && !classroom.compliment_king_enabled_for?(basis)
+        raise DisabledComplimentKingPeriodError.new("coupons.draw.compliment_king_disabled")
+      end
 
       # 1) 대상(버튼 UX: user_id 필수) + 교실 소속 보장
       raise MissingUserIdError.new("coupons.draw.user_id_required") if target_user_id.blank?

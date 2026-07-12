@@ -1,33 +1,81 @@
-require "rails_helper"
+require 'rails_helper'
 
 RSpec.describe CouponDraw::Issue, type: :service do
   include ActiveSupport::Testing::TimeHelpers
 
-  describe ".call" do
-    it "requires a target user id" do
+  describe '.call' do
+    it 'requires a target user id' do
       teacher = create(:user, :teacher)
       classroom = create(:classroom)
 
-      expect {
-        described_class.call(classroom: classroom, basis: "daily", mode: "daily_top", issued_by: teacher)
-      }.to raise_error(CouponDraw::Issue::MissingUserIdError)
+      expect do
+        described_class.call(classroom: classroom, basis: 'daily', mode: 'daily_top', issued_by: teacher)
+      end.to raise_error(CouponDraw::Issue::MissingUserIdError)
     end
 
-    it "rejects an inactive student target" do
+    it 'rejects an inactive student target' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
       classroom = create(:classroom)
-      create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student', status: 'inactive')
 
-      expect {
+      expect do
         described_class.call(
           classroom: classroom,
-          basis: "manual",
-          mode: "default",
+          basis: 'manual',
+          mode: 'default',
           issued_by: teacher,
           target_user_id: student.id
         )
-      }.to raise_error(ActiveRecord::RecordNotFound)
+      end.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
+    it 'rejects direct compliment king issuance for disabled periods' do
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      classroom = create(:classroom)
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      create(:coupon_template, created_by: teacher, active: true, weight: 100)
+
+      %w[daily weekly monthly].each do |period|
+        classroom.update!("#{period}_compliment_king_enabled" => false)
+        counts_before = [UserCoupon.count, CouponEvent.count]
+
+        expect do
+          described_class.call(
+            classroom: classroom,
+            basis: period,
+            mode: "#{period}_top",
+            issued_by: teacher,
+            target_user_id: student.id
+          )
+        end.to raise_error(CouponDraw::Issue::DisabledComplimentKingPeriodError)
+        expect([UserCoupon.count, CouponEvent.count]).to eq(counts_before)
+      end
+    end
+
+    it 'allows manual issuance when every compliment king period is disabled' do
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      classroom = create(
+        :classroom,
+        daily_compliment_king_enabled: false,
+        weekly_compliment_king_enabled: false,
+        monthly_compliment_king_enabled: false
+      )
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      create(:coupon_template, created_by: teacher, active: true, weight: 100)
+
+      expect do
+        described_class.call(
+          classroom: classroom,
+          basis: 'manual',
+          mode: 'default',
+          issued_by: teacher,
+          target_user_id: student.id
+        )
+      end.to change(UserCoupon, :count).by(1)
+                                       .and change(CouponEvent, :count).by(1)
     end
 
     it "rejects a daily top target who is not today's compliment king" do
@@ -37,97 +85,97 @@ RSpec.describe CouponDraw::Issue, type: :service do
       classroom = create(:classroom)
       now = Time.zone.local(2026, 4, 7, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:classroom_membership, user: king, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      create(:classroom_membership, user: king, classroom: classroom, role: 'student')
       create(:compliment, classroom: classroom, giver: teacher, receiver: king, given_at: now)
 
       travel_to now do
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "daily",
-            mode: "daily_top",
+            basis: 'daily',
+            mode: 'daily_top',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.to raise_error(CouponDraw::Issue::NotComplimentKingToday)
+        end.to raise_error(CouponDraw::Issue::NotComplimentKingToday)
       end
     end
 
-    it "prevents duplicate daily issuance for the same basis tag and period" do
+    it 'prevents duplicate daily issuance for the same basis tag and period' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
       classroom = create(:classroom)
       template = create(:coupon_template, created_by: teacher)
       now = Time.zone.local(2026, 4, 7, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
       create(
         :user_coupon,
         user: student,
         classroom: classroom,
         coupon_template: template,
         issued_by: teacher,
-        issuance_basis: "daily",
-        basis_tag: "default",
+        issuance_basis: 'daily',
+        basis_tag: 'default',
         period_start_on: now.to_date
       )
 
       travel_to now do
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "manual",
-            mode: "default",
+            basis: 'manual',
+            mode: 'default',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.not_to raise_error
+        end.not_to raise_error
 
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "daily",
-            mode: "default",
+            basis: 'daily',
+            mode: 'default',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+        end.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
       end
     end
 
-    it "allows repeated manual issuance for the same user, mode, and day" do
+    it 'allows repeated manual issuance for the same user, mode, and day' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
       classroom = create(:classroom)
       create(:coupon_template, created_by: teacher, active: true, weight: 100)
       now = Time.zone.local(2026, 4, 7, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
 
       travel_to now do
-        expect {
+        expect do
           2.times do
             described_class.call(
               classroom: classroom,
-              basis: "manual",
-              mode: "default",
+              basis: 'manual',
+              mode: 'default',
               issued_by: teacher,
               target_user_id: student.id
             )
           end
-        }.to change(UserCoupon, :count).by(2)
+        end.to change(UserCoupon, :count).by(2)
       end
     end
 
-    it "rejects reissuance after a daily top coupon was already used" do
+    it 'rejects reissuance after a daily top coupon was already used' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
       classroom = create(:classroom)
       template = create(:coupon_template, created_by: teacher)
       now = Time.zone.local(2026, 4, 7, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
       create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: now)
       create(
         :user_coupon,
@@ -135,189 +183,195 @@ RSpec.describe CouponDraw::Issue, type: :service do
         classroom: classroom,
         coupon_template: template,
         issued_by: teacher,
-        issuance_basis: "daily",
-        basis_tag: "daily_top",
+        issuance_basis: 'daily',
+        basis_tag: 'daily_top',
         period_start_on: now.to_date,
         status: :used
       )
 
       travel_to now do
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "daily",
-            mode: "daily_top",
+            basis: 'daily',
+            mode: 'daily_top',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+        end.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
       end
     end
 
-    it "allows a weekly top winner to receive a weekly coupon once per week" do
+    it 'allows a weekly top winner to receive a weekly coupon once per week' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
-      classroom = create(:classroom)
+      classroom = create(:classroom, weekly_compliment_king_enabled: true)
       template = create(:coupon_template, created_by: teacher, active: true, weight: 100)
       now = Time.zone.local(2026, 4, 8, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 9, 0, 0))
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 8, 9, 0, 0))
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student,
+                          given_at: Time.zone.local(2026, 4, 7, 9, 0, 0))
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student,
+                          given_at: Time.zone.local(2026, 4, 8, 9, 0, 0))
 
       travel_to now do
         coupon = described_class.call(
           classroom: classroom,
-          basis: "weekly",
-          mode: "weekly_top",
+          basis: 'weekly',
+          mode: 'weekly_top',
           issued_by: teacher,
           target_user_id: student.id
         )
 
         expect(coupon).to be_persisted
         expect(coupon.coupon_template).to eq(template)
-        expect(coupon.issuance_basis).to eq("weekly")
+        expect(coupon.issuance_basis).to eq('weekly')
         expect(coupon.period_start_on).to eq(Date.new(2026, 4, 6))
       end
     end
 
-    it "rejects duplicate weekly issuance in the same week" do
+    it 'rejects duplicate weekly issuance in the same week' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
-      classroom = create(:classroom)
+      classroom = create(:classroom, weekly_compliment_king_enabled: true)
       template = create(:coupon_template, created_by: teacher)
       now = Time.zone.local(2026, 4, 8, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
       create(
         :user_coupon,
         user: student,
         classroom: classroom,
         coupon_template: template,
         issued_by: teacher,
-        issuance_basis: "weekly",
-        basis_tag: "weekly_top",
+        issuance_basis: 'weekly',
+        basis_tag: 'weekly_top',
         period_start_on: Date.new(2026, 4, 6)
       )
 
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 9, 0, 0))
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student,
+                          given_at: Time.zone.local(2026, 4, 7, 9, 0, 0))
 
       travel_to now do
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "weekly",
-            mode: "weekly_top",
+            basis: 'weekly',
+            mode: 'weekly_top',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+        end.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
       end
     end
 
-    it "rejects reissuance after a weekly top coupon was already used" do
+    it 'rejects reissuance after a weekly top coupon was already used' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
-      classroom = create(:classroom)
+      classroom = create(:classroom, weekly_compliment_king_enabled: true)
       template = create(:coupon_template, created_by: teacher)
       now = Time.zone.local(2026, 4, 8, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 9, 0, 0))
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student,
+                          given_at: Time.zone.local(2026, 4, 7, 9, 0, 0))
       create(
         :user_coupon,
         user: student,
         classroom: classroom,
         coupon_template: template,
         issued_by: teacher,
-        issuance_basis: "weekly",
-        basis_tag: "weekly_top",
+        issuance_basis: 'weekly',
+        basis_tag: 'weekly_top',
         period_start_on: Date.new(2026, 4, 6),
         status: :used
       )
 
       travel_to now do
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "weekly",
-            mode: "weekly_top",
+            basis: 'weekly',
+            mode: 'weekly_top',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+        end.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
       end
     end
 
-    it "allows a monthly top winner to receive a monthly coupon once per month" do
+    it 'allows a monthly top winner to receive a monthly coupon once per month' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
-      classroom = create(:classroom)
+      classroom = create(:classroom, monthly_compliment_king_enabled: true)
       template = create(:coupon_template, created_by: teacher, active: true, weight: 100)
       now = Time.zone.local(2026, 4, 20, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 2, 9, 0, 0))
-      create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 20, 9, 0, 0))
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student,
+                          given_at: Time.zone.local(2026, 4, 2, 9, 0, 0))
+      create(:compliment, classroom: classroom, giver: teacher, receiver: student,
+                          given_at: Time.zone.local(2026, 4, 20, 9, 0, 0))
 
       travel_to now do
         coupon = described_class.call(
           classroom: classroom,
-          basis: "monthly",
-          mode: "monthly_top",
+          basis: 'monthly',
+          mode: 'monthly_top',
           issued_by: teacher,
           target_user_id: student.id
         )
 
         expect(coupon).to be_persisted
         expect(coupon.coupon_template).to eq(template)
-        expect(coupon.issuance_basis).to eq("monthly")
+        expect(coupon.issuance_basis).to eq('monthly')
         expect(coupon.period_start_on).to eq(Date.new(2026, 4, 1))
       end
     end
 
-    it "rejects duplicate monthly issuance in the same month" do
+    it 'rejects duplicate monthly issuance in the same month' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
-      classroom = create(:classroom)
+      classroom = create(:classroom, monthly_compliment_king_enabled: true)
       template = create(:coupon_template, created_by: teacher)
       now = Time.zone.local(2026, 4, 20, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
       create(
         :user_coupon,
         user: student,
         classroom: classroom,
         coupon_template: template,
         issued_by: teacher,
-        issuance_basis: "monthly",
-        basis_tag: "monthly_top",
+        issuance_basis: 'monthly',
+        basis_tag: 'monthly_top',
         period_start_on: Date.new(2026, 4, 1)
       )
 
       create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: now)
 
       travel_to now do
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "monthly",
-            mode: "monthly_top",
+            basis: 'monthly',
+            mode: 'monthly_top',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+        end.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
       end
     end
 
-    it "rejects reissuance after a monthly top coupon was already used" do
+    it 'rejects reissuance after a monthly top coupon was already used' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
-      classroom = create(:classroom)
+      classroom = create(:classroom, monthly_compliment_king_enabled: true)
       template = create(:coupon_template, created_by: teacher)
       now = Time.zone.local(2026, 4, 20, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
       create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: now)
       create(
         :user_coupon,
@@ -325,58 +379,58 @@ RSpec.describe CouponDraw::Issue, type: :service do
         classroom: classroom,
         coupon_template: template,
         issued_by: teacher,
-        issuance_basis: "monthly",
-        basis_tag: "monthly_top",
+        issuance_basis: 'monthly',
+        basis_tag: 'monthly_top',
         period_start_on: Date.new(2026, 4, 1),
         status: :used
       )
 
       travel_to now do
-        expect {
+        expect do
           described_class.call(
             classroom: classroom,
-            basis: "monthly",
-            mode: "monthly_top",
+            basis: 'monthly',
+            mode: 'monthly_top',
             issued_by: teacher,
             target_user_id: student.id
           )
-        }.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
+        end.to raise_error(CouponDraw::Issue::DuplicatePeriodError)
       end
     end
 
-    it "rejects issuance when the teacher has no active personal template" do
+    it 'rejects issuance when the teacher has no active personal template' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
       classroom = create(:classroom)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
       create(:coupon_template, created_by: teacher, active: false, weight: 0)
 
-      expect {
+      expect do
         described_class.call(
           classroom: classroom,
-          basis: "manual",
-          mode: "default",
+          basis: 'manual',
+          mode: 'default',
           issued_by: teacher,
           target_user_id: student.id
         )
-      }.to raise_error(CouponDraw::Issue::NoActiveTemplateError)
+      end.to raise_error(CouponDraw::Issue::NoActiveTemplateError)
     end
 
-    it "creates a coupon and an issued event" do
+    it 'creates a coupon and an issued event' do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
       classroom = create(:classroom)
       template = create(:coupon_template, created_by: teacher, active: true, weight: 100)
       now = Time.zone.local(2026, 4, 7, 10, 0, 0)
 
-      create(:classroom_membership, user: student, classroom: classroom, role: "student")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
 
       travel_to now do
         coupon = described_class.call(
           classroom: classroom,
-          basis: "manual",
-          mode: "default",
+          basis: 'manual',
+          mode: 'default',
           issued_by: teacher,
           target_user_id: student.id
         )
@@ -385,12 +439,12 @@ RSpec.describe CouponDraw::Issue, type: :service do
         expect(coupon.coupon_template).to eq(template)
         event = CouponEvent.last
 
-        expect(event).to have_attributes(action: "issued", user_coupon: coupon, actor: teacher)
+        expect(event).to have_attributes(action: 'issued', user_coupon: coupon, actor: teacher)
         expect(event.metadata).to include(
-          "basis" => "manual",
-          "mode" => "default",
-          "target_user_id" => student.id,
-          "target_user_name" => student.name
+          'basis' => 'manual',
+          'mode' => 'default',
+          'target_user_id' => student.id,
+          'target_user_name' => student.name
         )
       end
     end

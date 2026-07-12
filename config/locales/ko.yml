@@ -157,6 +157,7 @@ ko:
       user_id_required: "대상이 지정되지 않았습니다."
       no_candidate: "선발할 학생이 없습니다."
       no_active_template: "활성 쿠폰 템플릿이 없습니다."      
+      compliment_king_disabled: "이 교실에서는 해당 칭찬왕 기능을 사용하지 않습니다."
       already_issued_today: "이미 오늘 발급되었습니다."
       already_issued_this_week: "이미 이번 주 발급되었습니다."
       already_issued_this_month: "이미 이번 달 발급되었습니다."

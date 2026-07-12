@@ -17,9 +17,13 @@ class Classroom < ApplicationRecord
     end
 
     def enabled_compliment_king_periods
-      COMPLIMENT_KING_PERIODS.select do |period|
-        public_send("#{period}_compliment_king_enabled?")
-      end
+      COMPLIMENT_KING_PERIODS.select { |period| compliment_king_enabled_for?(period) }
+    end
+
+    def compliment_king_enabled_for?(period)
+      return false unless COMPLIMENT_KING_PERIODS.include?(period.to_s)
+
+      public_send("#{period}_compliment_king_enabled?")
     end
 
     validates :name, length: { maximum: 50 }

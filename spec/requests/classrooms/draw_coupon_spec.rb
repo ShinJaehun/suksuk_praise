@@ -213,6 +213,70 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       end
     end
 
+    it "rejects a direct weekly king draw when weekly compliment king is disabled" do
+      other_student = create(:user, :student)
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      create(:classroom_membership, user: other_student, classroom: classroom, role: "student")
+      existing_coupon = create(
+        :user_coupon,
+        user: other_student,
+        classroom: classroom,
+        coupon_template: template,
+        issued_by: teacher,
+        issuance_basis: "manual",
+        basis_tag: "default"
+      )
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+
+        expect do
+          post draw_coupon_classroom_path(classroom),
+            params: { basis: "weekly", mode: "weekly_top", user_id: student.id },
+            headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+        end.not_to change { [UserCoupon.count, CouponEvent.count] }
+      end
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("이 교실에서는 해당 칭찬왕 기능을 사용하지 않습니다.")
+      expect(existing_coupon.reload).to be_issued
+      expect(classroom.reload.weekly_compliment_king_enabled?).to eq(false)
+    end
+
+    it "rejects a direct monthly king draw when monthly compliment king is disabled" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      sign_in teacher
+
+      expect do
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "monthly", mode: "monthly_top", user_id: student.id },
+          as: :json
+      end.not_to change { [UserCoupon.count, CouponEvent.count] }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json_body).to eq(
+        "ok" => false,
+        "error" => "invalid",
+        "detail" => "coupons.draw.compliment_king_disabled"
+      )
+    end
+
+    it "rejects a direct daily king draw when daily compliment king is disabled" do
+      classroom.update!(daily_compliment_king_enabled: false)
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      sign_in teacher
+
+      expect do
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "daily", mode: "daily_top", user_id: student.id },
+          as: :json
+      end.not_to change { [UserCoupon.count, CouponEvent.count] }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json_body["detail"]).to eq("coupons.draw.compliment_king_disabled")
+    end
+
     it "creates a weekly coupon for the weekly compliment king" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       classroom.update!(weekly_compliment_king_enabled: true)
