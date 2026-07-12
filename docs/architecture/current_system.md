@@ -45,7 +45,8 @@
 - 기존 teacher의 SchoolMembership backfill은 아직 수행하지 않았다.
 - 학교 삭제와 school admin 권한은 아직 구현하지 않았다.
 - 교실 담당 교사 배정은 admin이 `teacher_ids` 파라미터를 명시적으로 제출했을 때만 변경한다.
-- 향후 학교 일정(`SchoolCalendarEvent`)은 `School`을 기준으로 연결할 계획이다.
+- 학교별 manager 권한, 휴무 기간, 공식 공휴일, 운영일 계산과 학교 중심 관리 화면은 아직 구현되지 않았다.
+- 확정된 학교 운영 정책과 단계별 구현 계획은 [`school_operations.md`](school_operations.md)에 정리한다.
 - `/classrooms`는 admin의 교실 + 선생님 + 학교 관리 허브 역할을 한다.
 - `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.
 - teacher nav는 담당 교실이 1개이면 해당 교실로 직접 이동하고, 여러 개이면 dropdown으로 담당 교실 목록을 보여준다.
