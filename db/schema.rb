@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_12_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_12_001000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -138,6 +138,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_12_000000) do
     t.index ["user_coupon_id"], name: "index_coupon_use_requests_on_user_coupon_id"
   end
 
+  create_table "school_closures", force: :cascade do |t|
+    t.bigint "school_id", null: false
+    t.string "name", null: false
+    t.date "starts_on", null: false
+    t.date "ends_on", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["school_id", "starts_on", "ends_on"], name: "index_school_closures_on_school_id_and_starts_on_and_ends_on"
+  end
+
   create_table "school_memberships", force: :cascade do |t|
     t.bigint "school_id", null: false
     t.bigint "user_id", null: false
@@ -238,6 +248,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_12_000000) do
   add_foreign_key "coupon_use_requests", "users", column: "requested_by_id"
   add_foreign_key "coupon_use_requests", "users", column: "resolved_by_id"
   add_foreign_key "coupon_use_requests", "users", column: "student_id"
+  add_foreign_key "school_closures", "schools"
   add_foreign_key "school_memberships", "schools"
   add_foreign_key "school_memberships", "users", on_delete: :cascade
   add_foreign_key "user_coupons", "classrooms"
