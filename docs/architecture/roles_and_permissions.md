@@ -4,7 +4,7 @@
 
 - 서버측 권한 판단의 중심은 Pundit policy와 `policy_scope`이다.
 - 모든 비-`index` 액션은 `ApplicationController`의 `verify_authorized`, `index` 액션은 `verify_policy_scoped` 대상으로 관리된다.
-- 실제 권한 경계는 전역 `User#role`(`admin`, `teacher`, `student`)과 교실 단위 `ClassroomMembership#role`(`teacher`, `student`)의 조합으로 형성된다. `SchoolMembership`은 teacher의 단일 학교 소속을 나타내지만 아직 권한 scope로 사용하지 않는다.
+- 실제 권한 경계는 전역 `User#role`(`admin`, `teacher`, `student`), 교실 단위 `ClassroomMembership#role`(`teacher`, `student`), 학교 단위 `SchoolMembership#role`(`member`, `manager`)의 조합으로 형성된다.
 - `teacher` 권한은 전역 role만으로 충분하지 않고, 대부분의 교실 관련 쓰기 권한은 "해당 classroom의 teacher membership"이 있어야 허용된다.
 - 일부 리소스는 policy 외에 controller/service guard가 추가로 있다.
   - `UsersController#show`의 classroom membership 확인
@@ -87,11 +87,13 @@
 | `Admin::SchoolsController#new`, `#create` | `SchoolPolicy#create?` | 가능 | 불가 | 불가 | `/classrooms` 관리 허브에서 진입 |
 | `Admin::SchoolsController#edit`, `#update` | `SchoolPolicy#update?` | 가능 | 불가 | 불가 | 학교 이름만 수정 가능 |
 
-학교 삭제, school admin 권한, teacher 학교 소속 scope는 아직 구현하지 않았다.
+`SchoolPolicy::Scope`는 global admin에게 전체 학교를, 소속 teacher에게 자신의 학교만 반환한다. 일반 member와 manager는 자신의 학교를 `show?`할 수 있고, `manage_operations?`는 global admin과 해당 학교 manager에게만 허용된다. controller와 route는 아직 이 권한에 연결되지 않았다.
+
+학교 삭제 endpoint와 manager 지정 UI는 아직 구현하지 않았다. 학교 생성·이름 수정·삭제 policy는 global admin 전용으로 유지한다.
 
 `SchoolMembership`은 teacher만 가질 수 있고 교사당 한 학교로 제한한다. global admin과 student는 membership을 가질 수 없다. 학교 소속과 담당 Classroom의 학교가 달라도 전환 기간에는 저장을 허용하고 별도 경고 badge는 표시하지 않으며, membership 자동 동기화나 담당 교사 자동 해제는 수행하지 않는다.
 
-전역 `User#role`은 유지하며, `SchoolMembership`은 기본값이 `member`인 `member`/`manager` 역할을 가진다. manager는 자신이 소속된 학교의 휴무 기간, 교실, 교사 소속을 관리하도록 할 예정이며 초기 지정·해제 권한은 global admin에게만 둔다. 이 역할을 사용하는 policy, scope와 화면은 아직 구현되지 않았으며 상세 정책은 [`school_operations.md`](school_operations.md)를 참고한다.
+전역 `User#role`은 유지하며, `SchoolMembership`은 기본값이 `member`인 `member`/`manager` 역할을 가진다. manager는 자신이 소속된 학교의 운영 기능만 관리할 수 있다. manager 지정·해제, 교실·교사 관리와 실제 운영 화면은 아직 구현되지 않았으며 상세 정책은 [`school_operations.md`](school_operations.md)를 참고한다.
 
 ### Compliment
 
