@@ -1,5 +1,10 @@
 ko:
   activerecord:
+    attributes:
+      school_closure:
+        name: "이름"
+        starts_on: "시작일"
+        ends_on: "종료일"
     errors:
       models:
         coupon_template:
@@ -81,6 +86,7 @@ ko:
       add_school: "학교 추가"
       school_classroom_count: "소속 교실 %{count}개"
       schools_empty: "등록된 학교가 없습니다."
+      school_workspace: "%{school} 학교 운영 정보"
     form:
       basic_info: "교실 기본 정보"
       name_label: "교실 이름"
@@ -287,6 +293,44 @@ ko:
   school_memberships:
     errors:
       user_must_be_teacher: "는 선생님 계정이어야 합니다."
+
+  schools:
+    show:
+      workspace_title: "학교 운영 정보"
+      classroom_count: "소속 교실"
+      teacher_count: "소속 교사"
+      classroom_count_value: "%{count}개"
+      teacher_count_value: "%{count}명"
+      managers: "학교 관리자"
+      managers_empty: "지정된 학교 관리자 없음"
+      closures_title: "학교 휴무 기간"
+      closures_empty: "등록된 학교 휴무 기간이 없습니다."
+      closure_single_date: "%{date}"
+      closure_date_range: "%{starts_on} ~ %{ends_on}"
+      back_to_classrooms: "교실 목록으로 돌아가기"
+
+  school_closures:
+    new:
+      title: "%{school} 휴무 기간 등록"
+    edit:
+      title: "%{school} 휴무 기간 수정"
+    form:
+      name_label: "이름"
+      starts_on_label: "시작일"
+      ends_on_label: "종료일"
+      create_submit: "등록"
+      update_submit: "저장"
+      submitting: "저장 중..."
+    actions:
+      new: "새 휴무 기간"
+      back: "학교 운영 정보로 돌아가기"
+      confirm_delete: "이 휴무 기간을 삭제할까요?"
+    create:
+      success: "학교 휴무 기간을 등록했습니다."
+    update:
+      success: "학교 휴무 기간을 수정했습니다."
+    destroy:
+      success: "학교 휴무 기간을 삭제했습니다."
 
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."

@@ -28,6 +28,8 @@ class ClassroomsController < ApplicationController
       @teacher_assignment_rows = teacher_assignment_rows
       @schools = policy_scope(School).order(:name, :id).load
       @school_classroom_counts = Classroom.where(school_id: @schools.map(&:id)).group(:school_id).count
+    elsif current_user.teacher?
+      @workspace_school = policy_scope(School).first
     end
     @manageable_classroom_ids =
       if current_user.admin?

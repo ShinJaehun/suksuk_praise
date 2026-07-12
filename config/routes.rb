@@ -75,6 +75,10 @@ Rails.application.routes.draw do
     resources :compliments, only: [:create]
   end
 
+  resources :schools, only: :show do
+    resources :school_closures, except: %i[index show]
+  end
+
   # 쿠폰 발급(교실에서 실행) — ClassroomsController#draw_coupon
   post "/classrooms/:id/draw_coupon",
        to: "classrooms#draw_coupon",

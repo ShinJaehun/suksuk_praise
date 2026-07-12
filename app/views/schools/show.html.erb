@@ -1,0 +1,64 @@
+<section class="mx-auto w-full max-w-5xl py-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <p class="text-sm font-semibold text-sky-700"><%= t("schools.show.workspace_title") %></p>
+      <h1 class="mt-1 text-3xl font-extrabold tracking-tight text-slate-900"><%= @school.name %></h1>
+    </div>
+    <%= link_to t("schools.show.back_to_classrooms"), classrooms_path,
+          class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+  </div>
+
+  <dl class="mt-6 grid gap-4 sm:grid-cols-3">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <dt class="text-sm text-slate-500"><%= t("schools.show.classroom_count") %></dt>
+      <dd class="mt-2 text-2xl font-bold text-slate-900"><%= t("schools.show.classroom_count_value", count: @classroom_count) %></dd>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <dt class="text-sm text-slate-500"><%= t("schools.show.teacher_count") %></dt>
+      <dd class="mt-2 text-2xl font-bold text-slate-900"><%= t("schools.show.teacher_count_value", count: @teacher_count) %></dd>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <dt class="text-sm text-slate-500"><%= t("schools.show.managers") %></dt>
+      <dd class="mt-2 text-sm font-semibold text-slate-900"><%= @managers.any? ? @managers.map { |manager| display_name(manager) }.join(", ") : t("schools.show.managers_empty") %></dd>
+    </div>
+  </dl>
+
+  <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div class="flex items-center justify-between gap-4">
+      <h2 class="text-xl font-bold text-slate-900"><%= t("schools.show.closures_title") %></h2>
+      <% if @can_manage_operations %>
+        <%= link_to t("school_closures.actions.new"), new_school_school_closure_path(@school),
+              class: "rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700" %>
+      <% end %>
+    </div>
+
+    <% if @school_closures.any? %>
+      <div class="mt-4 divide-y divide-slate-200">
+        <% @school_closures.each do |closure| %>
+          <article class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 class="font-semibold text-slate-900"><%= closure.name %></h3>
+              <p class="mt-1 text-sm text-slate-500">
+                <% if closure.starts_on == closure.ends_on %>
+                  <%= t("schools.show.closure_single_date", date: l(closure.starts_on, format: :short)) %>
+                <% else %>
+                  <%= t("schools.show.closure_date_range", starts_on: l(closure.starts_on, format: :short), ends_on: l(closure.ends_on, format: :short)) %>
+                <% end %>
+              </p>
+            </div>
+            <% if @can_manage_operations %>
+              <div class="flex gap-2">
+                <%= link_to t("ui.edit"), edit_school_school_closure_path(@school, closure), class: "rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+                <%= link_to t("ui.delete"), school_school_closure_path(@school, closure),
+                      data: { turbo_method: :delete, turbo_confirm: t("school_closures.actions.confirm_delete") },
+                      class: "rounded-lg border border-rose-300 px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>
+              </div>
+            <% end %>
+          </article>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="mt-4 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500"><%= t("schools.show.closures_empty") %></p>
+    <% end %>
+  </section>
+</section>

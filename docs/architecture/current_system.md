@@ -49,7 +49,8 @@
 - `PublicHoliday`는 전국 공통 공휴일의 날짜, 이름과 출처를 로컬 DB에 저장한다.
 - 한국천문연구원 특일 정보 OpenAPI client와 연도별 동기화 service가 있으며, 성공한 응답만 transaction으로 교체하고 실패 시 기존 데이터를 유지한다. 명령행 task는 기본적으로 현재·다음 연도를 동기화한다.
 - `SchoolCalendar`는 주말, 전국 공통 공휴일과 해당 학교의 휴무 기간을 기준으로 운영일과 주·월의 마지막 운영일을 계산한다.
-- 관리자 동기화 화면과 정기 실행 설정, 휴무일 controller·화면, 칭찬왕 날짜 제한과 학교 중심 관리 화면은 아직 구현되지 않았다.
+- 학교 workspace에서 member는 자신의 학교 정보와 휴무 기간을 읽을 수 있고, 해당 학교 manager와 global admin은 SchoolClosure를 등록·수정·삭제할 수 있다. `SchoolPolicy`와 학교 scope가 이 controller 흐름에 적용되어 있다.
+- 관리자 공휴일 동기화 화면과 정기 실행 설정, manager 지정 UI, manager의 교실·교사 관리 권한, 칭찬왕 날짜 제한은 아직 구현되지 않았다.
 - 확정된 학교 운영 정책과 단계별 구현 계획은 [`school_operations.md`](school_operations.md)에 정리한다.
 - `/classrooms`는 admin의 교실 + 선생님 + 학교 관리 허브 역할을 한다.
 - `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.

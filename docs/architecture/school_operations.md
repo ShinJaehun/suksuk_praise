@@ -42,7 +42,7 @@
 
 `SchoolPolicy`와 scope는 일반 teacher와 manager에게 자신의 학교만 노출한다. 일반 teacher는 학교를 열람할 수 있지만 운영 기능을 관리할 수 없고, manager는 자신의 학교 운영 기능만 관리할 수 있다. global admin은 모든 학교를 조회하고 관리한다. 학교 생성·이름 수정·삭제는 global admin 전용이다.
 
-이 policy는 아직 controller와 route에 연결되지 않았다. manager 지정 화면, 교실·교사 관리 권한과 실제 휴무일 관리도 후속 구현 범위다. student와 학교 미소속 teacher의 학교 scope는 비어 있다.
+이 policy는 학교 workspace와 휴무 기간 controller·route에 연결되어 있다. member는 자신의 학교 workspace와 휴무 기간을 읽을 수 있고, 해당 학교 manager와 global admin은 SchoolClosure를 등록·수정·삭제할 수 있다. manager 지정 화면과 교실·교사 관리 권한은 후속 구현 범위다. student와 학교 미소속 teacher의 학교 scope는 비어 있다.
 
 ---
 
@@ -55,7 +55,7 @@
 
 역할은 integer enum으로 구현되어 있으며 기본값은 `member`다. 기존 SchoolMembership도 `member`로 이관된다. 현재처럼 교사 한 명은 최대 한 학교에만 소속되는 구조를 유지하고, 한 학교에는 여러 manager를 둘 수 있다. global admin과 student는 SchoolMembership을 갖지 않는다.
 
-manager 역할을 사용하는 학교 조회 scope와 운영 관리 policy는 구현되어 있다. manager 지정 화면과 route는 아직 구현되지 않았다.
+manager 역할을 사용하는 학교 조회 scope와 운영 관리 policy는 학교 workspace와 SchoolClosure 관리에 적용되어 있다. manager 지정 화면과 route는 아직 구현되지 않았다.
 
 ---
 
@@ -125,7 +125,7 @@ last_school_day_of_week(date)
 last_school_day_of_month(date)
 ```
 
-현재 계산에는 주말, 전국 공통 PublicHoliday와 해당 학교의 SchoolClosure를 반영한다. controller·화면과 칭찬왕 사용 가능 날짜에는 아직 연결하지 않았다.
+현재 계산에는 주말, 전국 공통 PublicHoliday와 해당 학교의 SchoolClosure를 반영한다. SchoolClosure 관리 화면은 구현되었지만 칭찬왕 사용 가능 날짜에는 아직 연결하지 않았다.
 
 ---
 
@@ -171,4 +171,4 @@ last_school_day_of_month(date)
 - 제주 학교 홈페이지 학사일정 파싱
 - 칭찬왕 확정 모델, 소급 선정과 미선정 상태 관리
 - 쿠폰 발급 후 순위 변경에 대한 자동 보정
-- 학교 휴무일, 공휴일 API와 학교 workspace의 세부 UI 설계
+- 공휴일 API 관리 UI와 학교 workspace의 추가 확장
