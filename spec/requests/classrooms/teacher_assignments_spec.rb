@@ -43,6 +43,20 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       expect(classroom.classroom_memberships.teacher.exists?(user: other_teacher)).to eq(true)
     end
 
+    it "allows an admin to assign multiple teachers" do
+      sign_in admin
+
+      patch classroom_path(classroom), params: {
+        classroom: classroom_update_params.merge(
+          teacher_ids: [teacher.id.to_s, teacher.id.to_s, other_teacher.id.to_s]
+        )
+      }
+
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(classroom.classroom_memberships.teacher.pluck(:user_id))
+        .to contain_exactly(teacher.id, other_teacher.id)
+    end
+
     it "allows an admin to remove a teacher assignment" do
       create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
       sign_in admin
@@ -71,16 +85,84 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       expect(classroom.grade).to eq(4)
     end
 
-    it "removes all teacher assignments when an admin explicitly submits an empty teacher_ids array" do
+    it "removes all teacher assignments when an admin explicitly submits the blank checkbox value" do
       create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
       sign_in admin
 
       patch classroom_path(classroom), params: {
-        classroom: classroom_update_params.merge(teacher_ids: [])
+        classroom: classroom_update_params.merge(teacher_ids: [""])
       }
 
       expect(response).to redirect_to(classroom_path(classroom))
       expect(classroom.classroom_memberships.teacher).to be_empty
+    end
+
+    it "rejects a teacher id that does not exist without changing the classroom" do
+      original_school = create(:school)
+      other_school = create(:school)
+      classroom.update!(name: "기존 교실", school: original_school, grade: 2)
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      missing_id = User.maximum(:id).to_i + 10_000
+      sign_in admin
+
+      patch classroom_path(classroom), params: {
+        classroom: classroom_update_params.merge(
+          name: "변경된 교실",
+          school_id: other_school.id,
+          grade: 5,
+          teacher_ids: [missing_id.to_s]
+        )
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("선택한 담당 교사를 찾을 수 없습니다.")
+      expect(classroom.reload).to have_attributes(name: "기존 교실", school: original_school, grade: 2)
+      expect(classroom.classroom_memberships.teacher.pluck(:user_id)).to eq([teacher.id])
+    end
+
+    it "rejects a non-teacher user id without changing assignments" do
+      student = create(:user, :student)
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      sign_in admin
+
+      patch classroom_path(classroom), params: {
+        classroom: classroom_update_params.merge(teacher_ids: [student.id.to_s])
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("선택한 담당 교사를 찾을 수 없습니다.")
+      expect(classroom.classroom_memberships.teacher.pluck(:user_id)).to eq([teacher.id])
+    end
+
+    it "rejects mixed valid and missing teacher ids without partially applying them" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      missing_id = User.maximum(:id).to_i + 10_000
+      sign_in admin
+
+      patch classroom_path(classroom), params: {
+        classroom: classroom_update_params.merge(
+          teacher_ids: [other_teacher.id.to_s, missing_id.to_s]
+        )
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(classroom.classroom_memberships.teacher.pluck(:user_id)).to eq([teacher.id])
+      expect(classroom.classroom_memberships.teacher.exists?(user: other_teacher)).to eq(false)
+    end
+
+    it "rejects malformed, zero, negative, decimal, and whitespace-padded teacher ids" do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      sign_in admin
+
+      ["abc", "1abc", "0", "-1", "1.5", " #{other_teacher.id}"].each do |invalid_id|
+        patch classroom_path(classroom), params: {
+          classroom: classroom_update_params.merge(teacher_ids: [invalid_id])
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("선택한 담당 교사를 찾을 수 없습니다.")
+        expect(classroom.reload.classroom_memberships.teacher.pluck(:user_id)).to eq([teacher.id])
+      end
     end
 
     it "does not change student or admin memberships when syncing teacher assignments" do
@@ -113,6 +195,25 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       expect(response).to redirect_to(classroom_path(classroom))
       expect(classroom.classroom_memberships.teacher.exists?(user: teacher)).to eq(true)
       expect(classroom.classroom_memberships.teacher.exists?(user: other_teacher)).to eq(true)
+    end
+  end
+
+  describe "POST /classrooms" do
+    it "does not create a classroom for an invalid teacher id" do
+      missing_id = User.maximum(:id).to_i + 10_000
+      sign_in admin
+
+      expect do
+        post classrooms_path, params: {
+          classroom: {
+            name: "생성되면 안 되는 교실",
+            teacher_ids: [missing_id.to_s]
+          }
+        }
+      end.not_to change(Classroom, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("선택한 담당 교사를 찾을 수 없습니다.")
     end
   end
 

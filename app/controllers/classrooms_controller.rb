@@ -360,6 +360,9 @@ class ClassroomsController < ApplicationController
   end
 
   def update_classroom_with_teacher_assignments
+    selected_teacher_ids if current_user.admin? && teacher_assignment_params_submitted?
+    return false if teacher_assignment_invalid?
+
     Classroom.transaction do
       next false unless @classroom.update(classroom_params)
 
@@ -389,6 +392,9 @@ class ClassroomsController < ApplicationController
   end
 
   def create_classroom_with_teacher_assignments
+    selected_teacher_ids if current_user.admin?
+    return false if teacher_assignment_invalid?
+
     Classroom.transaction do
       if current_user.admin? && selected_teacher_ids.empty?
         @classroom.errors.add(:base, "담당 선생님을 1명 이상 선택해 주세요.")
@@ -433,9 +439,27 @@ class ClassroomsController < ApplicationController
   end
 
   def selected_teacher_ids
-    Array(params.dig(:classroom, :teacher_ids))
-      .reject(&:blank?)
-      .map(&:to_i) & User.teacher.pluck(:id)
+    return @selected_teacher_ids if defined?(@selected_teacher_ids)
+
+    raw_ids = Array(params.dig(:classroom, :teacher_ids)).reject { |value| value == "" }
+    valid_raw_ids = raw_ids.select { |value| value.to_s.match?(/\A[1-9]\d*\z/) }
+    requested_ids = valid_raw_ids.map(&:to_i).uniq
+    @selected_teacher_ids = User.teacher.where(id: requested_ids).pluck(:id)
+
+    if valid_raw_ids.size != raw_ids.size || @selected_teacher_ids.sort != requested_ids.sort
+      invalid_teacher_assignment(@selected_teacher_ids)
+    end
+    @selected_teacher_ids
+  end
+
+  def invalid_teacher_assignment(selected_ids)
+    @teacher_assignment_invalid = true
+    @classroom.errors.add(:base, t("classrooms.errors.teacher_not_found"))
+    @selected_teacher_ids = selected_ids
+  end
+
+  def teacher_assignment_invalid?
+    @teacher_assignment_invalid == true
   end
 
   def teacher_assignment_params_submitted?
