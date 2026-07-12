@@ -100,7 +100,9 @@ PublicHoliday
 
 `PublicHoliday`는 날짜, 이름, 출처를 로컬 DB에 저장하며 같은 날짜에도 이름이나 출처가 다르면 별도 공휴일로 저장할 수 있다. 동일한 날짜·이름·출처 조합은 중복 저장하지 않는다.
 
-외부 공식 API 동기화는 아직 구현되지 않았다. 정확한 API, adapter, 실행 방식과 동기화 주기는 후속 단계에서 결정한다.
+한국천문연구원 특일 정보 OpenAPI client와 연도별 동기화 service가 구현되어 있다. 외부 응답과 XML 파싱이 모두 성공한 뒤 transaction 안에서 해당 연도와 `kasi_special_days` source 데이터만 교체하며, 실패하거나 결과가 비어 있으면 기존 데이터를 유지한다.
+
+동기화에는 `KASI_HOLIDAY_API_KEY` 환경변수가 필요하다. `bin/rails public_holidays:sync`는 현재 연도와 다음 연도를, `bin/rails "public_holidays:sync[2026]"`는 지정 연도만 동기화한다. 관리자 화면, background job과 정기 실행 설정은 아직 구현되지 않았다.
 
 ---
 
