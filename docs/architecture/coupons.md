@@ -101,7 +101,13 @@ class UserCoupon < ApplicationRecord
   belongs_to :issued_by, class_name: "User", optional: true
 
   enum status: { issued: 0, used: 1 }
-  enum issuance_basis: { daily: "daily", weekly: "weekly", manual: "manual" }
+  enum issuance_basis: {
+    daily: "daily",
+    weekly: "weekly",
+    monthly: "monthly",
+    manual: "manual",
+    hybrid: "hybrid"
+  }
 
   validates :issued_at, :status, :issuance_basis, :period_start_on, presence: true
 end
@@ -109,9 +115,14 @@ end
 
 - `issue!` 헬퍼로 basis, period_start_on 자동 설정
 - `use!` → `issued` → `used` 전이만 허용
-- period duplicate guard는 현재 `daily` 발급에만 적용한다.
-- `manual` 발급은 동일한 `basis_tag`가 있어도 daily duplicate 규칙과 별개로 취급한다.
-- 향후 `weekly`, `monthly` 발급이 도입되면 각 기간 기준에 맞춰 duplicate guard를 확장한다.
+- 일간·주간·월간 칭찬왕 쿠폰은 issuance basis, basis tag, period 정보로 구분한다.
+- 같은 학생에게 같은 기간의 동일 칭찬왕 쿠폰을 중복 발급하지 않는다.
+- 사용 처리된 쿠폰도 같은 기간에 다시 발급하지 않는다.
+- 교실에서 비활성화한 기간의 칭찬왕 쿠폰은 실제 생성 전에 서버측에서 차단한다.
+- `manual`·custom 발급은 칭찬왕 기간 활성 설정과 무관하다.
+
+칭찬왕 집계와 향후 학교 운영일 연동 정책은
+[`weekly_monthly_compliment_king.md`](../specs/weekly_monthly_compliment_king.md)를 참고한다.
 
 ### CouponUseRequest
 
@@ -175,6 +186,7 @@ end
 
 ### Draw coupon / reveal
 
+- 칭찬왕 쿠폰 발급은 `CouponDraw::Issue`가 담당한다.
 - teacher/admin이 쿠폰을 뽑으면 서버에서는 `draw_coupon` 요청 시점에 쿠폰을 즉시 발급한다.
 - Turbo 응답에는 쿠폰 뽑기 overlay와 delayed reveal용 stream이 포함된다.
 - overlay가 열려 있는 동안 teacher/admin 화면 뒤의 쿠폰 목록, 최근 발급, KPI는 즉시 갱신하지 않는다.

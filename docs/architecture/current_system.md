@@ -91,6 +91,12 @@
 - compliment 생성 시 receiver 학생의 points가 증가한다.
 - 짧은 시간 안의 같은 giver/receiver/classroom 중복 요청은 차단된다.
 - 칭찬 목록과 타임라인은 학생 활동 기록 페이지에서 교실/권한 범위에 맞게 로드된다.
+- 일간·주간·월간 칭찬왕 집계는 `ComplimentKings::Pick`이 담당한다.
+- 일간은 해당 날짜, 주간은 월요일 시작 주, 월간은 달력 월을 Rails `Time.zone` 기준으로 집계한다.
+- 활성 학생만 집계하고 최고 횟수가 같은 학생은 모두 포함한다.
+- 교실별로 각 기간을 활성화하거나 비활성화할 수 있으며, 비활성 기간은 서버측 쿠폰 발급에서도 차단한다.
+- 칭찬왕 결과는 별도 record로 저장하지 않고 조회할 때마다 다시 계산한다.
+- 마지막 학교 운영일 사용 제한은 아직 구현되지 않았다. 상세 정책은 [`weekly_monthly_compliment_king.md`](../specs/weekly_monthly_compliment_king.md)를 참고한다.
 
 ## 쿠폰
 
@@ -106,6 +112,9 @@
 - 쿠폰 지급 카드의 `쿠폰 지급`은 같은 active template 범위에서 선택한 template을 `issuance_basis: manual`, `basis_tag: selected`로 발급한다.
 - 담당 teacher는 자기 교실의 active 학생에게만 쿠폰을 지급할 수 있고, admin은 접근 가능한 학생에게 지급할 수 있다. 외부 teacher, student, inactive 학생, 접근할 수 없거나 inactive인 template은 차단된다.
 - 교실 페이지의 칭찬왕 쿠폰 발급은 기존처럼 가중치 기반 `쿠폰 뽑기`만 제공하며 선택 지급 UI는 제공하지 않는다.
+- 칭찬왕 발급은 issuance basis, basis tag, period 정보로 일간·주간·월간을 구분한다.
+- 같은 학생에게 같은 기간의 동일 칭찬왕 쿠폰을 중복 발급하지 않으며, 사용 처리된 쿠폰도 다시 발급하지 않는다.
+- 수동·custom 쿠폰 발급은 칭찬왕 기간 활성 설정과 무관하다.
 - 학생은 본인의 보유 coupon을 확인할 수 있다.
 - `UserCoupon`은 issued/used 상태 전이를 가진다.
 - coupon 발급/사용 이벤트는 `CouponEvent`로 기록된다.

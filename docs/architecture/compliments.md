@@ -67,7 +67,20 @@ end
 
 ---
 
-## 6. 테스트 우선순위
+## 6. 칭찬왕 집계
+
+- 일간·주간·월간 집계는 `ComplimentKings::Pick`이 담당한다.
+- 일간은 해당 날짜, 주간은 월요일 시작 주, 월간은 달력 월을 Rails `Time.zone` 기준으로 계산한다.
+- 활성 학생만 집계하며, 최고 횟수가 같은 학생은 모두 결과에 포함한다.
+- 결과를 별도 선정 record로 저장하지 않고 조회할 때마다 다시 계산한다.
+- 교실별 기간 활성 설정은 화면과 서버측 쿠폰 발급에 모두 적용한다.
+
+상세 정책과 향후 학교 운영일 연동 계획은
+[`weekly_monthly_compliment_king.md`](../specs/weekly_monthly_compliment_king.md)를 참고한다.
+
+---
+
+## 7. 테스트 우선순위
 
 칭찬 기능에서 우선 테스트할 항목:
 
@@ -79,21 +92,21 @@ end
 
 ---
 
-## 7. 관련 코드 위치
+## 8. 관련 코드 위치
 
 - `app/models/compliment.rb`
+- `app/services/compliment_kings/pick.rb`
 - `app/controllers/compliments_controller.rb`
 - 관련 policy / request spec / service 객체(있다면)
 
 ---
 
-## 8. Open Questions
+## 9. Open Questions
 
 - admin의 칭찬 생성 권한 범위 문구는 현재 코드 기준 확인 필요.
 - 칭찬 취소/삭제 시 points 보정 규칙이 필요한가?
-- 기간별 칭찬왕 집계 규칙은 별도 문서로 분리할 것인가?
 
-## 9. 문서 유지 원칙
+## 10. 문서 유지 원칙
 
 - 현재 시스템 전체 요약은 `docs/architecture/current_system.md`에 둔다.
 - 이 문서는 칭찬 생성, 중복 요청 방지, points 증가 등 상세 규칙을 유지한다.
