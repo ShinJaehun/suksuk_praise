@@ -52,6 +52,7 @@ RSpec.describe "Admin schools", type: :request do
     expect(response.body).not_to include("<!DOCTYPE html>")
     expect(response.body).to include('data-turbo-frame="_top"')
     expect(response.body).to include('data-turbo-submits-with="등록 중..."')
+    expect(response.body).not_to include("translation missing")
   end
 
   it "renders the edit school form in one modal frame without the application layout" do
@@ -65,6 +66,7 @@ RSpec.describe "Admin schools", type: :request do
     expect(response.body).to include('data-turbo-frame="_top"')
     expect(response.body).to include('data-turbo-submits-with="저장 중..."')
     expect(response.body).not_to include("<!DOCTYPE html>")
+    expect(response.body).not_to include("translation missing")
   end
 
   it "creates a school" do

@@ -1,4 +1,4 @@
-<h1 class="text-2xl font-extrabold tracking-tight text-slate-900">교사 소속 및 담당 교실</h1>
+<h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("admin.teachers.edit_title") %></h1>
 
 <% if @teacher.errors.any? %>
   <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -7,7 +7,7 @@
 <% end %>
 
 <div class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
-  <h2 class="mb-2 text-base font-semibold">교사 정보</h2>
+  <h2 class="mb-2 text-base font-semibold"><%= t("admin.teachers.info_title") %></h2>
   <div class="flex items-center gap-3">
     <%= user_avatar_image(
           @teacher,
@@ -16,11 +16,11 @@
           alt: "#{@teacher.name} avatar"
         ) %>
     <div class="space-y-1">
-      <p><span class="font-medium text-gray-700">이름:</span> <span class="ml-2"><%= @teacher.name %></span></p>
-      <p><span class="font-medium text-gray-700">이메일:</span> <span class="ml-2"><%= @teacher.email %></span></p>
-      <p><span class="font-medium text-gray-700">생성일:</span> <span class="ml-2"><%= l(@teacher.created_at, format: :short) %></span></p>
-      <p><span class="font-medium text-gray-700">담당 교실 수:</span> <span class="ml-2"><%= @teacher_classroom_count %>개</span></p>
-      <p><span class="font-medium text-gray-700">담당 교실:</span> <span class="ml-2"><%= @teacher_classroom_names.any? ? @teacher_classroom_names.join(", ") : "미배정" %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.name") %>:</span> <span class="ml-2"><%= @teacher.name %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.email") %>:</span> <span class="ml-2"><%= @teacher.email %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.created_at") %></span> <span class="ml-2"><%= l(@teacher.created_at, format: :short) %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.classroom_count") %></span> <span class="ml-2"><%= t("admin.teachers.info.classroom_count_value", count: @teacher_classroom_count) %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.classrooms") %></span> <span class="ml-2"><%= @teacher_classroom_names.any? ? @teacher_classroom_names.join(", ") : t("admin.teachers.info.unassigned") %></span></p>
     </div>
   </div>
 </div>
@@ -31,20 +31,20 @@
       class: "space-y-6",
       data: { turbo_frame: "_top" } do |f| %>
   <section class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
-    <h2 class="mb-3 text-base font-semibold">학교 소속</h2>
-    <%= label_tag :school_id, "학교", class: "block text-sm font-medium text-gray-700" %>
+    <h2 class="mb-3 text-base font-semibold"><%= t("admin.teachers.school_membership_title") %></h2>
+    <%= label_tag :school_id, t("admin.teachers.form.school_label"), class: "block text-sm font-medium text-gray-700" %>
     <%= select_tag :school_id,
           options_from_collection_for_select(@schools, :id, :name, @selected_school_id),
-          include_blank: "학교 미지정",
+          include_blank: t("admin.teachers.form.school_unspecified"),
           class: "mt-1 block w-full rounded border border-gray-300 px-3 py-2 sm:max-w-md" %>
   </section>
 
   <section class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
-    <h2 class="mb-3 text-base font-semibold">담당 교실 선택</h2>
+    <h2 class="mb-3 text-base font-semibold"><%= t("admin.teachers.classroom_assignment_title") %></h2>
     <%= hidden_field_tag "classroom_ids[]", "" %>
 
     <% if @classrooms.none? %>
-      <p class="mb-4 text-xs text-gray-500">아직 생성된 교실이 없습니다. 먼저 교실을 만든 뒤, 담당 교실을 지정할 수 있습니다.</p>
+      <p class="mb-4 text-xs text-gray-500"><%= t("admin.teachers.classrooms_empty") %></p>
     <% else %>
       <div class="mb-4 space-y-2">
         <% @classrooms.each do |classroom| %>
@@ -56,7 +56,7 @@
             <span class="min-w-0">
               <span class="block text-sm font-medium text-slate-800"><%= classroom.name %></span>
               <span class="block text-xs text-slate-500">
-                <%= classroom.school&.name || "학교 미지정" %> · <%= classroom.grade ? "#{classroom.grade}학년" : "학년 미지정" %>
+                <%= classroom.school&.name || t("classrooms.index.school_unspecified") %> · <%= classroom.grade ? t("classrooms.index.grade", grade: classroom.grade) : t("classrooms.index.grade_unspecified") %>
               </span>
             </span>
           </label>
@@ -65,8 +65,10 @@
     <% end %>
 
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <%= f.submit "저장", class: "inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
-      <%= link_to "교실로 돌아가기", classrooms_path, class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      <%= f.submit t("ui.save"),
+            data: { turbo_submits_with: t("admin.teachers.form.submitting") },
+            class: "inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+      <%= link_to t("admin.teachers.actions.back_to_classrooms"), classrooms_path, class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
     </div>
   </section>
 <% end %>

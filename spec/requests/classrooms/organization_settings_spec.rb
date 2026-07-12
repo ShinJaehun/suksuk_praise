@@ -98,6 +98,7 @@ RSpec.describe "Classroom organization settings", type: :request do
     expect(response.body).to include("2학년")
     expect(response.body).to include("미지정")
     expect(response.body).not_to include("미지정 · 미지정")
+    expect(response.body).not_to include("translation missing")
   end
 
   it "rejects a grade outside the elementary school range" do

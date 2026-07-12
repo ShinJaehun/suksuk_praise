@@ -55,6 +55,44 @@ ko:
   classrooms:
     errors:
       teacher_not_found: "선택한 담당 교사를 찾을 수 없습니다."
+      teacher_required: "담당 선생님을 1명 이상 선택해 주세요."
+    index:
+      admin_title: "교실"
+      teacher_title: "내 교실"
+      unspecified: "미지정"
+      school_unspecified: "학교 미지정"
+      grade: "%{grade}학년"
+      grades: "%{grades}학년"
+      grade_unspecified: "학년 미지정"
+      additional_teachers: "외 %{count}명"
+      teacher_empty: "담당 선생님 없음"
+      student_count: "학생 %{count}명"
+      student_empty: "학생 없음"
+      open: "열기"
+      manage: "관리"
+      empty: "아직 교실이 없습니다."
+      teachers_title: "선생님"
+      new_teacher: "새 선생님 추가"
+      assigned_count: "담당 %{count}개"
+      additional_classrooms: "외 %{count}개"
+      unassigned: "미배정"
+      teachers_empty: "등록된 선생님이 없습니다."
+      schools_title: "학교"
+      add_school: "학교 추가"
+      school_classroom_count: "소속 교실 %{count}개"
+      schools_empty: "등록된 학교가 없습니다."
+    form:
+      basic_info: "교실 기본 정보"
+      name_label: "교실 이름"
+      name_placeholder: "예: 4학년 1반"
+      name_hint: "교실 이름은 50자 이내로 입력해 주세요."
+      school_label: "학교"
+      school_prompt: "학교 선택"
+      grade_label: "학년"
+      grade_prompt: "학년 선택"
+      teacher_assignment: "담당 선생님 배정"
+      teacher_assignment_count: "담당 선생님 배정 · %{count}명 선택됨"
+      teacher_assignment_submit: "담당 선생님 저장"
     create:
       success: "교실이 생성되었습니다."
     update:
@@ -196,6 +234,16 @@ ko:
 
   admin:
     schools:
+      new_title: "새 학교 등록"
+      edit_title: "학교 이름 수정"
+      form:
+        name_label: "학교 이름"
+        create_submit: "학교 등록"
+        update_submit: "변경 저장"
+        creating: "등록 중..."
+        updating: "저장 중..."
+      actions:
+        back_to_classrooms: "교실로 돌아가기"
       errors:
         name_blank: "학교 이름을 입력해 주세요."
       create:
@@ -203,6 +251,29 @@ ko:
       update:
         success: "학교 이름을 수정했습니다."
     teachers:
+      new_title: "새 교사 추가"
+      edit_title: "교사 소속 및 담당 교실"
+      info_title: "교사 정보"
+      school_membership_title: "학교 소속"
+      classroom_assignment_title: "담당 교실 선택"
+      classrooms_empty: "아직 생성된 교실이 없습니다. 먼저 교실을 만든 뒤, 담당 교실을 지정할 수 있습니다."
+      form:
+        password_label: "초기 비밀번호"
+        gender_label: "성별"
+        gender_male: "남자"
+        gender_female: "여자"
+        gender_prompt: "선택해 주세요"
+        school_label: "학교"
+        school_unspecified: "학교 미지정"
+        submitting: "저장 중..."
+      info:
+        created_at: "생성일:"
+        classroom_count: "담당 교실 수:"
+        classroom_count_value: "%{count}개"
+        classrooms: "담당 교실:"
+        unassigned: "미배정"
+      actions:
+        back_to_classrooms: "교실로 돌아가기"
       errors:
         school_not_found: "선택한 학교를 찾을 수 없습니다."
         classroom_not_found: "선택한 교실을 찾을 수 없습니다."
@@ -212,6 +283,10 @@ ko:
         failure: "교사 계정 생성에 실패했습니다."
       update:
         success: "교사 소속과 담당 교실을 저장했습니다."
+
+  school_memberships:
+    errors:
+      user_must_be_teacher: "는 선생님 계정이어야 합니다."
 
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."

@@ -5,11 +5,11 @@
   <% if show_details %>
     <details>
       <summary class="cursor-pointer text-base font-semibold text-slate-900">
-        담당 선생님 배정 · <%= assigned_teacher_ids.size %>명 선택됨
+        <%= t("classrooms.form.teacher_assignment_count", count: assigned_teacher_ids.size) %>
       </summary>
   <% else %>
     <div class="mb-4">
-      <h2 class="text-base font-semibold text-slate-900">담당 선생님 배정</h2>
+      <h2 class="text-base font-semibold text-slate-900"><%= t("classrooms.form.teacher_assignment") %></h2>
     </div>
   <% end %>
 
@@ -39,7 +39,7 @@
 
   <% if show_submit %>
     <div class="mt-5 flex justify-end">
-      <%= form.submit "담당 선생님 저장",
+      <%= form.submit t("classrooms.form.teacher_assignment_submit"),
             class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700" %>
     </div>
   <% end %>

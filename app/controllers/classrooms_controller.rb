@@ -15,7 +15,7 @@ class ClassroomsController < ApplicationController
   def index
     # index는 policy_scope만 요구(verify_policy_scoped 훅 통과)
     @classrooms = policy_scope(Classroom).includes(:school).order(created_at: :desc)
-    @classrooms_index_title = current_user.admin? ? "교실 관리" : "내 교실"
+    @classrooms_index_title = t(current_user.admin? ? "classrooms.index.admin_title" : "classrooms.index.teacher_title")
     classroom_ids = @classrooms.map(&:id)
     teacher_memberships = ClassroomMembership
       .joins(:user)
@@ -397,7 +397,7 @@ class ClassroomsController < ApplicationController
 
     Classroom.transaction do
       if current_user.admin? && selected_teacher_ids.empty?
-        @classroom.errors.add(:base, "담당 선생님을 1명 이상 선택해 주세요.")
+        @classroom.errors.add(:base, t("classrooms.errors.teacher_required"))
         next false
       end
 
@@ -514,8 +514,8 @@ class ClassroomsController < ApplicationController
 
         {
           teacher: teacher,
-          school_name: teacher.school_membership&.school&.name || "학교 미지정",
-          grade_label: grades.any? ? "#{grades.join(', ')}학년" : "학년 미지정",
+          school_name: teacher.school_membership&.school&.name || t("classrooms.index.school_unspecified"),
+          grade_label: grades.any? ? t("classrooms.index.grades", grades: grades.join(", ")) : t("classrooms.index.grade_unspecified"),
           classroom_names: classroom_names,
           classroom_count: classroom_names.size
         }

@@ -63,9 +63,9 @@ class Admin::SchoolsController < Admin::BaseController
 
   def modal_locals(template)
     if template == :new
-      { school: @school, title: "새 학교 등록", submit_label: "학교 등록" }
+      { school: @school, title: t("admin.schools.new_title"), submit_label: t("admin.schools.form.create_submit") }
     else
-      { school: @school, title: "학교 이름 수정", submit_label: "변경 저장" }
+      { school: @school, title: t("admin.schools.edit_title"), submit_label: t("admin.schools.form.update_submit") }
     end
   end
 end

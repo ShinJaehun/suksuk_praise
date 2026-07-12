@@ -10,6 +10,6 @@ class SchoolMembership < ApplicationRecord
   def user_must_be_teacher
     return if user&.teacher?
 
-    errors.add(:user, "는 선생님 계정이어야 합니다.")
+    errors.add(:user, I18n.t("school_memberships.errors.user_must_be_teacher"))
   end
 end

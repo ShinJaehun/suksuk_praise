@@ -33,7 +33,7 @@ RSpec.describe SchoolMembership, type: :model do
       membership = build(:school_membership, user: user)
 
       expect(membership).not_to be_valid
-      expect(membership.errors[:user]).to be_present
+      expect(membership.errors[:user]).to include("는 선생님 계정이어야 합니다.")
     end
   end
 
