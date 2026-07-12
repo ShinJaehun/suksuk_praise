@@ -12,7 +12,7 @@ class ApplicationController < ActionController::Base
   def after_sign_in_path_for(resource_or_scope)
     return user_path(resource_or_scope) if resource_or_scope.is_a?(User) && resource_or_scope.student?
 
-    super
+    role_landing_path_for(resource_or_scope)
   end
 
   rescue_from Pundit::NotAuthorizedError do
@@ -141,11 +141,15 @@ class ApplicationController < ActionController::Base
   end
 
   def role_landing_path
-    return user_path(current_user) if current_user.student?
-    return classrooms_path if current_user.admin?
+    role_landing_path_for(current_user)
+  end
 
-    teacher_classrooms = ClassroomPolicy::Scope.new(current_user, Classroom).resolve.order(:id).limit(2).to_a
-    return classroom_path(teacher_classrooms.first) if teacher_classrooms.one?
+  def role_landing_path_for(user)
+    return user_path(user) if user.student?
+    return schools_path if user.admin?
+
+    managed_membership = user.school_membership&.manager? ? user.school_membership : nil
+    return school_path(managed_membership.school) if managed_membership
 
     classrooms_path
   end

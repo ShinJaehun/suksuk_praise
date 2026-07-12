@@ -33,6 +33,8 @@ RSpec.describe "Classroom teacher assignments", type: :request do
 
   describe "PATCH /classrooms/:id" do
     it "allows an admin to assign a teacher" do
+      school = create(:school)
+      classroom.update!(school: school)
       sign_in admin
 
       patch classroom_path(classroom), params: {
@@ -41,9 +43,12 @@ RSpec.describe "Classroom teacher assignments", type: :request do
 
       expect(response).to redirect_to(classroom_path(classroom))
       expect(classroom.classroom_memberships.teacher.exists?(user: other_teacher)).to eq(true)
+      expect(other_teacher.reload.school_membership).to have_attributes(school: school, role: "member")
     end
 
     it "allows an admin to assign multiple teachers" do
+      school = create(:school)
+      classroom.update!(school: school)
       sign_in admin
 
       patch classroom_path(classroom), params: {
@@ -55,9 +60,13 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       expect(response).to redirect_to(classroom_path(classroom))
       expect(classroom.classroom_memberships.teacher.pluck(:user_id))
         .to contain_exactly(teacher.id, other_teacher.id)
+      expect(SchoolMembership.where(school: school, user: [teacher, other_teacher]).count).to eq(2)
     end
 
     it "allows an admin to remove a teacher assignment" do
+      school = create(:school)
+      classroom.update!(school: school)
+      school_membership = create(:school_membership, school: school, user: teacher)
       create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
       sign_in admin
 
@@ -68,6 +77,63 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       expect(response).to redirect_to(classroom_path(classroom))
       expect(classroom.classroom_memberships.teacher.exists?(user: teacher)).to eq(false)
       expect(classroom.classroom_memberships.teacher.exists?(user: other_teacher)).to eq(true)
+      expect(school_membership.reload).to be_member
+      expect(school_membership).to be_persisted
+    end
+
+    it "preserves an existing manager when assigning and keeps membership after removal" do
+      school = create(:school)
+      classroom.update!(school: school)
+      membership = create(:school_membership, :manager, school: school, user: teacher)
+      sign_in admin
+
+      patch classroom_path(classroom), params: { classroom: classroom_update_params.merge(teacher_ids: [teacher.id.to_s]) }
+      patch classroom_path(classroom), params: { classroom: classroom_update_params.merge(teacher_ids: [""]) }
+
+      expect(membership.reload).to be_manager
+    end
+
+    it "rejects members and managers from another school without partial changes" do
+      original_school = create(:school)
+      target_school = create(:school)
+      classroom.update!(name: "기존 교실", school: target_school, grade: 2)
+      existing_teacher = create(:user, :teacher)
+      create(:classroom_membership, classroom: classroom, user: existing_teacher, role: :teacher)
+
+      conflicting_teachers = [create(:school_membership, school: original_school).user, create(:school_membership, :manager, school: original_school).user]
+      sign_in admin
+
+      conflicting_teachers.each do |conflicting_teacher|
+        patch classroom_path(classroom), params: {
+          classroom: classroom_update_params.merge(
+            name: "변경되면 안 됨",
+            grade: 5,
+            school_id: target_school.id,
+            teacher_ids: [existing_teacher.id, conflicting_teacher.id]
+          )
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("다른 학교 소속 교사는 이 학급의 담당 교사로 지정할 수 없습니다.")
+        expect(classroom.reload).to have_attributes(name: "기존 교실", grade: 2, school: target_school)
+        expect(classroom.classroom_memberships.teacher.pluck(:user_id)).to contain_exactly(existing_teacher.id)
+      end
+    end
+
+    it "allows the same teacher to remain assigned across classrooms in one school" do
+      school = create(:school)
+      classroom.update!(school: school)
+      other_classroom = create(:classroom, school: school)
+      create(:school_membership, school: school, user: teacher)
+      sign_in admin
+
+      [classroom, other_classroom].each do |record|
+        patch classroom_path(record), params: { classroom: classroom_update_params.merge(name: record.name, teacher_ids: [teacher.id]) }
+        expect(response).to redirect_to(classroom_path(record))
+      end
+
+      expect(teacher.classroom_memberships.teacher.count).to eq(2)
+      expect(SchoolMembership.where(user: teacher).count).to eq(1)
     end
 
     it "keeps teacher assignments when teacher_ids is not submitted" do

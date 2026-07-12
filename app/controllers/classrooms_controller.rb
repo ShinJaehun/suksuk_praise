@@ -29,7 +29,12 @@ class ClassroomsController < ApplicationController
       @schools = policy_scope(School).order(:name, :id).load
       @school_classroom_counts = Classroom.where(school_id: @schools.map(&:id)).group(:school_id).count
     elsif current_user.teacher?
-      @workspace_school = policy_scope(School).first
+      @workspace_schools = policy_scope(School).includes(:school_closures).order(:name, :id).load
+      @upcoming_school_closures = @workspace_schools.index_with do |school|
+        school.school_closures
+          .select { |closure| closure.ends_on >= Time.zone.today }
+          .min_by { |closure| [closure.starts_on, closure.ends_on, closure.id] }
+      end
     end
     @manageable_classroom_ids =
       if current_user.admin?
@@ -364,11 +369,13 @@ class ClassroomsController < ApplicationController
   def update_classroom_with_teacher_assignments
     selected_teacher_ids if current_user.admin? && teacher_assignment_params_submitted?
     return false if teacher_assignment_invalid?
+    return false if teacher_school_assignment_conflict?
 
     Classroom.transaction do
       next false unless @classroom.update(classroom_params)
 
       sync_teacher_assignments if current_user.admin? && teacher_assignment_params_submitted?
+      ensure_school_memberships_for_assigned_teachers
       true
     end
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
@@ -396,6 +403,7 @@ class ClassroomsController < ApplicationController
   def create_classroom_with_teacher_assignments
     selected_teacher_ids if current_user.admin?
     return false if teacher_assignment_invalid?
+    return false if teacher_school_assignment_conflict?
 
     Classroom.transaction do
       if current_user.admin? && selected_teacher_ids.empty?
@@ -407,11 +415,12 @@ class ClassroomsController < ApplicationController
 
       teacher_ids = current_user.admin? ? selected_teacher_ids : [current_user.id]
       teacher_ids.each do |teacher_id|
-        ClassroomMembership.create!(
+        membership = ClassroomMembership.create!(
           classroom: @classroom,
           user_id: teacher_id,
           role: "teacher"
         )
+        SchoolMemberships::EnsureForTeacher.call(teacher: membership.user, school: @classroom.school)
       end
       true
     end
@@ -430,14 +439,41 @@ class ClassroomsController < ApplicationController
     teacher_ids_to_remove = current_teacher_ids - selected_teacher_ids
 
     teacher_ids_to_add.each do |teacher_id|
-      ClassroomMembership.find_or_create_by!(
+      membership = ClassroomMembership.find_or_create_by!(
         classroom: @classroom,
         user_id: teacher_id,
         role: "teacher"
       )
+      SchoolMemberships::EnsureForTeacher.call(teacher: membership.user, school: @classroom.school)
     end
 
     current_teacher_memberships.where(user_id: teacher_ids_to_remove).destroy_all
+  end
+
+  def ensure_school_memberships_for_assigned_teachers
+    return unless @classroom.school
+
+    @classroom.classroom_memberships.teacher.includes(:user).each do |membership|
+      SchoolMemberships::EnsureForTeacher.call(teacher: membership.user, school: @classroom.school)
+    end
+  end
+
+  def teacher_school_assignment_conflict?
+    return false unless current_user.admin?
+
+    target_school_id = params.dig(:classroom, :school_id).presence || @classroom.school_id
+    return false unless target_school_id
+
+    teacher_ids =
+      if teacher_assignment_params_submitted? || @classroom.new_record?
+        selected_teacher_ids
+      else
+        @classroom.classroom_memberships.teacher.joins(:user).where(users: { role: "teacher" }).pluck(:user_id)
+      end
+
+    conflict = SchoolMembership.where(user_id: teacher_ids).where.not(school_id: target_school_id).exists?
+    @classroom.errors.add(:base, t("classrooms.errors.teacher_school_conflict")) if conflict
+    conflict
   end
 
   def selected_teacher_ids

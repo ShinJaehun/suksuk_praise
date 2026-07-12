@@ -10,7 +10,7 @@ RSpec.describe "Users::Sessions", type: :request do
     create(:classroom_membership, classroom: classroom, user: student, role: "student")
   end
 
-  it "allows a teacher to sign in with Devise" do
+  it "signs a teacher in and redirects directly to classrooms index" do
     post user_session_path, params: {
       user: {
         email: teacher.email,
@@ -18,7 +18,7 @@ RSpec.describe "Users::Sessions", type: :request do
       }
     }
 
-    expect(response).to redirect_to(root_path)
+    expect(response).to redirect_to(classrooms_path)
     expect(controller.current_user).to eq(teacher)
   end
 
@@ -33,7 +33,7 @@ RSpec.describe "Users::Sessions", type: :request do
     expect(response.body).not_to include(destroy_student_session_path)
   end
 
-  it "allows an admin to sign in with Devise" do
+  it "signs an admin in and redirects directly to schools index" do
     post user_session_path, params: {
       user: {
         email: admin.email,
@@ -41,7 +41,7 @@ RSpec.describe "Users::Sessions", type: :request do
       }
     }
 
-    expect(response).to redirect_to(root_path)
+    expect(response).to redirect_to(schools_path)
     expect(controller.current_user).to eq(admin)
   end
 

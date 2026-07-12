@@ -75,7 +75,7 @@ Rails.application.routes.draw do
     resources :compliments, only: [:create]
   end
 
-  resources :schools, only: :show do
+  resources :schools, only: %i[index show] do
     resources :school_closures, except: %i[index show]
   end
 
@@ -128,7 +128,10 @@ Rails.application.routes.draw do
 
     get "teachers", to: redirect("/classrooms"), as: nil
     resources :teachers, only: [:new, :create, :edit, :update]
-    resources :schools, only: %i[new create edit update]
+    resources :schools, only: %i[new create edit update] do
+      resources :school_managers, only: :create, path: :managers
+      delete "managers/:user_id", to: "school_managers#destroy", as: :manager
+    end
 
     resources :coupon_templates, except: [:show]
   end

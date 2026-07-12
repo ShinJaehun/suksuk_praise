@@ -35,7 +35,7 @@
 - `School`은 학교 조직의 기준 모델이며, `Classroom`은 전환 기간 동안 optional `school`과 nullable `grade`를 가질 수 있다.
 - `Classroom#grade`는 초등학교 기준 1~6 정수만 허용하되, 기존 데이터 이전을 위해 아직 비어 있을 수 있다.
 - 전체 admin은 `/classrooms` 관리 허브에서 학교를 추가하고 이름을 수정할 수 있으며, 교실 생성·수정 시 학교와 학년을 지정할 수 있다.
-- teacher의 학교 소속은 `SchoolMembership`으로 관리하며, 현재 교사당 한 학교만 허용한다. 학교 미지정 teacher는 허용하고 global admin과 student는 SchoolMembership을 갖지 않는다.
+- teacher의 학교 소속은 `SchoolMembership`으로 관리하며, 현재 교사당 한 학교만 허용한다. 같은 학교의 여러 학급 담당은 가능하지만 다른 학교 소속 teacher의 담당 배정은 전체 변경과 함께 거부한다. 학교 학급에 담당 교사를 배정하면 누락된 member 소속을 생성하며 기존 manager 역할은 유지한다. `bin/rails school_memberships:backfill`은 누락 소속을 멱등하게 보완하고 기존 다른 학교 충돌은 변경하지 않은 채 집계한다.
 - 담당 학급의 기준은 기존 teacher 역할 `ClassroomMembership`이며, 담당 학년은 연결된 Classroom의 `grade`를 통해 계산하고 별도로 저장하지 않는다.
 - teacher 생성 시 기본 개인 쿠폰 준비는 User 생성 transaction 안에서 동기적으로 수행하며, 생성 후 비동기 보정이 아닌 teacher 생성 불변식으로 취급한다. 전체 admin의 교사 생성에서는 User, 기본 개인 쿠폰, 선택적 SchoolMembership을 하나의 transaction으로 처리해 어느 하나라도 실패하면 전체 rollback한다.
 - 전체 admin은 교사 생성 modal에서 계정과 학교 소속을 생성하고, 수정 modal에서는 SchoolMembership과 teacher 역할 ClassroomMembership만 관리한다. 수정 endpoint는 이름·이메일·비밀번호·성별·아바타를 변경하지 않는다.
@@ -49,8 +49,9 @@
 - `PublicHoliday`는 전국 공통 공휴일의 날짜, 이름과 출처를 로컬 DB에 저장한다.
 - 한국천문연구원 특일 정보 OpenAPI client와 연도별 동기화 service가 있으며, 성공한 응답만 transaction으로 교체하고 실패 시 기존 데이터를 유지한다. 명령행 task는 기본적으로 현재·다음 연도를 동기화한다.
 - `SchoolCalendar`는 주말, 전국 공통 공휴일과 해당 학교의 휴무 기간을 기준으로 운영일과 주·월의 마지막 운영일을 계산한다.
-- 학교 workspace에서 member는 자신의 학교 정보와 휴무 기간을 읽을 수 있고, 해당 학교 manager와 global admin은 SchoolClosure를 등록·수정·삭제할 수 있다. `SchoolPolicy`와 학교 scope가 이 controller 흐름에 적용되어 있다.
-- 관리자 공휴일 동기화 화면과 정기 실행 설정, manager 지정 UI, manager의 교실·교사 관리 권한, 칭찬왕 날짜 제한은 아직 구현되지 않았다.
+- `/schools`는 admin의 전체 학교 현황 화면이며 로그인 후 시작 위치다. manager는 자신의 학교 운영 정보로, 일반 teacher는 `/classrooms`로 이동한다. 학교 운영 정보에는 학급·교사·학교 관리자·휴무 기간 현황을 표시한다.
+- global admin은 학교 운영 정보에서 teacher를 학교 manager로 지정하거나 member로 해제할 수 있다. member는 자기 학교를 읽고, manager와 global admin은 SchoolClosure를 등록·수정·삭제할 수 있다.
+- 관리자 공휴일 동기화 화면과 정기 실행 설정, manager의 실제 교실·교사 CRUD 권한, 캘린더형 휴무일 UI, 칭찬왕 날짜 제한은 아직 구현되지 않았다.
 - 확정된 학교 운영 정책과 단계별 구현 계획은 [`school_operations.md`](school_operations.md)에 정리한다.
 - `/classrooms`는 admin의 교실 + 선생님 + 학교 관리 허브 역할을 한다.
 - `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.

@@ -22,6 +22,25 @@ RSpec.describe "School workspaces", type: :request do
     expect(response.body).to include(new_school_school_closure_path(other_school))
   end
 
+  it "shows every school in the admin index" do
+    sign_in admin
+
+    get schools_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(school.name, other_school.name)
+    expect(response.body).not_to include("translation missing")
+  end
+
+  it "redirects a member or manager index to their only school without exposing others" do
+    [member, manager].each do |teacher|
+      sign_in teacher
+      get schools_path
+      expect(response).to redirect_to(school_path(school))
+      expect(response.body).not_to include(other_school.name)
+    end
+  end
+
   it "allows members and managers to view only their school" do
     [member, manager].each do |teacher|
       sign_in teacher
@@ -48,6 +67,22 @@ RSpec.describe "School workspaces", type: :request do
     expect(response.body).not_to include("translation missing")
   end
 
+  it "shows school classrooms and teachers while limiting manager controls to admin" do
+    classroom = create(:classroom, school: school)
+    create(:classroom_membership, classroom: classroom, user: member, role: :teacher)
+
+    [member, manager].each do |teacher|
+      sign_in teacher
+      get school_path(school)
+      expect(response.body).to include(classroom.name, member.name)
+      expect(response.body).not_to include(admin_school_school_managers_path(school))
+    end
+
+    sign_in admin
+    get school_path(school)
+    expect(response.body).to include(admin_school_school_managers_path(school))
+  end
+
   it "rejects an unassigned teacher and a student" do
     [create(:user, :teacher), create(:user, :student)].each do |user|
       sign_in user
@@ -66,5 +101,14 @@ RSpec.describe "School workspaces", type: :request do
     expect(response.body).to include(school_path(school))
     expect(response.body).not_to include(school_path(other_school))
     expect(response.body).not_to include("translation missing")
+  end
+
+  it "shows a member their school and upcoming closure summary in the classrooms hub" do
+    closure = create(:school_closure, school: school, name: "재량휴업일", starts_on: 1.day.from_now.to_date, ends_on: 1.day.from_now.to_date)
+    sign_in member
+
+    get classrooms_path
+
+    expect(response.body).to include(school_path(school), school.name, closure.name)
   end
 end
