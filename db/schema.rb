@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_12_001000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_12_002000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -136,6 +136,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_12_001000) do
     t.index ["student_id"], name: "index_coupon_use_requests_on_student_id"
     t.index ["user_coupon_id"], name: "idx_coupon_use_requests_pending_unique", unique: true, where: "(status = 0)"
     t.index ["user_coupon_id"], name: "index_coupon_use_requests_on_user_coupon_id"
+  end
+
+  create_table "public_holidays", force: :cascade do |t|
+    t.date "date", null: false
+    t.string "name", null: false
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["date", "name", "source"], name: "index_public_holidays_on_date_and_name_and_source", unique: true
   end
 
   create_table "school_closures", force: :cascade do |t|

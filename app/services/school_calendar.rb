@@ -6,7 +6,7 @@ class SchoolCalendar
   def school_day?(value)
     date = normalize_date(value)
 
-    !date.saturday? && !date.sunday? && !closed_on?(date)
+    weekday?(date) && !PublicHoliday.exists?(date: date) && !closed_on?(date)
   end
 
   def last_school_day_of_week(value)
@@ -36,6 +36,19 @@ class SchoolCalendar
   end
 
   def last_school_day_in(range)
-    range.to_a.reverse.find { |date| school_day?(date) }
+    closures = school.school_closures
+      .where("starts_on <= ? AND ends_on >= ?", range.end, range.begin)
+      .pluck(:starts_on, :ends_on)
+    holiday_dates = PublicHoliday.where(date: range).pluck(:date)
+
+    range.to_a.reverse.find do |date|
+      weekday?(date) &&
+        !holiday_dates.include?(date) &&
+        closures.none? { |starts_on, ends_on| starts_on <= date && ends_on >= date }
+    end
+  end
+
+  def weekday?(date)
+    !date.saturday? && !date.sunday?
   end
 end

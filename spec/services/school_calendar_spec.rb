@@ -40,6 +40,22 @@ RSpec.describe SchoolCalendar do
 
       expect(calendar.school_day?(Date.new(2026, 7, 16))).to eq(true)
     end
+
+    it "treats a weekday public holiday as closed without affecting other dates" do
+      create(:public_holiday, date: Date.new(2026, 7, 16))
+
+      expect(calendar.school_day?(Date.new(2026, 7, 16))).to eq(false)
+      expect(calendar.school_day?(Date.new(2026, 7, 17))).to eq(true)
+    end
+
+    it "applies public holidays to every school" do
+      date = Date.new(2026, 7, 16)
+      create(:public_holiday, date: date)
+      other_calendar = described_class.new(create(:school))
+
+      expect(calendar.school_day?(date)).to eq(false)
+      expect(other_calendar.school_day?(date)).to eq(false)
+    end
   end
 
   describe "#last_school_day_of_week" do
@@ -64,6 +80,24 @@ RSpec.describe SchoolCalendar do
 
       expect(calendar.last_school_day_of_week(Date.new(2026, 7, 15))).to be_nil
     end
+
+    it "returns Thursday when Friday is a public holiday" do
+      create(:public_holiday, date: Date.new(2026, 7, 17))
+
+      expect(calendar.last_school_day_of_week(Date.new(2026, 7, 15))).to eq(Date.new(2026, 7, 16))
+    end
+
+    it "combines school closures and public holidays" do
+      create(:public_holiday, date: Date.new(2026, 7, 16))
+      create(
+        :school_closure,
+        school: school,
+        starts_on: Date.new(2026, 7, 17),
+        ends_on: Date.new(2026, 7, 17)
+      )
+
+      expect(calendar.last_school_day_of_week(Date.new(2026, 7, 15))).to eq(Date.new(2026, 7, 15))
+    end
   end
 
   describe "#last_school_day_of_month" do
@@ -87,6 +121,12 @@ RSpec.describe SchoolCalendar do
       )
 
       expect(calendar.last_school_day_of_month(Date.new(2026, 7, 10))).to be_nil
+    end
+
+    it "returns the previous school day when month-end is a public holiday" do
+      create(:public_holiday, date: Date.new(2026, 7, 31))
+
+      expect(calendar.last_school_day_of_month(Date.new(2026, 7, 10))).to eq(Date.new(2026, 7, 30))
     end
   end
 end

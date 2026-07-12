@@ -98,7 +98,9 @@ PublicHoliday
 - 공식 데이터에 아직 반영되지 않은 긴급 휴일은 학교별 휴무 기간으로 임시 보완할 수 있다.
 - 제주 학교 홈페이지의 학사일정은 파싱하지 않는다.
 
-정확한 공식 API, adapter, 실행 방식과 동기화 주기는 공휴일 구현 단계에서 결정한다.
+`PublicHoliday`는 날짜, 이름, 출처를 로컬 DB에 저장하며 같은 날짜에도 이름이나 출처가 다르면 별도 공휴일로 저장할 수 있다. 동일한 날짜·이름·출처 조합은 중복 저장하지 않는다.
+
+외부 공식 API 동기화는 아직 구현되지 않았다. 정확한 API, adapter, 실행 방식과 동기화 주기는 후속 단계에서 결정한다.
 
 ---
 
@@ -108,6 +110,7 @@ PublicHoliday
 
 ```text
 토요일 또는 일요일이면 휴무
+PublicHoliday가 해당 날짜에 존재하면 휴무
 해당 학교의 SchoolClosure 범위에 포함되면 휴무
 그 외에는 학교 운영일
 ```
@@ -120,7 +123,7 @@ last_school_day_of_week(date)
 last_school_day_of_month(date)
 ```
 
-현재 계산에는 주말과 해당 학교의 SchoolClosure만 반영한다. 공식 공휴일은 `PublicHoliday` 구현 후 추가하며, controller·화면과 칭찬왕 사용 가능 날짜에는 아직 연결하지 않았다.
+현재 계산에는 주말, 전국 공통 PublicHoliday와 해당 학교의 SchoolClosure를 반영한다. controller·화면과 칭찬왕 사용 가능 날짜에는 아직 연결하지 않았다.
 
 ---
 
