@@ -51,9 +51,9 @@
 - `member`: 일반 소속 교사
 - `manager`: 해당 학교의 관리 권한을 가진 교사
 
-현재처럼 교사 한 명은 최대 한 학교에만 소속되는 구조를 유지한다. global admin과 student는 SchoolMembership을 갖지 않는다.
+역할은 integer enum으로 구현되어 있으며 기본값은 `member`다. 기존 SchoolMembership도 `member`로 이관된다. 현재처럼 교사 한 명은 최대 한 학교에만 소속되는 구조를 유지하고, 한 학교에는 여러 manager를 둘 수 있다. global admin과 student는 SchoolMembership을 갖지 않는다.
 
-정확한 enum 표현, 기본값, validation과 기존 데이터 처리 방식은 manager 역할 구현 직전에 확정한다.
+manager를 사용하는 policy, scope, 지정 화면과 route는 아직 구현되지 않았다.
 
 ---
 

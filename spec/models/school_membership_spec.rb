@@ -11,11 +11,34 @@ RSpec.describe SchoolMembership, type: :model do
     expect(membership.user).to eq(teacher)
   end
 
+  it "defaults to the member role" do
+    membership = described_class.new
+
+    expect(membership).to be_member
+  end
+
+  it "allows a teacher to be a manager" do
+    membership = create(:school_membership, :manager)
+
+    expect(membership).to be_manager
+    expect(membership.user).to be_teacher
+  end
+
   it "allows different teachers to belong to the same school" do
     school = create(:school)
 
     expect(create(:school_membership, school: school, user: create(:user, :teacher))).to be_persisted
     expect(create(:school_membership, school: school, user: create(:user, :teacher))).to be_persisted
+  end
+
+  it "allows multiple managers to belong to the same school" do
+    school = create(:school)
+
+    first_manager = create(:school_membership, :manager, school: school)
+    second_manager = create(:school_membership, :manager, school: school)
+
+    expect(first_manager).to be_manager
+    expect(second_manager).to be_manager
   end
 
   it "rejects a second school membership for the same teacher" do
@@ -28,9 +51,13 @@ RSpec.describe SchoolMembership, type: :model do
     expect(duplicate.errors[:user_id]).to be_present
   end
 
-  it "rejects student and admin users" do
-    [create(:user, :student), create(:user, :admin)].each do |user|
-      membership = build(:school_membership, user: user)
+  it "rejects student and admin users for both school roles" do
+    %i[student admin].product(%i[member manager]).each do |user_role, school_role|
+      membership = build(
+        :school_membership,
+        user: create(:user, user_role),
+        role: school_role
+      )
 
       expect(membership).not_to be_valid
       expect(membership.errors[:user]).to include("는 선생님 계정이어야 합니다.")

@@ -91,7 +91,7 @@
 
 `SchoolMembership`은 teacher만 가질 수 있고 교사당 한 학교로 제한한다. global admin과 student는 membership을 가질 수 없다. 학교 소속과 담당 Classroom의 학교가 달라도 전환 기간에는 저장을 허용하고 별도 경고 badge는 표시하지 않으며, membership 자동 동기화나 담당 교사 자동 해제는 수행하지 않는다.
 
-향후에도 전역 `User#role`은 유지하고, 학교별 manager 권한은 `SchoolMembership`의 `member`/`manager` 역할로 표현한다. manager는 자신이 소속된 학교의 휴무 기간, 교실, 교사 소속을 관리하도록 할 예정이며 초기 지정·해제 권한은 global admin에게만 둔다. 이 권한과 scope는 아직 구현되지 않았으며 상세 정책은 [`school_operations.md`](school_operations.md)를 참고한다.
+전역 `User#role`은 유지하며, `SchoolMembership`은 기본값이 `member`인 `member`/`manager` 역할을 가진다. manager는 자신이 소속된 학교의 휴무 기간, 교실, 교사 소속을 관리하도록 할 예정이며 초기 지정·해제 권한은 global admin에게만 둔다. 이 역할을 사용하는 policy, scope와 화면은 아직 구현되지 않았으며 상세 정책은 [`school_operations.md`](school_operations.md)를 참고한다.
 
 ### Compliment
 

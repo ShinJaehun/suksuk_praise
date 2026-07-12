@@ -2,6 +2,8 @@ class SchoolMembership < ApplicationRecord
   belongs_to :school
   belongs_to :user
 
+  enum :role, { member: 0, manager: 10 }, default: :member
+
   validates :user_id, uniqueness: true
   validate :user_must_be_teacher
 
