@@ -126,6 +126,7 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def selected_school
+    return @selected_school if defined?(@selected_school)
     return nil if params[:school_id].blank?
 
     @selected_school = School.find_by(id: params[:school_id])
@@ -154,9 +155,13 @@ class Admin::TeachersController < Admin::BaseController
     raw_ids = Array(params[:classroom_ids]).reject(&:blank?)
     valid_raw_ids = raw_ids.select { |value| value.to_s.match?(/\A[1-9]\d*\z/) }
     requested_ids = valid_raw_ids.map(&:to_i).uniq
-    @selected_classroom_ids = policy_scope(Classroom).where(id: requested_ids).pluck(:id)
+    classrooms = policy_scope(Classroom).where(id: requested_ids).to_a
+    @selected_classroom_ids = classrooms.map(&:id)
+
     if valid_raw_ids.size != raw_ids.size || @selected_classroom_ids.sort != requested_ids.sort
       invalid_classroom_assignment(@selected_classroom_ids)
+    elsif requested_ids.any?
+      validate_classroom_school_assignments(classrooms)
     end
     @selected_classroom_ids
   end
@@ -167,6 +172,27 @@ class Admin::TeachersController < Admin::BaseController
     @selected_classroom_ids = selected_ids
   end
 
+  def validate_classroom_school_assignments(classrooms)
+    school = selected_school_for_classroom_assignment
+    if school.nil?
+      return if school_selection_invalid?
+
+      @classroom_assignments_invalid = true
+      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_school_required"))
+    elsif classrooms.any? { |classroom| classroom.school_id != school.id }
+      @classroom_assignments_invalid = true
+      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_school_mismatch"))
+    end
+  end
+
+  def selected_school_for_classroom_assignment
+    if school_selection_submitted?
+      selected_school
+    else
+      @teacher.school_membership&.school
+    end
+  end
+
   def classroom_assignments_invalid?
     @classroom_assignments_invalid == true
   end
@@ -174,7 +200,7 @@ class Admin::TeachersController < Admin::BaseController
   def load_edit_form
     load_school_options
     load_selected_school
-    @classrooms = policy_scope(Classroom).includes(:school).order(:created_at).load
+    @classrooms = classroom_options_for_selected_school
     @teacher_classroom_ids =
       if classroom_assignments_submitted?
         selected_classroom_ids
@@ -188,6 +214,16 @@ class Admin::TeachersController < Admin::BaseController
 
   def load_school_options
     @schools = School.order(:name, :id)
+  end
+
+  def classroom_options_for_selected_school
+    return Classroom.none unless @selected_school_id
+
+    policy_scope(Classroom)
+      .where(school_id: @selected_school_id)
+      .includes(:school)
+      .order(:created_at)
+      .load
   end
 
   def load_selected_school

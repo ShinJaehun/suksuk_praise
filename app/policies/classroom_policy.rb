@@ -3,6 +3,10 @@ class ClassroomPolicy < ApplicationPolicy
     def resolve
       return scope.all if user&.admin?
 
+      if user&.teacher? && user.school_membership&.manager?
+        return scope.where(school_id: user.school_membership.school_id)
+      end
+
       # Teachers can see only their classrooms
       if user&.teacher?
         return scope.joins(:classroom_memberships)
@@ -27,11 +31,11 @@ class ClassroomPolicy < ApplicationPolicy
   
   def show?
     return true if admin?
-    member_of?(record)
+    school_manager_of?(record) || member_of?(record)
   end
 
   def create?
-    admin? || teacher?
+    admin? || school_manager?
   end
   
   def new?
@@ -40,7 +44,7 @@ class ClassroomPolicy < ApplicationPolicy
 
   def update?
     return true if admin?
-    teacher_of?(record)
+    school_manager_of?(record) || teacher_of?(record)
   end
 
   def edit?
@@ -48,26 +52,34 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def destroy?
-    update?
+    admin? || teacher_of?(record)
   end
 
   def manage_members?
-    update?
+    admin? || teacher_of?(record)
   end
 
   def create_compliment?
-    update?
+    admin? || teacher_of?(record)
   end
 
   def refresh_compliment_king?
-    update?
+    admin? || teacher_of?(record)
   end
 
   def draw_coupon?
-    update?
+    admin? || teacher_of?(record)
   end
 
   private
+
+  def school_manager?
+    teacher? && user.school_membership&.manager?
+  end
+
+  def school_manager_of?(classroom)
+    school_manager? && classroom.school_id == user.school_membership.school_id
+  end
 
   def teacher_of?(classroom)
     classroom.classroom_memberships.exists?(user_id: user.id, role: "teacher")

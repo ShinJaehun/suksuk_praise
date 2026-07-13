@@ -174,4 +174,159 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).to include("교실로 돌아가기")
     expect(response.body).not_to include("translation missing")
   end
+
+  it "assigns classrooms from the selected school" do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: school.id,
+      classroom_ids: [classroom.id]
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(teacher.reload.school_membership).to have_attributes(school: school)
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(classroom.id)
+  end
+
+  it "assigns multiple classrooms from the selected school" do
+    school = create(:school)
+    classrooms = create_list(:classroom, 2, school: school)
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: school.id,
+      classroom_ids: classrooms.map(&:id)
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(teacher.reload.school_membership).to have_attributes(school: school)
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to match_array(classrooms.map(&:id))
+  end
+
+  it "rejects classroom assignments outside the selected school without partial changes" do
+    original_school = create(:school)
+    selected_school = create(:school)
+    other_school = create(:school)
+    existing_classroom = create(:classroom, school: original_school)
+    selected_classroom = create(:classroom, school: selected_school)
+    other_classroom = create(:classroom, school: other_school)
+    create(:school_membership, school: original_school, user: teacher)
+    create(:classroom_membership, classroom: existing_classroom, user: teacher, role: :teacher)
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: selected_school.id,
+      classroom_ids: [selected_classroom.id, other_classroom.id]
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("선택한 학교에 속한 학급만 담당 학급으로 지정할 수 있습니다.")
+    expect(teacher.reload.school_membership).to have_attributes(school: original_school)
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(existing_classroom.id)
+  end
+
+  it "allows changing school together with classrooms from the new school" do
+    original_school = create(:school)
+    new_school = create(:school)
+    old_classroom = create(:classroom, school: original_school)
+    new_classroom = create(:classroom, school: new_school)
+    create(:school_membership, school: original_school, user: teacher)
+    create(:classroom_membership, classroom: old_classroom, user: teacher, role: :teacher)
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: new_school.id,
+      classroom_ids: [new_classroom.id]
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(teacher.reload.school_membership).to have_attributes(school: new_school)
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(new_classroom.id)
+  end
+
+  it "allows selecting a school without classrooms" do
+    school = create(:school)
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: school.id,
+      classroom_ids: [""]
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(teacher.reload.school_membership).to have_attributes(school: school)
+    expect(teacher.classroom_memberships.teacher).to be_empty
+  end
+
+  it "allows clearing school and classroom assignments together" do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
+    create(:school_membership, school: school, user: teacher)
+    create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: "",
+      classroom_ids: [""]
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(teacher.reload.school_membership).to be_nil
+    expect(teacher.classroom_memberships.teacher).to be_empty
+  end
+
+  it "rejects classroom assignments without a selected school" do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: "",
+      classroom_ids: [classroom.id]
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("학교를 선택한 뒤 담당 학급을 지정해 주세요.")
+    expect(teacher.reload.school_membership).to be_nil
+    expect(teacher.classroom_memberships.teacher).to be_empty
+  end
+
+  it "rejects a missing classroom id without partial changes" do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
+    existing_classroom = create(:classroom, school: school)
+    create(:school_membership, school: school, user: teacher)
+    create(:classroom_membership, classroom: existing_classroom, user: teacher, role: :teacher)
+    missing_id = Classroom.maximum(:id).to_i + 10_000
+    sign_in admin
+
+    patch admin_teacher_path(teacher), params: {
+      school_id: school.id,
+      classroom_ids: [classroom.id, missing_id]
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("선택한 교실을 찾을 수 없습니다.")
+    expect(teacher.reload.school_membership).to have_attributes(school: school)
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(existing_classroom.id)
+  end
+
+  it "shows only classrooms from the teacher's current school in the edit form" do
+    school = create(:school)
+    other_school = create(:school)
+    classroom = create(:classroom, school: school, name: "현재 학교 학급")
+    other_classroom = create(:classroom, school: other_school, name: "다른 학교 학급")
+    create(:school_membership, school: school, user: teacher)
+    sign_in admin
+
+    get edit_admin_teacher_path(teacher)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(classroom.name)
+    expect(response.body).to include(%(value="#{classroom.id}"))
+    expect(response.body).not_to include(other_classroom.name)
+    expect(response.body).not_to include(%(value="#{other_classroom.id}"))
+  end
 end

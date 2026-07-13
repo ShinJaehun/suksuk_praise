@@ -33,16 +33,17 @@
 - manager 지정과 해제는 초기에는 global admin만 수행한다.
 - manager는 다른 manager를 지정하거나 해제할 수 없다.
 
-학교 manager는 자신이 manager로 소속된 학교에 한해 다음 기능을 관리할 수 있도록 할 예정이다.
+학교 manager는 자신이 manager로 소속된 학교에 한해 다음 기능을 관리한다.
 
 - 학교 정보 열람
 - 학교별 휴무 기간 등록·수정·삭제
-- 해당 학교의 교실 관리
-- 해당 학교 소속 교사와 담당 교실 관리
+- 해당 학교의 학급 목록·상세 조회
+- 해당 학교 학급 생성·기본 정보 수정
+- 해당 학교 소속 member/manager 교사의 담당 교사 배정
 
 `SchoolPolicy`와 scope는 일반 teacher와 manager에게 자신의 학교만 노출한다. 일반 teacher는 학교를 열람할 수 있지만 운영 기능을 관리할 수 없고, manager는 자신의 학교 운영 기능만 관리할 수 있다. global admin은 모든 학교를 조회하고 관리한다. 학교 생성·이름 수정·삭제는 global admin 전용이다.
 
-이 policy는 학교 운영 정보와 휴무 기간 controller·route에 연결되어 있다. member는 자신의 학교 현황과 휴무 기간을 읽고, 해당 학교 manager와 global admin은 SchoolClosure를 관리한다. global admin은 manager를 지정·해제할 수 있지만 manager의 실제 교실·교사 CRUD 권한은 후속 구현 범위다.
+이 policy는 학교 운영 정보와 휴무 기간 controller·route에 연결되어 있다. member는 자신의 학교 현황과 휴무 기간을 읽고, 해당 학교 manager와 global admin은 SchoolClosure를 관리한다. global admin은 manager를 지정·해제할 수 있다. manager는 학급을 다른 학교로 이동할 수 없고, teacher 계정 생성·삭제나 학교 소속 자체 변경은 할 수 없다.
 
 ---
 
@@ -56,6 +57,8 @@
 역할은 integer enum으로 구현되어 있으며 기본값은 `member`다. 현재 교사 한 명은 최대 한 학교에만 소속되고 같은 학교의 여러 학급을 담당할 수 있다. 다른 학교 소속 teacher를 담당 교사로 배정하는 것은 차단하며 여러 학교 소속 지원은 현재 범위가 아니다. 한 학교에는 여러 manager를 둘 수 있고 global admin과 student는 SchoolMembership을 갖지 않는다.
 
 학교 학급의 담당 teacher를 배정할 때 누락된 SchoolMembership을 member로 생성한다. 같은 학교의 기존 member·manager는 유지하고 다른 학교 membership은 validation 오류로 배정을 차단한다. 담당 해제 시에도 소속을 삭제하지 않는다. 기존 데이터는 `bin/rails school_memberships:backfill`로 멱등하게 보완하며 다른 학교 충돌은 변경하지 않고 `conflicts`로 집계한다.
+
+학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. global admin과 학교 manager 모두 학급 배정 과정에서 미소속 teacher나 다른 학교 소속 teacher의 소속을 생성·변경하지 않으며, 필요한 학교 소속 변경은 교사 수정 화면에서 먼저 수행한다.
 
 ---
 
@@ -165,6 +168,8 @@ last_school_day_of_month(date)
 
 - 일반 학사일정과 정상 등교 행사 관리
 - 학교 manager의 다른 manager 지정·해제
+- 학생 구성원 관리와 쿠폰·칭찬·메시지 등 수업 운영 기능 전체의 manager 권한 확장
+- 캘린더형 휴무일 UI
 - 교사당 여러 학교 소속
 - 주말 등교일 예외
 - 학교별 공휴일 중복 저장

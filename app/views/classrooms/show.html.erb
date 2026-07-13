@@ -6,32 +6,36 @@
       <h1 class="min-w-0 max-w-full break-words text-2xl font-extrabold tracking-tight text-slate-900"><%= @classroom.name %></h1>
 
       <div class="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-        <% @enabled_compliment_king_periods.each do |period| %>
-          <% frame_id = compliment_king_frame_id(@classroom, period) %>
-          <%= button_to t("ui.buttons.refresh_king_for.#{period}"),
-                refresh_compliment_king_classroom_path(@classroom, period: period),
-                method: :post,
-                form: {
-                  data: {
-                    action: "submit->compliment-king-toggle#submit",
-                    turbo_submits_with: t("ui.processing")
-                  }
-                },
-                aria: { controls: frame_id, expanded: "false" },
-                class: "w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 sm:w-auto" %>
+        <% if @can_refresh_compliment_king %>
+          <% @enabled_compliment_king_periods.each do |period| %>
+            <% frame_id = compliment_king_frame_id(@classroom, period) %>
+            <%= button_to t("ui.buttons.refresh_king_for.#{period}"),
+                  refresh_compliment_king_classroom_path(@classroom, period: period),
+                  method: :post,
+                  form: {
+                    data: {
+                      action: "submit->compliment-king-toggle#submit",
+                      turbo_submits_with: t("ui.processing")
+                    }
+                  },
+                  aria: { controls: frame_id, expanded: "false" },
+                  class: "w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 sm:w-auto" %>
+          <% end %>
         <% end %>
 
-        <% if @can_manage_classroom %>
-          <%= link_to "학생 로그인",
+        <% if @can_manage_classroom_members %>
+          <%= link_to t("classrooms.show.student_login"),
                 student_login_info_classroom_path(@classroom),
                 data: { turbo_frame: "modal" },
                 class: "w-full rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 sm:w-auto" %>
-          <%= link_to "교실 관리",
-                edit_classroom_path(@classroom),
-                class: "w-full rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 sm:w-auto" %>
-          <%= link_to "구성원 관리",
+          <%= link_to t("classrooms.show.manage_members"),
                 classroom_members_path(@classroom),
                 class: "w-full rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 sm:w-auto" %>
+        <% end %>
+        <% if @can_manage_classroom %>
+          <%= link_to t("classrooms.show.manage_classroom"),
+                edit_classroom_path(@classroom),
+                class: "w-full rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 sm:w-auto" %>
         <% end %>
       </div>
     </div>
@@ -52,7 +56,7 @@
           <% end %>
         </div>
       <% else %>
-        <p class="mt-2 text-sm text-slate-500">담당 교사 없음</p>
+        <p class="mt-2 text-sm text-slate-500"><%= t("classrooms.show.teacher_empty") %></p>
       <% end %>
     </div>
   </div>
@@ -82,15 +86,17 @@
       <% else %>
         <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
           <h2 class="text-lg font-bold text-slate-900">아직 학생이 없습니다</h2>
-          <p class="mt-2 text-sm text-slate-600">
-            구성원 관리에서 학생을 추가하거나 여러 학생을 한 번에 생성할 수 있어요.
-          </p>
-          <div class="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
-            <%= link_to "구성원 관리로 이동",
-                  classroom_members_path(@classroom, anchor: "student-management"),
-                  data: { turbo_frame: "_top" },
-                  class: "inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" %>
-          </div>
+          <% if @can_manage_classroom_members %>
+            <p class="mt-2 text-sm text-slate-600">
+              구성원 관리에서 학생을 추가하거나 여러 학생을 한 번에 생성할 수 있어요.
+            </p>
+            <div class="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+              <%= link_to "구성원 관리로 이동",
+                    classroom_members_path(@classroom, anchor: "student-management"),
+                    data: { turbo_frame: "_top" },
+                    class: "inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700" %>
+            </div>
+          <% end %>
         </div>
       <% end %>
     <% end %>

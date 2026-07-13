@@ -9,6 +9,14 @@
     <% end %>
   </div>
 
+  <% if current_user.school_membership&.manager? %>
+    <div class="mb-6">
+      <%= link_to t("classrooms.index.back_to_school_operations"),
+            school_path(current_user.school_membership.school),
+            class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+    </div>
+  <% end %>
+
   <% if @workspace_schools&.any? %>
     <section class="mb-6 rounded-2xl border border-sky-200 bg-sky-50 p-4">
       <h2 class="font-bold text-slate-900"><%= t("classrooms.index.school_operations_title") %></h2>

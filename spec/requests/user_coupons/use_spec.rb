@@ -69,6 +69,20 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(coupon.reload).to be_issued
     end
 
+    it "rejects an unassigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: classroom.school, user: manager)
+      sign_in manager
+
+      expect {
+        post use_user_coupon_path(student, coupon), as: :json
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_body).to eq("ok" => false, "error" => "not_authorized")
+      expect(coupon.reload).to be_issued
+    end
+
     it "shows a use request button to the owner student" do
       sign_in student
 

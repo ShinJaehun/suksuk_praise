@@ -157,6 +157,21 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       expect(json_body).to eq("ok" => false, "error" => "not_authorized")
     end
 
+    it "rejects an unassigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: classroom.school, user: manager)
+      sign_in manager
+
+      expect {
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "manual", mode: "default", user_id: student.id },
+          as: :json
+      }.not_to change(UserCoupon, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_body).to eq("ok" => false, "error" => "not_authorized")
+    end
+
     it "rejects an inactive student target" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       membership.inactive!

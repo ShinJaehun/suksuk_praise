@@ -75,6 +75,20 @@ RSpec.describe "User messages", type: :request do
       expect(response).to redirect_to(root_path)
     end
 
+    it "rejects an unassigned school manager from sending a student message" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: classroom.school, user: manager)
+      sign_in manager
+
+      expect {
+        post classroom_student_messages_path(classroom, student),
+             params: { user_message: { body: "관리자 권한만으로 전송 시도" } },
+             headers: turbo_headers
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it "marks student-sent unread messages read when a teacher opens the message page" do
       classroom.update!(message_policy: "student_initiated")
       message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "확인할 질문")

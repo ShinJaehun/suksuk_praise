@@ -68,7 +68,10 @@
       <%= f.submit t("ui.save"),
             data: { turbo_submits_with: t("admin.teachers.form.submitting") },
             class: "inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
-      <%= link_to t("admin.teachers.actions.back_to_classrooms"), classrooms_path, class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      <%= link_to t("admin.teachers.actions.back_to_classrooms"),
+            classrooms_path,
+            data: { turbo_frame: "_top" },
+            class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
     </div>
   </section>
 <% end %>

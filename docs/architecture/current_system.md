@@ -35,23 +35,26 @@
 - `School`은 학교 조직의 기준 모델이며, `Classroom`은 전환 기간 동안 optional `school`과 nullable `grade`를 가질 수 있다.
 - `Classroom#grade`는 초등학교 기준 1~6 정수만 허용하되, 기존 데이터 이전을 위해 아직 비어 있을 수 있다.
 - 전체 admin은 `/classrooms` 관리 허브에서 학교를 추가하고 이름을 수정할 수 있으며, 교실 생성·수정 시 학교와 학년을 지정할 수 있다.
-- teacher의 학교 소속은 `SchoolMembership`으로 관리하며, 현재 교사당 한 학교만 허용한다. 같은 학교의 여러 학급 담당은 가능하지만 다른 학교 소속 teacher의 담당 배정은 전체 변경과 함께 거부한다. 학교 학급에 담당 교사를 배정하면 누락된 member 소속을 생성하며 기존 manager 역할은 유지한다. `bin/rails school_memberships:backfill`은 누락 소속을 멱등하게 보완하고 기존 다른 학교 충돌은 변경하지 않은 채 집계한다.
+- 학교 manager는 자기 학교의 모든 학급을 `ClassroomPolicy::Scope`로 조회하고, 자기 학교 학급을 생성·기본 수정하며 같은 학교 소속 member/manager 교사를 담당 교사로 배정할 수 있다. manager가 생성·수정하는 학급의 학교는 서버에서 자기 학교로 고정되며 다른 학교로 이동할 수 없다.
+- 학교 manager가 실제 담당 교사로도 배정된 학급에서는 manager 권한과 기존 담당 교사 권한을 함께 가진다.
+- 일반 teacher는 기존처럼 자신이 `ClassroomMembership(role: teacher)`로 담당하는 학급만 조회·관리한다. 같은 학교 소속이라는 이유만으로 다른 학급에 접근하거나 담당 교사를 변경할 수 없다.
+- teacher의 학교 소속은 `SchoolMembership`으로 관리하며, 현재 교사당 한 학교만 허용한다. 같은 학교의 여러 학급 담당은 가능하지만 학급 담당 교사 배정은 학급과 같은 학교의 SchoolMembership을 가진 teacher만 허용한다. 학급 배정은 SchoolMembership을 자동 생성하거나 이동하지 않으며, 학교 소속 변경은 교사 수정 화면에서 먼저 수행한다. `bin/rails school_memberships:backfill`은 누락 소속을 멱등하게 보완하고 기존 다른 학교 충돌은 변경하지 않은 채 집계한다.
 - 담당 학급의 기준은 기존 teacher 역할 `ClassroomMembership`이며, 담당 학년은 연결된 Classroom의 `grade`를 통해 계산하고 별도로 저장하지 않는다.
 - teacher 생성 시 기본 개인 쿠폰 준비는 User 생성 transaction 안에서 동기적으로 수행하며, 생성 후 비동기 보정이 아닌 teacher 생성 불변식으로 취급한다. 전체 admin의 교사 생성에서는 User, 기본 개인 쿠폰, 선택적 SchoolMembership을 하나의 transaction으로 처리해 어느 하나라도 실패하면 전체 rollback한다.
 - 전체 admin은 교사 생성 modal에서 계정과 학교 소속을 생성하고, 수정 modal에서는 SchoolMembership과 teacher 역할 ClassroomMembership만 관리한다. 수정 endpoint는 이름·이메일·비밀번호·성별·아바타를 변경하지 않는다.
-- 교사 수정 시 제출된 담당 교실 ID가 하나라도 존재하지 않거나 admin의 정책 범위 밖이면 학교와 담당 교실 변경 전체를 거부하며, 두 소속 변경은 하나의 transaction으로 처리한다. 학교 소속과 담당 교실의 학교가 달라도 전환 기간에는 저장을 허용하며 별도 경고 badge는 표시하지 않는다.
-- SchoolMembership은 담당 교실이나 교실의 학교 변경에 따라 자동 생성·변경·삭제되지 않으며 담당 교사를 자동 해제하지도 않는다.
-- teacher가 보낸 교실 `school_id`, `grade` 변경값은 허용하지 않는다. teacher 교실 생성 시 소속 학교 자동 지정은 아직 구현하지 않았다.
+- 교사 수정 시 제출된 담당 교실 ID가 하나라도 존재하지 않거나 admin의 정책 범위 밖이면 학교와 담당 교실 변경 전체를 거부하며, 두 소속 변경은 하나의 transaction으로 처리한다. 선택 학급 중 하나라도 선택 학교와 다르면 전체 변경을 거부한다.
+- 담당 교사 배정은 기존 같은 학교 SchoolMembership만 사용하며 새 소속을 만들거나 다른 학교 소속을 이동하지 않는다. 담당 해제는 SchoolMembership을 자동 삭제하지 않고, 교실의 학교 변경도 기존 SchoolMembership을 자동 이동하지 않는다.
+- 일반 teacher가 보낸 교실 `school_id`, `grade` 변경값은 허용하지 않는다. manager가 보낸 `school_id` 변경값은 거부하고 자기 학교로 고정한다.
 - 기존 teacher의 SchoolMembership backfill은 아직 수행하지 않았다.
 - 학교 삭제와 school admin 권한은 아직 구현하지 않았다.
-- 교실 담당 교사 배정은 admin이 `teacher_ids` 파라미터를 명시적으로 제출했을 때만 변경한다.
+- 교실 담당 교사 배정은 admin 또는 학교 manager가 `teacher_ids` 파라미터를 명시적으로 제출했을 때만 변경한다.
 - `SchoolClosure`는 학교별 휴무 기간을 이름과 시작일·종료일 범위로 저장한다.
 - `PublicHoliday`는 전국 공통 공휴일의 날짜, 이름과 출처를 로컬 DB에 저장한다.
 - 한국천문연구원 특일 정보 OpenAPI client와 연도별 동기화 service가 있으며, 성공한 응답만 transaction으로 교체하고 실패 시 기존 데이터를 유지한다. 명령행 task는 기본적으로 현재·다음 연도를 동기화한다.
 - `SchoolCalendar`는 주말, 전국 공통 공휴일과 해당 학교의 휴무 기간을 기준으로 운영일과 주·월의 마지막 운영일을 계산한다.
 - `/schools`는 admin의 전체 학교 현황 화면이며 로그인 후 시작 위치다. manager는 자신의 학교 운영 정보로, 일반 teacher는 `/classrooms`로 이동한다. 학교 운영 정보에는 학급·교사·학교 관리자·휴무 기간 현황을 표시한다.
 - global admin은 학교 운영 정보에서 teacher를 학교 manager로 지정하거나 member로 해제할 수 있다. member는 자기 학교를 읽고, manager와 global admin은 SchoolClosure를 등록·수정·삭제할 수 있다.
-- 관리자 공휴일 동기화 화면과 정기 실행 설정, manager의 실제 교실·교사 CRUD 권한, 캘린더형 휴무일 UI, 칭찬왕 날짜 제한은 아직 구현되지 않았다.
+- 관리자 공휴일 동기화 화면과 정기 실행 설정, 캘린더형 휴무일 UI, 칭찬왕 날짜 제한은 아직 구현되지 않았다. 학생 구성원 관리와 쿠폰·칭찬·메시지 등 수업 운영 기능 전체의 manager 권한 확장도 아직 구현되지 않았다.
 - 확정된 학교 운영 정책과 단계별 구현 계획은 [`school_operations.md`](school_operations.md)에 정리한다.
 - `/classrooms`는 admin의 교실 + 선생님 + 학교 관리 허브 역할을 한다.
 - `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.

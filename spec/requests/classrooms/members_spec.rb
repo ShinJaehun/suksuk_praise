@@ -103,6 +103,29 @@ RSpec.describe "Classroom members", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  it "rejects a manager who is not assigned to the classroom" do
+    create(:school_membership, :manager, school: classroom.school, user: teacher)
+    sign_in teacher
+
+    get classroom_members_path(classroom)
+
+    expect(response).to redirect_to(root_path)
+  end
+
+  it "allows a manager assigned as the classroom teacher to manage members" do
+    create(:school_membership, :manager, school: classroom.school, user: teacher)
+    create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
+    student = create(:user, :student, name: "활성 학생")
+    create(:classroom_membership, classroom: classroom, user: student, role: :student)
+    sign_in teacher
+
+    get classroom_members_path(classroom)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("구성원 관리")
+    expect(response.body).to include(student.name)
+  end
+
   describe "PATCH /classrooms/:classroom_id/members/students/name" do
     it "lets a classroom teacher update active student names" do
       create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
@@ -153,6 +176,22 @@ RSpec.describe "Classroom members", type: :request do
     end
 
     it "rejects a teacher who does not manage the classroom" do
+      student = create(:user, :student, name: "유지")
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")
+      sign_in teacher
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => { name: "변경 시도" }
+        }
+      }
+
+      expect(response).to redirect_to(root_path)
+      expect(student.reload.name).to eq("유지")
+    end
+
+    it "rejects a manager who is not assigned to the classroom" do
+      create(:school_membership, :manager, school: classroom.school, user: teacher)
       student = create(:user, :student, name: "유지")
       membership = create(:classroom_membership, classroom: classroom, user: student, role: "student")
       sign_in teacher

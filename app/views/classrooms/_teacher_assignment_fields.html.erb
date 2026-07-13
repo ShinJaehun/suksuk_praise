@@ -10,32 +10,37 @@
   <% else %>
     <div class="mb-4">
       <h2 class="text-base font-semibold text-slate-900"><%= t("classrooms.form.teacher_assignment") %></h2>
+      <p class="mt-1 text-sm text-slate-500"><%= t("classrooms.form.teacher_assignment_description") %></p>
     </div>
   <% end %>
 
-  <%= hidden_field_tag "classroom[teacher_ids][]", "" %>
+  <% if local_assigns[:notice_key].present? %>
+    <p class="mt-4 rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500"><%= t(local_assigns[:notice_key]) %></p>
+  <% else %>
+    <%= hidden_field_tag "classroom[teacher_ids][]", "" %>
 
-  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-    <% assignable_teachers.each do |teacher| %>
-      <label class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50">
-        <%= check_box_tag "classroom[teacher_ids][]",
-              teacher.id,
-              assigned_teacher_ids.include?(teacher.id),
-              id: "classroom_teacher_ids_#{teacher.id}",
-              class: "rounded border-slate-300 text-sky-600 focus:ring-sky-500" %>
-        <%= user_avatar_image(
-              teacher,
-              size: 128,
-              class: "h-10 w-10 shrink-0 rounded-xl border border-slate-200 bg-slate-100 object-cover",
-              alt: "#{teacher.name} avatar"
-            ) %>
-        <span class="min-w-0">
-          <span class="block truncate text-sm font-semibold text-slate-800"><%= teacher.name %></span>
-          <span class="block truncate text-xs text-slate-500"><%= teacher.email %></span>
-        </span>
-      </label>
-    <% end %>
-  </div>
+    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <% assignable_teachers.each do |teacher| %>
+        <label class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50">
+          <%= check_box_tag "classroom[teacher_ids][]",
+                teacher.id,
+                assigned_teacher_ids.include?(teacher.id),
+                id: "classroom_teacher_ids_#{teacher.id}",
+                class: "rounded border-slate-300 text-sky-600 focus:ring-sky-500" %>
+          <%= user_avatar_image(
+                teacher,
+                size: 128,
+                class: "h-10 w-10 shrink-0 rounded-xl border border-slate-200 bg-slate-100 object-cover",
+                alt: "#{teacher.name} avatar"
+              ) %>
+          <span class="min-w-0">
+            <span class="block truncate text-sm font-semibold text-slate-800"><%= teacher.name %></span>
+            <span class="block truncate text-xs text-slate-500"><%= teacher.email %></span>
+          </span>
+        </label>
+      <% end %>
+    </div>
+  <% end %>
 
   <% if show_submit %>
     <div class="mt-5 flex justify-end">

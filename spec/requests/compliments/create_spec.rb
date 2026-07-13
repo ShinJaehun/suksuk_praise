@@ -92,6 +92,22 @@ RSpec.describe "Compliments#create", type: :request do
       expect(student.reload.points).to eq(0)
     end
 
+    it "rejects an unassigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: classroom.school, user: manager)
+      sign_in manager
+
+      expect {
+        post classroom_compliments_path(classroom),
+          params: { compliment: { receiver_id: student.id } },
+          as: :json
+      }.not_to change(Compliment, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_body).to eq("ok" => false, "error" => "not_authorized")
+      expect(student.reload.points).to eq(0)
+    end
+
     it "rejects a receiver who does not belong to the classroom" do
       other_student = create(:user, :student, points: 0)
       sign_in teacher

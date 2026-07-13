@@ -15,7 +15,7 @@ class ClassroomsController < ApplicationController
   def index
     # index는 policy_scope만 요구(verify_policy_scoped 훅 통과)
     @classrooms = policy_scope(Classroom).includes(:school).order(created_at: :desc)
-    @classrooms_index_title = t(current_user.admin? ? "classrooms.index.admin_title" : "classrooms.index.teacher_title")
+    @classrooms_index_title = t(classrooms_index_title_key)
     classroom_ids = @classrooms.map(&:id)
     teacher_memberships = ClassroomMembership
       .joins(:user)
@@ -39,6 +39,8 @@ class ClassroomsController < ApplicationController
     @manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
+      elsif current_user_school_manager?
+        classroom_ids.to_set
       elsif current_user.teacher?
         current_user.classroom_memberships.where(role: "teacher", classroom_id: classroom_ids).pluck(:classroom_id).to_set
       else
@@ -50,6 +52,8 @@ class ClassroomsController < ApplicationController
   def show
     authorize @classroom
     @can_manage_classroom = policy(@classroom).update?
+    @can_manage_classroom_members = policy(@classroom).manage_members?
+    @can_refresh_compliment_king = policy(@classroom).refresh_compliment_king?
     @students = @classroom.students.order(created_at: :asc)
     @homeroom_teachers = User.teacher
       .joins(:classroom_memberships)
@@ -76,32 +80,29 @@ class ClassroomsController < ApplicationController
   def new
     authorize Classroom
     @classroom = Classroom.new
-    if current_user.admin?
+    prepare_classroom_form
+    if current_user_school_manager?
+      @classroom.school = current_user.school_membership.school
+    elsif current_user.admin?
       load_school_options
-      load_new_classroom_teacher_assignment_form
     end
   end
 
   def create
     authorize Classroom
     @classroom = Classroom.new(classroom_params)
+    assign_manager_school
     if create_classroom_with_teacher_assignments
       redirect_to classroom_path(@classroom), notice: t("classrooms.create.success")
     else
-      if current_user.admin?
-        load_school_options
-        load_new_classroom_teacher_assignment_form
-      end
+      prepare_classroom_form
       render :new, status: :unprocessable_entity
     end
   end
 
   def edit
     authorize @classroom
-    if current_user.admin?
-      load_school_options
-      load_teacher_assignment_form
-    end
+    prepare_classroom_form
   end
 
   def update
@@ -109,10 +110,7 @@ class ClassroomsController < ApplicationController
     if update_classroom_with_teacher_assignments
       redirect_to @classroom, notice: t("classrooms.update.success")
     else
-      if current_user.admin?
-        load_school_options
-        load_teacher_assignment_form
-      end
+      prepare_classroom_form
       render :edit, status: :unprocessable_entity
     end
   end
@@ -157,7 +155,7 @@ class ClassroomsController < ApplicationController
 
   # Turbo로 일간 칭찬왕 영역만 새로고침
   def refresh_compliment_king
-    authorize @classroom, :show?
+    authorize @classroom, :refresh_compliment_king?
     @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
     @selected_period = params[:period].presence || "daily"
     raise ActiveRecord::RecordNotFound unless @enabled_compliment_king_periods.include?(@selected_period)
@@ -354,28 +352,41 @@ class ClassroomsController < ApplicationController
   end
 
   def classroom_params
-    permitted = [
-      :name,
-      :daily_compliment_king_enabled,
-      :weekly_compliment_king_enabled,
-      :monthly_compliment_king_enabled,
-      :message_policy
-    ]
-    permitted.concat(%i[school_id grade]) if current_user.admin?
+    permitted = %i[name]
+    permitted.concat(operation_setting_attributes) if operation_settings_allowed?
+    permitted << :grade if current_user.admin? || current_user_school_manager?
+    permitted << :school_id if current_user.admin?
 
-    params.require(:classroom).permit(*permitted)
+    params.require(:classroom).permit(*permitted.uniq)
+  end
+
+  def operation_setting_attributes
+    %i[
+      daily_compliment_king_enabled
+      weekly_compliment_king_enabled
+      monthly_compliment_king_enabled
+      message_policy
+    ]
+  end
+
+  def operation_settings_allowed?
+    return true if current_user.admin?
+    return false unless defined?(@classroom) && @classroom.present?
+
+    policy(@classroom).manage_members?
   end
 
   def update_classroom_with_teacher_assignments
-    selected_teacher_ids if current_user.admin? && teacher_assignment_params_submitted?
+    return false if manager_school_change_attempt?
+
+    selected_teacher_ids if can_assign_teachers? && teacher_assignment_params_submitted?
     return false if teacher_assignment_invalid?
     return false if teacher_school_assignment_conflict?
 
     Classroom.transaction do
       next false unless @classroom.update(classroom_params)
 
-      sync_teacher_assignments if current_user.admin? && teacher_assignment_params_submitted?
-      ensure_school_memberships_for_assigned_teachers
+      sync_teacher_assignments if can_assign_teachers? && teacher_assignment_params_submitted?
       true
     end
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
@@ -383,7 +394,8 @@ class ClassroomsController < ApplicationController
   end
 
   def load_teacher_assignment_form
-    @assignable_teachers = User.teacher.order(:name, :id)
+    @assignable_teachers = assignable_teachers
+    @teacher_assignment_notice_key = teacher_assignment_notice_key
     @assigned_teacher_ids = @classroom.classroom_memberships
       .teacher
       .joins(:user)
@@ -396,31 +408,28 @@ class ClassroomsController < ApplicationController
   end
 
   def load_new_classroom_teacher_assignment_form
-    @assignable_teachers = User.teacher.order(:name, :id)
+    @assignable_teachers = assignable_teachers
+    @teacher_assignment_notice_key = teacher_assignment_notice_key
     @assigned_teacher_ids = selected_teacher_ids
   end
 
   def create_classroom_with_teacher_assignments
-    selected_teacher_ids if current_user.admin?
+    return false if unavailable_teacher_assignment_submitted?
+
+    selected_teacher_ids if can_assign_teachers?
     return false if teacher_assignment_invalid?
     return false if teacher_school_assignment_conflict?
 
     Classroom.transaction do
-      if current_user.admin? && selected_teacher_ids.empty?
-        @classroom.errors.add(:base, t("classrooms.errors.teacher_required"))
-        next false
-      end
-
       next false unless @classroom.save
 
-      teacher_ids = current_user.admin? ? selected_teacher_ids : [current_user.id]
+      teacher_ids = can_assign_teachers? ? selected_teacher_ids : [current_user.id]
       teacher_ids.each do |teacher_id|
-        membership = ClassroomMembership.create!(
+        ClassroomMembership.create!(
           classroom: @classroom,
           user_id: teacher_id,
           role: "teacher"
         )
-        SchoolMemberships::EnsureForTeacher.call(teacher: membership.user, school: @classroom.school)
       end
       true
     end
@@ -439,29 +448,20 @@ class ClassroomsController < ApplicationController
     teacher_ids_to_remove = current_teacher_ids - selected_teacher_ids
 
     teacher_ids_to_add.each do |teacher_id|
-      membership = ClassroomMembership.find_or_create_by!(
+      ClassroomMembership.find_or_create_by!(
         classroom: @classroom,
         user_id: teacher_id,
         role: "teacher"
       )
-      SchoolMemberships::EnsureForTeacher.call(teacher: membership.user, school: @classroom.school)
     end
 
     current_teacher_memberships.where(user_id: teacher_ids_to_remove).destroy_all
   end
 
-  def ensure_school_memberships_for_assigned_teachers
-    return unless @classroom.school
-
-    @classroom.classroom_memberships.teacher.includes(:user).each do |membership|
-      SchoolMemberships::EnsureForTeacher.call(teacher: membership.user, school: @classroom.school)
-    end
-  end
-
   def teacher_school_assignment_conflict?
-    return false unless current_user.admin?
+    return false unless can_assign_teachers?
 
-    target_school_id = params.dig(:classroom, :school_id).presence || @classroom.school_id
+    target_school_id = teacher_assignment_school_id
     return false unless target_school_id
 
     teacher_ids =
@@ -471,8 +471,10 @@ class ClassroomsController < ApplicationController
         @classroom.classroom_memberships.teacher.joins(:user).where(users: { role: "teacher" }).pluck(:user_id)
       end
 
-    conflict = SchoolMembership.where(user_id: teacher_ids).where.not(school_id: target_school_id).exists?
-    @classroom.errors.add(:base, t("classrooms.errors.teacher_school_conflict")) if conflict
+    conflict = SchoolMembership.where(user_id: teacher_ids, school_id: target_school_id).count != teacher_ids.size
+    if conflict
+      @classroom.errors.add(:base, t("classrooms.errors.teacher_school_required"))
+    end
     conflict
   end
 
@@ -482,18 +484,29 @@ class ClassroomsController < ApplicationController
     raw_ids = Array(params.dig(:classroom, :teacher_ids)).reject { |value| value == "" }
     valid_raw_ids = raw_ids.select { |value| value.to_s.match?(/\A[1-9]\d*\z/) }
     requested_ids = valid_raw_ids.map(&:to_i).uniq
-    @selected_teacher_ids = User.teacher.where(id: requested_ids).pluck(:id)
+    @selected_teacher_ids = assignable_teachers.where(id: requested_ids).pluck(:id)
 
     if valid_raw_ids.size != raw_ids.size || @selected_teacher_ids.sort != requested_ids.sort
-      invalid_teacher_assignment(@selected_teacher_ids)
+      invalid_teacher_assignment(
+        @selected_teacher_ids,
+        requested_ids: requested_ids,
+        malformed: valid_raw_ids.size != raw_ids.size
+      )
     end
     @selected_teacher_ids
   end
 
-  def invalid_teacher_assignment(selected_ids)
+  def invalid_teacher_assignment(selected_ids, requested_ids:, malformed:)
     @teacher_assignment_invalid = true
-    @classroom.errors.add(:base, t("classrooms.errors.teacher_not_found"))
+    @classroom.errors.add(:base, t(teacher_assignment_error_key(requested_ids, malformed: malformed)))
     @selected_teacher_ids = selected_ids
+  end
+
+  def teacher_assignment_error_key(requested_ids, malformed:)
+    return "classrooms.errors.teacher_not_found" if malformed
+    return "classrooms.errors.teacher_not_found" unless User.teacher.where(id: requested_ids).count == requested_ids.size
+
+    "classrooms.errors.teacher_school_required"
   end
 
   def teacher_assignment_invalid?
@@ -502,6 +515,70 @@ class ClassroomsController < ApplicationController
 
   def teacher_assignment_params_submitted?
     params.require(:classroom).key?(:teacher_ids)
+  end
+
+  def prepare_classroom_form
+    load_school_options if current_user.admin?
+    load_new_classroom_teacher_assignment_form if @classroom.new_record? && can_assign_teachers?
+    load_teacher_assignment_form if @classroom.persisted? && can_assign_teachers?
+  end
+
+  def assignable_teachers
+    school_id = teacher_assignment_school_id
+    return User.none unless school_id
+
+    User.teacher
+      .joins(:school_membership)
+      .where(school_memberships: { school_id: school_id })
+      .order(:name, :id)
+  end
+
+  def can_assign_teachers?
+    current_user.admin? || current_user_school_manager?
+  end
+
+  def unavailable_teacher_assignment_submitted?
+    return false unless current_user.admin? && @classroom.new_record?
+    return false unless teacher_assignment_params_submitted?
+    return false if Array(params.dig(:classroom, :teacher_ids)).reject(&:blank?).empty?
+
+    @teacher_assignment_invalid = true
+    @classroom.errors.add(:base, t("classrooms.errors.teacher_assignment_after_create"))
+    true
+  end
+
+  def teacher_assignment_school_id
+    return current_user.school_membership&.school_id if current_user_school_manager?
+    return nil if @classroom.new_record?
+
+    params.dig(:classroom, :school_id).presence || @classroom.school_id
+  end
+
+  def teacher_assignment_notice_key
+    return "classrooms.form.teacher_assignment_after_create" if current_user.admin? && @classroom.new_record?
+    return "classrooms.form.teacher_assignment_school_required" if teacher_assignment_school_id.blank?
+    return "classrooms.form.teacher_assignment_empty" if @assignable_teachers.empty?
+
+    nil
+  end
+
+  def current_user_school_manager?
+    current_user&.teacher? && current_user.school_membership&.manager?
+  end
+
+  def assign_manager_school
+    return unless current_user_school_manager?
+
+    @classroom.school = current_user.school_membership.school
+  end
+
+  def manager_school_change_attempt?
+    return false unless current_user_school_manager?
+    return false unless params.require(:classroom).key?(:school_id)
+    return false if params.dig(:classroom, :school_id).to_s == @classroom.school_id.to_s
+
+    @classroom.errors.add(:base, t("classrooms.errors.manager_school_change"))
+    true
   end
 
   def redirect_students_to_mypage!
@@ -558,6 +635,13 @@ class ClassroomsController < ApplicationController
           classroom_count: classroom_names.size
         }
       end
+  end
+
+  def classrooms_index_title_key
+    return "classrooms.index.admin_title" if current_user.admin?
+    return "classrooms.index.manager_title" if current_user_school_manager?
+
+    "classrooms.index.teacher_title"
   end
 
   def load_recent_issued_coupons!

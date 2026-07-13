@@ -249,6 +249,25 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
   end
 
+  it "rejects approval by an unassigned school manager" do
+    manager = create(:user, :teacher)
+    create(:school_membership, :manager, school: classroom.school, user: manager)
+    request = create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+    sign_in manager
+
+    expect {
+      patch approve_coupon_use_request_path(request)
+    }.not_to change(CouponEvent, :count)
+
+    expect(response).to redirect_to(root_path)
+    expect(coupon.reload).to be_issued
+    expect(request.reload).to be_pending
+    expect(Turbo::StreamsChannel).not_to have_received(:broadcast_replace_to)
+    expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
+  end
+
   it "does not use a coupon twice when approving an already approved request" do
     request = create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
     sign_in teacher

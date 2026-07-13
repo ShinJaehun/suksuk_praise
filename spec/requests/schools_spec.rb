@@ -83,6 +83,26 @@ RSpec.describe "School workspaces", type: :request do
     expect(response.body).to include(admin_school_school_managers_path(school))
   end
 
+  it "links classrooms only when the viewer can open them" do
+    assigned_classroom = create(:classroom, school: school, name: "담당 학급")
+    unassigned_classroom = create(:classroom, school: school, name: "미담당 학급")
+    create(:classroom_membership, classroom: assigned_classroom, user: member, role: :teacher)
+
+    sign_in member
+    get school_path(school)
+    expect(response.body).to include(assigned_classroom.name, unassigned_classroom.name)
+    expect(response.body).to include(classroom_path(assigned_classroom))
+    expect(response.body).not_to include(classroom_path(unassigned_classroom))
+
+    sign_in manager
+    get school_path(school)
+    expect(response.body).to include(classroom_path(assigned_classroom), classroom_path(unassigned_classroom))
+
+    sign_in admin
+    get school_path(school)
+    expect(response.body).to include(classroom_path(assigned_classroom), classroom_path(unassigned_classroom))
+  end
+
   it "rejects an unassigned teacher and a student" do
     [create(:user, :teacher), create(:user, :student)].each do |user|
       sign_in user

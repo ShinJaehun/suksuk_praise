@@ -1,35 +1,37 @@
 <section class="mx-auto w-full max-w-5xl space-y-6 pt-4">
   <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div class="space-y-1">
-      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">교실 관리</h1>
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("classrooms.edit.title") %></h1>
     </div>
 
     <div class="flex flex-col gap-2 sm:flex-row">
-      <%= link_to "구성원 관리",
-            classroom_members_path(@classroom),
-            class: "inline-flex items-center justify-center rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100" %>
-      <%= link_to "교실로 돌아가기",
+      <% if policy(@classroom).manage_members? %>
+        <%= link_to t("classrooms.edit.manage_members"),
+              classroom_members_path(@classroom),
+              class: "inline-flex items-center justify-center rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100" %>
+      <% end %>
+      <%= link_to t("classrooms.edit.back_to_classroom"),
             classroom_path(@classroom),
             class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
     </div>
   </div>
 
-  <%= render "form", classroom: @classroom, submit_label: "교실 설정 저장" %>
+  <%= render "form", classroom: @classroom, submit_label: t("classrooms.edit.submit") %>
 
-  <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
-    <div class="mb-4">
-      <h2 class="text-base font-semibold text-rose-900">교실 삭제</h2>
-      <p class="mt-1 text-sm text-rose-700">
-        교실을 삭제합니다. 학생과 칭찬, 쿠폰 자료가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-      </p>
-    </div>
+  <% if policy(@classroom).destroy? %>
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+      <div class="mb-4">
+        <h2 class="text-base font-semibold text-rose-900"><%= t("classrooms.edit.delete_title") %></h2>
+        <p class="mt-1 text-sm text-rose-700"><%= t("classrooms.edit.delete_description") %></p>
+      </div>
 
-    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-      <%= link_to t('ui.buttons.delete_classroom'),
-            classroom_path(@classroom),
-            data: { turbo_method: :delete, turbo_confirm: t('ui.buttons.confirm_delete_classroom') },
-            class: "inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100" %>
-    </div>
-  </section>
+      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <%= link_to t('ui.buttons.delete_classroom'),
+              classroom_path(@classroom),
+              data: { turbo_method: :delete, turbo_confirm: t('ui.buttons.confirm_delete_classroom') },
+              class: "inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100" %>
+      </div>
+    </section>
+  <% end %>
 
 </section>

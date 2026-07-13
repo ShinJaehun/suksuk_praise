@@ -62,8 +62,13 @@ ko:
       teacher_not_found: "선택한 담당 교사를 찾을 수 없습니다."
       teacher_required: "담당 선생님을 1명 이상 선택해 주세요."
       teacher_school_conflict: "다른 학교 소속 교사는 이 학급의 담당 교사로 지정할 수 없습니다."
+      teacher_school_required: "해당 학교에 소속된 선생님만 담당 교사로 지정할 수 있습니다."
+      teacher_assignment_after_create: "교실을 만든 뒤 관리 화면에서 담당 선생님을 배정해 주세요."
+      manager_teacher_school_conflict: "자기 학교의 교사만 담당 교사로 지정할 수 있습니다."
+      manager_school_change: "학교 관리자는 학급을 다른 학교로 이동할 수 없습니다."
     index:
       admin_title: "교실"
+      manager_title: "학교 전체 학급"
       teacher_title: "내 교실"
       unspecified: "미지정"
       school_unspecified: "학교 미지정"
@@ -89,8 +94,23 @@ ko:
       schools_empty: "등록된 학교가 없습니다."
       school_operations_title: "학교 운영 정보"
       school_operations_link: "%{school} 운영 정보"
+      back_to_school_operations: "학교 운영 정보로 돌아가기"
       upcoming_closure: "예정 휴무: %{name} (%{date})"
       closures_empty: "예정된 휴무 기간이 없습니다."
+    new:
+      title: "새 학급"
+    edit:
+      title: "교실 관리"
+      manage_members: "구성원 관리"
+      back_to_classroom: "교실로 돌아가기"
+      submit: "교실 설정 저장"
+      delete_title: "교실 삭제"
+      delete_description: "교실을 삭제합니다. 학생과 칭찬, 쿠폰 자료가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+    show:
+      student_login: "학생 로그인"
+      manage_classroom: "교실 관리"
+      manage_members: "구성원 관리"
+      teacher_empty: "담당 교사 없음"
     form:
       basic_info: "교실 기본 정보"
       name_label: "교실 이름"
@@ -101,6 +121,10 @@ ko:
       grade_label: "학년"
       grade_prompt: "학년 선택"
       teacher_assignment: "담당 선생님 배정"
+      teacher_assignment_description: "이 학교에 소속된 선생님만 표시됩니다."
+      teacher_assignment_after_create: "교실을 만든 뒤 관리 화면에서 담당 선생님을 배정해 주세요."
+      teacher_assignment_school_required: "학교를 먼저 지정한 뒤 담당 선생님을 배정할 수 있습니다."
+      teacher_assignment_empty: "이 학교에 소속된 선생님이 없습니다."
       teacher_assignment_count: "담당 선생님 배정 · %{count}명 선택됨"
       teacher_assignment_submit: "담당 선생님 저장"
     create:
@@ -293,6 +317,8 @@ ko:
       errors:
         school_not_found: "선택한 학교를 찾을 수 없습니다."
         classroom_not_found: "선택한 교실을 찾을 수 없습니다."
+        classroom_school_mismatch: "선택한 학교에 속한 학급만 담당 학급으로 지정할 수 있습니다."
+        classroom_school_required: "학교를 선택한 뒤 담당 학급을 지정해 주세요."
         default_coupons_failed: "교사 계정의 기본 쿠폰을 준비하지 못했습니다."
       create:
         success: "새 교사 계정이 생성되었습니다."

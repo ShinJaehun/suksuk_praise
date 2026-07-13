@@ -65,5 +65,27 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    it "rejects an unassigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: classroom.school, user: manager)
+      sign_in manager
+
+      post refresh_compliment_king_classroom_path(classroom), params: { period: "daily" }
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "allows an assigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: classroom.school, user: manager)
+      create(:classroom_membership, classroom: classroom, user: manager, role: :teacher)
+      sign_in manager
+
+      post refresh_compliment_king_classroom_path(classroom), params: { period: "daily" }, headers: turbo_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("오늘의 칭찬왕")
+    end
   end
 end

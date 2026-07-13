@@ -65,6 +65,21 @@ RSpec.describe "UserCoupons#create", type: :request do
     expect(UserCoupon.last.coupon_template).to eq(admin_template)
   end
 
+  it "rejects an unassigned school manager" do
+    manager = create(:user, :teacher)
+    create(:school_membership, :manager, school: classroom.school, user: manager)
+    manager_template = create(:coupon_template, created_by: manager, active: true)
+    sign_in manager
+
+    expect {
+      post classroom_student_coupons_path(classroom, student),
+        params: { coupon_template_id: manager_template.id },
+        as: :json
+    }.not_to change(UserCoupon, :count)
+
+    expect(response).to have_http_status(:forbidden)
+  end
+
   it "rejects a teacher outside the classroom" do
     outsider = create(:user, :teacher)
     outsider_template = create(:coupon_template, created_by: outsider, active: true)

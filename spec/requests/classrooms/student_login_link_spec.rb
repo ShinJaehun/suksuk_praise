@@ -101,6 +101,16 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).not_to include(classroom.student_login_token)
   end
 
+  it "does not allow an unassigned school manager to access token management" do
+    create(:school_membership, :manager, school: classroom.school, user: teacher)
+    sign_in teacher
+
+    get student_login_info_classroom_path(classroom)
+
+    expect(response).to redirect_to(root_path)
+    expect(response.body).not_to include(classroom.student_login_token)
+  end
+
   it "does not show student login controls on the members page" do
     create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
     sign_in teacher
@@ -247,6 +257,17 @@ RSpec.describe "Classroom student login link", type: :request do
   end
 
   it "does not allow a non-managing teacher to regenerate the token" do
+    old_token = classroom.student_login_token
+    sign_in teacher
+
+    patch regenerate_student_login_token_classroom_path(classroom)
+
+    expect(response).to redirect_to(root_path)
+    expect(classroom.reload.student_login_token).to eq(old_token)
+  end
+
+  it "does not allow an unassigned school manager to regenerate the token" do
+    create(:school_membership, :manager, school: classroom.school, user: teacher)
     old_token = classroom.student_login_token
     sign_in teacher
 
