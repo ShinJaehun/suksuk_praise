@@ -244,6 +244,7 @@ ko:
 
   date:
     formats:
+      long: "%Y년 %m월 %d일"
       short: "%m/%d"
 
   coupon_events:
@@ -331,6 +332,37 @@ ko:
       user_must_be_teacher: "는 선생님 계정이어야 합니다."
 
   schools:
+    calendar:
+      weekdays:
+        - "일"
+        - "월"
+        - "화"
+        - "수"
+        - "목"
+        - "금"
+        - "토"
+      month_title: "%{year}년 %{month}월"
+      previous_month: "이전 달"
+      next_month: "다음 달"
+      help: "달력에서 휴무일을 확인하고 관리할 수 있습니다."
+      form_title: "휴무 기간 등록"
+      form_errors: "입력 내용을 확인해 주세요."
+      list_title: "등록된 휴무 기간"
+      reset_selection: "선택 초기화"
+      selection_default: "날짜를 선택하거나 아래 날짜 입력칸을 직접 수정하세요."
+      selection_start: "%{start} 선택됨. 같은 날짜 하루 휴무로 등록하거나 다른 날짜를 선택해 기간을 지정할 수 있습니다."
+      selection_range: "%{start}부터 %{end}까지 선택됨."
+      selection_reset: "종료일이 시작일보다 빨라 %{start}을 새 시작일로 선택했습니다."
+      school_closure: "학교 휴무"
+      public_holiday: "공식 공휴일"
+      today: "오늘"
+      school_closure_short: "휴무"
+      public_holiday_short: "공휴일"
+      today_short: "오늘"
+      public_holiday_names: "공식 공휴일: %{names}"
+      school_closure_names: "학교 휴무: %{names}"
+      single_day: "하루 휴무"
+      date_range: "기간 휴무"
     index:
       title: "관리 학교"
       summary: "학급 %{classrooms}개 · 소속 교사 %{teachers}명"

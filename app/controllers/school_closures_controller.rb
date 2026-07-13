@@ -1,4 +1,6 @@
 class SchoolClosuresController < ApplicationController
+  include SchoolWorkspacePrepareable
+
   before_action :authenticate_user!
   before_action :set_school
   before_action :authorize_school_operations
@@ -12,9 +14,14 @@ class SchoolClosuresController < ApplicationController
     @school_closure = @school.school_closures.new(school_closure_params)
 
     if @school_closure.save
-      redirect_to school_path(@school), notice: t("school_closures.create.success")
+      redirect_to school_path(@school, calendar_redirect_params), notice: t("school_closures.create.success")
     else
-      render :new, status: :unprocessable_entity
+      if params[:return_to_calendar].present?
+        prepare_school_workspace
+        render "schools/show", status: :unprocessable_entity
+      else
+        render :new, status: :unprocessable_entity
+      end
     end
   end
 
@@ -30,7 +37,7 @@ class SchoolClosuresController < ApplicationController
 
   def destroy
     @school_closure.destroy!
-    redirect_to school_path(@school), notice: t("school_closures.destroy.success"), status: :see_other
+    redirect_to school_path(@school, calendar_redirect_params), notice: t("school_closures.destroy.success"), status: :see_other
   end
 
   private
@@ -49,5 +56,9 @@ class SchoolClosuresController < ApplicationController
 
   def school_closure_params
     params.require(:school_closure).permit(:name, :starts_on, :ends_on)
+  end
+
+  def calendar_redirect_params
+    params[:month].present? ? { month: calendar_month_param } : {}
   end
 end

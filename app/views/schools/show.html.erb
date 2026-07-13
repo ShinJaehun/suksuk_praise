@@ -64,42 +64,166 @@
     </section>
   </div>
 
-  <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <div class="flex items-center justify-between gap-4">
-      <h2 class="text-xl font-bold text-slate-900"><%= t("schools.show.closures_title") %></h2>
+  <section
+    class="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+    <% if @can_manage_operations %>
+      data-controller="school-closure-picker"
+      data-school-closure-picker-default-status-value="<%= t("schools.calendar.selection_default") %>"
+      data-school-closure-picker-start-status-value="<%= t("schools.calendar.selection_start") %>"
+      data-school-closure-picker-range-status-value="<%= t("schools.calendar.selection_range") %>"
+      data-school-closure-picker-reset-status-value="<%= t("schools.calendar.selection_reset") %>"
+    <% end %>>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="text-xl font-bold text-slate-900"><%= t("schools.show.closures_title") %></h2>
+        <p class="mt-1 text-sm text-slate-500"><%= t("schools.calendar.help") %></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <%= link_to t("schools.calendar.previous_month"),
+              school_path(@school, month: @previous_calendar_month_param),
+              class: "rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+        <%= link_to t("schools.calendar.next_month"),
+              school_path(@school, month: @next_calendar_month_param),
+              class: "rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      </div>
+    </div>
+
+    <div class="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <h3 class="text-lg font-extrabold text-slate-900"><%= t("schools.calendar.month_title", year: @calendar_month.year, month: @calendar_month.month) %></h3>
+          <div class="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span><%= t("schools.calendar.school_closure") %></span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span><%= t("schools.calendar.public_holiday") %></span>
+            <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full border-2 border-sky-500"></span><%= t("schools.calendar.today") %></span>
+          </div>
+        </div>
+
+        <div class="school-closure-calendar mt-3">
+          <div class="school-closure-calendar__weekdays">
+            <% t("schools.calendar.weekdays").each do |weekday| %>
+              <div class="school-closure-calendar__weekday"><%= weekday %></div>
+            <% end %>
+          </div>
+          <% @calendar_weeks.each do |week| %>
+            <div class="school-closure-calendar__week">
+              <% week.each do |date| %>
+                <% closures = @school_closures_by_date[date] %>
+                <% public_holidays = @public_holidays_by_date[date] || [] %>
+                <% aria_label = school_calendar_aria_label(date: date, closures: closures, public_holidays: public_holidays, today: @today) %>
+                <% if @can_manage_operations %>
+                  <button
+                    type="button"
+                    class="<%= school_calendar_day_button_classes(date: date, calendar_month: @calendar_month, today: @today, closures: closures, public_holidays: public_holidays) %>"
+                    data-school-closure-picker-target="dayButton"
+                    data-school-closure-picker-date-value="<%= date.iso8601 %>"
+                    data-action="school-closure-picker#selectDate"
+                    aria-label="<%= aria_label %>">
+                    <span class="school-closure-calendar__date"><%= date.day %></span>
+                    <span class="school-closure-calendar__badges">
+                      <% if date == @today %><span><%= t("schools.calendar.today_short") %></span><% end %>
+                      <% if public_holidays.any? %><span><%= t("schools.calendar.public_holiday_short") %></span><% end %>
+                      <% if closures.any? %><span><%= t("schools.calendar.school_closure_short") %></span><% end %>
+                    </span>
+                  </button>
+                <% else %>
+                  <div class="<%= school_calendar_day_classes(date: date, calendar_month: @calendar_month, today: @today, closures: closures, public_holidays: public_holidays) %>" aria-label="<%= aria_label %>">
+                    <span class="school-closure-calendar__date"><%= date.day %></span>
+                    <span class="school-closure-calendar__badges">
+                      <% if date == @today %><span><%= t("schools.calendar.today_short") %></span><% end %>
+                      <% if public_holidays.any? %><span><%= t("schools.calendar.public_holiday_short") %></span><% end %>
+                      <% if closures.any? %><span><%= t("schools.calendar.school_closure_short") %></span><% end %>
+                    </span>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
       <% if @can_manage_operations %>
-        <%= link_to t("school_closures.actions.new"), new_school_school_closure_path(@school),
-              class: "rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700" %>
+        <aside class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 class="text-base font-bold text-slate-900"><%= t("schools.calendar.form_title") %></h3>
+          <p class="mt-1 text-sm text-slate-500" data-school-closure-picker-target="status"><%= t("schools.calendar.selection_default") %></p>
+
+          <% if @school_closure.errors.any? %>
+            <div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <p class="font-semibold"><%= t("schools.calendar.form_errors") %></p>
+              <ul class="mt-1 list-disc space-y-1 pl-5">
+                <% @school_closure.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <%= form_with model: [@school, @school_closure],
+                url: school_school_closures_path(@school, month: @calendar_month_param),
+                class: "mt-4 space-y-4" do |f| %>
+            <%= hidden_field_tag :return_to_calendar, "1" %>
+            <% %i[name starts_on ends_on].each do |attribute| %>
+              <% has_errors = @school_closure.errors[attribute].any? %>
+              <div>
+                <%= f.label attribute, t("school_closures.form.#{attribute}_label"), class: "block text-sm font-semibold text-slate-800" %>
+                <% if attribute == :name %>
+                  <%= f.text_field attribute, class: "mt-1 block w-full rounded-lg border px-3 py-2 text-sm shadow-sm #{has_errors ? "border-rose-400" : "border-slate-300"}" %>
+                <% else %>
+                  <%= f.date_field attribute,
+                        class: "mt-1 block w-full rounded-lg border px-3 py-2 text-sm shadow-sm #{has_errors ? "border-rose-400" : "border-slate-300"}",
+                        data: {
+                          school_closure_picker_target: attribute == :starts_on ? "startInput" : "endInput",
+                          action: "change->school-closure-picker#syncFromInputs"
+                        } %>
+                <% end %>
+                <% if has_errors %>
+                  <p class="mt-1 text-sm text-rose-600"><%= @school_closure.errors.full_messages_for(attribute).to_sentence %></p>
+                <% end %>
+              </div>
+            <% end %>
+
+            <div class="flex items-center justify-between gap-3">
+              <button type="button"
+                class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
+                data-action="school-closure-picker#reset">
+                <%= t("schools.calendar.reset_selection") %>
+              </button>
+              <%= f.submit t("school_closures.form.create_submit"),
+                    data: { turbo_submits_with: t("school_closures.form.submitting") },
+                    class: "rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700" %>
+            </div>
+          <% end %>
+        </aside>
       <% end %>
     </div>
 
-    <% if @school_closures.any? %>
-      <div class="mt-4 divide-y divide-slate-200">
-        <% @school_closures.each do |closure| %>
-          <article class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 class="font-semibold text-slate-900"><%= closure.name %></h3>
-              <p class="mt-1 text-sm text-slate-500">
-                <% if closure.starts_on == closure.ends_on %>
-                  <%= t("schools.show.closure_single_date", date: l(closure.starts_on, format: :short)) %>
-                <% else %>
-                  <%= t("schools.show.closure_date_range", starts_on: l(closure.starts_on, format: :short), ends_on: l(closure.ends_on, format: :short)) %>
-                <% end %>
-              </p>
-            </div>
-            <% if @can_manage_operations %>
-              <div class="flex gap-2">
-                <%= link_to t("ui.edit"), edit_school_school_closure_path(@school, closure), class: "rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
-                <%= link_to t("ui.delete"), school_school_closure_path(@school, closure),
-                      data: { turbo_method: :delete, turbo_confirm: t("school_closures.actions.confirm_delete") },
-                      class: "rounded-lg border border-rose-300 px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>
+    <div class="mt-6">
+      <h3 class="text-lg font-bold text-slate-900"><%= t("schools.calendar.list_title") %></h3>
+      <% if @school_closures.any? %>
+        <div class="mt-3 divide-y divide-slate-200">
+          <% @school_closures.each do |closure| %>
+            <article class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 class="font-semibold text-slate-900"><%= closure.name %></h4>
+                <p class="mt-1 text-sm text-slate-500">
+                  <span class="font-semibold text-slate-700"><%= t(closure.starts_on == closure.ends_on ? "schools.calendar.single_day" : "schools.calendar.date_range") %></span>
+                  <span><%= school_closure_period_label(closure) %></span>
+                </p>
               </div>
-            <% end %>
-          </article>
-        <% end %>
-      </div>
-    <% else %>
-      <p class="mt-4 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500"><%= t("schools.show.closures_empty") %></p>
-    <% end %>
+              <% if @can_manage_operations %>
+                <div class="flex gap-2">
+                  <%= link_to t("ui.edit"), edit_school_school_closure_path(@school, closure), class: "rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+                  <%= link_to t("ui.delete"), school_school_closure_path(@school, closure, month: @calendar_month_param),
+                        data: { turbo_method: :delete, turbo_confirm: t("school_closures.actions.confirm_delete") },
+                        class: "rounded-lg border border-rose-300 px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>
+                </div>
+              <% end %>
+            </article>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="mt-4 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500"><%= t("schools.show.closures_empty") %></p>
+      <% end %>
+    </div>
   </section>
 </section>

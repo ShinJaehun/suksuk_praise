@@ -33,8 +33,9 @@ RSpec.describe "School closure management", type: :request do
     expect(closure.reload.name).to eq("겨울방학")
 
     expect do
-      delete school_school_closure_path(school, closure)
+      delete school_school_closure_path(school, closure, month: "2026-07")
     end.to change(school.school_closures, :count).by(-1)
+    expect(response).to redirect_to(school_path(school, month: "2026-07"))
   end
 
   it "prevents a member from creating a closure" do
@@ -75,6 +76,23 @@ RSpec.describe "School closure management", type: :request do
     end.not_to change { closure.reload.attributes.slice("name", "starts_on", "ends_on") }
 
     expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).not_to include("translation missing")
+  end
+
+  it "renders the calendar month with errors when inline create validation fails" do
+    sign_in manager
+
+    expect do
+      post school_school_closures_path(school, month: "2026-08"),
+        params: {
+          return_to_calendar: "1",
+          school_closure: valid_params.merge(starts_on: "2026-08-10", ends_on: "2026-08-09")
+        }
+    end.not_to change(SchoolClosure, :count)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("2026년 8월")
+    expect(response.body).to include("입력 내용을 확인해 주세요.")
     expect(response.body).not_to include("translation missing")
   end
 

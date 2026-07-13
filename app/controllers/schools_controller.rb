@@ -1,4 +1,6 @@
 class SchoolsController < ApplicationController
+  include SchoolWorkspacePrepareable
+
   before_action :authenticate_user!
 
   def index
@@ -17,19 +19,7 @@ class SchoolsController < ApplicationController
     @school = policy_scope(School).find(params[:id])
     authorize @school, :show?
 
-    @classroom_count = @school.classrooms.count
-    @teacher_count = @school.school_memberships.count
-    @managers = @school.school_memberships.manager.includes(:user).map(&:user)
-    @school_closures = @school.school_closures.order(starts_on: :asc, ends_on: :asc, id: :asc)
-    @can_manage_operations = policy(@school).manage_operations?
-    @classrooms = @school.classrooms.includes(classroom_memberships: :user).order(:name, :id)
-    @teacher_memberships = @school.school_memberships.includes(user: { classroom_memberships: :classroom }).order(:role, :id)
-    if current_user.admin?
-      @manager_candidates = User.teacher
-        .left_joins(:school_membership)
-        .where(school_memberships: { id: nil })
-        .or(User.teacher.left_joins(:school_membership).where(school_memberships: { school_id: @school.id, role: :member }))
-        .order(:name, :id)
-    end
+    @school_closure = @school.school_closures.new
+    prepare_school_workspace
   end
 end
