@@ -76,6 +76,14 @@
   border-right: 0;
 }
 
+.school-closure-calendar__weekday--saturday {
+  color: #0369a1;
+}
+
+.school-closure-calendar__weekday--sunday {
+  color: #be123c;
+}
+
 .school-closure-calendar__day {
   position: relative;
   min-height: 5rem;
@@ -106,6 +114,38 @@
 .school-closure-calendar__day--muted {
   background: #f8fafc;
   color: #94a3b8;
+}
+
+.school-closure-calendar__day--saturday {
+  background: #f0f9ff;
+}
+
+.school-closure-calendar__day--sunday {
+  background: #fff1f2;
+}
+
+.school-closure-calendar__day--saturday .school-closure-calendar__date {
+  color: #0369a1;
+}
+
+.school-closure-calendar__day--sunday .school-closure-calendar__date {
+  color: #be123c;
+}
+
+.school-closure-calendar__day--muted.school-closure-calendar__day--saturday {
+  background: #f8fbff;
+}
+
+.school-closure-calendar__day--muted.school-closure-calendar__day--sunday {
+  background: #fffafa;
+}
+
+.school-closure-calendar__day--muted.school-closure-calendar__day--saturday .school-closure-calendar__date {
+  color: #7aa7c7;
+}
+
+.school-closure-calendar__day--muted.school-closure-calendar__day--sunday .school-closure-calendar__date {
+  color: #d08a9a;
 }
 
 .school-closure-calendar__day--today {

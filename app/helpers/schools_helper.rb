@@ -1,6 +1,8 @@
 module SchoolsHelper
   def school_calendar_day_classes(date:, calendar_month:, today:, closures:, public_holidays:)
     classes = ["school-closure-calendar__day"]
+    classes << "school-closure-calendar__day--saturday" if date.saturday?
+    classes << "school-closure-calendar__day--sunday" if date.sunday?
     classes << "school-closure-calendar__day--muted" unless date.month == calendar_month.month
     classes << "school-closure-calendar__day--today" if date == today
     classes << "school-closure-calendar__day--school-closure" if closures.any?
@@ -17,6 +19,13 @@ module SchoolsHelper
       public_holidays: public_holidays
     ).split
     classes << "school-closure-calendar__day--button"
+    classes.join(" ")
+  end
+
+  def school_calendar_weekday_classes(index)
+    classes = ["school-closure-calendar__weekday"]
+    classes << "school-closure-calendar__weekday--sunday" if index.zero?
+    classes << "school-closure-calendar__weekday--saturday" if index == 6
     classes.join(" ")
   end
 

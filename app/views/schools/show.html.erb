@@ -101,8 +101,8 @@
 
         <div class="school-closure-calendar mt-3">
           <div class="school-closure-calendar__weekdays">
-            <% t("schools.calendar.weekdays").each do |weekday| %>
-              <div class="school-closure-calendar__weekday"><%= weekday %></div>
+            <% t("schools.calendar.weekdays").each_with_index do |weekday, index| %>
+              <div class="<%= school_calendar_weekday_classes(index) %>"><%= weekday %></div>
             <% end %>
           </div>
           <% @calendar_weeks.each do |week| %>

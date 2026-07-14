@@ -88,6 +88,32 @@ RSpec.describe 'School workspaces', type: :request do
     expect(response.body).to include('학교 휴일: 여름방학')
   end
 
+  it 'marks weekend calendar cells and headers without hiding holiday states' do
+    create(:school_closure, school: school, name: '여름방학', starts_on: Date.new(2026, 8, 1),
+                            ends_on: Date.new(2026, 8, 1))
+    create(:public_holiday, date: Date.new(2026, 8, 2), name: '대체공휴일')
+    sign_in manager
+
+    get school_path(school, month: '2026-08')
+
+    expect(response).to have_http_status(:ok)
+    document = Nokogiri::HTML(response.body)
+    saturday = calendar_day(document, Date.new(2026, 8, 1))
+    sunday = calendar_day(document, Date.new(2026, 8, 2))
+    monday = calendar_day(document, Date.new(2026, 8, 3))
+
+    expect(saturday["class"]).to include("school-closure-calendar__day--saturday")
+    expect(saturday["class"]).to include("school-closure-calendar__day--school-closure")
+    expect(sunday["class"]).to include("school-closure-calendar__day--sunday")
+    expect(sunday["class"]).to include("school-closure-calendar__day--public-holiday")
+    expect(monday["class"]).not_to include("school-closure-calendar__day--saturday")
+    expect(monday["class"]).not_to include("school-closure-calendar__day--sunday")
+
+    weekday_headers = document.css(".school-closure-calendar__weekday")
+    expect(weekday_headers.first["class"]).to include("school-closure-calendar__weekday--sunday")
+    expect(weekday_headers.last["class"]).to include("school-closure-calendar__weekday--saturday")
+  end
+
   it 'falls back to the current month when the month query is missing or invalid' do
     sign_in manager
 
@@ -182,5 +208,10 @@ RSpec.describe 'School workspaces', type: :request do
     get classrooms_path
 
     expect(response.body).to include(school_path(school), school.name, closure.name)
+  end
+
+  def calendar_day(document, date)
+    label = I18n.l(date, format: :long)
+    document.at_css(%([aria-label^="#{label}"]))
   end
 end
