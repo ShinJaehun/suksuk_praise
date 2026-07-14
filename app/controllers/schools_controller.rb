@@ -13,6 +13,7 @@ class SchoolsController < ApplicationController
     @classroom_counts = Classroom.where(school_id: school_ids).group(:school_id).count
     @teacher_counts = SchoolMembership.where(school_id: school_ids).group(:school_id).count
     @managers_by_school_id = SchoolMembership.manager.includes(:user).where(school_id: school_ids).group_by(&:school_id)
+    prepare_public_holiday_sync_years if current_user.admin?
   end
 
   def show
@@ -21,5 +22,18 @@ class SchoolsController < ApplicationController
 
     @school_closure = @school.school_closures.new
     prepare_school_workspace
+  end
+
+  private
+
+  def prepare_public_holiday_sync_years
+    current_year = Time.zone.today.year
+    @public_holiday_sync_years = [current_year - 1, current_year, current_year + 1]
+    date_range = Date.new(@public_holiday_sync_years.min, 1, 1)..Date.new(@public_holiday_sync_years.max, 12, 31)
+    @public_holiday_synced_years = PublicHoliday
+      .where(source: PublicHolidays::SyncYear::SOURCE, date: date_range)
+      .pluck(:date)
+      .map(&:year)
+      .uniq
   end
 end

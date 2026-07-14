@@ -128,6 +128,9 @@ Rails.application.routes.draw do
 
     get "teachers", to: redirect("/classrooms"), as: nil
     resources :teachers, only: [:new, :create, :edit, :update]
+    resources :public_holidays, only: [] do
+      post :sync, on: :collection
+    end
     resources :schools, only: %i[new create edit update] do
       resources :school_managers, only: :create, path: :managers
       delete "managers/:user_id", to: "school_managers#destroy", as: :manager

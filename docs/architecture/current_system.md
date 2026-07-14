@@ -51,10 +51,11 @@
 - `SchoolClosure`는 학교별 휴일을 이름과 시작일·종료일 범위로 저장한다. 내부 모델명은 `SchoolClosure`를 유지하고 사용자 화면에서는 휴일이라는 용어를 사용한다.
 - `PublicHoliday`는 전국 공통 공휴일의 날짜, 이름과 출처를 로컬 DB에 저장한다.
 - 한국천문연구원 특일 정보 OpenAPI client와 연도별 동기화 service가 있으며, 성공한 응답만 transaction으로 교체하고 실패 시 기존 데이터를 유지한다. 명령행 task는 기본적으로 현재·다음 연도를 동기화한다.
+- global admin은 학교 목록 화면의 공식 공휴일 동기화 카드에서 이전·현재·다음 연도를 기존 sync service로 수동 동기화할 수 있다. 별도의 공식 공휴일 목록 관리 화면은 제공하지 않으며, 공휴일 적용 결과는 학교 휴일 달력에서 확인한다. 학교 manager와 일반 teacher는 공식 공휴일을 동기화할 수 없다.
 - `SchoolCalendar`는 주말, 전국 공통 공휴일과 해당 학교의 휴일을 기준으로 운영일과 주·월의 마지막 운영일을 계산한다.
 - `/schools`는 admin의 전체 학교 현황 화면이며 로그인 후 시작 위치다. manager는 자신의 학교 운영 정보로, 일반 teacher는 `/classrooms`로 이동한다. 학교 운영 정보에는 학급·교사·학교 관리자·휴일 현황을 표시한다.
 - global admin은 학교 운영 정보에서 teacher를 학교 manager로 지정하거나 member로 해제할 수 있다. member는 자기 학교를 읽고, manager와 global admin은 SchoolClosure를 등록·수정·삭제할 수 있다.
-- 관리자 공휴일 동기화 화면과 정기 실행 설정, 캘린더형 휴일 UI는 아직 구현되지 않았다. 학생 구성원 관리와 쿠폰·칭찬·메시지 등 수업 운영 기능 전체의 manager 권한 확장도 아직 구현되지 않았다.
+- 공식 공휴일 자동 정기 동기화 설정과 캘린더형 휴일 UI는 아직 구현되지 않았다. 학생 구성원 관리와 쿠폰·칭찬·메시지 등 수업 운영 기능 전체의 manager 권한 확장도 아직 구현되지 않았다.
 - 확정된 학교 운영 정책과 단계별 구현 계획은 [`school_operations.md`](school_operations.md)에 정리한다.
 - `/classrooms`는 admin의 교실 + 선생님 + 학교 관리 허브 역할을 한다.
 - `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.

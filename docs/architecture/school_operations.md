@@ -99,7 +99,8 @@ PublicHoliday
 - 외부 공식 API의 결과를 DB에 저장하며 화면 요청마다 API를 호출하지 않는다.
 - API 호출 실패 시 기존 저장 데이터를 유지한다.
 - 올해와 다음 해 데이터를 동기화할 수 있도록 한다.
-- 정기 동기화와 global admin의 수동 동기화 가능성을 고려한다.
+- global admin은 학교 목록 화면의 공식 공휴일 동기화 카드에서 이전·현재·다음 연도를 수동 동기화할 수 있다.
+- 학교 manager와 일반 teacher는 공식 공휴일을 동기화할 수 없다.
 - 공식 데이터에 아직 반영되지 않은 긴급 휴일은 학교별 휴일로 임시 보완할 수 있다.
 - 제주 학교 홈페이지의 학사일정은 파싱하지 않는다.
 
@@ -107,7 +108,7 @@ PublicHoliday
 
 한국천문연구원 특일 정보 OpenAPI client와 연도별 동기화 service가 구현되어 있다. 외부 응답과 XML 파싱이 모두 성공한 뒤 transaction 안에서 해당 연도와 `kasi_special_days` source 데이터만 교체하며, 실패하거나 결과가 비어 있으면 기존 데이터를 유지한다.
 
-동기화에는 `KASI_HOLIDAY_API_KEY` 환경변수가 필요하다. `bin/rails public_holidays:sync`는 현재 연도와 다음 연도를, `bin/rails "public_holidays:sync[2026]"`는 지정 연도만 동기화한다. 관리자 화면, background job과 정기 실행 설정은 아직 구현되지 않았다.
+동기화에는 `KASI_HOLIDAY_API_KEY` 환경변수가 필요하다. `bin/rails public_holidays:sync`는 현재 연도와 다음 연도를, `bin/rails "public_holidays:sync[2026]"`는 지정 연도만 동기화한다. global admin은 학교 목록 화면의 공식 공휴일 동기화 카드에서 기존 sync service를 통해 이전·현재·다음 연도를 수동 동기화할 수 있다. 별도의 공식 공휴일 목록 관리 화면은 제공하지 않으며, 공휴일 적용 결과는 학교 휴일 달력에서 확인한다. 실패하면 기존 데이터는 유지된다. background job과 정기 실행 설정은 아직 구현되지 않았다.
 
 ---
 
@@ -181,4 +182,4 @@ last_school_day_of_month(date)
 - 제주 학교 홈페이지 학사일정 파싱
 - 칭찬왕 확정 모델, 소급 선정과 미선정 상태 관리
 - 쿠폰 발급 후 순위 변경에 대한 자동 보정
-- 공휴일 API 관리 UI와 학교 workspace의 추가 확장
+- 공식 공휴일 자동 동기화와 학교 workspace의 추가 확장
