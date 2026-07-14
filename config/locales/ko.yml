@@ -82,21 +82,9 @@ ko:
       open: "열기"
       manage: "관리"
       empty: "아직 교실이 없습니다."
-      teachers_title: "선생님"
-      new_teacher: "새 선생님 추가"
       assigned_count: "담당 %{count}개"
       additional_classrooms: "외 %{count}개"
-      unassigned: "미배정"
-      teachers_empty: "등록된 선생님이 없습니다."
-      schools_title: "학교"
       add_school: "학교 추가"
-      school_classroom_count: "소속 교실 %{count}개"
-      schools_empty: "등록된 학교가 없습니다."
-      school_operations_title: "학교 운영 정보"
-      school_operations_link: "%{school} 운영 정보"
-      back_to_school_operations: "학교 운영 정보로 돌아가기"
-      upcoming_closure: "예정 휴일: %{name} (%{date})"
-      closures_empty: "예정된 휴일이 없습니다."
     new:
       title: "새 학급"
     edit:
@@ -270,8 +258,8 @@ ko:
   admin:
     public_holidays:
       card:
-        title: "공식 공휴일 동기화"
-        description: "전국 공통 공식 공휴일 데이터를 동기화합니다."
+        title: "공휴일 동기화"
+        description: "공휴일 데이터를 동기화합니다."
       sync:
         button: "%{year}년 동기화"
         syncing: "동기화 중..."
@@ -296,7 +284,7 @@ ko:
         creating: "등록 중..."
         updating: "저장 중..."
       actions:
-        back_to_classrooms: "교실로 돌아가기"
+        back_to_schools: "학교 관리로 돌아가기"
       errors:
         name_blank: "학교 이름을 입력해 주세요."
       create:
@@ -304,12 +292,26 @@ ko:
       update:
         success: "학교 이름을 수정했습니다."
     teachers:
-      new_title: "새 교사 추가"
-      edit_title: "교사 소속 및 담당 교실"
-      info_title: "교사 정보"
+      new_title: "새 선생님 추가"
+      edit_title: "선생님 소속 및 담당 교실"
+      info_title: "선생님 정보"
       school_membership_title: "학교 소속"
       classroom_assignment_title: "담당 교실 선택"
       classrooms_empty: "아직 생성된 교실이 없습니다. 먼저 교실을 만든 뒤, 담당 교실을 지정할 수 있습니다."
+      back_to_index: "선생님 관리로 돌아가기"
+      index:
+        title: "선생님 관리"
+        list_title: "선생님 목록"
+        add_teacher: "선생님 추가"
+        empty: "등록된 선생님이 없습니다."
+        school: "소속 학교"
+        school_role: "학교 역할"
+        classrooms: "담당 교실"
+        manager: "학교 관리자"
+        member: "일반 구성원"
+        unassigned_school: "학교 미지정"
+        unassigned_role: "해당 없음"
+        unassigned_classroom: "담당 교실 없음"
       form:
         password_label: "초기 비밀번호"
         gender_label: "성별"
@@ -325,19 +327,17 @@ ko:
         classroom_count_value: "%{count}개"
         classrooms: "담당 교실:"
         unassigned: "미배정"
-      actions:
-        back_to_classrooms: "교실로 돌아가기"
       errors:
         school_not_found: "선택한 학교를 찾을 수 없습니다."
         classroom_not_found: "선택한 교실을 찾을 수 없습니다."
         classroom_school_mismatch: "선택한 학교에 속한 학급만 담당 학급으로 지정할 수 있습니다."
         classroom_school_required: "학교를 선택한 뒤 담당 학급을 지정해 주세요."
-        default_coupons_failed: "교사 계정의 기본 쿠폰을 준비하지 못했습니다."
+        default_coupons_failed: "선생님 계정의 기본 쿠폰을 준비하지 못했습니다."
       create:
-        success: "새 교사 계정이 생성되었습니다."
-        failure: "교사 계정 생성에 실패했습니다."
+        success: "새 선생님 계정이 생성되었습니다."
+        failure: "선생님 계정 생성에 실패했습니다."
       update:
-        success: "교사 소속과 담당 교실을 저장했습니다."
+        success: "선생님 소속과 담당 교실을 저장했습니다."
 
   school_memberships:
     errors:

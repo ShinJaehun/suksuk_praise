@@ -6,7 +6,7 @@
       <h1 class="mb-4 text-2xl font-extrabold tracking-tight text-slate-900"><%= t("admin.teachers.new_title") %></h1>
       <%= render "form", teacher: @teacher %>
       <div class="mt-4">
-        <%= link_to t("admin.teachers.actions.back_to_classrooms"), classrooms_path, class: "text-blue-600 hover:underline" %>
+        <%= link_to t("admin.teachers.back_to_index"), admin_teachers_path, class: "text-blue-600 hover:underline" %>
       </div>
     </div>
   </section>

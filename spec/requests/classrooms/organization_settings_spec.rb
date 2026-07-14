@@ -30,7 +30,12 @@ RSpec.describe 'Classroom organization settings', type: :request do
 
     get classrooms_path
 
-    expect(response.body).to include('학교 전체 학급', '우리 학교 학급', new_classroom_path, school_path(school))
+    expect(response.body).to include(
+      '학교 전체 학급',
+      '우리 학교 학급',
+      new_classroom_path
+    )
+    expect(response.body).not_to include(school_path(school))
     expect(response.body).not_to include('다른 학교 학급')
   end
 
@@ -304,6 +309,24 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).to include('미지정')
     expect(response.body).not_to include('미지정 · 미지정')
     expect(response.body).not_to include('translation missing')
+  end
+
+  it 'keeps classroom identification while removing school and teacher management sections' do
+    classroom = create(:classroom, name: '지정 교실', school: school, grade: 2)
+    homeroom = create(:school_membership, school: school, user: create(:user, :teacher, name: '담당 선생님')).user
+    create(:classroom_membership, classroom: classroom, user: homeroom, role: :teacher)
+    sign_in admin
+
+    get classrooms_path
+
+    expect(response.body).to include('지정 교실', school.name, '2학년', '담당 선생님')
+    expect(response.body).to include(classroom_path(classroom), edit_classroom_path(classroom))
+    expect(response.body).not_to include(new_admin_teacher_path)
+    expect(response.body).not_to include(edit_admin_teacher_path(homeroom))
+    expect(response.body).not_to include(new_admin_school_path)
+    expect(response.body).not_to include(edit_admin_school_path(school))
+    expect(response.body).not_to include('선생님 목록')
+    expect(response.body).not_to include('학교 운영 정보')
   end
 
   it 'rejects a grade outside the elementary school range' do

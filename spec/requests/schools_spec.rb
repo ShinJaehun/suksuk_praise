@@ -188,26 +188,27 @@ RSpec.describe 'School workspaces', type: :request do
     end
   end
 
-  it 'exposes appropriate workspace links from the classrooms hub' do
+  it 'does not expose school workspace links from the classrooms index' do
     sign_in admin
     get classrooms_path
-    expect(response.body).to include(school_path(school))
+    expect(response.body).not_to include(school_path(school))
 
     sign_in member
     get classrooms_path
-    expect(response.body).to include(school_path(school))
+    expect(response.body).not_to include(school_path(school))
     expect(response.body).not_to include(school_path(other_school))
     expect(response.body).not_to include('translation missing')
   end
 
-  it 'shows a member their school and upcoming closure summary in the classrooms hub' do
+  it 'does not show a member school closure summary in the classrooms index' do
     closure = create(:school_closure, school: school, name: '재량휴업일', starts_on: 1.day.from_now.to_date,
                                       ends_on: 1.day.from_now.to_date)
     sign_in member
 
     get classrooms_path
 
-    expect(response.body).to include(school_path(school), school.name, closure.name)
+    expect(response.body).not_to include(school_path(school))
+    expect(response.body).not_to include(closure.name)
   end
 
   def calendar_day(document, date)

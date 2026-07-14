@@ -84,7 +84,7 @@
 
 | 리소스/액션 | 정책 기준 | admin | teacher | student | 비고 |
 |---|---|---|---|---|---|
-| `Admin::SchoolsController#new`, `#create` | `SchoolPolicy#create?` | 가능 | 불가 | 불가 | `/classrooms` 관리 허브에서 진입 |
+| `Admin::SchoolsController#new`, `#create` | `SchoolPolicy#create?` | 가능 | 불가 | 불가 | `/schools` 학교 관리 화면에서 진입 |
 | `Admin::SchoolsController#edit`, `#update` | `SchoolPolicy#update?` | 가능 | 불가 | 불가 | 학교 이름만 수정 가능 |
 | `SchoolsController#show` | `SchoolPolicy#show?` + `SchoolPolicy::Scope` | 가능 | 자기 학교 | 불가 | member와 manager 모두 자기 학교 읽기 가능 |
 | `SchoolsController#index` | `SchoolPolicy#index?` + `SchoolPolicy::Scope` | 전체 학교 | 자기 학교 | 불가 | 단일 소속 teacher는 show로 이동 |

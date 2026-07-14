@@ -49,7 +49,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
 
     created_teacher = User.teacher.find_by!(email: valid_teacher_params[:email])
     expect(response).to have_http_status(:see_other)
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(created_teacher.school).to eq(school)
     expect(CouponTemplate.personal_for(created_teacher).find_by(title: library_template.title)).to be_present
   end
@@ -63,7 +63,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
     }
 
     created_teacher = User.teacher.find_by!(email: valid_teacher_params[:email])
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(created_teacher.school_membership).to be_nil
   end
 
@@ -99,7 +99,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include('turbo-stream action="replace" target="modal"')
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
-    expect(response.body).to include('교사 계정의 기본 쿠폰을 준비하지 못했습니다.')
+    expect(response.body).to include('선생님 계정의 기본 쿠폰을 준비하지 못했습니다.')
     expect(response.body).not_to include('<!DOCTYPE html>')
     expect(User.find_by(email: valid_teacher_params[:email])).to be_nil
     expect(CouponTemplate.where(bucket: 'personal')).to be_empty
@@ -176,7 +176,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
 
     created_teacher = User.teacher.find_by!(email: valid_teacher_params[:email])
     expect(response).to have_http_status(:see_other)
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(created_teacher.school).to eq(school)
     expect(response.body).not_to include('turbo-stream action="refresh"')
   end
@@ -224,7 +224,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
           headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
     expect(response).to have_http_status(:see_other)
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.school).to eq(other_school)
     expect(teacher.classroom_memberships.teacher.exists?(classroom: classroom)).to eq(true)
     expect(response.body).not_to include('turbo-stream action="refresh"')
@@ -237,7 +237,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
 
     patch admin_teacher_path(teacher), params: { classroom_ids: [classroom.id] }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.school).to eq(school)
     expect(teacher.classroom_memberships.teacher.exists?(classroom: classroom)).to eq(true)
   end
@@ -347,7 +347,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
       classroom_ids: [classroom.id]
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.attributes.slice(*original_attributes.keys)).to eq(original_attributes)
     expect(teacher.school).to eq(other_school)
     expect(teacher.classroom_memberships.teacher.exists?(classroom: classroom)).to eq(true)
@@ -369,7 +369,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
       }
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.attributes.slice(*original_attributes.keys)).to eq(original_attributes)
   end
 
@@ -414,7 +414,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
     create(:classroom_membership, user: teacher, classroom: classroom, role: 'teacher')
     sign_in admin
 
-    get classrooms_path
+    get admin_teachers_path
 
     expect(response.body).to include('학교 미지정')
     expect(response.body).not_to include('학교 소속 확인 필요')
@@ -432,9 +432,10 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
     end
     sign_in admin
 
-    get classrooms_path
+    get admin_teachers_path
 
-    expect(response.body).to include("#{school.name} · 3, 4학년")
+    expect(response.body).to include(school.name)
+    expect(response.body).to include('3, 4학년')
     expect(response.body).not_to include('학교 소속 확인 필요')
   end
 
@@ -442,9 +443,14 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
     teacher
     sign_in admin
 
-    get classrooms_path
+    get admin_teachers_path
 
-    expect(response.body).to include('학교 미지정 · 학년 미지정')
+    expect(response.body).to include(
+      '학교 미지정',
+      '해당 없음',
+      '담당 교실 없음',
+      '학년 미지정'
+    )
   end
 
   it 'keeps the standalone validation fallback in the application layout' do
@@ -457,7 +463,7 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include('<!DOCTYPE html>')
-    expect(response.body).to include('교실로 돌아가기')
+    expect(response.body).to include('선생님 관리로 돌아가기')
   end
 
   def valid_teacher_params

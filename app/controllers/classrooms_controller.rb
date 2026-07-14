@@ -24,18 +24,6 @@ class ClassroomsController < ApplicationController
     @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", user_role: "teacher", limit_per_classroom: 1)
     @classroom_student_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "student").group(:classroom_id).count
     @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 5)
-    if current_user.admin?
-      @teacher_assignment_rows = teacher_assignment_rows
-      @schools = policy_scope(School).order(:name, :id).load
-      @school_classroom_counts = Classroom.where(school_id: @schools.map(&:id)).group(:school_id).count
-    elsif current_user.teacher?
-      @workspace_schools = policy_scope(School).includes(:school_closures).order(:name, :id).load
-      @upcoming_school_closures = @workspace_schools.index_with do |school|
-        school.school_closures
-          .select { |closure| closure.ends_on >= Time.zone.today }
-          .min_by { |closure| [closure.starts_on, closure.ends_on, closure.id] }
-      end
-    end
     @manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
@@ -622,29 +610,6 @@ class ClassroomsController < ApplicationController
       .order(:classroom_id, :created_at, :id)
       .group_by(&:classroom_id)
       .transform_values { |memberships| memberships.map(&:user) }
-  end
-
-  def teacher_assignment_rows
-    User.teacher
-      .with_attached_avatar
-      .includes(school_membership: :school, classroom_memberships: :classroom)
-      .order(:created_at)
-      .map do |teacher|
-        classrooms = teacher.classroom_memberships
-          .select(&:teacher?)
-          .map(&:classroom)
-          .compact
-        classroom_names = classrooms.map(&:name)
-        grades = classrooms.filter_map(&:grade).uniq.sort
-
-        {
-          teacher: teacher,
-          school_name: teacher.school_membership&.school&.name || t("classrooms.index.school_unspecified"),
-          grade_label: grades.any? ? t("classrooms.index.grades", grades: grades.join(", ")) : t("classrooms.index.grade_unspecified"),
-          classroom_names: classroom_names,
-          classroom_count: classroom_names.size
-        }
-      end
   end
 
   def classrooms_index_title_key

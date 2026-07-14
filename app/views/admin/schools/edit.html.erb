@@ -6,7 +6,7 @@
       <div class="space-y-4">
         <%= render "content", school: @school, title: t("admin.schools.edit_title"), submit_label: t("admin.schools.form.update_submit") %>
       </div>
-      <%= link_to t("admin.schools.actions.back_to_classrooms"), classrooms_path, class: "mt-4 inline-block text-sm text-blue-600 hover:underline" %>
+      <%= link_to t("admin.schools.actions.back_to_schools"), schools_path, class: "mt-4 inline-block text-sm text-blue-600 hover:underline" %>
     </div>
   </section>
 <% end %>

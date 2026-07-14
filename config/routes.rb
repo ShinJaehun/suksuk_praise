@@ -126,8 +126,7 @@ Rails.application.routes.draw do
   namespace :admin do
     root to: redirect("/classrooms")
 
-    get "teachers", to: redirect("/classrooms"), as: nil
-    resources :teachers, only: [:new, :create, :edit, :update]
+    resources :teachers, only: [:index, :new, :create, :edit, :update]
     resources :public_holidays, only: [] do
       post :sync, on: :collection
     end

@@ -12,26 +12,27 @@ RSpec.describe 'Admin schools', type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('새 학교 등록')
-    expect(response.body).to include('교실로 돌아가기')
+    expect(response.body).to include('학교 관리로 돌아가기')
     expect(response.body).to include('name="school[name]"')
   end
 
-  it 'shows schools and classroom counts in the admin classrooms hub' do
+  it 'shows schools and classroom counts in the admin schools index' do
     create_list(:classroom, 2, school: school)
     sign_in admin
 
-    get classrooms_path
+    get schools_path
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('학교 추가')
     expect(response.body).to include(school.name)
-    expect(response.body).to include('소속 교실 2개')
+    expect(response.body).to include('학급 2개')
+    expect(response.body).to include('소속 교사 0명')
     expect(response.body).to include(new_admin_school_path)
     expect(response.body).to include(edit_admin_school_path(school))
     expect(response.body).to include('data-turbo-frame="modal"')
   end
 
-  it 'does not show school management in a teacher classrooms hub' do
+  it 'does not show school management in a teacher classrooms index' do
     sign_in teacher
 
     get classrooms_path
@@ -76,7 +77,7 @@ RSpec.describe 'Admin schools', type: :request do
       post admin_schools_path, params: { school: { name: '푸른초등학교' } }
     end.to change(School, :count).by(1)
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(schools_path)
     expect(School.find_by!(name: '푸른초등학교')).to be_present
   end
 
@@ -90,7 +91,7 @@ RSpec.describe 'Admin schools', type: :request do
     end.to change(School, :count).by(1)
 
     expect(response).to have_http_status(:see_other)
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(schools_path)
     expect(response.body).not_to include('turbo-stream action="refresh"')
     expect(School.find_by!(name: '모달초등학교')).to be_present
   end
@@ -122,7 +123,7 @@ RSpec.describe 'Admin schools', type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include('<!DOCTYPE html>')
     expect(response.body).to include('학교 이름을 입력해 주세요.')
-    expect(response.body).to include('교실로 돌아가기')
+    expect(response.body).to include('학교 관리로 돌아가기')
   end
 
   it 'redirects the top frame after a successful modal update' do
@@ -133,7 +134,7 @@ RSpec.describe 'Admin schools', type: :request do
           headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
     expect(response).to have_http_status(:see_other)
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(schools_path)
     expect(response.body).not_to include('turbo-stream action="refresh"')
     expect(school.reload.name).to eq('튼튼초등학교')
   end
@@ -162,7 +163,7 @@ RSpec.describe 'Admin schools', type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include('<!DOCTYPE html>')
     expect(response.body).to include('학교 이름을 입력해 주세요.')
-    expect(response.body).to include('교실로 돌아가기')
+    expect(response.body).to include('학교 관리로 돌아가기')
     expect(school.reload.name).to eq('새싹초등학교')
   end
 

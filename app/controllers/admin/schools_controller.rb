@@ -12,7 +12,7 @@ class Admin::SchoolsController < Admin::BaseController
     authorize @school
 
     if @school.save
-      redirect_to classrooms_path,
+      redirect_to schools_path,
         notice: t("admin.schools.create.success"),
         status: :see_other
     else
@@ -28,7 +28,7 @@ class Admin::SchoolsController < Admin::BaseController
     authorize @school
 
     if @school.update(school_params)
-      redirect_to classrooms_path,
+      redirect_to schools_path,
         notice: t("admin.schools.update.success"),
         status: :see_other
     else

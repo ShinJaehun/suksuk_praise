@@ -2,6 +2,10 @@ class Admin::TeachersController < Admin::BaseController
   before_action :set_teacher, only: %i[edit update]
   layout -> { turbo_frame_request? ? false : "application" }
 
+  def index
+    @teacher_rows = teacher_rows
+  end
+
   def new
     @teacher = User.new
     @teacher.avatar_key = teacher_avatar_keys.sample
@@ -19,7 +23,7 @@ class Admin::TeachersController < Admin::BaseController
     authorize @teacher
 
     if create_teacher_with_school_membership
-      redirect_to classrooms_path,
+      redirect_to admin_teachers_path,
         notice: t("admin.teachers.create.success"),
         status: :see_other
     else
@@ -39,7 +43,7 @@ class Admin::TeachersController < Admin::BaseController
     authorize @teacher
 
     if update_teacher_assignments
-      redirect_to classrooms_path,
+      redirect_to admin_teachers_path,
         notice: t("admin.teachers.update.success"),
         status: :see_other
     else
@@ -49,6 +53,38 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   private
+
+  def teacher_rows
+    policy_scope(User)
+      .teacher
+      .with_attached_avatar
+      .includes(school_membership: :school, classroom_memberships: :classroom)
+      .order(:created_at)
+      .map do |teacher|
+        classrooms = teacher.classroom_memberships
+          .select(&:teacher?)
+          .map(&:classroom)
+          .compact
+        classroom_names = classrooms.map(&:name)
+        grades = classrooms.filter_map(&:grade).uniq.sort
+
+        {
+          teacher: teacher,
+          school_name: teacher.school_membership&.school&.name || t("admin.teachers.index.unassigned_school"),
+          school_role_label: teacher_school_role_label(teacher),
+          grade_label: grades.any? ? t("classrooms.index.grades", grades: grades.join(", ")) : t("classrooms.index.grade_unspecified"),
+          classroom_names: classroom_names,
+          classroom_count: classroom_names.size
+        }
+      end
+  end
+
+  def teacher_school_role_label(teacher)
+    membership = teacher.school_membership
+    return t("admin.teachers.index.unassigned_role") unless membership
+
+    t(membership.manager? ? "admin.teachers.index.manager" : "admin.teachers.index.member")
+  end
 
   def set_teacher
     @teacher = User.find(params[:id])

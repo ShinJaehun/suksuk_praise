@@ -4,23 +4,38 @@ RSpec.describe "Admin teachers", type: :request do
   let(:admin) { create(:user, :admin) }
   let(:teacher) { create(:user, :teacher, name: "담당 교사") }
 
-  it "redirects the retired teacher index to classrooms" do
+  it "shows the teacher management index to an admin" do
+    school = create(:school, name: "새싹초등학교")
+    classroom = create(:classroom, school: school, grade: 4, name: "4학년 1반")
+    manager = create(:school_membership, :manager, school: school, user: teacher).user
+    member_teacher = create(:school_membership, school: school, user: create(:user, :teacher, name: "일반 선생님")).user
+    unassigned_teacher = create(:user, :teacher, name: "미배정 선생님")
+    create(:classroom_membership, classroom: classroom, user: manager, role: :teacher)
     sign_in admin
 
-    get "/admin/teachers"
-
-    expect(response).to redirect_to("/classrooms")
-  end
-
-  it "opens the new teacher form from classrooms in the modal frame" do
-    sign_in admin
-
-    get classrooms_path
+    get admin_teachers_path
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include("선생님 관리")
+    expect(response.body).to include("선생님 추가")
+    expect(response.body).to include("담당 교사", "새싹초등학교", "학교 관리자", "4학년 1반", "4학년")
+    expect(response.body).to include("일반 선생님", "일반 구성원")
+    expect(response.body).to include("미배정 선생님", "학교 미지정", "해당 없음", "담당 교실 없음")
+    expect(response.body).to include(new_admin_teacher_path)
+    expect(response.body).to include(edit_admin_teacher_path(manager))
+    expect(response.body).to include(edit_admin_teacher_path(member_teacher))
+    expect(response.body).to include('data-turbo-frame="modal"')
+  end
+
+  it "shows an empty state on the teacher management index" do
+    sign_in admin
+
+    get admin_teachers_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("등록된 선생님이 없습니다.")
     expect(response.body).to include(new_admin_teacher_path)
     expect(response.body).to include('data-turbo-frame="modal"')
-    expect(response.body).to include("새 선생님 추가")
   end
 
   it "keeps the new teacher page fallback" do
@@ -29,8 +44,8 @@ RSpec.describe "Admin teachers", type: :request do
     get new_admin_teacher_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("새 교사 추가")
-    expect(response.body).to include("교실로 돌아가기")
+    expect(response.body).to include("새 선생님 추가")
+    expect(response.body).to include("선생님 관리로 돌아가기")
     expect(response.body).to match(%r{src="[^"]*avatars/teacher[MF]\d{2}[^"]*\.png"})
     expect(response.body).to include('name="user[gender]"')
     expect(response.body).to include('name="user[avatar_key]"')
@@ -44,7 +59,7 @@ RSpec.describe "Admin teachers", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
-    expect(response.body).to include("새 교사 추가")
+    expect(response.body).to include("새 선생님 추가")
     expect(response.body).to include('data-turbo-frame="_top"')
     expect(response.body).to include('data-turbo-submits-with="저장 중..."')
     expect(response.body).not_to include("<!DOCTYPE html>")
@@ -138,11 +153,11 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).to match(%r{src="[^"]*avatars/#{avatar_key}[^"]*\.png"})
   end
 
-  it "opens teacher assignment links from classrooms in the modal frame" do
+  it "opens teacher assignment links from the teacher management index in the modal frame" do
     teacher
     sign_in admin
 
-    get classrooms_path
+    get admin_teachers_path
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(edit_admin_teacher_path(teacher))
@@ -155,8 +170,8 @@ RSpec.describe "Admin teachers", type: :request do
     get edit_admin_teacher_path(teacher)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("교사 소속 및 담당 교실")
-    expect(response.body).to include("교실로 돌아가기")
+    expect(response.body).to include("선생님 소속 및 담당 교실")
+    expect(response.body).to include("선생님 관리로 돌아가기")
     expect(response.body).to include('data-turbo-frame="_top"')
   end
 
@@ -167,12 +182,82 @@ RSpec.describe "Admin teachers", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
-    expect(response.body).to include("교사 소속 및 담당 교실")
+    expect(response.body).to include("선생님 소속 및 담당 교실")
     expect(response.body).to include('data-turbo-frame="_top"')
     expect(response.body).to include('data-turbo-submits-with="저장 중..."')
     expect(response.body).not_to include("<!DOCTYPE html>")
-    expect(response.body).to include("교실로 돌아가기")
+    expect(response.body).to include("선생님 관리로 돌아가기")
     expect(response.body).not_to include("translation missing")
+  end
+
+  it "blocks non-admin users from the teacher management index" do
+    manager = create(:school_membership, :manager).user
+    regular_teacher = create(:user, :teacher)
+    student = create(:user, :student)
+
+    [manager, regular_teacher, student].each do |user|
+      sign_in user
+      get admin_teachers_path
+      expect(response).to redirect_to(root_path)
+    end
+  end
+
+  it "blocks non-admin users from teacher management actions" do
+    manager = create(:school_membership, :manager).user
+    regular_teacher = create(:user, :teacher)
+    student = create(:user, :student)
+
+    [manager, regular_teacher, student].each do |user|
+      sign_in user
+
+      get new_admin_teacher_path
+      expect(response).to redirect_to(root_path)
+
+      expect do
+        post admin_teachers_path, params: {
+          user: {
+            name: "차단된 선생님",
+            email: "blocked-#{user.id}@example.com",
+            password: "password123"
+          }
+        }
+      end.not_to change { User.teacher.count }
+      expect(response).to redirect_to(root_path)
+
+      get edit_admin_teacher_path(teacher)
+      expect(response).to redirect_to(root_path)
+
+      patch admin_teacher_path(teacher), params: { school_id: "" }
+      expect(response).to redirect_to(root_path)
+    end
+  end
+
+  it "requires authentication for the teacher management index" do
+    get admin_teachers_path
+
+    expect(response).to redirect_to(new_user_session_path)
+  end
+
+  it "shows the teacher management navigation link only to admins" do
+    manager_membership = create(:school_membership, :manager)
+    regular_teacher = create(:user, :teacher)
+    student = create(:user, :student)
+
+    sign_in admin
+    get schools_path
+    expect(response.body).to include(admin_teachers_path)
+
+    sign_in manager_membership.user
+    get school_path(manager_membership.school)
+    expect(response.body).not_to include(admin_teachers_path)
+
+    sign_in regular_teacher
+    get classrooms_path
+    expect(response.body).not_to include(admin_teachers_path)
+
+    sign_in student
+    get user_path(student)
+    expect(response.body).not_to include(admin_teachers_path)
   end
 
   it "assigns classrooms from the selected school" do
@@ -185,7 +270,7 @@ RSpec.describe "Admin teachers", type: :request do
       classroom_ids: [classroom.id]
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.school_membership).to have_attributes(school: school)
     expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(classroom.id)
   end
@@ -200,7 +285,7 @@ RSpec.describe "Admin teachers", type: :request do
       classroom_ids: classrooms.map(&:id)
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.school_membership).to have_attributes(school: school)
     expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to match_array(classrooms.map(&:id))
   end
@@ -241,7 +326,7 @@ RSpec.describe "Admin teachers", type: :request do
       classroom_ids: [new_classroom.id]
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.school_membership).to have_attributes(school: new_school)
     expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(new_classroom.id)
   end
@@ -255,7 +340,7 @@ RSpec.describe "Admin teachers", type: :request do
       classroom_ids: [""]
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.school_membership).to have_attributes(school: school)
     expect(teacher.classroom_memberships.teacher).to be_empty
   end
@@ -272,7 +357,7 @@ RSpec.describe "Admin teachers", type: :request do
       classroom_ids: [""]
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(admin_teachers_path)
     expect(teacher.reload.school_membership).to be_nil
     expect(teacher.classroom_memberships.teacher).to be_empty
   end
