@@ -1,0 +1,63 @@
+<% teacher_avatar_keys = User.avatar_keys_for_role("teacher") %>
+<% avatar_image_sources = teacher_avatar_keys.index_with { |avatar_key| asset_path("avatars/#{avatar_key}.png") } %>
+
+<%= form_with model: teacher,
+      url: school_teachers_path(@school),
+      class: "space-y-4 max-w-md",
+      data: {
+        turbo_frame: "_top",
+        controller: "teacher-avatar-preview",
+        teacher_avatar_preview_male_keys_value: User::TEACHER_MALE_AVATAR_KEYS,
+        teacher_avatar_preview_female_keys_value: User::TEACHER_FEMALE_AVATAR_KEYS,
+        teacher_avatar_preview_all_keys_value: teacher_avatar_keys,
+        teacher_avatar_preview_image_sources_value: avatar_image_sources
+      } do |f| %>
+  <% if teacher.errors.any? %>
+    <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+      <%= teacher.errors.full_messages.to_sentence %>
+    </div>
+  <% end %>
+
+  <div class="flex justify-center">
+    <%= f.hidden_field :avatar_key, data: { teacher_avatar_preview_target: "avatarKey" } %>
+    <%= image_tag "avatars/#{teacher.avatar_key}.png",
+          class: "h-20 w-20 rounded-lg object-cover",
+          alt: "",
+          data: { teacher_avatar_preview_target: "image" } %>
+  </div>
+
+  <div>
+    <%= f.label :name, t("ui.user_labels.name"), class: "block text-sm font-medium text-gray-700" %>
+    <%= f.text_field :name, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :email, t("ui.user_labels.email"), class: "block text-sm font-medium text-gray-700" %>
+    <%= f.email_field :email, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :password, t("schools.teachers.form.password_label"), class: "block text-sm font-medium text-gray-700" %>
+    <%= f.password_field :password, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :password_confirmation, t("schools.teachers.form.password_confirmation_label"), class: "block text-sm font-medium text-gray-700" %>
+    <%= f.password_field :password_confirmation, class: "mt-1 block w-full border rounded px-3 py-2" %>
+  </div>
+
+  <div>
+    <%= f.label :gender, t("schools.teachers.form.gender_label"), class: "block text-sm font-medium text-gray-700" %>
+    <%= f.select :gender,
+          [[t("schools.teachers.form.gender_male"), "male"], [t("schools.teachers.form.gender_female"), "female"]],
+          { include_blank: t("schools.teachers.form.gender_prompt") },
+          class: "mt-1 block w-full border rounded px-3 py-2",
+          data: { action: "teacher-avatar-preview#update" } %>
+  </div>
+
+  <div>
+    <%= f.submit t("ui.save"),
+          data: { turbo_submits_with: t("schools.teachers.form.submitting") },
+          class: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" %>
+  </div>
+<% end %>

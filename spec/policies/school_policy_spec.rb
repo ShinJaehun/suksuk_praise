@@ -82,7 +82,26 @@ RSpec.describe SchoolPolicy do
         expect(policy.index?).to eq(false)
         expect(policy.show?).to eq(false)
         expect(policy.manage_operations?).to eq(false)
+        expect(policy.manage_teachers?).to eq(false)
       end
+    end
+
+    it "allows only admins and managers of the record school to manage school teachers" do
+      admin = create(:user, :admin)
+      manager = create(:user, :teacher)
+      member = create(:user, :teacher)
+      other_manager = create(:user, :teacher)
+      student = create(:user, :student)
+      create(:school_membership, :manager, school: school, user: manager)
+      create(:school_membership, school: school, user: member)
+      create(:school_membership, :manager, school: other_school, user: other_manager)
+
+      expect(described_class.new(admin, school).manage_teachers?).to eq(true)
+      expect(described_class.new(manager, school).manage_teachers?).to eq(true)
+      expect(described_class.new(member, school).manage_teachers?).to eq(false)
+      expect(described_class.new(other_manager, school).manage_teachers?).to eq(false)
+      expect(described_class.new(student, school).manage_teachers?).to eq(false)
+      expect(described_class.new(nil, school).manage_teachers?).to be_falsey
     end
 
     it "keeps school creation, updates, and deletion admin-only" do

@@ -57,6 +57,13 @@ ko:
       classrooms_index: "교실 목록"
       students: "학생 목록"
 
+  navigation:
+    dashboard: "한눈에 보기"
+    school_management: "학교 관리"
+    school_operations: "학교 운영"
+    classrooms: "교실"
+    teacher_management: "선생님 관리"
+
   classrooms:
     errors:
       teacher_not_found: "선택한 담당 교사를 찾을 수 없습니다."
@@ -405,6 +412,45 @@ ko:
       closure_single_date: "%{date}"
       closure_date_range: "%{starts_on} ~ %{ends_on}"
       back_to_classrooms: "교실 목록으로 돌아가기"
+    teachers:
+      new_title: "새 선생님 추가"
+      edit_title: "선생님 담당 교실"
+      info_title: "선생님 정보"
+      classroom_assignment_title: "담당 교실 선택"
+      classrooms_empty: "아직 생성된 교실이 없습니다. 먼저 교실을 만든 뒤, 담당 교실을 지정할 수 있습니다."
+      back_to_index: "선생님 관리로 돌아가기"
+      index:
+        title: "선생님 관리"
+        description: "소속 선생님과 담당 교실을 관리합니다."
+        list_title: "선생님 목록"
+        add_teacher: "선생님 추가"
+        empty: "등록된 선생님이 없습니다."
+        school_role: "학교 역할"
+        classrooms: "담당 교실"
+        manager: "학교 관리자"
+        member: "일반 구성원"
+        unassigned_classroom: "담당 교실 없음"
+      form:
+        password_label: "초기 비밀번호"
+        password_confirmation_label: "초기 비밀번호 확인"
+        gender_label: "성별"
+        gender_male: "남자"
+        gender_female: "여자"
+        gender_prompt: "선택해 주세요"
+        submitting: "저장 중..."
+      info:
+        classroom_count: "담당 교실 수:"
+        classroom_count_value: "%{count}개"
+        classrooms: "담당 교실:"
+        unassigned: "미배정"
+      errors:
+        classroom_not_found: "선택한 교실을 찾을 수 없습니다."
+        default_coupons_failed: "선생님 계정의 기본 쿠폰을 준비하지 못했습니다."
+      create:
+        success: "새 선생님 계정이 생성되었습니다."
+        failure: "선생님 계정 생성에 실패했습니다."
+      update:
+        success: "선생님 담당 교실을 저장했습니다."
 
   school_closures:
     new:

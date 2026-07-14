@@ -20,6 +20,10 @@ class SchoolPolicy < ApplicationPolicy
     admin? || school_manager?
   end
 
+  def manage_teachers?
+    admin? || school_manager?
+  end
+
   def create?
     admin?
   end

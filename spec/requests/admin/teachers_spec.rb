@@ -246,14 +246,23 @@ RSpec.describe "Admin teachers", type: :request do
     sign_in admin
     get schools_path
     expect(response.body).to include(admin_teachers_path)
+    expect(response.body).to include(schools_path, classrooms_path)
 
     sign_in manager_membership.user
-    get school_path(manager_membership.school)
+    assigned_classroom = create(:classroom, school: manager_membership.school)
+    create(:classroom_membership, classroom: assigned_classroom, user: manager_membership.user, role: :teacher)
+    get school_teachers_path(manager_membership.school)
     expect(response.body).not_to include(admin_teachers_path)
+    expect(response.body).to include(school_path(manager_membership.school))
+    expect(response.body).to include(classrooms_path)
+    expect(response.body).to include(school_teachers_path(manager_membership.school))
+    expect(response.body).not_to include(classroom_path(assigned_classroom))
 
     sign_in regular_teacher
     get classrooms_path
     expect(response.body).not_to include(admin_teachers_path)
+    expect(response.body).not_to include(school_teachers_path(manager_membership.school))
+    expect(response.body).not_to include(school_path(manager_membership.school))
 
     sign_in student
     get user_path(student)

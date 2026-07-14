@@ -40,10 +40,13 @@
 - 해당 학교의 학급 목록·상세 조회
 - 해당 학교 학급 생성·기본 정보 수정
 - 해당 학교 소속 member/manager 교사의 담당 교사 배정
+- 해당 학교 선생님 목록 조회
+- 새 선생님을 해당 학교의 일반 구성원으로 생성
+- 해당 학교 안에서 선생님의 담당 교실 배정·해제
 
-`SchoolPolicy`와 scope는 일반 teacher와 manager에게 자신의 학교만 노출한다. 일반 teacher는 학교를 열람할 수 있지만 운영 기능을 관리할 수 없고, manager는 자신의 학교 운영 기능만 관리할 수 있다. global admin은 모든 학교를 조회하고 관리한다. 학교 생성·이름 수정·삭제는 global admin 전용이다.
+`SchoolPolicy`와 scope는 일반 teacher와 manager에게 자신의 학교만 노출한다. 일반 teacher는 학교를 열람할 수 있지만 운영 기능과 선생님 관리를 할 수 없고, manager는 자신의 학교 운영 기능과 학교별 선생님 관리만 사용할 수 있다. global admin은 모든 학교를 조회하고 관리하며 `/admin/teachers`에서 전체 학교 선생님을 관리한다. 학교 생성·이름 수정·삭제는 global admin 전용이다.
 
-이 policy는 학교 운영 정보와 휴일 controller·route에 연결되어 있다. member는 자신의 학교 현황과 휴일을 읽고, 해당 학교 manager와 global admin은 SchoolClosure를 관리한다. global admin은 manager를 지정·해제할 수 있다. manager는 학급을 다른 학교로 이동할 수 없고, teacher 계정 생성·삭제나 학교 소속 자체 변경은 할 수 없다.
+이 policy는 학교 운영 정보, 휴일 controller·route, 학교별 선생님 관리 route에 연결되어 있다. member는 자신의 학교 현황과 휴일을 읽고, 해당 학교 manager와 global admin은 SchoolClosure를 관리한다. global admin은 manager를 지정·해제할 수 있다. manager는 학급을 다른 학교로 이동할 수 없고, teacher를 다른 학교로 이동하거나 학교 소속을 해제하거나 manager 지정·해제를 할 수 없다. 학교 manager의 teacher 생성은 URL의 학교로 고정되며 항상 일반 구성원으로 생성된다.
 
 ---
 
@@ -58,7 +61,7 @@
 
 학교 학급의 담당 teacher를 배정할 때 누락된 SchoolMembership을 member로 생성한다. 같은 학교의 기존 member·manager는 유지하고 다른 학교 membership은 validation 오류로 배정을 차단한다. 담당 해제 시에도 소속을 삭제하지 않는다. 기존 데이터는 `bin/rails school_memberships:backfill`로 멱등하게 보완하며 다른 학교 충돌은 변경하지 않고 `conflicts`로 집계한다.
 
-학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. global admin과 학교 manager 모두 학급 배정 과정에서 미소속 teacher나 다른 학교 소속 teacher의 소속을 생성·변경하지 않으며, 필요한 학교 소속 변경은 교사 수정 화면에서 먼저 수행한다.
+학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. global admin과 학교 manager 모두 학급 배정 과정에서 미소속 teacher나 다른 학교 소속 teacher의 소속을 생성·변경하지 않으며, 필요한 학교 소속 변경은 global admin의 전체 교사 수정 화면에서 먼저 수행한다. 학교별 선생님 관리 화면은 해당 학교 안의 ClassroomMembership만 추가·삭제하고 다른 학교 담당 교실은 변경하지 않는다.
 
 ---
 

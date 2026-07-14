@@ -1,0 +1,67 @@
+<h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("schools.teachers.edit_title") %></h1>
+
+<% if @teacher.errors.any? %>
+  <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+    <%= @teacher.errors.full_messages.to_sentence %>
+  </div>
+<% end %>
+
+<div class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
+  <h2 class="mb-2 text-base font-semibold"><%= t("schools.teachers.info_title") %></h2>
+  <div class="flex items-center gap-3">
+    <%= user_avatar_image(
+          @teacher,
+          size: 128,
+          class: "h-20 w-20 rounded-xl border border-slate-200 bg-slate-100 object-cover",
+          alt: "#{display_name(@teacher)} avatar"
+        ) %>
+    <div class="space-y-1">
+      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.name") %>:</span> <span class="ml-2"><%= display_name(@teacher) %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.email") %>:</span> <span class="ml-2"><%= @teacher.email %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("schools.teachers.info.classroom_count") %></span> <span class="ml-2"><%= t("schools.teachers.info.classroom_count_value", count: @teacher_classroom_count) %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("schools.teachers.info.classrooms") %></span> <span class="ml-2"><%= @teacher_classroom_names.any? ? @teacher_classroom_names.join(", ") : t("schools.teachers.info.unassigned") %></span></p>
+    </div>
+  </div>
+</div>
+
+<%= form_with model: @teacher,
+      url: school_teacher_path(@school, @teacher),
+      method: :patch,
+      class: "space-y-6",
+      data: { turbo_frame: "_top" } do |f| %>
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
+    <h2 class="mb-3 text-base font-semibold"><%= t("schools.teachers.classroom_assignment_title") %></h2>
+    <%= hidden_field_tag "classroom_ids[]", "" %>
+
+    <% if @classrooms.none? %>
+      <p class="mb-4 text-xs text-gray-500"><%= t("schools.teachers.classrooms_empty") %></p>
+    <% else %>
+      <div class="mb-4 space-y-2">
+        <% @classrooms.each do |classroom| %>
+          <label class="flex items-start gap-2 rounded-lg border border-slate-100 px-3 py-2">
+            <%= check_box_tag "classroom_ids[]",
+                  classroom.id,
+                  @teacher_classroom_ids.include?(classroom.id),
+                  class: "mt-1 rounded border-gray-300" %>
+            <span class="min-w-0">
+              <span class="block text-sm font-medium text-slate-800"><%= classroom.name %></span>
+              <span class="block text-xs text-slate-500">
+                <%= classroom.grade ? t("classrooms.index.grade", grade: classroom.grade) : t("classrooms.index.grade_unspecified") %>
+              </span>
+            </span>
+          </label>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <%= f.submit t("ui.save"),
+            data: { turbo_submits_with: t("schools.teachers.form.submitting") },
+            class: "inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+      <%= link_to t("schools.teachers.back_to_index"),
+            school_teachers_path(@school),
+            data: { turbo_frame: "_top" },
+            class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+    </div>
+  </section>
+<% end %>

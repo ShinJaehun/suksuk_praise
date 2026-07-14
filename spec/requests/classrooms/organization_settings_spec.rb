@@ -24,19 +24,27 @@ RSpec.describe 'Classroom organization settings', type: :request do
   it 'shows a manager their whole school classrooms without other schools' do
     manager = create(:user, :teacher)
     create(:school_membership, :manager, school: school, user: manager)
-    create(:classroom, school: school, name: '우리 학교 학급')
+    assigned_classroom = create(:classroom, school: school, name: '담당 학급')
+    unassigned_classroom = create(:classroom, school: school, name: '미담당 학급')
     create(:classroom, school: create(:school), name: '다른 학교 학급')
+    create(:classroom_membership, classroom: assigned_classroom, user: manager, role: :teacher)
     sign_in manager
 
     get classrooms_path
 
     expect(response.body).to include(
       '학교 전체 학급',
-      '우리 학교 학급',
+      '담당 학급',
+      '미담당 학급',
       new_classroom_path
     )
-    expect(response.body).not_to include(school_path(school))
+    expect(response.body).to include(classroom_path(assigned_classroom), classroom_path(unassigned_classroom))
+    expect(response.body).to include(school_path(school))
     expect(response.body).not_to include('다른 학교 학급')
+    expect(response.body).to include(school_teachers_path(school))
+    expect(response.body).not_to include('학교 운영 정보')
+    expect(response.body).not_to include('선생님 목록')
+    expect(response.body).to include(%(href="#{classrooms_path}"))
   end
 
   it 'keeps a regular teacher limited to assigned classrooms' do

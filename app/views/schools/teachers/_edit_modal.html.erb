@@ -1,0 +1,8 @@
+<%= turbo_frame_tag :modal do %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" data-controller="modal">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-lg">
+      <button type="button" data-action="modal#close" class="absolute right-2 top-2 text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+      <div class="space-y-6"><%= render "edit_content" %></div>
+    </div>
+  </div>
+<% end %>

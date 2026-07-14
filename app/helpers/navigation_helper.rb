@@ -21,4 +21,12 @@ module NavigationHelper
   rescue Pundit::NotDefinedError
     false
   end
+
+  def school_manager_membership_for_nav
+    return nil unless current_user&.teacher?
+    return @school_manager_membership_for_nav if defined?(@school_manager_membership_for_nav)
+
+    membership = current_user.school_membership
+    @school_manager_membership_for_nav = membership&.manager? ? membership : nil
+  end
 end
