@@ -7,7 +7,7 @@
 
       <div class="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
         <% if @can_refresh_compliment_king %>
-          <% @enabled_compliment_king_periods.each do |period| %>
+          <% @refreshable_compliment_king_periods.each do |period| %>
             <% frame_id = compliment_king_frame_id(@classroom, period) %>
             <%= button_to t("ui.buttons.refresh_king_for.#{period}"),
                   refresh_compliment_king_classroom_path(@classroom, period: period),

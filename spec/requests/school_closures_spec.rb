@@ -68,7 +68,7 @@ RSpec.describe "School closure management", type: :request do
   end
 
   it "returns 422 without changing data when validation fails" do
-    closure = create(:school_closure, school: school, name: "기존 휴무")
+    closure = create(:school_closure, school: school, name: "기존 휴일")
     sign_in manager
 
     expect do

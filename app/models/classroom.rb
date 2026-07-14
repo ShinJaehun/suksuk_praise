@@ -26,6 +26,24 @@ class Classroom < ApplicationRecord
       public_send("#{period}_compliment_king_enabled?")
     end
 
+    def compliment_king_refresh_available_for?(period, date: Time.zone.today)
+      period = period.to_s
+      date = date.to_date
+      return false unless COMPLIMENT_KING_PERIODS.include?(period)
+      return true if period == "daily"
+      return true if school.blank?
+
+      calendar = SchoolCalendar.new(school)
+      case period
+      when "weekly"
+        calendar.last_school_day_of_week(date) == date
+      when "monthly"
+        calendar.last_school_day_of_month(date) == date
+      else
+        false
+      end
+    end
+
     validates :name, length: { maximum: 50 }
     validates :school, presence: true, if: -> { school_id.present? }
     validates :grade, numericality: {

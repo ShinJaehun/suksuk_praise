@@ -18,6 +18,7 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
 
     it "renders the daily king card for daily period" do
       travel_to Time.zone.local(2026, 4, 7, 12, 0, 0) do
+        create(:school_closure, school: classroom.school, starts_on: Date.new(2026, 4, 7), ends_on: Date.new(2026, 4, 7))
         create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
 
         post refresh_compliment_king_classroom_path(classroom), params: { period: "daily" }, headers: turbo_headers
@@ -36,7 +37,7 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
 
     it "renders the weekly king card for weekly period when enabled" do
       classroom.update!(weekly_compliment_king_enabled: true)
-      travel_to Time.zone.local(2026, 4, 8, 12, 0, 0) do
+      travel_to Time.zone.local(2026, 4, 10, 12, 0, 0) do
         create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
 
         post refresh_compliment_king_classroom_path(classroom), params: { period: "weekly" }, headers: turbo_headers
@@ -49,7 +50,7 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
 
     it "renders the monthly king card for monthly period when enabled" do
       classroom.update!(monthly_compliment_king_enabled: true)
-      travel_to Time.zone.local(2026, 4, 20, 12, 0, 0) do
+      travel_to Time.zone.local(2026, 4, 30, 12, 0, 0) do
         create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
 
         post refresh_compliment_king_classroom_path(classroom), params: { period: "monthly" }, headers: turbo_headers
@@ -58,6 +59,44 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
         expect(response.body).to include("이번 달 칭찬왕")
         expect(response.body).to include(student.name)
       end
+    end
+
+    it "redirects a weekly refresh before the last school day without picking a king" do
+      classroom.update!(weekly_compliment_king_enabled: true)
+
+      travel_to Time.zone.local(2026, 4, 8, 12, 0, 0) do
+        expect(ComplimentKings::Pick).not_to receive(:call)
+
+        post refresh_compliment_king_classroom_path(classroom), params: { period: "weekly" }, headers: turbo_headers
+      end
+
+      expect(response).to redirect_to(classroom_path(classroom))
+    end
+
+    it "redirects a monthly refresh before the last school day without picking a king" do
+      classroom.update!(monthly_compliment_king_enabled: true)
+
+      travel_to Time.zone.local(2026, 4, 20, 12, 0, 0) do
+        expect(ComplimentKings::Pick).not_to receive(:call)
+
+        post refresh_compliment_king_classroom_path(classroom), params: { period: "monthly" }, headers: turbo_headers
+      end
+
+      expect(response).to redirect_to(classroom_path(classroom))
+    end
+
+    it "keeps weekly refresh available for a classroom without a school" do
+      classroom.update!(school: nil, weekly_compliment_king_enabled: true)
+
+      travel_to Time.zone.local(2026, 4, 8, 12, 0, 0) do
+        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+
+        post refresh_compliment_king_classroom_path(classroom), params: { period: "weekly" }, headers: turbo_headers
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("이번 주 칭찬왕")
+      expect(response.body).to include(student.name)
     end
 
     it "rejects refresh for a disabled period" do

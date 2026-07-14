@@ -59,6 +59,10 @@ RSpec.describe SchoolCalendar do
   end
 
   describe "#last_school_day_of_week" do
+    it "returns Friday when Friday is a school day" do
+      expect(calendar.last_school_day_of_week(Date.new(2026, 7, 15))).to eq(Date.new(2026, 7, 17))
+    end
+
     it "returns Thursday when Friday is a closure" do
       create(
         :school_closure,
@@ -101,6 +105,14 @@ RSpec.describe SchoolCalendar do
   end
 
   describe "#last_school_day_of_month" do
+    it "returns month-end when month-end is a school day" do
+      expect(calendar.last_school_day_of_month(Date.new(2026, 7, 10))).to eq(Date.new(2026, 7, 31))
+    end
+
+    it "returns the previous school day when month-end is a weekend" do
+      expect(calendar.last_school_day_of_month(Date.new(2026, 5, 10))).to eq(Date.new(2026, 5, 29))
+    end
+
     it "returns the previous school day when month-end is closed" do
       create(
         :school_closure,
@@ -110,6 +122,17 @@ RSpec.describe SchoolCalendar do
       )
 
       expect(calendar.last_school_day_of_month(Date.new(2026, 7, 10))).to eq(Date.new(2026, 7, 30))
+    end
+
+    it "returns the previous school day when a closure continues through month-end" do
+      create(
+        :school_closure,
+        school: school,
+        starts_on: Date.new(2026, 7, 27),
+        ends_on: Date.new(2026, 7, 31)
+      )
+
+      expect(calendar.last_school_day_of_month(Date.new(2026, 7, 10))).to eq(Date.new(2026, 7, 24))
     end
 
     it "returns nil when the entire month is closed" do

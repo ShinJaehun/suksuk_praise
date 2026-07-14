@@ -61,6 +61,7 @@ class ClassroomsController < ApplicationController
       .with_attached_avatar
       .order(:name, :id)
     @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
+    @refreshable_compliment_king_periods = refreshable_compliment_king_periods(@enabled_compliment_king_periods)
     @compliment_king_sections = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods)
     @compliment_king_period_cards = build_compliment_king_period_cards(enabled_periods: @enabled_compliment_king_periods)
     @student_ids_with_pending_coupon_use_requests = student_ids_with_pending_coupon_use_requests
@@ -159,6 +160,15 @@ class ClassroomsController < ApplicationController
     @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
     @selected_period = params[:period].presence || "daily"
     raise ActiveRecord::RecordNotFound unless @enabled_compliment_king_periods.include?(@selected_period)
+    unless @classroom.compliment_king_refresh_available_for?(@selected_period)
+      respond_to do |f|
+        f.html { redirect_to classroom_path(@classroom) }
+        f.turbo_stream { redirect_to classroom_path(@classroom) }
+        f.json { head :forbidden }
+      end
+      return
+    end
+
     @selected_section = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods).fetch(@selected_period)
     @issued_winner_ids = build_issued_compliment_king_winner_ids(period: @selected_period, section: @selected_section)
 
@@ -695,6 +705,12 @@ class ClassroomsController < ApplicationController
         period: period,
         frame_id: view_context.dom_id(@classroom, :"compliment_king_#{period}")
       }
+    end
+  end
+
+  def refreshable_compliment_king_periods(enabled_periods)
+    enabled_periods.select do |period|
+      @classroom.compliment_king_refresh_available_for?(period)
     end
   end
 

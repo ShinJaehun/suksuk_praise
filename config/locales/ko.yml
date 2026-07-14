@@ -95,8 +95,8 @@ ko:
       school_operations_title: "학교 운영 정보"
       school_operations_link: "%{school} 운영 정보"
       back_to_school_operations: "학교 운영 정보로 돌아가기"
-      upcoming_closure: "예정 휴무: %{name} (%{date})"
-      closures_empty: "예정된 휴무 기간이 없습니다."
+      upcoming_closure: "예정 휴일: %{name} (%{date})"
+      closures_empty: "예정된 휴일이 없습니다."
     new:
       title: "새 학급"
     edit:
@@ -344,25 +344,25 @@ ko:
       month_title: "%{year}년 %{month}월"
       previous_month: "이전 달"
       next_month: "다음 달"
-      help: "달력에서 휴무일을 확인하고 관리할 수 있습니다."
-      form_title: "휴무 기간 등록"
+      help: "달력에서 휴일을 확인하고 관리할 수 있습니다."
+      form_title: "휴일 등록"
       form_errors: "입력 내용을 확인해 주세요."
-      list_title: "등록된 휴무 기간"
+      list_title: "등록된 휴일"
       reset_selection: "선택 초기화"
       selection_default: "날짜를 선택하거나 아래 날짜 입력칸을 직접 수정하세요."
-      selection_start: "%{start} 선택됨. 같은 날짜 하루 휴무로 등록하거나 다른 날짜를 선택해 기간을 지정할 수 있습니다."
+      selection_start: "%{start} 선택됨. 같은 날짜 하루 휴일로 등록하거나 다른 날짜를 선택해 기간을 지정할 수 있습니다."
       selection_range: "%{start}부터 %{end}까지 선택됨."
       selection_reset: "종료일이 시작일보다 빨라 %{start}을 새 시작일로 선택했습니다."
-      school_closure: "학교 휴무"
+      school_closure: "학교 휴일"
       public_holiday: "공식 공휴일"
       today: "오늘"
-      school_closure_short: "휴무"
+      school_closure_short: "휴일"
       public_holiday_short: "공휴일"
       today_short: "오늘"
       public_holiday_names: "공식 공휴일: %{names}"
-      school_closure_names: "학교 휴무: %{names}"
-      single_day: "하루 휴무"
-      date_range: "기간 휴무"
+      school_closure_names: "학교 휴일: %{names}"
+      single_day: "하루 휴일"
+      date_range: "기간 휴일"
     index:
       title: "관리 학교"
       summary: "학급 %{classrooms}개 · 소속 교사 %{teachers}명"
@@ -388,17 +388,17 @@ ko:
       manager_remove: "관리자 해제"
       manager_prompt: "교사 선택"
       manager_remove_confirm: "이 교사의 학교 관리자 권한을 해제할까요?"
-      closures_title: "학교 휴무 기간"
-      closures_empty: "등록된 학교 휴무 기간이 없습니다."
+      closures_title: "학교 휴일"
+      closures_empty: "등록된 학교 휴일이 없습니다."
       closure_single_date: "%{date}"
       closure_date_range: "%{starts_on} ~ %{ends_on}"
       back_to_classrooms: "교실 목록으로 돌아가기"
 
   school_closures:
     new:
-      title: "%{school} 휴무 기간 등록"
+      title: "%{school} 휴일 등록"
     edit:
-      title: "%{school} 휴무 기간 수정"
+      title: "%{school} 휴일 수정"
     form:
       name_label: "이름"
       starts_on_label: "시작일"
@@ -407,15 +407,15 @@ ko:
       update_submit: "저장"
       submitting: "저장 중..."
     actions:
-      new: "새 휴무 기간"
+      new: "새 휴일"
       back: "학교 운영 정보로 돌아가기"
-      confirm_delete: "이 휴무 기간을 삭제할까요?"
+      confirm_delete: "이 휴일을 삭제할까요?"
     create:
-      success: "학교 휴무 기간을 등록했습니다."
+      success: "학교 휴일을 등록했습니다."
     update:
-      success: "학교 휴무 기간을 수정했습니다."
+      success: "학교 휴일을 수정했습니다."
     destroy:
-      success: "학교 휴무 기간을 삭제했습니다."
+      success: "학교 휴일을 삭제했습니다."
 
   empty:
     issued_coupons: "아직 발급된 쿠폰이 없습니다."

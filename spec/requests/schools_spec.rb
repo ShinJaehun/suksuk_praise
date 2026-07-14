@@ -85,7 +85,7 @@ RSpec.describe 'School workspaces', type: :request do
     expect(response.body).to include(school_path(school, month: '2026-09'))
     expect(response.body).to include('여름방학')
     expect(response.body).to include('공식 공휴일: 대체공휴일')
-    expect(response.body).to include('학교 휴무: 여름방학')
+    expect(response.body).to include('학교 휴일: 여름방학')
   end
 
   it 'falls back to the current month when the month query is missing or invalid' do
@@ -112,7 +112,7 @@ RSpec.describe 'School workspaces', type: :request do
     get school_path(school, month: '2026-07')
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('2026년 7월', '학교 휴무: 재량휴업일', '공식 공휴일: 공휴일')
+    expect(response.body).to include('2026년 7월', '학교 휴일: 재량휴업일', '공식 공휴일: 공휴일')
     expect(response.body).not_to include('data-action="school-closure-picker#selectDate"')
     expect(response.body).not_to include('data-controller="school-closure-picker"')
     expect(response.body).not_to include(school_school_closures_path(school))
