@@ -55,6 +55,7 @@
 - global admin은 학교 목록 화면의 공식 공휴일 동기화 카드에서 이전·현재·다음 연도를 기존 sync service로 수동 동기화할 수 있다. 별도의 공식 공휴일 목록 관리 화면은 제공하지 않으며, 공휴일 적용 결과는 학교 휴일 달력에서 확인한다. 학교 manager와 일반 teacher는 공식 공휴일을 동기화할 수 없다.
 - `SchoolCalendar`는 주말, 전국 공통 공휴일과 해당 학교의 휴일을 기준으로 운영일과 주·월의 마지막 운영일을 계산한다.
 - `/classrooms`는 사용자가 접근할 수 있는 교실을 확인하고 진입하는 교실 전용 목록이다.
+- global admin은 `/classrooms`와 `/admin/teachers`에서 학교 필터를 사용해 전체 목록 또는 특정 학교의 교실·선생님 목록을 조회할 수 있다.
 - `/schools`는 학교와 학교 운영 정보를 관리하는 화면이며 admin의 로그인 후 시작 위치다. manager는 자신의 학교 운영 정보로, 일반 teacher는 `/classrooms`로 이동한다. 학교 운영 정보에는 학급·교사·학교 관리자·휴일 현황을 표시한다.
 - `/admin/teachers`는 global admin 전용 전체 선생님 계정·소속·담당 교실 관리 화면이다.
 - `/schools/:school_id/teachers`는 global admin 또는 해당 학교 manager가 사용하는 학교 범위 선생님·담당 교실 관리 화면이다.

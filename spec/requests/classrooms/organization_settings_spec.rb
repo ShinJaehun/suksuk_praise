@@ -45,6 +45,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).not_to include('학교 운영 정보')
     expect(response.body).not_to include('선생님 목록')
     expect(response.body).to include(%(href="#{classrooms_path}"))
+    expect(response.body).not_to include('id="classroom-school-filter"')
   end
 
   it 'keeps a regular teacher limited to assigned classrooms' do
@@ -59,6 +60,64 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).to include(assigned.name)
     expect(response.body).not_to include(unassigned.name)
     expect(response.body).not_to include(new_classroom_path)
+    expect(response.body).not_to include('id="classroom-school-filter"')
+  end
+
+  it 'shows a school filter to an admin while keeping the full classroom list by default' do
+    other_school = create(:school, name: '나래초등학교')
+    classroom = create(:classroom, school: school, name: '새싹 학급')
+    other_classroom = create(:classroom, school: other_school, name: '나래 학급')
+    sign_in admin
+
+    get classrooms_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('id="classroom-school-filter"')
+    expect(response.body).to include('name="school_id"')
+    expect(response.body).to include('전체 학교')
+    expect(response.body).to include(school.name, other_school.name)
+    expect(response.body).to include(classroom.name, other_classroom.name)
+    expect(response.body).to include(classroom_path(classroom), classroom_path(other_classroom))
+    expect(response.body).not_to include(new_admin_school_path)
+    expect(response.body).not_to include(edit_admin_school_path(school))
+  end
+
+  it 'filters classrooms by selected school for an admin' do
+    other_school = create(:school, name: '나래초등학교')
+    classroom = create(:classroom, school: school, name: '새싹 학급')
+    other_classroom = create(:classroom, school: other_school, name: '나래 학급')
+    teacher = create(:school_membership, school: school, user: create(:user, :teacher, name: '새싹 선생님')).user
+    other_teacher = create(:school_membership, school: other_school, user: create(:user, :teacher, name: '나래 선생님')).user
+    student = create(:user, :student, name: '새싹 학생')
+    other_student = create(:user, :student, name: '나래 학생')
+    create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
+    create(:classroom_membership, classroom: other_classroom, user: other_teacher, role: :teacher)
+    create(:classroom_membership, classroom: classroom, user: student, role: :student)
+    create(:classroom_membership, classroom: other_classroom, user: other_student, role: :student)
+    sign_in admin
+
+    get classrooms_path, params: { school_id: school.id }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to match(%r{<option selected="selected" value="#{school.id}">#{school.name}</option>})
+    expect(response.body).to include(classroom.name, classroom_path(classroom), teacher.name, '학생 1명')
+    expect(response.body).not_to include(other_classroom.name)
+    expect(response.body).not_to include(classroom_path(other_classroom))
+    expect(response.body).not_to include(other_teacher.name)
+    expect(response.body).not_to include(other_student.name)
+  end
+
+  it 'treats an invalid admin classroom school filter as the full list' do
+    classroom = create(:classroom, school: school, name: '새싹 학급')
+    other_classroom = create(:classroom, school: create(:school), name: '다른 학급')
+    sign_in admin
+
+    get classrooms_path, params: { school_id: 'missing' }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(classroom.name, other_classroom.name)
+    expect(response.body).to include(classroom_path(classroom), classroom_path(other_classroom))
+    expect(response.body).not_to include('selected="selected" value="missing"')
   end
 
   it 'allows a manager to show an unassigned classroom in their school' do

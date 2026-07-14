@@ -14,7 +14,10 @@ class ClassroomsController < ApplicationController
 
   def index
     # index는 policy_scope만 요구(verify_policy_scoped 훅 통과)
-    @classrooms = policy_scope(Classroom).includes(:school).order(created_at: :desc)
+    prepare_school_filter if current_user.admin?
+    classrooms_scope = policy_scope(Classroom)
+    classrooms_scope = classrooms_scope.where(school_id: @selected_school.id) if current_user.admin? && @selected_school
+    @classrooms = classrooms_scope.includes(:school).order(created_at: :desc)
     @classrooms_index_title = t(classrooms_index_title_key)
     classroom_ids = @classrooms.map(&:id)
     teacher_memberships = ClassroomMembership
@@ -562,6 +565,18 @@ class ClassroomsController < ApplicationController
 
   def current_user_school_manager?
     current_user&.teacher? && current_user.school_membership&.manager?
+  end
+
+  def prepare_school_filter
+    @filter_schools = policy_scope(School).order(:name, :id).load
+    @selected_school = @filter_schools.detect { |school| school.id == school_filter_id }
+  end
+
+  def school_filter_id
+    value = params[:school_id].to_s
+    return nil unless value.match?(/\A[1-9]\d*\z/)
+
+    value.to_i
   end
 
   def assign_manager_school

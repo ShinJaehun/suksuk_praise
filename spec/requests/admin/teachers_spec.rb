@@ -6,6 +6,7 @@ RSpec.describe "Admin teachers", type: :request do
 
   it "shows the teacher management index to an admin" do
     school = create(:school, name: "새싹초등학교")
+    other_school = create(:school, name: "나래초등학교")
     classroom = create(:classroom, school: school, grade: 4, name: "4학년 1반")
     manager = create(:school_membership, :manager, school: school, user: teacher).user
     member_teacher = create(:school_membership, school: school, user: create(:user, :teacher, name: "일반 선생님")).user
@@ -18,6 +19,10 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("선생님 관리")
     expect(response.body).to include("선생님 추가")
+    expect(response.body).to include('id="teacher-school-filter"')
+    expect(response.body).to include('name="school_id"')
+    expect(response.body).to include("전체 학교")
+    expect(response.body).to include(school.name, other_school.name)
     expect(response.body).to include("담당 교사", "새싹초등학교", "학교 관리자", "4학년 1반", "4학년")
     expect(response.body).to include("일반 선생님", "일반 구성원")
     expect(response.body).to include("미배정 선생님", "학교 미지정", "해당 없음", "담당 교실 없음")
@@ -25,6 +30,38 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).to include(edit_admin_teacher_path(manager))
     expect(response.body).to include(edit_admin_teacher_path(member_teacher))
     expect(response.body).to include('data-turbo-frame="modal"')
+  end
+
+  it "filters the teacher management index by school" do
+    school = create(:school, name: "새싹초등학교")
+    other_school = create(:school, name: "나래초등학교")
+    school_teacher = create(:school_membership, school: school, user: create(:user, :teacher, name: "새싹 선생님")).user
+    other_school_teacher = create(:school_membership, school: other_school, user: create(:user, :teacher, name: "나래 선생님")).user
+    unassigned_teacher = create(:user, :teacher, name: "미배정 선생님")
+    sign_in admin
+
+    get admin_teachers_path, params: { school_id: school.id }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('id="teacher-school-filter"')
+    expect(response.body).to match(%r{<option selected="selected" value="#{school.id}">#{school.name}</option>})
+    expect(response.body).to include(school_teacher.name, school_teacher.email, edit_admin_teacher_path(school_teacher))
+    expect(response.body).not_to include(other_school_teacher.name)
+    expect(response.body).not_to include(edit_admin_teacher_path(other_school_teacher))
+    expect(response.body).not_to include(unassigned_teacher.name)
+  end
+
+  it "treats an invalid teacher school filter as the full teacher list" do
+    school_teacher = create(:school_membership, school: create(:school), user: create(:user, :teacher, name: "소속 선생님")).user
+    unassigned_teacher = create(:user, :teacher, name: "미배정 선생님")
+    sign_in admin
+
+    get admin_teachers_path, params: { school_id: "missing" }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(school_teacher.name, unassigned_teacher.name)
+    expect(response.body).to include("학교 미지정")
+    expect(response.body).not_to include('selected="selected" value="missing"')
   end
 
   it "shows an empty state on the teacher management index" do

@@ -64,6 +64,12 @@ ko:
     classrooms: "교실"
     teacher_management: "선생님 관리"
 
+  filters:
+    apply: "적용"
+    school:
+      label: "학교"
+      all: "전체 학교"
+
   classrooms:
     errors:
       teacher_not_found: "선택한 담당 교사를 찾을 수 없습니다."

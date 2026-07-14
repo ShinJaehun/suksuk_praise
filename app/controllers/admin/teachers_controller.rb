@@ -3,6 +3,7 @@ class Admin::TeachersController < Admin::BaseController
   layout -> { turbo_frame_request? ? false : "application" }
 
   def index
+    prepare_school_filter
     @teacher_rows = teacher_rows
   end
 
@@ -55,11 +56,17 @@ class Admin::TeachersController < Admin::BaseController
   private
 
   def teacher_rows
-    policy_scope(User)
+    scope = policy_scope(User)
       .teacher
       .with_attached_avatar
       .includes(school_membership: :school, classroom_memberships: :classroom)
-      .order(:created_at)
+
+    if @selected_school
+      scope = scope.joins(:school_membership)
+        .where(school_memberships: { school_id: @selected_school.id })
+    end
+
+    scope.order(:created_at)
       .map do |teacher|
         classrooms = teacher.classroom_memberships
           .select(&:teacher?)
@@ -77,6 +84,18 @@ class Admin::TeachersController < Admin::BaseController
           classroom_count: classroom_names.size
         }
       end
+  end
+
+  def prepare_school_filter
+    @filter_schools = policy_scope(School).order(:name, :id).load
+    @selected_school = @filter_schools.detect { |school| school.id == school_filter_id }
+  end
+
+  def school_filter_id
+    value = params[:school_id].to_s
+    return nil unless value.match?(/\A[1-9]\d*\z/)
+
+    value.to_i
   end
 
   def teacher_school_role_label(teacher)
