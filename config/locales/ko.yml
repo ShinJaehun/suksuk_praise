@@ -64,6 +64,42 @@ ko:
     classrooms: "교실"
     teacher_management: "선생님 관리"
 
+  dashboard:
+    title: "한눈에 보기"
+    heading: "%{classroom} · %{period}"
+    period_range: "%{start_date} ~ %{end_date}"
+    filters:
+      school: "학교"
+      classroom: "학급"
+      period: "기간"
+      choose_school: "학교를 선택해 주세요"
+      choose_classroom: "학급을 선택해 주세요"
+      select_school: "선택"
+      apply: "조회"
+      week: "이번 주"
+      month: "이번 달"
+    prompts:
+      choose_school_and_classroom: "분석할 학교와 학급을 선택해 주세요."
+      choose_classroom: "분석할 학급을 선택해 주세요."
+      no_classrooms: "분석할 수 있는 학급이 없습니다."
+      no_students: "분석할 학생이 없습니다."
+    summary:
+      compliments: "받은 칭찬"
+      issued: "쿠폰 발급"
+      used: "쿠폰 사용"
+      zero_compliments: "칭찬 0회 학생"
+    comparison:
+      title: "학생별 비교"
+      metric_navigation: "비교 지표 선택"
+      compliments: "받은 칭찬"
+      issued: "쿠폰 발급"
+      used: "쿠폰 사용"
+    counts:
+      compliments: "%{count}회"
+      issued: "%{count}장"
+      used: "%{count}장"
+      students: "%{count}명"
+
   filters:
     apply: "적용"
     school:
@@ -247,6 +283,7 @@ ko:
     formats:
       long: "%Y년 %m월 %d일"
       short: "%m/%d"
+      dashboard: "%-m월 %-d일"
 
   coupon_events:
     action:

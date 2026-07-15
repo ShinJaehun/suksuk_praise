@@ -1,66 +1,127 @@
 <section class="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+  <div>
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("dashboard.title") %></h1>
+  </div>
+
   <% if current_user.student? %>
-    <div>
-      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">한눈에 보기</h1>
-    </div>
     <%= render "dashboards/student_weekly_activity",
           previous_week_path: dashboard_path(week_offset: @week_offset - 1),
           next_week_path: dashboard_path(week_offset: @week_offset + 1) %>
-  <% elsif current_user.admin? %>
-    <div>
-      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">한눈에 보기</h1>
-    </div>
-
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">전체 교실 수</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900"><%= @total_classroom_count %></p>
-      </div>
-      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">전체 교사 수</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900"><%= @total_teacher_count %></p>
-      </div>
-      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">전체 학생 수</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900"><%= @total_student_count %></p>
-      </div>
-      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p class="text-sm font-medium text-slate-500">pending 쿠폰 요청 수</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900"><%= @pending_coupon_request_count %></p>
-      </div>
-    </div>
   <% else %>
-    <div>
-      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">한눈에 보기</h1>
-    </div>
+    <% if @show_school_filter %>
+      <div id="dashboard-school-filter" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <%= form_with url: dashboard_path, method: :get, local: true, class: "flex flex-col gap-3 sm:flex-row sm:items-end" do %>
+          <div class="min-w-0 flex-1">
+            <%= label_tag :school_id, t("dashboard.filters.school"), class: "block text-sm font-semibold text-slate-700" %>
+            <%= select_tag :school_id,
+                  options_from_collection_for_select(@filter_schools, :id, :name, @selected_school&.id),
+                  prompt: t("dashboard.filters.choose_school"),
+                  class: "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" %>
+          </div>
+          <%= submit_tag t("dashboard.filters.select_school"),
+                class: "rounded-lg bg-slate-800 px-4 py-2 font-semibold text-white hover:bg-slate-700" %>
+        <% end %>
+      </div>
+    <% end %>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <% @classrooms.each do |classroom| %>
-        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h2 class="text-lg font-bold text-slate-900"><%= classroom.name %></h2>
-              <p class="mt-1 text-sm text-slate-500">학생 <%= @student_counts_by_classroom_id.fetch(classroom.id, 0) %>명</p>
+    <% if !@show_school_filter || @selected_school %>
+      <div id="dashboard-analysis-filter" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <%= form_with url: dashboard_path, method: :get, local: true, class: "grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,12rem)_auto] sm:items-end" do %>
+          <%= hidden_field_tag :school_id, @selected_school.id if @show_school_filter %>
+          <%= hidden_field_tag :metric, @metric %>
+          <div>
+            <%= label_tag :classroom_id, t("dashboard.filters.classroom"), class: "block text-sm font-semibold text-slate-700" %>
+            <%= select_tag :classroom_id,
+                  options_from_collection_for_select(@available_classrooms, :id, :name, @selected_classroom&.id),
+                  prompt: t("dashboard.filters.choose_classroom"),
+                  class: "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" %>
+          </div>
+          <div>
+            <%= label_tag :period, t("dashboard.filters.period"), class: "block text-sm font-semibold text-slate-700" %>
+            <%= select_tag :period,
+                  options_for_select(@period_options, @period),
+                  class: "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900" %>
+          </div>
+          <%= submit_tag t("dashboard.filters.apply"),
+                class: "rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700" %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @selected_classroom %>
+      <div class="space-y-1">
+        <h2 class="text-xl font-bold text-slate-900">
+          <%= t("dashboard.heading", classroom: @selected_classroom.name, period: t("dashboard.filters.#{@period}")) %>
+        </h2>
+        <p class="text-sm text-slate-500">
+          <%= t("dashboard.period_range", start_date: l(@period_start, format: :dashboard), end_date: l(@period_end, format: :dashboard)) %>
+        </p>
+      </div>
+
+      <% if @student_rows.empty? %>
+        <p class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-600">
+          <%= t("dashboard.prompts.no_students") %>
+        </p>
+      <% else %>
+        <dl class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <% [
+            ["compliments", "dashboard.summary.compliments", "dashboard.counts.compliments", @summary[:compliments_count]],
+            ["issued", "dashboard.summary.issued", "dashboard.counts.issued", @summary[:issued_count]],
+            ["used", "dashboard.summary.used", "dashboard.counts.used", @summary[:used_count]],
+            ["zero-compliments", "dashboard.summary.zero_compliments", "dashboard.counts.students", @summary[:zero_compliment_students_count]]
+          ].each do |key, label_key, count_key, count| %>
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" data-summary="<%= key %>" data-count="<%= count %>">
+              <dt class="text-sm font-medium text-slate-500"><%= t(label_key) %></dt>
+              <dd class="mt-2 text-3xl font-extrabold text-slate-900"><%= t(count_key, count: count) %></dd>
             </div>
-            <%= link_to "교실 열기", classroom_path(classroom), class: "shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+          <% end %>
+        </dl>
+
+        <section class="space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-xl font-bold text-slate-900"><%= t("dashboard.comparison.title") %></h2>
+            <nav class="flex flex-wrap gap-2" aria-label="<%= t("dashboard.comparison.metric_navigation") %>">
+              <% @metric_links.each do |link| %>
+                <%= link_to link[:label], link[:path],
+                      aria: { current: ("page" if link[:active]) },
+                      class: class_names(
+                        "rounded-full px-3 py-1.5 text-sm font-semibold",
+                        "bg-blue-600 text-white" => link[:active],
+                        "bg-slate-100 text-slate-700 hover:bg-slate-200" => !link[:active]
+                      ) %>
+              <% end %>
+            </nav>
           </div>
 
-          <dl class="mt-4 grid grid-cols-3 gap-3 text-sm">
-            <div class="rounded-lg bg-slate-50 p-3">
-              <dt class="text-slate-500">오늘 칭찬</dt>
-              <dd class="mt-1 text-lg font-bold text-slate-900"><%= @today_compliment_counts_by_classroom_id.fetch(classroom.id, 0) %></dd>
-            </div>
-            <div class="rounded-lg bg-slate-50 p-3">
-              <dt class="text-slate-500">쿠폰 요청</dt>
-              <dd class="mt-1 text-lg font-bold text-slate-900"><%= @pending_coupon_request_counts_by_classroom_id.fetch(classroom.id, 0) %></dd>
-            </div>
-            <div class="rounded-lg bg-slate-50 p-3">
-              <dt class="text-slate-500">새 메시지</dt>
-              <dd class="mt-1 text-lg font-bold text-slate-900"><%= @unread_student_message_counts_by_classroom_id.fetch(classroom.id, 0) %></dd>
-            </div>
-          </dl>
-        </article>
+          <div class="space-y-3" data-chart-metric="<%= @metric %>">
+            <% @student_rows.each do |row| %>
+              <div class="grid grid-cols-[minmax(8rem,11rem)_minmax(0,1fr)] items-center gap-3" data-student-id="<%= row[:student].id %>">
+                <div class="flex min-w-0 items-center gap-2">
+                  <%= user_avatar_image(
+                        row[:student],
+                        size: 64,
+                        class: "h-9 w-9 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover",
+                        alt: "#{display_name(row[:student])} avatar"
+                      ) %>
+                  <span class="truncate text-sm font-semibold text-slate-800"><%= row[:student].name %></span>
+                </div>
+                <div class="flex min-w-0 items-center gap-2">
+                  <div class="h-5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <div class="h-full rounded-full bg-blue-500" style="width: <%= row[:bar_percent] %>%"></div>
+                  </div>
+                  <span class="w-12 shrink-0 text-right text-sm font-bold tabular-nums text-slate-800">
+                    <%= t(@selected_metric_count_key, count: row[:selected_metric_count]) %>
+                  </span>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </section>
       <% end %>
-    </div>
+    <% else %>
+      <p class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-600">
+        <%= t(@selection_prompt_key) %>
+      </p>
+    <% end %>
   <% end %>
 </section>

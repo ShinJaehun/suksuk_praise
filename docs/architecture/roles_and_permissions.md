@@ -44,6 +44,10 @@
 
 ## 권한 매트릭스
 
+### Dashboard
+
+`DashboardsController#show`는 guest를 인증 화면으로 보낸다. admin, 학교 manager와 일반 teacher의 학급 분석은 `policy_scope(Classroom)`을 사용하므로 admin은 전체 학급, manager는 자기 학교 전체 학급, 일반 teacher는 담당 teacher membership 학급만 선택할 수 있다. 선택한 숫자형 `classroom_id`도 이 scope 안에서만 조회하며 범위 밖이면 `404 Not Found`로 처리한다. student에게는 이 학급 분석 권한을 부여하지 않고 기존 PIN 세션 교실 기준 개인 주간 dashboard를 유지한다.
+
 ### Classroom / ClassroomStudent
 
 | 리소스/액션 | 정책 기준 | admin | teacher | student | 비고 |

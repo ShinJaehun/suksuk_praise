@@ -190,7 +190,11 @@
 
 ## dashboard
 
-- dashboard는 `GET /dashboard`의 `한눈에 보기` 화면이며 현재 사용자 role에 따라 내용을 나눈다.
+- `GET /dashboard`는 admin, 학교 manager, 일반 teacher가 공통으로 사용하는 한 학급 분석 화면이다.
+- 역할별 차이는 `ClassroomPolicy::Scope`에 따라 선택 가능한 학교·학급 범위뿐이다. global admin은 학교와 학급을 순서대로 선택하고, 학교 manager는 자기 학교 전체 학급을, 일반 teacher는 담당 학급만 선택한다.
+- 선택한 학급의 이번 주(월요일부터 오늘) 또는 이번 달(1일부터 오늘) 받은 칭찬, 쿠폰 발급, 쿠폰 사용 현황을 요약 카드와 학생별 썸네일·가로 막대그래프로 표시한다.
+- 분석 대상은 현재 active student membership이며 구성원 관리 순서인 membership 생성 시각과 id 순서를 유지한다. 칭찬은 `Compliment.given_at`, 쿠폰 발급·사용은 `CouponEvent.created_at`을 기준으로 집계한다.
+- 대화, unread 메시지와 메시지 알림은 dashboard 범위에 포함하지 않는다.
 - student dashboard는 PIN 로그인 세션의 active classroom membership을 기준으로 현재 교실의 활동을 표시한다.
 - student dashboard는 `week_offset` query parameter로 이전 주와 다음 주를 이동하며, 선택한 주의 월요일부터 금요일까지를 집계 범위로 사용한다.
 - student dashboard 상단에는 현재 교실에서 지금까지 받은 칭찬, 선택한 주에 받은 칭찬, 현재 보유 쿠폰, 선택한 주에 발급받은 쿠폰과 사용한 쿠폰 수를 5칸 summary panel로 표시한다.
@@ -201,8 +205,6 @@
 - 기존 학생 로그인용 `GET /dashboard`는 유지된다.
 - 특정 학생 한눈에 보기 `GET /classrooms/:classroom_id/students/:id/dashboard`는 기존 student dashboard와 같은 주간 집계와 화면을 재사용하되, `current_user`가 아니라 URL의 classroom과 student를 집계 대상으로 사용한다.
 - 특정 학생 한눈에 보기도 `week_offset`, 월요일부터 금요일까지의 집계, 5칸 summary panel, 자동 y축 눈금, 곡선형 SVG 그래프, 쿠폰 발급/사용 marker와 활동 없는 주 표시를 지원한다.
-- teacher dashboard는 담당 교실별 학생 수, 오늘 칭찬 수, pending 쿠폰 요청 수, 학생 발신 unread 메시지 수와 교실 이동 링크를 표시한다.
-- admin dashboard는 전체 교실 수, 교사 수, 학생 수, pending 쿠폰 요청 수를 표시한다.
 
 ## 테스트 상태
 
