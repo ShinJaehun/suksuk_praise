@@ -1,15 +1,21 @@
-require "rails_helper"
+require 'rails_helper'
 
 RSpec.describe ComplimentPolicy::Scope do
-  describe "#resolve" do
+  describe '#resolve' do
     let(:teacher) { create(:user, :teacher) }
     let(:student) { create(:user, :student) }
     let(:other_student) { create(:user, :student) }
     let(:teacher_classroom) { create(:classroom) }
     let(:other_classroom) { create(:classroom) }
-    let!(:teacher_membership) { create(:classroom_membership, user: teacher, classroom: teacher_classroom, role: "teacher") }
-    let!(:student_membership) { create(:classroom_membership, user: student, classroom: teacher_classroom, role: "student") }
-    let!(:other_student_membership) { create(:classroom_membership, user: other_student, classroom: other_classroom, role: "student") }
+    let!(:teacher_membership) do
+      create(:classroom_membership, user: teacher, classroom: teacher_classroom, role: 'teacher')
+    end
+    let!(:student_membership) do
+      create(:classroom_membership, user: student, classroom: teacher_classroom, role: 'student')
+    end
+    let!(:other_student_membership) do
+      create(:classroom_membership, user: other_student, classroom: other_classroom, role: 'student')
+    end
     let!(:visible_compliment) do
       create(:compliment, giver: teacher, receiver: student, classroom: teacher_classroom)
     end
@@ -17,7 +23,7 @@ RSpec.describe ComplimentPolicy::Scope do
       create(:compliment, receiver: other_student, classroom: other_classroom)
     end
 
-    it "returns all compliments for admin" do
+    it 'returns all compliments for admin' do
       admin = create(:user, :admin)
 
       resolved = described_class.new(admin, Compliment.all).resolve
@@ -31,10 +37,14 @@ RSpec.describe ComplimentPolicy::Scope do
       expect(resolved).to contain_exactly(visible_compliment)
     end
 
-    it "returns only compliments received by the student" do
-      teacher_classroom.classroom_memberships.find_or_create_by!(user: other_student) do |membership|
-        membership.role = "student"
-      end
+    it 'returns only compliments received by the student' do
+      create(
+        :classroom_membership,
+        user: student,
+        classroom: other_classroom,
+        role: 'student',
+        status: 'inactive'
+      )
 
       received_in_other_classroom = create(
         :compliment,
@@ -48,7 +58,7 @@ RSpec.describe ComplimentPolicy::Scope do
       expect(resolved).to contain_exactly(visible_compliment, received_in_other_classroom)
     end
 
-    it "returns no compliments for guest" do
+    it 'returns no compliments for guest' do
       resolved = described_class.new(nil, Compliment.all).resolve
 
       expect(resolved).to be_empty

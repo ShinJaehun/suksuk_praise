@@ -41,6 +41,10 @@
     - 한 반 규모에서는 단건 비활성화로 충분하므로 우선순위 낮음
     - 학년말 전체 정리나 교실 archive 기능과 함께 재검토
   - 활동 이력이 전혀 없는 학생에 한해 hard delete를 허용할지 검토
+  - 명시적인 학생 학급 이동 workflow
+    - 기존 active membership 비활성화와 대상 학급 membership 생성 또는 복구를 한 transaction으로 처리
+    - admin, 학교 manager, 담당 teacher 중 실행 권한 정책 결정 필요
+    - 현재는 다른 active 학급이 있으면 재활성화를 거부하고 자동 이동하지 않음
 - 교실·교사 관리 IA 후속 검토
   - 담당 선생님 배정을 admin 전용 교실·교사 관리 흐름으로 정리
   - School/Grade/Classroom 구조 설계

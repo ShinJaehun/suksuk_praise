@@ -56,6 +56,48 @@ RSpec.describe ClassroomPolicy do
     end
   end
 
+  describe "#view_student_data?" do
+    let(:school) { create(:school) }
+    let(:classroom) { create(:classroom, school: school) }
+
+    it "permits an admin" do
+      expect(described_class.new(create(:user, :admin), classroom).view_student_data?).to eq(true)
+    end
+
+    it "permits a teacher assigned to the classroom" do
+      teacher = create(:user, :teacher)
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+
+      expect(described_class.new(teacher, classroom).view_student_data?).to eq(true)
+    end
+
+    it "rejects a teacher outside the classroom" do
+      expect(described_class.new(create(:user, :teacher), classroom).view_student_data?).to eq(false)
+    end
+
+    it "rejects an unassigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: school, user: manager)
+
+      expect(described_class.new(manager, classroom).view_student_data?).to eq(false)
+    end
+
+    it "permits a manager who is also assigned to the classroom" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: school, user: manager)
+      create(:classroom_membership, classroom: classroom, user: manager, role: "teacher")
+
+      expect(described_class.new(manager, classroom).view_student_data?).to eq(true)
+    end
+
+    it "permits a student member of the classroom" do
+      student = create(:user, :student)
+      create(:classroom_membership, classroom: classroom, user: student, role: "student")
+
+      expect(described_class.new(student, classroom).view_student_data?).to eq(true)
+    end
+  end
+
   describe "classroom operation permissions" do
     let(:school) { create(:school) }
     let(:classroom) { create(:classroom, school: school) }

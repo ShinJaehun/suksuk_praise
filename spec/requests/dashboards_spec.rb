@@ -195,7 +195,7 @@ RSpec.describe "Dashboards", type: :request do
       other_classroom = create(:classroom)
       other_student = create(:user, :student)
       create(:classroom_membership, classroom: classroom, user: student, role: "student")
-      create(:classroom_membership, classroom: other_classroom, user: student, role: "student")
+      create(:classroom_membership, classroom: other_classroom, user: student, role: "student", status: "inactive")
       create(:classroom_membership, classroom: classroom, user: other_student, role: "student")
 
       travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do

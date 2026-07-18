@@ -62,13 +62,15 @@
 | `ClassroomsController#refresh_compliment_king` | `ClassroomPolicy#show?` | 가능 | membership 교실이면 가능 | membership 교실이면 가능 | 읽기 액션으로 동작 |
 | `ClassroomsController#student_login_info` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 학생 로그인 URL/QR/재발급 modal |
 | `ClassroomsController#draw_coupon` | `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `CouponDraw::Issue`가 대상 학생 소속, daily king, 중복 발급을 추가 검증 |
+| `ClassroomStudentsController#show`, `#dashboard`, `#activity` | `ClassroomPolicy#view_student_data?` + `UserPolicy#show?` | 가능 | URL 교실 teacher membership일 때만 가능 | 본인이며 URL 교실에서 active일 때만 가능 | manager 권한만으로는 불가. 담당 teacher/admin은 inactive 학생의 과거 기록 조회 가능 |
+| `ClassroomStudentMessagesController#index`, `#create` | `ClassroomPolicy#view_student_data?` + `UserPolicy#show?` + `UserMessagePolicy` | 가능 | URL 교실 teacher membership일 때만 가능 | 본인이며 URL 교실에서 active일 때만 가능 | create는 active 학생과 기존 메시지 정책·model validation을 추가 적용 |
 | `ClassroomStudentsController#coupon_assignment` | `UserPolicy#show?` + `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실의 active 학생만 가능 | 불가 | Turbo Frame용 지급 카드이며 `policy_scope(CouponTemplate).active` template만 표시 |
 | `ClassroomStudentsController#new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
 | `ClassroomStudentsController#create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 새 user는 항상 `role: student` |
 | `ClassroomStudentsController#bulk_new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
 | `ClassroomStudentsController#bulk_create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 벌크 생성도 동일한 membership 기준 |
 | `ClassroomStudentsController#deactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `User`를 삭제하지 않고 현재 교실 student membership을 inactive 처리 |
-| `ClassroomStudentsController#reactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 inactive student membership을 active로 복구 |
+| `ClassroomStudentsController#reactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 다른 학급에 active student membership이 있으면 어느 membership도 변경하지 않고 복구 거부 |
 | `ClassroomStudentsController#destroy` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 직접 DELETE 요청도 hard delete 대신 현재 교실 student membership을 inactive 처리 |
 | `Classrooms::MembersController#update_student_names` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 student membership id 기준으로 학생 이름을 일괄 수정하며 실패 시 전체 rollback |
 | `Classrooms::MembersController#edit_student_pin`, `#update_student_pin` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 active student membership만 대상으로 PIN을 일괄 재설정하며 inactive 학생은 제외 |
@@ -137,7 +139,7 @@
 | 리소스/액션 | 정책 기준 | admin | teacher | student | 비고 |
 |---|---|---|---|---|---|
 | `UserCouponsController#create` | `ClassroomPolicy#draw_coupon?` + `policy_scope(CouponTemplate)` | 가능 | 해당 교실의 active 학생에게만 가능 | 불가 | active template 선택 지급만 허용하며 `manual/selected`로 기록 |
-| `UserCouponsController#index` | `UserPolicy#show?` + `policy_scope(UserCoupon)` | 가능 | 가능 | 본인만 가능 | teacher scope가 classroom으로 제한되지 않음 |
+| `UserCouponsController#index` | `UserPolicy#show?` + `policy_scope(UserCoupon)` | 가능 | 담당 teacher membership 학급의 쿠폰만 가능 | 본인만 가능 | manager 권한만으로 자기 학교 전체 쿠폰 범위가 확장되지 않음 |
 | `UserCouponsController#use` | `UserCouponPolicy#use?` | 가능 | 해당 coupon classroom의 teacher membership이면 가능 | 본인 coupon만 가능 | `UserCoupons::Use`가 상태 전이와 이벤트 생성을 처리 |
 | `CouponEventsController#index` | `CouponEventPolicy#index?` + `policy_scope(CouponEvent)` | 가능 | 가능 | 불가 | teacher는 담당 교실 이벤트와 본인이 actor인 이벤트 조회 |
 
@@ -160,6 +162,7 @@
 
 - 교실 조회 범위는 `policy_scope(Classroom)`로 role별로 나뉜다.
 - teacher의 수정 권한은 전역 role만으로 충분하지 않고, 해당 교실의 teacher membership이 필요하다.
+- 학생 데이터 조회는 학교 manager에게도 열려 있는 `show?`를 재사용하지 않고 `view_student_data?`를 사용한다. global admin, URL 교실의 실제 담당 teacher, 해당 교실 소속 student만 통과하며 student 본인의 active 상태와 대상 학생 확인은 controller와 `UserPolicy#show?`가 추가 검증한다.
 - `refresh_compliment_king`은 읽기 액션으로 취급되어 `show?`만 요구한다.
 
 ### User
@@ -195,14 +198,11 @@
 
 ## 확인 필요 항목
 
-### 권한 버그 가능성
+### 해결된 권한 경계
 
-- teacher의 `UserCoupon::Scope`가 classroom 제한 없이 전체를 반환한다. 현재 구현상 teacher가 조회 가능한 학생 상세에서 다른 교실의 coupon history까지 볼 수 있을 가능성이 있다.
-  - 추천 spec 타입: request
-  - 위험도: 높음
-- `UsersController#show`에서 `classroom_id` 없이 teacher가 학생 상세에 접근할 수 있다. 이 경우 KPI와 coupon 목록이 teacher 담당 교실로 한정되지 않을 가능성이 있다.
-  - 추천 spec 타입: request
-  - 위험도: 높음
+- teacher의 `UserCouponPolicy::Scope`는 담당 teacher membership classroom의 쿠폰으로 제한한다.
+- classroom-scoped 학생 상세, 한눈에 보기, 활동 기록과 메시지는 URL classroom의 `view_student_data?`를 먼저 확인하므로, 같은 학생을 다른 학급에서 담당한다는 이유만으로 미담당 학급 데이터에 접근할 수 없다.
+- 학교 manager는 실제 classroom teacher membership이 있을 때만 학생 데이터와 담당 학급 쿠폰 범위에 접근한다.
 
 ### 정책 의도 확인 필요
 

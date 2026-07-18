@@ -5,11 +5,11 @@ class ClassroomStudentMessagesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :set_student
+  before_action :authorize_student_data!
   before_action :ensure_active_self_student!, only: :index
   before_action :ensure_active_student!, only: :create
 
   def index
-    authorize @student, :show?
     raise Pundit::NotAuthorizedError unless @classroom.student_messages_enabled?
 
     read_count = mark_managed_student_messages_read
@@ -80,6 +80,11 @@ class ClassroomStudentMessagesController < ApplicationController
       user_id: @student.id,
       role: "student"
     )
+  end
+
+  def authorize_student_data!
+    authorize @classroom, :view_student_data?
+    authorize @student, :show?
   end
 
   def ensure_active_student!

@@ -59,6 +59,14 @@ class ClassroomPolicy < ApplicationPolicy
     admin? || teacher_of?(record)
   end
 
+  def view_student_data?
+    return true if admin?
+    return teacher_of?(record) if teacher?
+    return student_of?(record) if student?
+
+    false
+  end
+
   def create_compliment?
     admin? || teacher_of?(record)
   end
@@ -87,5 +95,9 @@ class ClassroomPolicy < ApplicationPolicy
 
   def member_of?(classroom)
     classroom.classroom_memberships.exists?(user_id: user.id)
+  end
+
+  def student_of?(classroom)
+    classroom.classroom_memberships.exists?(user_id: user.id, role: "student")
   end
 end

@@ -505,6 +505,85 @@ RSpec.describe "Classroom students", type: :request do
     end
   end
 
+  describe "classroom-scoped student read boundaries" do
+    let(:student) { create(:user, :student) }
+    let(:past_classroom) { create(:classroom, school: classroom.school, name: "과거 학급") }
+
+    before do
+      create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "active")
+      create(:classroom_membership, user: student, classroom: past_classroom, role: "student", status: "inactive")
+    end
+
+    it "allows the assigned teacher to view show and activity in the URL classroom" do
+      [
+        classroom_student_path(classroom, student),
+        activity_classroom_student_path(classroom, student)
+      ].each do |path|
+        get path
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it "rejects a teacher from show and activity in an unassigned URL classroom" do
+      [
+        classroom_student_path(past_classroom, student),
+        activity_classroom_student_path(past_classroom, student)
+      ].each do |path|
+        get path
+
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    it "allows the past classroom teacher to view inactive student records" do
+      past_teacher = create(:user, :teacher)
+      create(:classroom_membership, user: past_teacher, classroom: past_classroom, role: "teacher")
+      sign_out teacher
+      sign_in past_teacher
+
+      [
+        classroom_student_path(past_classroom, student),
+        activity_classroom_student_path(past_classroom, student)
+      ].each do |path|
+        get path
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    it "allows an admin to view inactive student records" do
+      sign_out teacher
+      sign_in create(:user, :admin)
+
+      get classroom_student_path(past_classroom, student)
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "rejects an unassigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: past_classroom.school, user: manager)
+      sign_out teacher
+      sign_in manager
+
+      get classroom_student_path(past_classroom, student)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "allows the student in the active classroom and rejects the inactive past classroom" do
+      sign_out teacher
+      sign_in student
+
+      get classroom_student_path(classroom, student)
+      expect(response).to have_http_status(:ok)
+
+      get classroom_student_path(past_classroom, student)
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "GET /classrooms/:classroom_id/students/:id/edit" do
     it "shows student PIN management without password inputs" do
       student = create(:user, :student)
@@ -624,6 +703,49 @@ RSpec.describe "Classroom students", type: :request do
       patch reactivate_classroom_student_path(classroom, student)
 
       expect(membership.reload).to be_active
+    end
+
+    it "keeps both memberships unchanged when another classroom is already active" do
+      student = create(:user, :student)
+      active_classroom = create(:classroom)
+      active_membership = create(:classroom_membership, user: student, classroom: active_classroom, role: "student", status: "active")
+      inactive_membership = create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(flash[:alert]).to eq(I18n.t("students.reactivate.active_membership_conflict"))
+      expect(active_membership.reload).to be_active
+      expect(inactive_membership.reload).to be_inactive
+    end
+
+    it "applies the same active membership conflict rule to an admin" do
+      admin = create(:user, :admin)
+      student = create(:user, :student)
+      active_membership = create(:classroom_membership, user: student, classroom: create(:classroom), role: "student", status: "active")
+      inactive_membership = create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "inactive")
+      sign_out teacher
+      sign_in admin
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(flash[:alert]).to eq(I18n.t("students.reactivate.active_membership_conflict"))
+      expect(active_membership.reload).to be_active
+      expect(inactive_membership.reload).to be_inactive
+    end
+
+    it "does not let the active classroom teacher reactivate the student in another classroom" do
+      student = create(:user, :student)
+      active_membership = create(:classroom_membership, user: student, classroom: classroom, role: "student", status: "active")
+      other_classroom = create(:classroom)
+      inactive_membership = create(:classroom_membership, user: student, classroom: other_classroom, role: "student", status: "inactive")
+
+      patch reactivate_classroom_student_path(other_classroom, student)
+
+      expect(response).to redirect_to(root_path)
+      expect(active_membership.reload).to be_active
+      expect(inactive_membership.reload).to be_inactive
     end
 
     it "rejects a teacher outside the classroom" do

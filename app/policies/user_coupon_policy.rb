@@ -3,11 +3,19 @@ class UserCouponPolicy < ApplicationPolicy
     def resolve
       return scope.none unless user
 
-      # 교사/관리자는 전체 조회 허용(컨트롤러에서 user_id로 다시 좁혀 사용)
-      return scope.all if user.admin? || user.teacher?
+      return scope.all if user.admin?
+
+      if user.teacher?
+        teacher_classroom_ids = ClassroomMembership
+          .where(user_id: user.id, role: "teacher")
+          .select(:classroom_id)
+        return scope.where(classroom_id: teacher_classroom_ids)
+      end
 
       # 학생: 본인 것만
-      scope.where(user_id: user.id)
+      return scope.where(user_id: user.id) if user.student?
+
+      scope.none
     end
   end
 

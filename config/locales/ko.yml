@@ -7,6 +7,10 @@ ko:
         ends_on: "종료일"
     errors:
       models:
+        classroom_membership:
+          attributes:
+            base:
+              active_student_membership_taken: "이 학생은 다른 학급에서 이미 활동 중입니다."
         coupon_template:
           attributes:
             title:
@@ -245,6 +249,7 @@ ko:
       confirm: "이 학생을 운영 대상에서 제외할까요? 과거 기록은 보존됩니다."
     reactivate:
       success: "학생을 복구했습니다."
+      active_membership_conflict: "이 학생은 다른 학급에서 활동 중이어서 복구할 수 없습니다."
 
   coupons:
     assign:

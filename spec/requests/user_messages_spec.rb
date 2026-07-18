@@ -89,6 +89,41 @@ RSpec.describe "User messages", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
+    it "enforces the URL classroom boundary for messages with an inactive past membership" do
+      past_classroom = create(:classroom, school: classroom.school)
+      create(:classroom_membership, user: student, classroom: past_classroom, role: "student", status: "inactive")
+
+      sign_in teacher
+      get classroom_student_messages_path(past_classroom, student)
+      expect(response).to redirect_to(root_path)
+
+      expect {
+        post classroom_student_messages_path(past_classroom, student),
+          params: { user_message: { body: "미담당 과거 학급 메시지" } }
+      }.not_to change(UserMessage, :count)
+      expect(response).to redirect_to(root_path)
+
+      past_teacher = create(:user, :teacher)
+      create(:classroom_membership, user: past_teacher, classroom: past_classroom, role: "teacher")
+      sign_in past_teacher
+      get classroom_student_messages_path(past_classroom, student)
+      expect(response).to have_http_status(:ok)
+
+      sign_in admin
+      get classroom_student_messages_path(past_classroom, student)
+      expect(response).to have_http_status(:ok)
+
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: past_classroom.school, user: manager)
+      sign_in manager
+      get classroom_student_messages_path(past_classroom, student)
+      expect(response).to redirect_to(root_path)
+
+      sign_in student
+      get classroom_student_messages_path(past_classroom, student)
+      expect(response).to have_http_status(:not_found)
+    end
+
     it "marks student-sent unread messages read when a teacher opens the message page" do
       classroom.update!(message_policy: "student_initiated")
       message = create(:user_message, classroom: classroom, sender: student, recipient: teacher, body: "확인할 질문")
@@ -461,6 +496,7 @@ RSpec.describe "User messages", type: :request do
 
     it "does not create a student root message when the enabled classroom has no teachers" do
       no_teacher_classroom = create(:classroom, message_policy: "student_initiated")
+      classroom.classroom_memberships.find_by!(user: student, role: "student").inactive!
       create(:classroom_membership, user: student, classroom: no_teacher_classroom, role: "student")
       sign_in student
 

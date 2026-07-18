@@ -10,6 +10,7 @@ class ClassroomStudentsController < ApplicationController
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_create]
   before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :deactivate, :reactivate, :reset_password]
+  before_action :authorize_student_data!, only: [:show, :dashboard, :activity]
   before_action :ensure_active_self_student!, only: [:show, :dashboard, :activity]
 
   def new
@@ -125,8 +126,6 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def show
-    authorize @student, :show?
-
     @user = @student
     load_student_profile_permissions!
     read_count = @student_messages_enabled ? mark_managed_student_messages_read : 0
@@ -146,8 +145,6 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def activity
-    authorize @student, :show?
-
     @user = @student
     load_student_profile_permissions!
     load_user_show_data!(
@@ -159,8 +156,6 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def dashboard
-    authorize @student, :show?
-
     @user = @student
     load_student_profile_permissions!
     load_user_show_data!(
@@ -244,6 +239,10 @@ class ClassroomStudentsController < ApplicationController
     redirect_to classroom_members_path(@classroom),
       notice: t("students.reactivate.success"),
       status: :see_other
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+    redirect_to classroom_members_path(@classroom),
+      alert: t("students.reactivate.active_membership_conflict"),
+      status: :see_other
   end
 
   private
@@ -259,7 +258,15 @@ class ClassroomStudentsController < ApplicationController
   def set_student
     @student = User.find(params[:id])
     raise ActiveRecord::RecordNotFound unless @student.student?
-    raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(user_id: @student.id)
+    raise ActiveRecord::RecordNotFound unless @classroom.classroom_memberships.exists?(
+      user_id: @student.id,
+      role: "student"
+    )
+  end
+
+  def authorize_student_data!
+    authorize @classroom, :view_student_data?
+    authorize @student, :show?
   end
 
   def student_membership

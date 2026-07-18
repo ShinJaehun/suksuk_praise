@@ -101,4 +101,36 @@ RSpec.describe "Classroom student dashboards", type: :request do
 
     expect(response).to redirect_to(root_path)
   end
+
+  it "enforces the URL classroom boundary for a student with an inactive past membership" do
+    past_classroom = create(:classroom, school: classroom.school)
+    classroom.classroom_memberships.find_by!(user: student, role: "student").update!(status: "active")
+    create(:classroom_membership, classroom: past_classroom, user: student, role: "student", status: "inactive")
+
+    sign_in teacher
+    get dashboard_classroom_student_path(past_classroom, student)
+    expect(response).to redirect_to(root_path)
+
+    past_teacher = create(:user, :teacher)
+    create(:classroom_membership, classroom: past_classroom, user: past_teacher, role: "teacher")
+    sign_in past_teacher
+    get dashboard_classroom_student_path(past_classroom, student)
+    expect(response).to have_http_status(:ok)
+
+    sign_in create(:user, :admin)
+    get dashboard_classroom_student_path(past_classroom, student)
+    expect(response).to have_http_status(:ok)
+
+    manager = create(:user, :teacher)
+    create(:school_membership, :manager, school: past_classroom.school, user: manager)
+    sign_in manager
+    get dashboard_classroom_student_path(past_classroom, student)
+    expect(response).to redirect_to(root_path)
+
+    sign_in student
+    get dashboard_classroom_student_path(classroom, student)
+    expect(response).to have_http_status(:ok)
+    get dashboard_classroom_student_path(past_classroom, student)
+    expect(response).to have_http_status(:not_found)
+  end
 end

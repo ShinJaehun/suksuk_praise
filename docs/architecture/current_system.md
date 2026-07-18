@@ -68,6 +68,8 @@
 - teacher/admin은 교실 범위 학생 페이지에서 학생을 조회하고 관리한다.
 - 학생 canonical page는 `GET /classrooms/:classroom_id/students/:id`이다.
 - 학생의 교실 활동 상태는 `User`가 아니라 `ClassroomMembership.status`로 관리하며, 허용값은 `active`, `inactive`, 기본값은 `active`다.
+- student `User`는 전체 시스템에서 active student membership을 최대 하나만 가지며, 과거 학급의 inactive membership은 여러 개 보존할 수 있다. teacher membership에는 이 제한을 적용하지 않는다.
+- inactive 학생을 복구할 때 다른 학급의 active student membership이 있으면 복구를 거부하고 어느 membership도 자동 변경하지 않는다. 명시적인 학생 학급 이동 기능은 아직 제공하지 않는다.
 - `Classroom#students`는 일반 운영 화면에서 사용하는 active 학생 목록이다.
 - teacher 교실 화면, 학생 PIN 로그인 목록, 칭찬 대상, 쿠폰 발급 대상, 새 메시지 생성 대상은 active 학생 기준이다.
 - 학생은 운영 UI에서 기본적으로 삭제하지 않고 현재 교실 membership을 inactive 처리한다.
@@ -78,7 +80,8 @@
 - 이미 로그인한 학생이 inactive가 되면 다음 요청에서 로그아웃 후 학생 로그인 화면으로 redirect된다.
 - inactive 학생은 칭찬, 쿠폰 발급, 새 메시지 발신/수신 대상에서 제외된다.
 - inactive 처리 후에도 기존 메시지 thread와 과거 칭찬/쿠폰 기록 조회는 유지된다.
-- teacher/admin은 inactive 학생 상세와 활동 기록을 조회할 수 있으며, inactive 학생 상세에서는 `비활성` badge를 표시하고 칭찬하기, 쿠폰 지급, 새 메시지 작성 UI를 숨긴다.
+- global admin은 모든 학급의 학생 데이터를 조회할 수 있다. teacher는 URL에 지정된 classroom의 teacher membership이 있을 때만 active/inactive 학생 상세, 한눈에 보기, 활동 기록과 메시지 기록을 조회할 수 있다. 학교 manager도 실제 담당 teacher가 아니면 학생 데이터에 접근할 수 없다.
+- 담당 teacher/admin은 inactive 학생의 과거 기록을 조회할 수 있으며, inactive 학생 상세에서는 `비활성` badge를 표시하고 칭찬하기, 쿠폰 지급, 새 메시지 작성 UI를 숨긴다. student 본인은 inactive 과거 학급 URL에 접근할 수 없다.
 - 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 복구 action을 제공한다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
 - teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
@@ -134,6 +137,7 @@
 - 같은 학생에게 같은 기간의 동일 칭찬왕 쿠폰을 중복 발급하지 않으며, 사용 처리된 쿠폰도 다시 발급하지 않는다.
 - 수동·custom 쿠폰 발급은 칭찬왕 기간 활성 설정과 무관하다.
 - 학생은 본인의 보유 coupon을 확인할 수 있다.
+- `UserCouponPolicy::Scope`는 global admin에게 전체 쿠폰을, teacher에게 teacher membership이 있는 classroom의 쿠폰만, student에게 본인 쿠폰만 반환한다. 학교 manager 권한만으로 자기 학교 전체 쿠폰을 조회할 수는 없다.
 - `UserCoupon`은 issued/used 상태 전이를 가진다.
 - coupon 발급/사용 이벤트는 `CouponEvent`로 기록된다.
 - 보유 쿠폰은 기본 학생 상세 페이지인 쿠폰 관리 화면에 표시되고, 최근 발급 쿠폰은 학생 활동 기록 페이지에 표시된다.
