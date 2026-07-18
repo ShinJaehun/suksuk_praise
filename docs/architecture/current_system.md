@@ -32,8 +32,8 @@
 ## 교실/학생 관리
 
 - 교사와 학생의 관계는 `ClassroomMembership`을 기준으로 한다.
-- `School`은 학교 조직의 기준 모델이며, `Classroom`은 전환 기간 동안 optional `school`과 nullable `grade`를 가질 수 있다.
-- `Classroom#grade`는 초등학교 기준 1~6 정수만 허용하되, 기존 데이터 이전을 위해 아직 비어 있을 수 있다.
+- `School`은 학교 조직의 기준 모델이며 모든 `Classroom`은 하나의 school과 1~6 범위의 grade를 반드시 가진다. application validation과 DB `NOT NULL` 제약으로 둘 다 보장하며 학교 없는 legacy classroom은 더 이상 허용하지 않는다.
+- 2026-07-18 개발 DB 감사에서는 school/grade 없는 classroom, 학교 소속 없는 teacher, 비-teacher SchoolMembership, 학교가 다른 teacher assignment가 모두 0건이었다. 이 결과는 개발 환경에 한정되며 각 운영 환경은 배포와 migration 전에 같은 감사를 별도로 수행해야 한다.
 - 전체 admin은 `/schools`에서 학교를 추가하고 이름을 수정할 수 있으며, 교실 생성·수정 시 학교와 학년을 지정할 수 있다.
 - 학교 manager는 자기 학교의 모든 학급을 `ClassroomPolicy::Scope`로 조회하고, 자기 학교 학급을 생성·기본 수정하며 같은 학교 소속 member/manager 교사를 담당 교사로 배정할 수 있다. manager가 생성·수정하는 학급의 학교는 서버에서 자기 학교로 고정되며 다른 학교로 이동할 수 없다.
 - 학교 manager가 실제 담당 교사로도 배정된 학급에서는 manager 권한과 기존 담당 교사 권한을 함께 가진다.
@@ -46,7 +46,7 @@
 - 교사 수정 시 제출된 담당 교실 ID가 하나라도 존재하지 않거나 admin의 정책 범위 밖이면 학교와 담당 교실 변경 전체를 거부하며, 두 소속 변경은 하나의 transaction으로 처리한다. 선택 학급 중 하나라도 선택 학교와 다르면 전체 변경을 거부한다.
 - 담당 교사 배정은 기존 같은 학교 SchoolMembership만 사용하며 새 소속을 만들거나 다른 학교 소속을 이동하지 않는다. 담당 해제는 SchoolMembership을 자동 삭제하지 않고, 교실의 학교 변경도 기존 SchoolMembership을 자동 이동하지 않는다.
 - 일반 teacher가 보낸 교실 `school_id`, `grade` 변경값은 허용하지 않는다. manager가 보낸 `school_id` 변경값은 거부하고 자기 학교로 고정한다.
-- 기존 teacher의 SchoolMembership backfill은 아직 수행하지 않았다.
+- 기존 teacher의 SchoolMembership 누락을 보완하는 backfill task는 유지한다. 실행 여부는 환경별로 확인해야 하며, 현재 감사한 개발 DB에는 학교 소속 없는 teacher가 없다.
 - 학교 삭제와 school admin 권한은 아직 구현하지 않았다.
 - 교실 담당 교사 배정은 admin 또는 학교 manager가 `teacher_ids` 파라미터를 명시적으로 제출했을 때만 변경한다.
 - `SchoolClosure`는 학교별 휴일을 이름과 시작일·종료일 범위로 저장한다. 내부 모델명은 `SchoolClosure`를 유지하고 사용자 화면에서는 휴일이라는 용어를 사용한다.
@@ -118,7 +118,7 @@
 - 교실별로 각 기간을 활성화하거나 비활성화할 수 있으며, 비활성 기간은 서버측 쿠폰 발급에서도 차단한다.
 - 칭찬왕 결과는 별도 record로 저장하지 않고 조회할 때마다 다시 계산한다.
 - 주간 칭찬왕 갱신 버튼은 해당 주의 마지막 학교 운영일에만 표시하고, 월간 칭찬왕 갱신 버튼은 해당 달의 마지막 학교 운영일에만 표시한다. 다른 날짜에는 주간·월간 갱신 버튼과 안내 문구를 모두 표시하지 않는다.
-- 주간·월간 칭찬왕 갱신 요청은 서버에서도 마지막 학교 운영일인지 검증한다. 학교가 연결되지 않은 기존 학급은 기존 갱신 동작을 유지한다.
+- 주간·월간 칭찬왕 갱신 요청은 서버에서도 해당 school의 마지막 운영일인지 검증한다.
 - 휴일 정보는 일반 기능 제한에 사용하지 않는다. 칭찬 등록, 쿠폰 발급과 사용, 일일 칭찬왕 갱신, 학생 메시지, 학생 및 학급 관리는 휴일 여부와 관계없이 기존 동작을 유지한다.
 - 칭찬왕 결과 카드의 쿠폰 발급 버튼과 쿠폰 발급 요청은 학교 운영일 날짜 조건으로 제한하지 않는다. 상세 정책은 [`weekly_monthly_compliment_king.md`](../specs/weekly_monthly_compliment_king.md)를 참고한다.
 

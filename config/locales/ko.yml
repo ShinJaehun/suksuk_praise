@@ -1,6 +1,9 @@
 ko:
   activerecord:
     attributes:
+      classroom:
+        school: "학교"
+        grade: "학년"
       school_closure:
         name: "이름"
         starts_on: "시작일"

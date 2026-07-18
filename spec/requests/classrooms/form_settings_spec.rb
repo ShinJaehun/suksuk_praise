@@ -62,6 +62,8 @@ RSpec.describe "Classroom form settings", type: :request do
       post classrooms_path, params: {
         classroom: {
           name: "새 설정 교실",
+          school_id: school.id,
+          grade: 4,
           daily_compliment_king_enabled: "0",
           weekly_compliment_king_enabled: "1",
           monthly_compliment_king_enabled: "1",
@@ -115,7 +117,9 @@ RSpec.describe "Classroom form settings", type: :request do
 
       post classrooms_path, params: {
         classroom: {
-          name: "관리자 생성 교실"
+          name: "관리자 생성 교실",
+          school_id: school.id,
+          grade: 4
         }
       }
 

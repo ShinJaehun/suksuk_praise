@@ -163,6 +163,47 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(classroom.grade).to eq(1)
   end
 
+  it 'rejects admin classroom creation without a school' do
+    sign_in admin
+
+    expect do
+      post classrooms_path, params: {
+        classroom: { name: '학교 없는 학급', school_id: '', grade: 1 }
+      }
+    end.not_to change(Classroom, :count)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('학교')
+    expect(response.body).to include('name="classroom[school_id]"')
+  end
+
+  it 'rejects admin classroom creation without a grade' do
+    sign_in admin
+
+    expect do
+      post classrooms_path, params: {
+        classroom: { name: '학년 없는 학급', school_id: school.id, grade: '' }
+      }
+    end.not_to change(Classroom, :count)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('학년')
+    expect(response.body).to include('name="classroom[grade]"')
+  end
+
+  it 'rejects admin classroom creation with an out-of-range grade' do
+    sign_in admin
+
+    expect do
+      post classrooms_path, params: {
+        classroom: { name: '잘못된 학년', school_id: school.id, grade: 7 }
+      }
+    end.not_to change(Classroom, :count)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('학년')
+  end
+
   it 'allows a manager to create a classroom fixed to their school' do
     manager = create(:user, :teacher)
     other_school = create(:school)
@@ -185,6 +226,36 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(classroom.classroom_memberships.teacher.exists?(user: manager)).to eq(true)
   end
 
+  it 'rejects manager classroom creation without a grade' do
+    manager = create(:user, :teacher)
+    create(:school_membership, :manager, school: school, user: manager)
+    sign_in manager
+
+    expect do
+      post classrooms_path, params: {
+        classroom: { name: '학년 없는 관리자 학급', grade: '', teacher_ids: [manager.id] }
+      }
+    end.not_to change(Classroom, :count)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('학년')
+  end
+
+  it 'rejects manager classroom creation with an out-of-range grade' do
+    manager = create(:user, :teacher)
+    create(:school_membership, :manager, school: school, user: manager)
+    sign_in manager
+
+    expect do
+      post classrooms_path, params: {
+        classroom: { name: '잘못된 관리자 학년', grade: 0, teacher_ids: [manager.id] }
+      }
+    end.not_to change(Classroom, :count)
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('학년')
+  end
+
   it 'rejects classroom creation by a regular teacher' do
     sign_in teacher
 
@@ -200,7 +271,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
   end
 
   it 'allows an admin to change an existing classroom school and grade' do
-    classroom = create(:classroom, school: nil, grade: nil)
+    classroom = create(:classroom, school: create(:school), grade: 2)
     create(:school_membership, school: school, user: teacher)
     create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
     sign_in admin
@@ -323,6 +394,36 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(classroom.reload).to have_attributes(name: '기존 학급', grade: 1, school: school)
   end
 
+  it 'rejects a blank grade submitted by a manager' do
+    manager = create(:user, :teacher)
+    classroom = create(:classroom, school: school, grade: 3)
+    create(:school_membership, :manager, school: school, user: manager)
+    sign_in manager
+
+    patch classroom_path(classroom), params: {
+      classroom: classroom_update_params(classroom).merge(grade: '')
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(classroom.reload.grade).to eq(3)
+    expect(response.body).to include('학년')
+  end
+
+  it 'rejects an out-of-range grade submitted by a manager' do
+    manager = create(:user, :teacher)
+    classroom = create(:classroom, school: school, grade: 3)
+    create(:school_membership, :manager, school: school, user: manager)
+    sign_in manager
+
+    patch classroom_path(classroom), params: {
+      classroom: classroom_update_params(classroom).merge(grade: 7)
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(classroom.reload.grade).to eq(3)
+    expect(response.body).to include('학년')
+  end
+
   it 'rejects manager updates outside their school' do
     manager = create(:user, :teacher)
     classroom = create(:classroom, school: create(:school), name: '다른 학교 학급')
@@ -353,31 +454,6 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(classroom.grade).to eq(3)
   end
 
-  it 'renders an existing classroom with no school or grade' do
-    classroom = create(:classroom, school: nil, grade: nil)
-    sign_in admin
-
-    get edit_classroom_path(classroom)
-
-    expect(response).to have_http_status(:ok)
-    expect(response.body).to include('name="classroom[school_id]"')
-    expect(response.body).to include('name="classroom[grade]"')
-  end
-
-  it 'shows organization details without repeating the missing label' do
-    create(:classroom, name: '미지정 교실', school: nil, grade: nil)
-    create(:classroom, name: '지정 교실', school: school, grade: 2)
-    sign_in admin
-
-    get classrooms_path
-
-    expect(response.body).to include('새싹초등학교')
-    expect(response.body).to include('2학년')
-    expect(response.body).to include('미지정')
-    expect(response.body).not_to include('미지정 · 미지정')
-    expect(response.body).not_to include('translation missing')
-  end
-
   it 'keeps classroom identification while removing school and teacher management sections' do
     classroom = create(:classroom, name: '지정 교실', school: school, grade: 2)
     homeroom = create(:school_membership, school: school, user: create(:user, :teacher, name: '담당 선생님')).user
@@ -397,7 +473,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
   end
 
   it 'rejects a grade outside the elementary school range' do
-    classroom = create(:classroom, school: nil, grade: nil)
+    classroom = create(:classroom, school: school, grade: 3)
     sign_in admin
 
     patch classroom_path(classroom), params: {
@@ -405,12 +481,25 @@ RSpec.describe 'Classroom organization settings', type: :request do
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
-    expect(classroom.reload.grade).to be_nil
+    expect(classroom.reload.grade).to eq(3)
+    expect(response.body).to include('학년')
+  end
+
+  it 'rejects removing the grade from an existing classroom' do
+    classroom = create(:classroom, school: school, grade: 3)
+    sign_in admin
+
+    patch classroom_path(classroom), params: {
+      classroom: classroom_update_params(classroom).merge(grade: '')
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(classroom.reload.grade).to eq(3)
     expect(response.body).to include('학년')
   end
 
   it 'safely rejects a school id that does not exist' do
-    classroom = create(:classroom, school: nil, grade: nil)
+    classroom = create(:classroom, school: school, grade: 3)
     sign_in admin
 
     patch classroom_path(classroom), params: {
@@ -418,7 +507,20 @@ RSpec.describe 'Classroom organization settings', type: :request do
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
-    expect(classroom.reload.school).to be_nil
+    expect(classroom.reload.school).to eq(school)
+    expect(response.body).to include('학교')
+  end
+
+  it 'rejects removing the school from an existing classroom' do
+    classroom = create(:classroom, school: school, grade: 3)
+    sign_in admin
+
+    patch classroom_path(classroom), params: {
+      classroom: classroom_update_params(classroom).merge(school_id: '')
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(classroom.reload.school).to eq(school)
     expect(response.body).to include('학교')
   end
 

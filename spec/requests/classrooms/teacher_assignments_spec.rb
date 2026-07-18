@@ -57,16 +57,6 @@ RSpec.describe "Classroom teacher assignments", type: :request do
       expect(response.body).not_to include("classroom[teacher_ids][]")
     end
 
-    it "shows school-required guidance for a classroom without a school" do
-      classroom.update!(school: nil)
-      sign_in admin
-
-      get edit_classroom_path(classroom)
-
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("학교를 먼저 지정한 뒤 담당 선생님을 배정할 수 있습니다.")
-      expect(response.body).not_to include("classroom[teacher_ids][]")
-    end
   end
 
   describe "PATCH /classrooms/:id" do

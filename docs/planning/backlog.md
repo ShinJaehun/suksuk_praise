@@ -47,7 +47,6 @@
     - 현재는 다른 active 학급이 있으면 재활성화를 거부하고 자동 이동하지 않음
 - 교실·교사 관리 IA 후속 검토
   - 담당 선생님 배정을 admin 전용 교실·교사 관리 흐름으로 정리
-  - School/Grade/Classroom 구조 설계
 - 교실 archive
   - 학년도 종료 시 교실을 읽기 전용으로 보관
   - archive/active 목록 필터

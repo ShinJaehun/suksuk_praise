@@ -85,20 +85,6 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
       expect(response).to redirect_to(classroom_path(classroom))
     end
 
-    it "keeps weekly refresh available for a classroom without a school" do
-      classroom.update!(school: nil, weekly_compliment_king_enabled: true)
-
-      travel_to Time.zone.local(2026, 4, 8, 12, 0, 0) do
-        create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
-
-        post refresh_compliment_king_classroom_path(classroom), params: { period: "weekly" }, headers: turbo_headers
-      end
-
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include("이번 주 칭찬왕")
-      expect(response.body).to include(student.name)
-    end
-
     it "rejects refresh for a disabled period" do
       post refresh_compliment_king_classroom_path(classroom), params: { period: "weekly" }, as: :json
 

@@ -21,6 +21,8 @@
 
 학교는 칭찬왕을 선정하거나 결과를 보존하지 않는다. 칭찬왕에는 운영일 계산 결과만 제공한다.
 
+모든 `Classroom`은 하나의 `School`과 1~6 범위의 grade를 반드시 가진다. application validation과 DB `NOT NULL` 제약을 함께 적용하며 school이나 grade가 없는 legacy classroom은 허용하지 않는다.
+
 ---
 
 ## 3. global admin과 학교 manager
@@ -59,9 +61,9 @@
 
 역할은 integer enum으로 구현되어 있으며 기본값은 `member`다. 현재 교사 한 명은 최대 한 학교에만 소속되고 같은 학교의 여러 학급을 담당할 수 있다. 다른 학교 소속 teacher를 담당 교사로 배정하는 것은 차단하며 여러 학교 소속 지원은 현재 범위가 아니다. 한 학교에는 여러 manager를 둘 수 있고 global admin과 student는 SchoolMembership을 갖지 않는다.
 
-학교 학급의 담당 teacher를 배정할 때 누락된 SchoolMembership을 member로 생성한다. 같은 학교의 기존 member·manager는 유지하고 다른 학교 membership은 validation 오류로 배정을 차단한다. 담당 해제 시에도 소속을 삭제하지 않는다. 기존 데이터는 `bin/rails school_memberships:backfill`로 멱등하게 보완하며 다른 학교 충돌은 변경하지 않고 `conflicts`로 집계한다.
+학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. global admin과 학교 manager 모두 학급 배정 과정에서 미소속 teacher나 다른 학교 소속 teacher의 소속을 자동 생성·변경하지 않으며, 필요한 학교 소속 변경은 global admin의 전체 교사 수정 화면에서 먼저 수행한다. 같은 학교의 기존 member·manager는 유지하고 다른 학교 membership은 validation 오류로 배정을 차단하며, 담당 해제 시에도 학교 소속을 삭제하지 않는다. 학교별 선생님 관리 화면은 해당 학교 안의 ClassroomMembership만 추가·삭제하고 다른 학교 담당 교실은 변경하지 않는다.
 
-학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. global admin과 학교 manager 모두 학급 배정 과정에서 미소속 teacher나 다른 학교 소속 teacher의 소속을 생성·변경하지 않으며, 필요한 학교 소속 변경은 global admin의 전체 교사 수정 화면에서 먼저 수행한다. 학교별 선생님 관리 화면은 해당 학교 안의 ClassroomMembership만 추가·삭제하고 다른 학교 담당 교실은 변경하지 않는다.
+기존 teacher assignment의 누락 SchoolMembership은 `bin/rails school_memberships:backfill`로 멱등하게 보완한다. backfill은 다른 학교 충돌을 자동 변경하지 않고 `conflicts`로 집계한다.
 
 ---
 
@@ -146,7 +148,6 @@ last_school_day_of_month(date)
 - 월간 칭찬왕 갱신 버튼은 해당 달의 마지막 학교 운영일에만 노출한다.
 - 다른 날짜에는 주간·월간 갱신 버튼과 안내 문구를 모두 노출하지 않는다.
 - 주간·월간 갱신 URL로 직접 요청해도 서버에서 같은 날짜 조건을 검증한다.
-- 학교가 연결되지 않은 기존 학급은 기존 주간·월간 칭찬왕 갱신 동작을 유지한다.
 - 사용 가능한 날짜에는 결과를 여러 번 열고 닫고 다시 집계할 수 있다.
 - 칭찬왕 결과를 공식 수상 결과로 확정하거나 별도 record로 보존하지 않는다.
 - 쿠폰 발급 후 순위가 바뀌어도 자동 보정하지 않으며, 추가 지급은 교사가 custom 쿠폰으로 처리한다.

@@ -4,7 +4,7 @@ class Classroom < ApplicationRecord
 
     has_secure_token :student_login_token
 
-    belongs_to :school, optional: true
+    belongs_to :school
 
     # Empty classrooms may remove their remaining teacher memberships on deletion.
     # Operational records are protected by the prepended destroy guard below.
@@ -50,12 +50,11 @@ class Classroom < ApplicationRecord
     end
 
     validates :name, length: { maximum: 50 }
-    validates :school, presence: true, if: -> { school_id.present? }
     validates :grade, numericality: {
       only_integer: true,
       greater_than_or_equal_to: 1,
       less_than_or_equal_to: 6
-    }, allow_nil: true
+    }
     validates :message_policy, inclusion: { in: MESSAGE_POLICIES }
 
     def messages_disabled?

@@ -421,13 +421,12 @@ RSpec.describe 'Admin teacher school memberships', type: :request do
     expect(teacher.reload.school_membership).to be_nil
   end
 
-  it 'shows sorted unique grades and does not warn for matching or schoolless classrooms' do
+  it 'shows sorted unique grades and does not warn for matching classrooms' do
     matching_classroom = create(:classroom, school: school, grade: 4, name: '4학년 1반')
     duplicate_grade_classroom = create(:classroom, school: school, grade: 4, name: '4학년 2반')
     other_grade_classroom = create(:classroom, school: school, grade: 3, name: '3학년 1반')
-    schoolless_classroom = create(:classroom, school: nil, grade: nil, name: '미지정반')
     create(:school_membership, user: teacher, school: school)
-    [matching_classroom, duplicate_grade_classroom, other_grade_classroom, schoolless_classroom].each do |classroom|
+    [matching_classroom, duplicate_grade_classroom, other_grade_classroom].each do |classroom|
       create(:classroom_membership, user: teacher, classroom: classroom, role: 'teacher')
     end
     sign_in admin

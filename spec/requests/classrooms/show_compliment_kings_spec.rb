@@ -123,18 +123,6 @@ RSpec.describe "Classrooms compliment kings", type: :request do
       expect(refresh_button_for(document, "daily")).to be_present
     end
 
-    it "keeps enabled weekly refresh behavior for classrooms without a school" do
-      classroom.update!(school: nil, weekly_compliment_king_enabled: true)
-
-      travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do
-        get classroom_path(classroom)
-      end
-
-      expect(response).to have_http_status(:ok)
-      document = Nokogiri::HTML(response.body)
-      expect(refresh_button_for(document, "weekly")).to be_present
-    end
-
     it "shows today's compliment count on student cards instead of total points" do
       student.update!(points: 9)
 
