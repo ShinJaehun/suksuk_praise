@@ -7,6 +7,10 @@ ko:
         ends_on: "종료일"
     errors:
       models:
+        classroom:
+          attributes:
+            base:
+              students_or_history_present: "학생 또는 활동 기록이 있는 교실은 삭제할 수 없습니다."
         classroom_membership:
           attributes:
             base:
@@ -146,7 +150,7 @@ ko:
       back_to_classroom: "교실로 돌아가기"
       submit: "교실 설정 저장"
       delete_title: "교실 삭제"
-      delete_description: "교실을 삭제합니다. 학생과 칭찬, 쿠폰 자료가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+      delete_description: "학생 또는 활동 기록이 있는 교실은 삭제할 수 없습니다. 비어 있는 교실만 삭제할 수 있습니다."
     show:
       student_login: "학생 로그인"
       manage_classroom: "교실 관리"
@@ -174,6 +178,7 @@ ko:
       success: "교실 설정을 저장했습니다."
     destroy:
       success: "교실이 삭제되었습니다."
+      failure: "교실을 삭제하지 못했습니다."
     refresh:
       title: "칭찬왕"
       count: "%{count}회 칭찬 받음"

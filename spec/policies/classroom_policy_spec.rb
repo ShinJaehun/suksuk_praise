@@ -127,7 +127,50 @@ RSpec.describe ClassroomPolicy do
       expect(policy.create_compliment?).to eq(true)
       expect(policy.refresh_compliment_king?).to eq(true)
       expect(policy.draw_coupon?).to eq(true)
-      expect(policy.destroy?).to eq(true)
+      expect(policy.destroy?).to eq(false)
+    end
+  end
+
+  describe "#destroy?" do
+    let(:school) { create(:school) }
+    let(:classroom) { create(:classroom, school: school) }
+
+    it "permits an admin" do
+      expect(described_class.new(create(:user, :admin), classroom).destroy?).to eq(true)
+    end
+
+    it "rejects an assigned teacher" do
+      teacher = create(:user, :teacher)
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+
+      expect(described_class.new(teacher, classroom).destroy?).to eq(false)
+    end
+
+    it "rejects an unassigned teacher" do
+      expect(described_class.new(create(:user, :teacher), classroom).destroy?).to eq(false)
+    end
+
+    it "rejects an unassigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: school, user: manager)
+
+      expect(described_class.new(manager, classroom).destroy?).to eq(false)
+    end
+
+    it "rejects a school manager who is also an assigned teacher" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: school, user: manager)
+      create(:classroom_membership, classroom: classroom, user: manager, role: "teacher")
+
+      expect(described_class.new(manager, classroom).destroy?).to eq(false)
+    end
+
+    it "rejects a student" do
+      expect(described_class.new(create(:user, :student), classroom).destroy?).to eq(false)
+    end
+
+    it "rejects a guest" do
+      expect(described_class.new(nil, classroom).destroy?).to eq(false)
     end
   end
 

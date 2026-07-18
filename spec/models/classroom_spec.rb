@@ -96,4 +96,84 @@ RSpec.describe Classroom, type: :model do
 
     expect(classroom.students).to contain_exactly(active_student)
   end
+
+  describe "hard delete safety" do
+    it "allows deletion when only teacher memberships exist" do
+      classroom = create(:classroom)
+      teacher = create(:user, :teacher)
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+
+      expect(classroom.destroy).to be_truthy
+      expect(Classroom.exists?(classroom.id)).to eq(false)
+      expect(User.exists?(teacher.id)).to eq(true)
+      expect(ClassroomMembership.where(classroom_id: classroom.id)).to be_empty
+    end
+
+    it "rejects deletion when an active student membership exists" do
+      classroom = create(:classroom)
+      membership = create(:classroom_membership, classroom: classroom, role: "student", status: "active")
+
+      expect(classroom.destroy).to eq(false)
+      expect(Classroom.exists?(classroom.id)).to eq(true)
+      expect(ClassroomMembership.exists?(membership.id)).to eq(true)
+      expect(classroom.errors.details[:base]).to include(error: :students_or_history_present)
+    end
+
+    it "rejects deletion when an inactive student membership exists" do
+      classroom = create(:classroom)
+      membership = create(:classroom_membership, classroom: classroom, role: "student", status: "inactive")
+
+      expect(classroom.destroy).to eq(false)
+      expect(Classroom.exists?(classroom.id)).to eq(true)
+      expect(ClassroomMembership.exists?(membership.id)).to eq(true)
+    end
+
+    it "preserves the classroom and compliment when a compliment exists" do
+      classroom = create(:classroom)
+      compliment = create(:compliment, classroom: classroom)
+
+      expect(classroom.destroy).to eq(false)
+      expect(Classroom.exists?(classroom.id)).to eq(true)
+      expect(Compliment.exists?(compliment.id)).to eq(true)
+    end
+
+    it "preserves the classroom and coupon when an issued coupon exists" do
+      classroom = create(:classroom)
+      coupon_owner = create(:user, :teacher)
+      create(:classroom_membership, classroom: classroom, user: coupon_owner, role: "teacher")
+      coupon = create(:user_coupon, classroom: classroom, user: coupon_owner)
+
+      expect(classroom.destroy).to eq(false)
+      expect(Classroom.exists?(classroom.id)).to eq(true)
+      expect(UserCoupon.exists?(coupon.id)).to eq(true)
+      expect(ClassroomMembership.where(classroom: classroom).count).to eq(1)
+    end
+
+    it "preserves the classroom and message when a student message exists" do
+      classroom = create(:classroom)
+      teacher = create(:user, :teacher)
+      student = create(:user, :student)
+      create(:classroom_membership, classroom: classroom, user: teacher, role: "teacher")
+      create(:classroom_membership, classroom: classroom, user: student, role: "student")
+      message = create(:user_message, classroom: classroom, sender: teacher, recipient: student)
+      membership_count = classroom.classroom_memberships.count
+
+      expect(classroom.destroy).to eq(false)
+      expect(Classroom.exists?(classroom.id)).to eq(true)
+      expect(UserMessage.exists?(message.id)).to eq(true)
+      expect(classroom.classroom_memberships.count).to eq(membership_count)
+    end
+
+    it "preserves the classroom and coupon event when a coupon event exists" do
+      event = create(:coupon_event)
+      classroom = event.classroom
+      membership_count = classroom.classroom_memberships.count
+
+      expect(classroom.destroy).to eq(false)
+      expect(Classroom.exists?(classroom.id)).to eq(true)
+      expect(CouponEvent.exists?(event.id)).to eq(true)
+      expect(UserCoupon.exists?(event.user_coupon_id)).to eq(true)
+      expect(classroom.classroom_memberships.count).to eq(membership_count)
+    end
+  end
 end

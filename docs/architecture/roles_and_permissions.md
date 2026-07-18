@@ -58,7 +58,7 @@
 | `ClassroomsController#create` | `ClassroomPolicy#create?` | 가능 | manager만 가능 | 불가 | admin은 임의 학교 지정 가능. manager는 자기 학교로 고정되며 같은 학교 소속 teacher만 배정 가능 |
 | `ClassroomsController#edit` | `ClassroomPolicy#update?` | 가능 | 담당 학급 또는 manager인 자기 학교 학급만 가능 | 불가 |  |
 | `ClassroomsController#update` | `ClassroomPolicy#update?` | 가능 | 담당 학급 또는 manager인 자기 학교 학급만 가능 | 불가 | manager는 학급을 다른 학교로 이동할 수 없고 같은 학교 소속 teacher만 배정 가능 |
-| `ClassroomsController#destroy` | `ClassroomPolicy#destroy?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | manager 권한만으로 삭제 불가 |
+| `ClassroomsController#destroy` | `ClassroomPolicy#destroy?` + model 삭제 guard | 학생 또는 운영 기록이 없는 교실만 가능 | 불가 | 불가 | manager가 담당 teacher여도 불가. teacher membership만 있는 미사용 교실은 admin이 삭제 가능 |
 | `ClassroomsController#refresh_compliment_king` | `ClassroomPolicy#show?` | 가능 | membership 교실이면 가능 | membership 교실이면 가능 | 읽기 액션으로 동작 |
 | `ClassroomsController#student_login_info` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 학생 로그인 URL/QR/재발급 modal |
 | `ClassroomsController#draw_coupon` | `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `CouponDraw::Issue`가 대상 학생 소속, daily king, 중복 발급을 추가 검증 |

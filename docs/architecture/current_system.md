@@ -63,6 +63,9 @@
 - 공식 공휴일 자동 정기 동기화 설정과 캘린더형 휴일 UI는 아직 구현되지 않았다. 학생 구성원 관리와 쿠폰·칭찬·메시지 등 수업 운영 기능 전체의 manager 권한 확장도 아직 구현되지 않았다.
 - 확정된 학교 운영 정책과 단계별 구현 계획은 [`school_operations.md`](school_operations.md)에 정리한다.
 - `/classrooms/:id/edit`은 교실 설정, `/classrooms/:id/members`는 구성원 관리 화면이다.
+- 교실 hard delete는 global admin만 실행할 수 있다. 담당 teacher와 학교 manager는 담당 여부와 무관하게 삭제할 수 없다.
+- global admin도 active/inactive 학생 membership이나 칭찬, 발급 쿠폰, 쿠폰 요청·이벤트, 학생 메시지 등 운영 기록이 있는 교실은 삭제할 수 없다. teacher membership만 남은 미사용 교실은 삭제할 수 있으며 이때 teacher 계정은 유지되고 해당 교실 membership만 제거된다.
+- 교실 archive는 아직 구현되지 않았다.
 - teacher nav는 담당 교실이 1개이면 해당 교실로 직접 이동하고, 여러 개이면 dropdown으로 담당 교실 목록을 보여준다.
 - 교실 이름은 최대 50자로 제한한다.
 - teacher/admin은 교실 범위 학생 페이지에서 학생을 조회하고 관리한다.

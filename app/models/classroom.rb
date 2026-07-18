@@ -6,11 +6,16 @@ class Classroom < ApplicationRecord
 
     belongs_to :school, optional: true
 
-    # 교실 삭제 시 관련 칭찬/쿠폰도 함께 삭제
+    # Empty classrooms may remove their remaining teacher memberships on deletion.
+    # Operational records are protected by the prepended destroy guard below.
     has_many :classroom_memberships, dependent: :destroy
     has_many :users, through: :classroom_memberships
     has_many :user_coupons, dependent: :destroy
     has_many :compliments, dependent: :destroy
+    has_many :coupon_events
+    has_many :user_messages
+
+    before_destroy :prevent_destroy_with_students_or_history, prepend: true
 
     def students
       users.merge(ClassroomMembership.where(role: "student", status: "active"))
@@ -71,5 +76,22 @@ class Classroom < ApplicationRecord
 
     def student_can_start_messages?
       student_initiated_messages?
+    end
+
+    def destroyable_without_history?
+      !classroom_memberships.student.exists? &&
+        !compliments.exists? &&
+        !user_coupons.exists? &&
+        !coupon_events.exists? &&
+        !user_messages.exists?
+    end
+
+    private
+
+    def prevent_destroy_with_students_or_history
+      return if destroyable_without_history?
+
+      errors.add(:base, :students_or_history_present)
+      throw :abort
     end
 end

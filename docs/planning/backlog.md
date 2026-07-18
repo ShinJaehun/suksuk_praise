@@ -48,7 +48,13 @@
 - 교실·교사 관리 IA 후속 검토
   - 담당 선생님 배정을 admin 전용 교실·교사 관리 흐름으로 정리
   - School/Grade/Classroom 구조 설계
-- 교실 archive 정책
+- 교실 archive
+  - 학년도 종료 시 교실을 읽기 전용으로 보관
+  - archive/active 목록 필터
+  - archive 교실의 학생 로그인 차단
+  - 신규 칭찬·쿠폰·메시지 차단
+  - 과거 기록 조회 유지
+  - archive 교실 복구 가능 여부 결정
 - 학생 상세 통계
 - 복사/붙여넣기 학생 등록
 - 학생 dashboard 그래프 point의 hover tooltip

@@ -109,8 +109,20 @@ class ClassroomsController < ApplicationController
 
   def destroy
     authorize @classroom
-    @classroom.destroy
-    redirect_to classrooms_path, notice: t("classrooms.destroy.success")
+
+    if @classroom.destroy
+      redirect_to classrooms_path,
+        notice: t("classrooms.destroy.success"),
+        status: :see_other
+    else
+      redirect_to edit_classroom_path(@classroom),
+        alert: classroom_destroy_error_message,
+        status: :see_other
+    end
+  rescue ActiveRecord::InvalidForeignKey, ActiveRecord::RecordNotDestroyed
+    redirect_to edit_classroom_path(@classroom),
+      alert: t("classrooms.destroy.failure"),
+      status: :see_other
   end
 
   def student_login_info
@@ -350,6 +362,10 @@ class ClassroomsController < ApplicationController
 
   def set_classroom
     @classroom = Classroom.find(params[:id])
+  end
+
+  def classroom_destroy_error_message
+    @classroom.errors.full_messages.to_sentence.presence || t("classrooms.destroy.failure")
   end
 
   def classroom_params

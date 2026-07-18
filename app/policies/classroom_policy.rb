@@ -52,7 +52,7 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def destroy?
-    admin? || teacher_of?(record)
+    !!admin?
   end
 
   def manage_members?
