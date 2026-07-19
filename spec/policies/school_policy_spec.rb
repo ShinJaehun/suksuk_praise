@@ -86,7 +86,7 @@ RSpec.describe SchoolPolicy do
       end
     end
 
-    it "allows only admins and managers of the record school to manage school teachers" do
+    it "allows only managers of the record school to manage school teachers" do
       admin = create(:user, :admin)
       manager = create(:user, :teacher)
       member = create(:user, :teacher)
@@ -96,7 +96,7 @@ RSpec.describe SchoolPolicy do
       create(:school_membership, school: school, user: member)
       create(:school_membership, :manager, school: other_school, user: other_manager)
 
-      expect(described_class.new(admin, school).manage_teachers?).to eq(true)
+      expect(described_class.new(admin, school).manage_teachers?).to eq(false)
       expect(described_class.new(manager, school).manage_teachers?).to eq(true)
       expect(described_class.new(member, school).manage_teachers?).to eq(false)
       expect(described_class.new(other_manager, school).manage_teachers?).to eq(false)

@@ -21,7 +21,7 @@ class SchoolPolicy < ApplicationPolicy
   end
 
   def manage_teachers?
-    admin? || school_manager?
+    school_manager?
   end
 
   def create?

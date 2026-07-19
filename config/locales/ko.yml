@@ -58,6 +58,7 @@ ko:
       name: "이름"
       email: "이메일"
       password: "비밀번호"
+      role: "현재 역할"
 
     user_placeholders:
       name: "이름을 입력하세요"
@@ -163,8 +164,6 @@ ko:
       school_prompt: "학교 선택"
       grade_label: "학년"
       grade_prompt: "학년 선택"
-      teacher_assignment_managed_in_school: "담당 선생님은 학교 관리의 선생님 관리 화면에서 배정합니다."
-      manage_teachers: "선생님 관리로 이동"
     create:
       success: "교실이 생성되었습니다."
     update:
@@ -322,7 +321,6 @@ ko:
         failure: "공식 공휴일 동기화에 실패했습니다. 기존 데이터는 유지되었습니다."
         invalid_year: "동기화할 연도를 확인해 주세요."
     school_managers:
-      membership_conflict: "이미 다른 학교에 소속된 교사입니다."
       create:
         success: "학교 관리자를 지정했습니다."
       destroy:
@@ -346,11 +344,9 @@ ko:
         success: "학교 이름을 수정했습니다."
     teachers:
       new_title: "새 선생님 추가"
-      edit_title: "선생님 학교 소속"
+      edit_title: "선생님 설정"
       info_title: "선생님 정보"
-      school_membership_title: "학교 소속"
-      assignment_managed_in_school: "담당 학급은 해당 학교의 선생님 관리 화면에서 배정합니다."
-      manage_school_teachers: "학교 선생님 관리로 이동"
+      school_membership_title: "학교 소속과 담당 학급"
       back_to_index: "선생님 관리로 돌아가기"
       index:
         title: "선생님 관리"
@@ -373,8 +369,12 @@ ko:
         gender_prompt: "선택해 주세요"
         school_label: "학교"
         school_unspecified: "학교 미지정"
+        classrooms_label: "담당 학급"
+        classrooms_help: "학교를 선택하면 담당 학급을 지정할 수 있습니다."
+        classrooms_empty: "담당 학급 없음"
         submitting: "저장 중..."
       info:
+        teacher_role: "선생님"
         created_at: "생성일:"
         classroom_count: "담당 교실 수:"
         classroom_count_value: "%{count}개"
@@ -382,13 +382,18 @@ ko:
         unassigned: "미배정"
       errors:
         school_not_found: "선택한 학교를 찾을 수 없습니다."
-        classroom_assignments_must_be_cleared: "담당 학급을 먼저 모두 해제한 뒤 학교 소속을 변경하거나 삭제해 주세요."
+        classroom_not_found: "선택한 학급을 찾을 수 없습니다."
+        classroom_school_mismatch: "선택한 학교에 속하지 않은 학급이 포함되어 있습니다."
+        school_required_for_classrooms: "학교 소속이 없으면 담당 학급을 지정할 수 없습니다."
+        assignment_save_failed: "학교와 담당 학급을 저장하지 못했습니다."
+        assignment_selection_required: "학교와 담당 학급의 최종 상태를 함께 선택해 주세요."
+        teacher_required: "선생님 계정만 학교와 담당 학급을 변경할 수 있습니다."
         default_coupons_failed: "선생님 계정의 기본 쿠폰을 준비하지 못했습니다."
       create:
         success: "새 선생님 계정이 생성되었습니다."
         failure: "선생님 계정 생성에 실패했습니다."
       update:
-        success: "선생님 학교 소속을 저장했습니다."
+        success: "학교와 담당 학급을 저장했습니다."
 
   school_memberships:
     errors:
@@ -440,23 +445,25 @@ ko:
       teacher_count_value: "%{count}명"
       administrators: "학교 관리자"
       administrators_empty: "지정된 학교 관리자 없음"
-      classrooms_title: "학교 학급"
-      teachers_title: "소속 교사"
-      manage_teachers: "선생님 관리"
-      classroom_summary: "담당 교사: %{teachers} · 학생 %{students}명"
-      teacher_unassigned: "미배정"
-      classroom_unassigned: "담당 학급 없음"
-      role_manager: "학교 관리자"
-      role_member: "일반 교사"
-      manager_assign: "관리자 지정"
-      manager_remove: "관리자 해제"
-      manager_prompt: "교사 선택"
-      manager_remove_confirm: "이 교사의 학교 관리자 권한을 해제할까요?"
       closures_title: "학교 휴일"
       closures_empty: "등록된 학교 휴일이 없습니다."
       closure_single_date: "%{date}"
       closure_date_range: "%{starts_on} ~ %{ends_on}"
-      back_to_classrooms: "교실 목록으로 돌아가기"
+      back_to_classrooms: "교실 목록으로"
+    settings:
+      title: "학교 설정"
+      name_title: "학교 이름"
+      name_label: "학교 이름"
+      name_submit: "학교 이름 저장"
+      managers_title: "현재 학교 관리자"
+      manager_candidate_label: "관리자로 지정할 선생님"
+      manager_prompt: "선생님 선택"
+      manager_assign: "관리자 지정"
+      manager_remove: "관리자 해제"
+      manager_remove_confirm: "이 교사의 학교 관리자 권한을 해제할까요?"
+      back_to_school: "학교 관리로 돌아가기"
+      update:
+        success: "학교 이름을 수정했습니다."
     teachers:
       new_title: "새 선생님 추가"
       edit_title: "선생님 담당 교실"

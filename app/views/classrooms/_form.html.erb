@@ -61,14 +61,6 @@
         </div>
       </section>
 
-      <aside class="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
-        <p><%= t("classrooms.form.teacher_assignment_managed_in_school") %></p>
-        <% if classroom.school.present? %>
-          <%= link_to t("classrooms.form.manage_teachers"),
-                school_teachers_path(classroom.school),
-                class: "mt-2 inline-flex font-semibold text-sky-700 underline hover:text-sky-900" %>
-        <% end %>
-      </aside>
     <% end %>
 
     <% if policy(classroom).manage_operations? %>

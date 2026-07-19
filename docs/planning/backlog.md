@@ -17,6 +17,8 @@
 
 - `docs/architecture/current_system.md`
   - 현재 구현되어 있는 사실을 정리한다.
+- `docs/architecture/school_operations.md`
+  - 학교 기본 설정·휴일과 학교별 선생님 관리의 현재 동작을 정리한다.
 - `docs/specs/*.md`
   - 구현하기로 확정한 기능 정책을 정리한다.
 - `docs/planning/backlog.md`

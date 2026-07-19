@@ -58,10 +58,12 @@
       <%= f.submit t("ui.save"),
             data: { turbo_submits_with: t("schools.teachers.form.submitting") },
             class: "inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
-      <%= link_to t("schools.teachers.back_to_index"),
-            school_teachers_path(@school),
-            data: { turbo_frame: "_top" },
-            class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      <% unless turbo_frame_request? || local_assigns[:modal] %>
+        <%= link_to t("schools.teachers.back_to_index"),
+              school_teachers_path(@school),
+              data: { turbo_frame: "_top" },
+              class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+      <% end %>
     </div>
   </section>
 <% end %>

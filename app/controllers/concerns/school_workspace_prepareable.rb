@@ -4,23 +4,24 @@ module SchoolWorkspacePrepareable
   private
 
   def prepare_school_workspace
-    @classroom_count = @school.classrooms.count
-    @teacher_count = @school.school_memberships.count
-    @managers = @school.school_memberships.manager.includes(:user).map(&:user)
+    prepare_school_overview
     @can_manage_operations = policy(@school).manage_operations?
     prepare_closure_calendar
     @school_closures = @school.school_closures.order(starts_on: :asc, ends_on: :asc, id: :asc)
-    @classrooms = @school.classrooms.includes(classroom_memberships: :user).order(:name, :id)
-    @teacher_memberships = @school.school_memberships.includes(user: { classroom_memberships: :classroom }).order(:role, :id)
-    prepare_manager_candidates if current_user.admin?
   end
 
-  def prepare_manager_candidates
-    @manager_candidates = User.teacher
-      .left_joins(:school_membership)
-      .where(school_memberships: { id: nil })
-      .or(User.teacher.left_joins(:school_membership).where(school_memberships: { school_id: @school.id, role: :member }))
-      .order(:name, :id)
+  def prepare_school_overview
+    @classroom_count = @school.classrooms.count
+    @teacher_count = @school.school_memberships.count
+    @managers = @school.school_memberships.manager.includes(:user).map(&:user)
+  end
+
+  def prepare_school_settings
+    @managers = @school.school_memberships.manager.includes(:user).order(:id)
+    @manager_candidates = @school.school_memberships
+      .includes(:user)
+      .order(:role, :id)
+      .map(&:user)
   end
 
   def prepare_closure_calendar

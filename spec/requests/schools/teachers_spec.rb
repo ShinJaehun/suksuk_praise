@@ -9,46 +9,33 @@ RSpec.describe "School teachers", type: :request do
   let(:other_manager) { create(:school_membership, :manager, school: other_school, user: create(:user, :teacher)).user }
 
   describe "GET /schools/:school_id/teachers" do
-    it "allows an admin and the school manager to view school teachers" do
+    it "shows only the school's teachers, roles, classrooms, avatars, and modal actions to its manager" do
       classroom = create(:classroom, school: school, grade: 4, name: "4학년 1반")
       other_classroom = create(:classroom, school: other_school, name: "다른 학교 학급")
       unassigned_teacher = create(:user, :teacher, name: "미소속 선생님")
       create(:classroom_membership, classroom: classroom, user: manager, role: :teacher)
       create(:classroom_membership, classroom: other_classroom, user: manager, role: :teacher)
-      other_school_teacher = create(:school_membership, school: other_school, user: create(:user, :teacher, name: "다른 학교 선생님")).user
+      other_teacher = create(:school_membership, school: other_school, user: create(:user, :teacher, name: "다른 학교 선생님")).user
       student = create(:user, :student, name: "학생")
       school_member = member
 
-      [admin, manager].each do |actor|
-        sign_in actor
-
-        get school_teachers_path(school)
-
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("선생님 관리", "소속 선생님과 담당 교실을 관리합니다.")
-        expect(response.body).to include(manager.name, manager.email, "학교 관리자", "4학년 1반", "담당 1개", "4학년")
-        expect(response.body).to include(school_member.name, school_member.email, "일반 구성원")
-        expect(response.body).to include(new_school_teacher_path(school))
-        expect(response.body).to include(edit_school_teacher_path(school, manager))
-        expect(response.body).to include(edit_school_teacher_path(school, school_member))
-        expect(response.body).not_to include(other_school_teacher.name)
-        expect(response.body).not_to include(unassigned_teacher.name)
-        expect(response.body).not_to include(student.name)
-        expect(response.body).not_to include(other_classroom.name)
-      end
-    end
-
-    it "shows an empty state" do
-      sign_in admin
-
+      sign_in manager
       get school_teachers_path(school)
 
+      document = Nokogiri::HTML(response.body)
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("등록된 선생님이 없습니다.")
-      expect(response.body).to include(new_school_teacher_path(school))
+      expect(response.body).to include(school.name, manager.name, manager.email, school_member.name, "학교 관리자", classroom.name)
+      expect(document.at_css(%(img[alt="#{manager.name} avatar"]))).to be_present
+      expect(document.at_css(%(a[href="#{new_school_teacher_path(school)}"][data-turbo-frame="modal"]))).to be_present
+      expect(document.at_css(%(a[href="#{edit_school_teacher_path(school, manager)}"][data-turbo-frame="modal"]))).to be_present
+      expect(response.body).not_to include(other_teacher.name, unassigned_teacher.name, student.name, other_classroom.name)
     end
 
-    it "blocks members, other school managers, students, and guests" do
+    it "blocks admins, members, other school managers, students, and guests" do
+      sign_in admin
+      get school_teachers_path(school)
+      expect(response).to redirect_to(root_path)
+
       sign_in member
       get school_teachers_path(school)
       expect(response).to redirect_to(root_path)
@@ -65,28 +52,74 @@ RSpec.describe "School teachers", type: :request do
       get school_teachers_path(school)
       expect(response).to redirect_to(new_user_session_path)
     end
+
+  end
+
+  describe "GET modal forms" do
+    it "renders new and edit forms in the modal for the school manager" do
+      classroom = create(:classroom, school: school, name: "1반")
+
+      sign_in manager
+
+      get new_school_teacher_path(school), headers: { "Turbo-Frame" => "modal" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('<turbo-frame id="modal"')
+
+      get edit_school_teacher_path(school, member), headers: { "Turbo-Frame" => "modal" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('<turbo-frame id="modal"', classroom.name)
+      expect(response.body).to include("저장")
+      expect(response.body).not_to include("학교 관리로 돌아가기")
+      expect(response.body).not_to include("선생님 관리로 돌아가기")
+    end
+
+    it "keeps the teacher index link in the HTML edit fallback" do
+      sign_in manager
+
+      get edit_school_teacher_path(school, member)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("선생님 관리로 돌아가기")
+      expect(response.body).to include(school_teachers_path(school))
+    end
+
+    it "blocks members and managers from another school" do
+      sign_in member
+      get new_school_teacher_path(school)
+      expect(response).to redirect_to(root_path)
+
+      sign_in other_manager
+      get edit_school_teacher_path(school, member)
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "blocks an admin from every school teacher modal action" do
+      sign_in admin
+
+      get new_school_teacher_path(school)
+      expect(response).to redirect_to(root_path)
+
+      get edit_school_teacher_path(school, member)
+      expect(response).to redirect_to(root_path)
+    end
   end
 
   describe "POST /schools/:school_id/teachers" do
-    it "creates a member teacher for the URL school as an admin or manager" do
+    it "creates a member teacher for the URL school as its manager" do
       library_template = create(:coupon_template, created_by: admin, bucket: "library", active: true, title: "기본 쿠폰")
 
-      [admin, manager].each_with_index do |actor, index|
-        sign_in actor
-        email = "school-teacher-#{index}@example.com"
+      sign_in manager
+      post school_teachers_path(school), params: {
+        user: valid_teacher_params(email: "school-teacher@example.com"),
+        school_id: other_school.id
+      }
 
-        post school_teachers_path(school), params: {
-          user: valid_teacher_params(email: email),
-          school_id: other_school.id
-        }
-
-        created_teacher = User.teacher.find_by!(email: email)
-        expect(response).to have_http_status(:see_other)
-        expect(response).to redirect_to(school_teachers_path(school))
-        expect(created_teacher.role).to eq("teacher")
-        expect(created_teacher.school_membership).to have_attributes(school: school, role: "member")
-        expect(CouponTemplate.personal_for(created_teacher).find_by(title: library_template.title)).to be_present
-      end
+      created_teacher = User.teacher.find_by!(email: "school-teacher@example.com")
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(school_teachers_path(school))
+      expect(created_teacher.role).to eq("teacher")
+      expect(created_teacher.school_membership).to have_attributes(school: school, role: "member")
+      expect(CouponTemplate.personal_for(created_teacher).find_by(title: library_template.title)).to be_present
     end
 
     it "rolls back user, coupons, and membership on validation failure" do
@@ -124,7 +157,7 @@ RSpec.describe "School teachers", type: :request do
     end
 
     it "blocks direct posts outside the allowed school scope" do
-      [other_manager, member, create(:user, :student)].each do |actor|
+      [admin, other_manager, member, create(:user, :student)].each do |actor|
         sign_in actor
 
         expect do
@@ -168,7 +201,7 @@ RSpec.describe "School teachers", type: :request do
 
     it "keeps manager role while updating assignments" do
       classroom = create(:classroom, school: school)
-      sign_in admin
+      sign_in manager
 
       patch school_teacher_path(school, manager), params: { classroom_ids: [classroom.id] }
 
@@ -236,6 +269,10 @@ RSpec.describe "School teachers", type: :request do
       expect(response).to have_http_status(:not_found)
 
       sign_in member
+      patch school_teacher_path(school, member), params: { classroom_ids: [classroom.id] }
+      expect(response).to redirect_to(root_path)
+
+      sign_in admin
       patch school_teacher_path(school, member), params: { classroom_ids: [classroom.id] }
       expect(response).to redirect_to(root_path)
     end

@@ -1,0 +1,8 @@
+<% if turbo_frame_request? %>
+  <%= render "settings_modal" %>
+<% else %>
+  <section class="mx-auto w-full max-w-xl space-y-5 pt-4">
+    <%= render "settings_content" %>
+    <%= link_to t("schools.settings.back_to_school"), school_path(@school), class: "text-sm font-semibold text-sky-700" %>
+  </section>
+<% end %>

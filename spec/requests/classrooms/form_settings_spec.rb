@@ -36,14 +36,16 @@ RSpec.describe "Classroom form settings", type: :request do
       expect(response.body).not_to include("message_policy")
     end
 
-    it "shows school teacher management guidance without assignment inputs to an admin" do
+    it "does not show teacher assignment guidance, links, or inputs to an admin" do
       sign_in admin
 
       get new_classroom_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("담당 선생님은 학교 관리의 선생님 관리 화면에서 배정합니다.")
-      expect(response.body).not_to include('name="classroom[teacher_ids][]"')
+      form = Nokogiri::HTML(response.body).at_css(%(form[action="#{classrooms_path}"]))
+      expect(form.text).not_to include("담당 선생님", "선생님 관리로 이동")
+      expect(form.at_css(%(a[href*="/teachers"]))).to be_nil
+      expect(form.at_css('input[name="classroom[teacher_ids][]"]')).to be_nil
     end
   end
 

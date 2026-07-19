@@ -90,6 +90,8 @@ RSpec.describe "Admin teachers", type: :request do
   end
 
   it "targets modal form submissions to the top frame" do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
     sign_in admin
 
     get new_admin_teacher_path, headers: { "Turbo-Frame" => "modal" }
@@ -104,6 +106,9 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).to match(%r{src="[^"]*avatars/teacher[MF]\d{2}[^"]*\.png"})
     expect(response.body).to include('name="user[gender]"')
     expect(response.body).to include('name="user[avatar_key]"')
+    expect(response.body).to include('data-controller="teacher-school-classrooms"')
+    expect(response.body).to include('name="school_id"', 'name="classroom_ids[]"')
+    expect(response.body).to include(classroom.name)
   end
 
   it "saves a submitted male teacher avatar_key for male gender" do
@@ -207,7 +212,7 @@ RSpec.describe "Admin teachers", type: :request do
     get edit_admin_teacher_path(teacher)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("선생님 학교 소속")
+    expect(response.body).to include("선생님 설정")
     expect(response.body).to include("선생님 관리로 돌아가기")
     expect(response.body).to include('data-turbo-frame="_top"')
   end
@@ -219,7 +224,7 @@ RSpec.describe "Admin teachers", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
-    expect(response.body).to include("선생님 학교 소속")
+    expect(response.body).to include("선생님 설정")
     expect(response.body).to include('data-turbo-frame="_top"')
     expect(response.body).to include('data-turbo-submits-with="저장 중..."')
     expect(response.body).not_to include("<!DOCTYPE html>")
@@ -284,16 +289,19 @@ RSpec.describe "Admin teachers", type: :request do
     get schools_path
     expect(response.body).to include(admin_teachers_path)
     expect(response.body).to include(schools_path, classrooms_path)
+    expect(response.body).not_to include(school_teachers_path(manager_membership.school))
 
     sign_in manager_membership.user
     assigned_classroom = create(:classroom, school: manager_membership.school)
     create(:classroom_membership, classroom: assigned_classroom, user: manager_membership.user, role: :teacher)
     get school_teachers_path(manager_membership.school)
+    document = Nokogiri::HTML(response.body)
     expect(response.body).not_to include(admin_teachers_path)
     expect(response.body).to include(school_path(manager_membership.school))
     expect(response.body).to include(classrooms_path)
     expect(response.body).to include(school_teachers_path(manager_membership.school))
-    expect(response.body).not_to include(classroom_path(assigned_classroom))
+    expect(document.css(%(a[href="#{school_teachers_path(manager_membership.school)}"])).size).to eq(2)
+    expect(response.body).not_to include(school_path(manager_membership.school, anchor: "school-teachers"))
 
     sign_in regular_teacher
     get classrooms_path
@@ -306,147 +314,7 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).not_to include(admin_teachers_path)
   end
 
-  it "ignores classroom assignment params while selecting a school" do
-    school = create(:school)
-    classroom = create(:classroom, school: school)
-    sign_in admin
-
-    patch admin_teacher_path(teacher), params: {
-      school_id: school.id,
-      classroom_ids: [classroom.id]
-    }
-
-    expect(response).to redirect_to(admin_teachers_path)
-    expect(teacher.reload.school_membership).to have_attributes(school: school)
-    expect(teacher.classroom_memberships.teacher).to be_empty
-  end
-
-  it "ignores multiple forged classroom assignment params" do
-    school = create(:school)
-    classrooms = create_list(:classroom, 2, school: school)
-    sign_in admin
-
-    patch admin_teacher_path(teacher), params: {
-      school_id: school.id,
-      classroom_ids: classrooms.map(&:id)
-    }
-
-    expect(response).to redirect_to(admin_teachers_path)
-    expect(teacher.reload.school_membership).to have_attributes(school: school)
-    expect(teacher.classroom_memberships.teacher).to be_empty
-  end
-
-  it "ignores forged classroom ids but rejects a conflicting school change" do
-    original_school = create(:school)
-    selected_school = create(:school)
-    other_school = create(:school)
-    existing_classroom = create(:classroom, school: original_school)
-    selected_classroom = create(:classroom, school: selected_school)
-    other_classroom = create(:classroom, school: other_school)
-    create(:school_membership, school: original_school, user: teacher)
-    create(:classroom_membership, classroom: existing_classroom, user: teacher, role: :teacher)
-    sign_in admin
-
-    patch admin_teacher_path(teacher),
-      params: {
-        school_id: selected_school.id,
-        classroom_ids: [selected_classroom.id, other_classroom.id]
-      },
-      headers: { "Accept" => Mime[:turbo_stream].to_s }
-
-    expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include('turbo-stream action="replace" target="modal"')
-    expect(response.body).to include("담당 학급을 먼저 모두 해제한 뒤 학교 소속을 변경하거나 삭제해 주세요.")
-    expect(teacher.reload.school_membership).to have_attributes(school: original_school)
-    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(existing_classroom.id)
-    expect(teacher.classroom_memberships.teacher.where(classroom: [selected_classroom, other_classroom])).to be_empty
-  end
-
-  it "rejects a school change while classroom assignments remain" do
-    original_school = create(:school)
-    new_school = create(:school)
-    old_classroom = create(:classroom, school: original_school)
-    create(:school_membership, school: original_school, user: teacher)
-    membership = create(:classroom_membership, classroom: old_classroom, user: teacher, role: :teacher)
-    sign_in admin
-
-    patch admin_teacher_path(teacher),
-      params: { school_id: new_school.id },
-      headers: { "Accept" => Mime[:turbo_stream].to_s }
-
-    expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include("담당 학급을 먼저 모두 해제한 뒤 학교 소속을 변경하거나 삭제해 주세요.")
-    expect(teacher.reload.school_membership).to have_attributes(school: original_school)
-    expect(teacher.classroom_memberships.teacher.pluck(:id)).to contain_exactly(membership.id)
-  end
-
-  it "allows selecting a school without classrooms" do
-    school = create(:school)
-    sign_in admin
-
-    patch admin_teacher_path(teacher), params: {
-      school_id: school.id,
-      classroom_ids: [""]
-    }
-
-    expect(response).to redirect_to(admin_teachers_path)
-    expect(teacher.reload.school_membership).to have_attributes(school: school)
-    expect(teacher.classroom_memberships.teacher).to be_empty
-  end
-
-  it "rejects clearing school while classroom assignments remain" do
-    school = create(:school)
-    classroom = create(:classroom, school: school)
-    create(:school_membership, school: school, user: teacher)
-    membership = create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
-    sign_in admin
-
-    patch admin_teacher_path(teacher),
-      params: { school_id: "", classroom_ids: [""] },
-      headers: { "Accept" => Mime[:turbo_stream].to_s }
-
-    expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include('turbo-stream action="replace" target="modal"')
-    expect(response.body).to include("담당 학급을 먼저 모두 해제한 뒤 학교 소속을 변경하거나 삭제해 주세요.")
-    expect(teacher.reload.school_membership).to have_attributes(school: school)
-    expect(teacher.classroom_memberships.teacher.pluck(:id)).to contain_exactly(membership.id)
-  end
-
-  it "ignores classroom assignments without a selected school" do
-    school = create(:school)
-    classroom = create(:classroom, school: school)
-    sign_in admin
-
-    patch admin_teacher_path(teacher), params: {
-      school_id: "",
-      classroom_ids: [classroom.id]
-    }
-
-    expect(response).to redirect_to(admin_teachers_path)
-    expect(teacher.reload.school_membership).to be_nil
-    expect(teacher.classroom_memberships.teacher).to be_empty
-  end
-
-  it "ignores a missing classroom id without changing assignments" do
-    school = create(:school)
-    classroom = create(:classroom, school: school)
-    existing_classroom = create(:classroom, school: school)
-    create(:school_membership, school: school, user: teacher)
-    create(:classroom_membership, classroom: existing_classroom, user: teacher, role: :teacher)
-    missing_id = Classroom.maximum(:id).to_i + 10_000
-    sign_in admin
-
-    patch admin_teacher_path(teacher), params: {
-      school_id: school.id,
-      classroom_ids: [classroom.id, missing_id]
-    }
-
-    expect(response).to redirect_to(admin_teachers_path)
-    expect(teacher.reload.school_membership).to have_attributes(school: school)
-    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(existing_classroom.id)
-  end
-
-  it "does not show classroom assignment inputs in the edit form" do
+  it "shows school classroom assignment inputs without a school teacher management link" do
     school = create(:school)
     other_school = create(:school)
     classroom = create(:classroom, school: school, name: "현재 학교 학급")
@@ -457,11 +325,10 @@ RSpec.describe "Admin teachers", type: :request do
     get edit_admin_teacher_path(teacher)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("담당 학급은 해당 학교의 선생님 관리 화면에서 배정합니다.")
-    expect(response.body).to include(school_teachers_path(school))
-    expect(response.body).not_to include(%(name="classroom_ids[]"))
-    expect(response.body).not_to include(classroom.name)
-    expect(response.body).not_to include(other_classroom.name)
-    expect(response.body).not_to include(%(value="#{other_classroom.id}"))
+    expect(response.body).to include(%(name="classroom_ids[]"))
+    expect(response.body).to include(classroom.name, other_classroom.name)
+    expect(response.body).to include(%(value="#{other_classroom.id}"))
+    expect(response.body).not_to include(school_teachers_path(school))
+    expect(response.body).not_to include("담당 학급은 해당 학교의 선생님 관리 화면에서 배정합니다.")
   end
 end

@@ -75,7 +75,7 @@ Rails.application.routes.draw do
     resources :compliments, only: [:create]
   end
 
-  resources :schools, only: %i[index show] do
+  resources :schools, only: %i[index show edit update] do
     resources :teachers, only: %i[index new create edit update], module: :schools
     resources :school_closures, except: %i[index show]
   end

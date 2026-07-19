@@ -11,8 +11,7 @@ class Admin::TeachersController < Admin::BaseController
     @teacher = User.new
     @teacher.avatar_key = teacher_avatar_keys.sample
     authorize @teacher
-    load_school_options
-    load_selected_school
+    load_school_assignment_form
   end
 
   def create
@@ -23,14 +22,13 @@ class Admin::TeachersController < Admin::BaseController
     @teacher.avatar_key = pool.sample unless pool.include?(@teacher.avatar_key)
     authorize @teacher
 
-    if create_teacher_with_school_membership
+    if create_teacher_with_assignments
       redirect_to admin_teachers_path,
         notice: t("admin.teachers.create.success"),
         status: :see_other
     else
       flash.now[:alert] = t("admin.teachers.create.failure")
-      load_school_options
-      load_selected_school
+      load_school_assignment_form
       render_teacher_form(:new)
     end
   end
@@ -41,9 +39,16 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def update
-    authorize @teacher
+    authorize @teacher, @teacher.teacher? ? :update? : :index?
 
-    if update_teacher_school_membership
+    unless @teacher.teacher?
+      @teacher.errors.add(:base, t("admin.teachers.errors.teacher_required"))
+      load_edit_form
+      render_teacher_form(:edit)
+      return
+    end
+
+    if update_teacher_assignments
       redirect_to admin_teachers_path,
         notice: t("admin.teachers.update.success"),
         status: :see_other
@@ -124,49 +129,46 @@ class Admin::TeachersController < Admin::BaseController
     User.avatar_keys_for_role("teacher")
   end
 
-  def create_teacher_with_school_membership
+  def create_teacher_with_assignments
     school = selected_school
-    return false if school_selection_invalid?
+    classroom_ids = selected_classroom_ids(school)
+    return false if school_assignment_invalid?
 
     User.transaction do
       @teacher.save!
       SchoolMembership.create!(user: @teacher, school: school) if school
-    end
-    true
-  rescue ActiveRecord::RecordInvalid => error
-    handle_teacher_creation_error(error)
-  end
-
-  def update_teacher_school_membership
-    school = selected_school if school_selection_submitted?
-    return false if school_selection_invalid?
-    return false if school_selection_submitted? && teacher_school_assignment_conflict?(school)
-
-    User.transaction do
-      sync_school_membership!(school) if school_selection_submitted?
+      classroom_ids.each do |classroom_id|
+        ClassroomMembership.create!(user: @teacher, classroom_id: classroom_id, role: :teacher)
+      end
     end
     true
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
-    copy_membership_errors(error.record) if error.respond_to?(:record)
-    false
+    handle_teacher_creation_error(error)
   end
 
-  def teacher_school_assignment_conflict?(target_school)
-    teacher_classrooms = @teacher.classroom_memberships.teacher.joins(:classroom)
-    conflict =
-      if target_school
-        teacher_classrooms.where.not(classrooms: { school_id: target_school.id }).exists?
-      else
-        teacher_classrooms.exists?
-      end
-
-    if conflict
-      @teacher.errors.add(
-        :base,
-        t("admin.teachers.errors.classroom_assignments_must_be_cleared")
-      )
+  def update_teacher_assignments
+    unless school_selection_submitted? && classroom_selection_submitted?
+      @teacher.errors.add(:base, t("admin.teachers.errors.assignment_selection_required"))
+      return false
     end
-    conflict
+
+    school = selected_school
+    classroom_ids = selected_classroom_ids(school)
+    return false if school_assignment_invalid?
+
+    User.transaction do
+      sync_teacher_classroom_assignments!(classroom_ids, before: true)
+      sync_school_membership!(school)
+      sync_teacher_classroom_assignments!(classroom_ids, before: false)
+    end
+    true
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
+    if error.respond_to?(:record)
+      copy_assignment_errors(error.record)
+    else
+      @teacher.errors.add(:base, t("admin.teachers.errors.assignment_save_failed"))
+    end
+    false
   end
 
   def sync_school_membership!(school)
@@ -175,17 +177,32 @@ class Admin::TeachersController < Admin::BaseController
     if school.nil?
       membership&.destroy!
     elsif membership
-      membership.update!(school: school)
+      attributes = { school: school }
+      attributes[:role] = :member if membership.school_id != school.id
+      membership.update!(attributes)
     else
       SchoolMembership.create!(user: @teacher, school: school)
     end
   end
 
+  def sync_teacher_classroom_assignments!(classroom_ids, before:)
+    current_memberships = @teacher.classroom_memberships.teacher
+    current_ids = current_memberships.pluck(:classroom_id)
+
+    if before
+      current_memberships.where(classroom_id: current_ids - classroom_ids).find_each(&:destroy!)
+    else
+      (classroom_ids - current_ids).each do |classroom_id|
+        ClassroomMembership.create!(user: @teacher, classroom_id: classroom_id, role: :teacher)
+      end
+    end
+  end
+
   def selected_school
     return @selected_school if defined?(@selected_school)
-    return nil if params[:school_id].blank?
+    return nil if teacher_assignment_params[:school_id].blank?
 
-    @selected_school = School.find_by(id: params[:school_id])
+    @selected_school = School.find_by(id: teacher_assignment_params[:school_id])
     return @selected_school if @selected_school
 
     @school_selection_invalid = true
@@ -197,44 +214,94 @@ class Admin::TeachersController < Admin::BaseController
     @school_selection_invalid == true
   end
 
+  def selected_classroom_ids(school)
+    return @selected_classroom_ids if defined?(@selected_classroom_ids)
+
+    raw_ids = Array(teacher_assignment_params[:classroom_ids]).reject(&:blank?)
+    valid_raw_ids = raw_ids.select { |value| value.to_s.match?(/\A[1-9]\d*\z/) }
+    requested_ids = valid_raw_ids.map(&:to_i).uniq
+    @selected_classroom_ids = requested_ids
+
+    if valid_raw_ids.size != raw_ids.size || Classroom.where(id: requested_ids).count != requested_ids.size
+      @classroom_selection_invalid = true
+      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_not_found"))
+    elsif !school_selection_invalid? && school.nil? && requested_ids.any?
+      @classroom_selection_invalid = true
+      @teacher.errors.add(:base, t("admin.teachers.errors.school_required_for_classrooms"))
+    elsif school && Classroom.where(id: requested_ids).where.not(school_id: school.id).exists?
+      @classroom_selection_invalid = true
+      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_school_mismatch"))
+    end
+
+    @selected_classroom_ids
+  end
+
+  def school_assignment_invalid?
+    school_selection_invalid? || @classroom_selection_invalid == true
+  end
+
   def school_selection_submitted?
-    params.key?(:school_id)
+    teacher_assignment_params.key?(:school_id)
+  end
+
+  def classroom_selection_submitted?
+    teacher_assignment_params.key?(:classroom_ids)
   end
 
   def load_edit_form
-    load_school_options
-    load_selected_school
     classrooms = @teacher.classroom_memberships.teacher.includes(:classroom).map(&:classroom).compact
     @teacher_classroom_names = classrooms.map(&:name)
     @teacher_classroom_count = classrooms.size
+    load_school_assignment_form
   end
 
-  def load_school_options
-    @schools = School.order(:name, :id)
+  def load_school_assignment_form
+    @schools = School.order(:name, :id).load
+    @classrooms_by_school = Classroom.where(school_id: @schools.map(&:id)).order(:name, :id).group_by(&:school_id)
+    load_selected_school
+    @selected_classroom_ids =
+      if teacher_assignment_params.key?(:classroom_ids)
+        Array(teacher_assignment_params[:classroom_ids]).filter_map do |value|
+          value.to_i if value.to_s.match?(/\A[1-9]\d*\z/)
+        end.uniq
+      elsif @teacher.persisted?
+        @teacher.classroom_memberships.teacher.pluck(:classroom_id)
+      else
+        []
+      end
   end
 
   def load_selected_school
     @selected_school_id =
       if school_selection_submitted?
-        params[:school_id].presence&.to_i
+        teacher_assignment_params[:school_id].presence&.to_i
       else
         @teacher.school_membership&.school_id
       end
   end
 
-  def copy_membership_errors(record)
-    return unless record.is_a?(SchoolMembership)
+  def teacher_assignment_params
+    @teacher_assignment_params ||= params.permit(:school_id, classroom_ids: [])
+  end
+
+  def copy_assignment_errors(record)
+    return unless record.is_a?(SchoolMembership) || record.is_a?(ClassroomMembership)
 
     record.errors.full_messages.each { |message| @teacher.errors.add(:base, message) }
   end
 
   def handle_teacher_creation_error(error)
+    unless error.respond_to?(:record)
+      @teacher.errors.add(:base, t("admin.teachers.errors.assignment_save_failed"))
+      return false
+    end
+
     record = error.record
 
     if record.equal?(@teacher)
       false
-    elsif record.is_a?(SchoolMembership)
-      copy_membership_errors(record)
+    elsif record.is_a?(SchoolMembership) || record.is_a?(ClassroomMembership)
+      copy_assignment_errors(record)
       false
     elsif record.is_a?(CouponTemplate)
       @teacher.errors.add(:base, t("admin.teachers.errors.default_coupons_failed"))

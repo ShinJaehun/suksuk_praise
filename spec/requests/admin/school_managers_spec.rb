@@ -5,64 +5,108 @@ RSpec.describe "Admin school managers", type: :request do
   let(:school) { create(:school) }
   let(:teacher) { create(:user, :teacher) }
 
-  it "promotes an existing member and creates a manager membership when absent" do
+  it "promotes an existing school member without changing assignments" do
     membership = create(:school_membership, school: school, user: teacher)
+    classroom = create(:classroom, school: school)
+    classroom_membership = create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
     sign_in admin
 
     post admin_school_school_managers_path(school), params: { user_id: teacher.id }
-    expect(membership.reload).to be_manager
 
-    other_teacher = create(:user, :teacher)
-    post admin_school_school_managers_path(school), params: { user_id: other_teacher.id }
-    expect(other_teacher.reload.school_membership).to be_manager
+    expect(response).to redirect_to(school_path(school))
+    expect(membership.reload).to be_manager
+    expect(classroom_membership.reload).to be_present
+    expect(teacher.reload.school_membership).to eq(membership)
   end
 
-  it "demotes a manager without deleting the membership" do
+  it "demotes a manager without deleting membership or assignments" do
     membership = create(:school_membership, :manager, school: school, user: teacher)
+    classroom_membership = create(:classroom_membership, classroom: create(:classroom, school: school), user: teacher, role: :teacher)
     sign_in admin
 
     delete admin_school_manager_path(school, teacher)
 
+    expect(response).to redirect_to(school_path(school))
     expect(membership.reload).to be_member
+    expect(classroom_membership.reload).to be_present
   end
 
-  it "rejects manager and member requests and student targets" do
-    manager = create(:user, :teacher)
-    member = create(:user, :teacher)
-    create(:school_membership, :manager, school: school, user: manager)
-    create(:school_membership, school: school, user: member)
-
-    [manager, member].each do |actor|
-      sign_in actor
-      post admin_school_school_managers_path(school), params: { user_id: teacher.id }
-      expect(teacher.reload.school_membership).to be_nil
-    end
-
+  it "refreshes the overview and clears the modal for Turbo changes" do
+    membership = create(:school_membership, school: school, user: teacher)
     sign_in admin
-    post admin_school_school_managers_path(school), params: { user_id: create(:user, :student).id }
-    expect(response).to have_http_status(:not_found)
+
+    post admin_school_school_managers_path(school),
+      params: { user_id: teacher.id },
+      headers: { "Accept" => Mime[:turbo_stream].to_s }
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(
+      'turbo-stream action="replace" target="school_overview"',
+      'turbo-stream action="update" target="modal"',
+      teacher.name
+    )
+    expect(membership.reload).to be_manager
   end
 
-  it "does not change a membership belonging to another school" do
-    membership = create(:school_membership, school: create(:school), user: teacher)
-    sign_in admin
+  it "rejects a school manager actor" do
+    actor = create(:school_membership, :manager, school: school).user
+    sign_in actor
 
     post admin_school_school_managers_path(school), params: { user_id: teacher.id }
 
-    expect(membership.reload).to have_attributes(role: "member", school_id: membership.school_id)
+    expect(response).to redirect_to(root_path)
+    expect(teacher.reload.school_membership).to be_nil
   end
 
-  it "shows only unassigned and same-school member teachers as candidates" do
-    unassigned = teacher
-    same_school_member = create(:school_membership, school: school)
-    same_school_manager = create(:school_membership, :manager, school: school)
-    other_school_teacher = create(:school_membership, school: create(:school))
+  it "rejects a school member actor" do
+    actor = create(:school_membership, school: school).user
+    sign_in actor
+
+    post admin_school_school_managers_path(school), params: { user_id: teacher.id }
+
+    expect(response).to redirect_to(root_path)
+    expect(teacher.reload.school_membership).to be_nil
+  end
+
+  it "rejects a student target" do
+    target = create(:user, :student)
     sign_in admin
 
-    get school_path(school)
+    post admin_school_school_managers_path(school), params: { user_id: target.id }
 
-    expect(response.body).to include(unassigned.name, same_school_member.user.name)
-    expect(response.body).not_to include(%(value="#{same_school_manager.user.id}"))
-    expect(response.body).not_to include(%(value="#{other_school_teacher.user.id}"))
+    expect(response).to have_http_status(:not_found)
+    expect(target.reload.school_membership).to be_nil
+  end
+
+  it "rejects an unassigned teacher target" do
+    target = create(:user, :teacher)
+    sign_in admin
+
+    post admin_school_school_managers_path(school), params: { user_id: target.id }
+
+    expect(response).to have_http_status(:not_found)
+    expect(target.reload.school_membership).to be_nil
+  end
+
+  it "rejects an other-school teacher target without changing its membership" do
+    other_school = create(:school)
+    membership = create(
+      :school_membership,
+      school: other_school,
+      user: create(:user, :teacher),
+      role: :member
+    )
+    original_school_id = membership.school_id
+    target = membership.user
+    sign_in admin
+
+    post admin_school_school_managers_path(school), params: { user_id: target.id }
+
+    expect(response).to have_http_status(:not_found)
+    expect(target.reload.school_membership).to eq(membership)
+    expect(membership.reload).to have_attributes(
+      school_id: original_school_id,
+      role: "member"
+    )
   end
 end

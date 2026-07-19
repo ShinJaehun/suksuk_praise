@@ -18,6 +18,7 @@
     <div class="space-y-1">
       <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.name") %>:</span> <span class="ml-2"><%= @teacher.name %></span></p>
       <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.email") %>:</span> <span class="ml-2"><%= @teacher.email %></span></p>
+      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.role") %>:</span> <span class="ml-2"><%= t("admin.teachers.info.teacher_role") %></span></p>
       <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.created_at") %></span> <span class="ml-2"><%= l(@teacher.created_at, format: :short) %></span></p>
       <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.classroom_count") %></span> <span class="ml-2"><%= t("admin.teachers.info.classroom_count_value", count: @teacher_classroom_count) %></span></p>
       <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.classrooms") %></span> <span class="ml-2"><%= @teacher_classroom_names.any? ? @teacher_classroom_names.join(", ") : t("admin.teachers.info.unassigned") %></span></p>
@@ -32,19 +33,7 @@
       data: { turbo_frame: "_top" } do |f| %>
   <section class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
     <h2 class="mb-3 text-base font-semibold"><%= t("admin.teachers.school_membership_title") %></h2>
-    <%= label_tag :school_id, t("admin.teachers.form.school_label"), class: "block text-sm font-medium text-gray-700" %>
-    <%= select_tag :school_id,
-          options_from_collection_for_select(@schools, :id, :name, @selected_school_id),
-          include_blank: t("admin.teachers.form.school_unspecified"),
-          class: "mt-1 block w-full rounded border border-gray-300 px-3 py-2 sm:max-w-md" %>
-
-    <p class="mt-3 text-sm text-slate-500"><%= t("admin.teachers.assignment_managed_in_school") %></p>
-    <% if @teacher.school_membership %>
-      <%= link_to t("admin.teachers.manage_school_teachers"),
-            school_teachers_path(@teacher.school_membership.school),
-            data: { turbo_frame: "_top" },
-            class: "mt-2 inline-flex font-semibold text-sky-700 underline hover:text-sky-900" %>
-    <% end %>
+    <%= render "admin/teachers/school_classroom_fields" %>
 
     <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
       <%= f.submit t("ui.save"),
