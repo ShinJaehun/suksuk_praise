@@ -6,25 +6,25 @@
       </div>
     <% end %>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="mb-4">
-        <h2 class="text-base font-semibold text-slate-900"><%= t("classrooms.form.basic_info") %></h2>
-      </div>
+    <% if policy(classroom).manage_structure? %>
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="mb-4">
+          <h2 class="text-base font-semibold text-slate-900"><%= t("classrooms.form.basic_info") %></h2>
+        </div>
 
-      <div class="space-y-2 sm:max-w-3xl">
-        <% name_has_errors = classroom.errors[:name].any? %>
-        <%= f.label :name, t("classrooms.form.name_label"), class: "block text-sm font-semibold text-slate-800" %>
-        <%= f.text_field :name,
-              placeholder: t("classrooms.form.name_placeholder"),
-              class: "block w-full rounded-xl border px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 #{name_has_errors ? "border-rose-400 focus:border-rose-500 focus:ring-rose-100" : "border-slate-300 focus:border-sky-500 focus:ring-sky-100"}" %>
-        <% if name_has_errors %>
-          <p class="text-sm text-rose-600"><%= classroom.errors.full_messages_for(:name).to_sentence %></p>
-        <% else %>
-          <p class="text-sm text-slate-500"><%= t("classrooms.form.name_hint") %></p>
-        <% end %>
-      </div>
+        <div class="space-y-2 sm:max-w-3xl">
+          <% name_has_errors = classroom.errors[:name].any? %>
+          <%= f.label :name, t("classrooms.form.name_label"), class: "block text-sm font-semibold text-slate-800" %>
+          <%= f.text_field :name,
+                placeholder: t("classrooms.form.name_placeholder"),
+                class: "block w-full rounded-xl border px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 #{name_has_errors ? "border-rose-400 focus:border-rose-500 focus:ring-rose-100" : "border-slate-300 focus:border-sky-500 focus:ring-sky-100"}" %>
+          <% if name_has_errors %>
+            <p class="text-sm text-rose-600"><%= classroom.errors.full_messages_for(:name).to_sentence %></p>
+          <% else %>
+            <p class="text-sm text-slate-500"><%= t("classrooms.form.name_hint") %></p>
+          <% end %>
+        </div>
 
-      <% if current_user.admin? || current_user.school_membership&.manager? %>
         <div class="mt-5 grid gap-4 sm:max-w-3xl sm:grid-cols-2">
           <% if current_user.admin? %>
             <div class="space-y-2">
@@ -59,10 +59,19 @@
             <% end %>
           </div>
         </div>
-      <% end %>
-    </section>
+      </section>
 
-    <% if policy(classroom).manage_members? %>
+      <aside class="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">
+        <p><%= t("classrooms.form.teacher_assignment_managed_in_school") %></p>
+        <% if classroom.school.present? %>
+          <%= link_to t("classrooms.form.manage_teachers"),
+                school_teachers_path(classroom.school),
+                class: "mt-2 inline-flex font-semibold text-sky-700 underline hover:text-sky-900" %>
+        <% end %>
+      </aside>
+    <% end %>
+
+    <% if policy(classroom).manage_operations? %>
       <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="mb-4">
           <h2 class="text-base font-semibold text-slate-900">칭찬왕 설정</h2>
@@ -116,16 +125,6 @@
           <p class="text-sm text-slate-500">학생 메시지 영역과 작성 권한을 교실별로 설정합니다.</p>
         </div>
       </section>
-    <% end %>
-
-    <% if current_user.admin? || current_user.school_membership&.manager? %>
-      <%= render "classrooms/teacher_assignment_fields",
-            assignable_teachers: @assignable_teachers,
-            assigned_teacher_ids: @assigned_teacher_ids,
-            form: f,
-            notice_key: @teacher_assignment_notice_key,
-            show_details: false,
-            show_submit: false %>
     <% end %>
 
     <div class="flex justify-end">

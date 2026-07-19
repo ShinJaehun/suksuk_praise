@@ -10,15 +10,15 @@ class ClassroomPolicy < ApplicationPolicy
       # Teachers can see only their classrooms
       if user&.teacher?
         return scope.joins(:classroom_memberships)
-          .where(classroom_memberships: { user_id: user.id, role: "teacher" })
-          .distinct
+                    .where(classroom_memberships: { user_id: user.id, role: 'teacher' })
+                    .distinct
       end
 
       # Students can see only their classrooms
       if user&.student?
         return scope.joins(:classroom_memberships)
-          .where(classroom_memberships: { user_id: user.id })
-          .distinct
+                    .where(classroom_memberships: { user_id: user.id })
+                    .distinct
       end
 
       scope.none
@@ -28,23 +28,23 @@ class ClassroomPolicy < ApplicationPolicy
   def index?
     admin? || teacher? || student?
   end
-  
+
   def show?
     return true if admin?
+
     school_manager_of?(record) || member_of?(record)
   end
 
   def create?
     admin? || school_manager?
   end
-  
+
   def new?
     create?
   end
 
   def update?
-    return true if admin?
-    school_manager_of?(record) || teacher_of?(record)
+    manage_structure? || manage_operations?
   end
 
   def edit?
@@ -57,6 +57,14 @@ class ClassroomPolicy < ApplicationPolicy
 
   def manage_members?
     admin? || teacher_of?(record)
+  end
+
+  def manage_structure?
+    !!(admin? || school_manager_of?(record))
+  end
+
+  def manage_operations?
+    !!(admin? || teacher_of?(record))
   end
 
   def view_student_data?
@@ -90,14 +98,20 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def teacher_of?(classroom)
-    classroom.classroom_memberships.exists?(user_id: user.id, role: "teacher")
+    return false unless user&.teacher?
+
+    classroom.classroom_memberships.exists?(user_id: user.id, role: 'teacher')
   end
 
   def member_of?(classroom)
+    return false unless user
+
     classroom.classroom_memberships.exists?(user_id: user.id)
   end
 
   def student_of?(classroom)
-    classroom.classroom_memberships.exists?(user_id: user.id, role: "student")
+    return false unless user&.student?
+
+    classroom.classroom_memberships.exists?(user_id: user.id, role: 'student')
   end
 end

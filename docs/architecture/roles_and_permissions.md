@@ -55,9 +55,9 @@
 | `ClassroomsController#index` | `policy_scope(Classroom)` | 가능 | 가능 | 가능 | role별 classroom scope 적용 |
 | `ClassroomsController#show` | `ClassroomPolicy#show?` | 가능 | 담당 학급 또는 manager인 자기 학교 학급만 가능 | 본인 membership 교실만 가능 | 일반 teacher는 같은 학교 미담당 학급 접근 불가 |
 | `ClassroomsController#new` | `ClassroomPolicy#create?` | 가능 | manager만 가능 | 불가 | admin은 학교·학년 입력, manager는 자기 학교 고정과 학년 입력 |
-| `ClassroomsController#create` | `ClassroomPolicy#create?` | 가능 | manager만 가능 | 불가 | school과 1~6 grade 필수. admin은 학교 지정, manager는 자기 학교로 고정되며 같은 학교 소속 teacher만 배정 가능 |
-| `ClassroomsController#edit` | `ClassroomPolicy#update?` | 가능 | 담당 학급 또는 manager인 자기 학교 학급만 가능 | 불가 |  |
-| `ClassroomsController#update` | `ClassroomPolicy#update?` | 가능 | 담당 학급 또는 manager인 자기 학교 학급만 가능 | 불가 | school과 1~6 grade 필수. manager는 학급을 다른 학교로 이동할 수 없고 같은 학교 소속 teacher만 배정 가능 |
+| `ClassroomsController#create` | `ClassroomPolicy#create?` | 가능 | manager만 가능 | 불가 | school과 1~6 grade 필수. admin은 학교 지정, manager는 자기 학교로 고정. `teacher_ids`는 허용하지 않음 |
+| `ClassroomsController#edit` | `ClassroomPolicy#update?` | 가능 | 담당 학급 또는 manager인 자기 학교 학급만 가능 | 불가 | `manage_structure?`와 `manage_operations?`에 따라 form 영역 분리 |
+| `ClassroomsController#update` | `ClassroomPolicy#update?` | 가능 | 담당 학급 또는 manager인 자기 학교 학급만 가능 | 불가 | admin·manager는 구조 정보, admin·담당 teacher는 운영 설정만 허용. `teacher_ids`는 허용하지 않음 |
 | `ClassroomsController#destroy` | `ClassroomPolicy#destroy?` + model 삭제 guard | 학생 또는 운영 기록이 없는 교실만 가능 | 불가 | 불가 | manager가 담당 teacher여도 불가. teacher membership만 있는 미사용 교실은 admin이 삭제 가능 |
 | `ClassroomsController#refresh_compliment_king` | `ClassroomPolicy#show?` | 가능 | membership 교실이면 가능 | membership 교실이면 가능 | 읽기 액션으로 동작 |
 | `ClassroomsController#student_login_info` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 학생 로그인 URL/QR/재발급 modal |
@@ -83,8 +83,8 @@
 | `Admin::TeachersController#index` | `policy_scope(User)` | 가능 | 불가 | 불가 | `Admin::BaseController#require_admin!`도 필요 |
 | `Admin::TeachersController#new` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 선택적으로 단일 학교 소속 지정 |
 | `Admin::TeachersController#create` | `UserPolicy#create?` | 가능 | 불가 | 불가 | 새 계정은 항상 `role: teacher`; User 생성 transaction 안에서 기본 개인 쿠폰을 준비하고 선택적 SchoolMembership까지 한 transaction으로 처리하며 하나라도 실패하면 전체 rollback |
-| `Admin::TeachersController#edit` | `UserPolicy#update?` | 가능 | 불가 | 불가 | 대상 teacher의 학교 소속과 담당 교실 관리 |
-| `Admin::TeachersController#update` | `UserPolicy#update?` | 가능 | 불가 | 불가 | SchoolMembership과 teacher ClassroomMembership만 한 transaction으로 변경. 계정 속성은 변경하지 않으며, 담당 교실 ID가 하나라도 없거나 policy scope 밖이면 전체 거부 |
+| `Admin::TeachersController#edit` | `UserPolicy#update?` | 가능 | 불가 | 불가 | 대상 teacher의 학교 소속 관리와 담당 교실 현황 조회 |
+| `Admin::TeachersController#update` | `UserPolicy#update?` | 가능 | 불가 | 불가 | SchoolMembership만 변경. 계정 속성과 `classroom_ids`는 변경하지 않으며, 담당 학급과 새 학교가 충돌하거나 담당 학급이 있는 상태의 소속 삭제는 거부 |
 | `Schools::TeachersController#index` | `SchoolPolicy#manage_teachers?` + `SchoolPolicy::Scope` | 가능 | 해당 학교 manager만 가능 | 불가 | URL school 소속 teacher만 조회 |
 | `Schools::TeachersController#new`, `#create` | `SchoolPolicy#manage_teachers?` + `SchoolPolicy::Scope` | 가능 | 해당 학교 manager만 가능 | 불가 | 새 teacher는 URL school의 일반 구성원으로 생성. body의 school_id는 사용하지 않음 |
 | `Schools::TeachersController#edit`, `#update` | `SchoolPolicy#manage_teachers?` + `SchoolPolicy::Scope` | 가능 | 해당 학교 manager만 가능 | 불가 | 대상 teacher는 URL school 소속으로 제한. 해당 학교 교실 담당 배정만 변경하고 학교 소속·manager 역할·다른 학교 교실 담당은 변경하지 않음 |
@@ -102,7 +102,11 @@
 
 `SchoolPolicy::Scope`는 global admin에게 전체 학교를, 소속 teacher에게 자신의 학교만 반환한다. 일반 member와 manager는 자신의 학교를 `show?`할 수 있고, `manage_operations?`와 `manage_teachers?`는 global admin과 해당 학교 manager에게만 허용된다. 학교 workspace와 SchoolClosure controller가 운영 권한을 사용하고, 학교별 선생님 관리 controller는 `manage_teachers?`를 사용한다.
 
-`ClassroomPolicy::Scope`는 global admin에게 전체 학급을, 학교 manager에게 자기 학교의 모든 학급을, 일반 teacher에게 담당 teacher membership 학급만 반환한다. student의 기존 membership 기반 scope는 유지한다. manager 권한 확장은 학급 목록·상세·생성·기본 수정·담당 교사 배정까지이며, 학생 구성원 관리와 쿠폰·칭찬·메시지 등 수업 운영 기능 전체에는 아직 적용하지 않는다. 학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하며, 학급 배정은 SchoolMembership을 자동 생성·이동하지 않는다.
+`ClassroomPolicy::Scope`는 global admin에게 전체 학급을, 학교 manager에게 자기 학교의 모든 학급을, 일반 teacher에게 담당 teacher membership 학급만 반환한다. student의 기존 membership 기반 scope는 유지한다. `manage_structure?`는 global admin과 해당 학교 manager에게 이름·학년, admin에게 학교 변경을 허용한다. `manage_operations?`와 `manage_members?`는 global admin과 실제 담당 teacher에게만 허용한다. 따라서 manager는 담당 teacher가 아니라면 학생 관리나 칭찬왕·메시지 운영 설정 권한을 얻지 않는다.
+
+담당 teacher 배정·해제는 `/schools/:school_id/teachers`와 `/schools/:school_id/teachers/:id/edit`에서만 수행한다. classroom create/update와 global admin의 `/admin/teachers/:id` update는 `teacher_ids` 또는 `classroom_ids`로 담당 관계를 변경하지 않는다.
+
+담당 teacher는 SchoolMembership을 반드시 가지며 모든 담당 Classroom은 그 SchoolMembership과 같은 학교여야 한다. `/admin/teachers/:id`에서 학교 소속을 변경하거나 삭제하기 전에 기존 학교의 선생님 관리 화면에서 담당 학급을 모두 해제해야 한다. 충돌하면 SchoolMembership 변경을 거부하고 기존 ClassroomMembership을 보존하며 자동 삭제·이동하지 않는다.
 
 학교 삭제 endpoint는 아직 구현하지 않았다. 학교 생성·이름 수정·삭제 policy와 manager 지정·해제는 global admin 전용으로 유지한다. 학교 manager는 `/schools/:school_id/teachers`에서 자기 학교 teacher를 일반 구성원으로 생성하고 자기 학교 담당 교실만 배정·해제할 수 있으며, 학교 이동·소속 해제·manager 지정/해제·다른 학교 교실 배정은 할 수 없다.
 

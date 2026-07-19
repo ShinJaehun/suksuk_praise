@@ -214,8 +214,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: {
         name: '관리자 생성 학급',
         school_id: other_school.id,
-        grade: 2,
-        teacher_ids: [manager.id]
+        grade: 2
       }
     }
 
@@ -223,7 +222,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response).to redirect_to(classroom_path(classroom))
     expect(classroom.school).to eq(school)
     expect(classroom.grade).to eq(2)
-    expect(classroom.classroom_memberships.teacher.exists?(user: manager)).to eq(true)
+    expect(classroom.classroom_memberships.teacher).to be_empty
   end
 
   it 'rejects manager classroom creation without a grade' do
@@ -233,7 +232,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
 
     expect do
       post classrooms_path, params: {
-        classroom: { name: '학년 없는 관리자 학급', grade: '', teacher_ids: [manager.id] }
+        classroom: { name: '학년 없는 관리자 학급', grade: '' }
       }
     end.not_to change(Classroom, :count)
 
@@ -248,7 +247,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
 
     expect do
       post classrooms_path, params: {
-        classroom: { name: '잘못된 관리자 학년', grade: 0, teacher_ids: [manager.id] }
+        classroom: { name: '잘못된 관리자 학년', grade: 0 }
       }
     end.not_to change(Classroom, :count)
 
@@ -290,6 +289,27 @@ RSpec.describe 'Classroom organization settings', type: :request do
 
     follow_redirect!
     expect(response.body).to include('교실 설정을 저장했습니다.')
+  end
+
+  it 'rejects an admin school change that would leave a teacher assigned across schools' do
+    original_school = create(:school)
+    target_school = create(:school)
+    classroom = create(:classroom, school: original_school, name: '기존 학급', grade: 2)
+    create(:school_membership, school: original_school, user: teacher)
+    create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
+    sign_in admin
+
+    patch classroom_path(classroom), params: {
+      classroom: classroom_update_params(classroom).merge(
+        name: '변경되면 안 됨',
+        school_id: target_school.id,
+        grade: 5
+      )
+    }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('해당 학교에 소속된 선생님만 담당 교사로 지정할 수 있습니다.')
+    expect(classroom.reload).to have_attributes(name: '기존 학급', school: original_school, grade: 2)
   end
 
   it 'allows a manager to update basic classroom fields in their school' do
@@ -438,20 +458,38 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(classroom.reload.name).to eq('다른 학교 학급')
   end
 
-  it 'ignores school and grade params submitted by a teacher' do
+  it 'ignores structure params and applies operation params submitted by an assigned teacher' do
     original_school = create(:school)
     other_school = create(:school)
-    classroom = create(:classroom, school: original_school, grade: 3)
+    classroom = create(
+      :classroom,
+      name: '기존 학급',
+      school: original_school,
+      grade: 3,
+      daily_compliment_king_enabled: true,
+      message_policy: 'replies_only'
+    )
     create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
     sign_in teacher
 
     patch classroom_path(classroom), params: {
-      classroom: classroom_update_params(classroom).merge(school_id: other_school.id, grade: 5)
+      classroom: classroom_update_params(classroom).merge(
+        name: '변경되면 안 되는 학급',
+        school_id: other_school.id,
+        grade: 5,
+        daily_compliment_king_enabled: '0',
+        message_policy: 'student_initiated'
+      )
     }
 
     expect(response).to redirect_to(classroom_path(classroom))
-    expect(classroom.reload.school).to eq(original_school)
-    expect(classroom.grade).to eq(3)
+    expect(classroom.reload).to have_attributes(
+      name: '기존 학급',
+      school: original_school,
+      grade: 3,
+      daily_compliment_king_enabled: false,
+      message_policy: 'student_initiated'
+    )
   end
 
   it 'keeps classroom identification while removing school and teacher management sections' do

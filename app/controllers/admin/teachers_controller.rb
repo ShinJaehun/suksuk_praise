@@ -43,7 +43,7 @@ class Admin::TeachersController < Admin::BaseController
   def update
     authorize @teacher
 
-    if update_teacher_assignments
+    if update_teacher_school_membership
       redirect_to admin_teachers_path,
         notice: t("admin.teachers.update.success"),
         status: :see_other
@@ -137,19 +137,36 @@ class Admin::TeachersController < Admin::BaseController
     handle_teacher_creation_error(error)
   end
 
-  def update_teacher_assignments
+  def update_teacher_school_membership
     school = selected_school if school_selection_submitted?
-    selected_classroom_ids if classroom_assignments_submitted?
-    return false if school_selection_invalid? || classroom_assignments_invalid?
+    return false if school_selection_invalid?
+    return false if school_selection_submitted? && teacher_school_assignment_conflict?(school)
 
     User.transaction do
       sync_school_membership!(school) if school_selection_submitted?
-      sync_homeroom_memberships! if classroom_assignments_submitted?
     end
     true
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
     copy_membership_errors(error.record) if error.respond_to?(:record)
     false
+  end
+
+  def teacher_school_assignment_conflict?(target_school)
+    teacher_classrooms = @teacher.classroom_memberships.teacher.joins(:classroom)
+    conflict =
+      if target_school
+        teacher_classrooms.where.not(classrooms: { school_id: target_school.id }).exists?
+      else
+        teacher_classrooms.exists?
+      end
+
+    if conflict
+      @teacher.errors.add(
+        :base,
+        t("admin.teachers.errors.classroom_assignments_must_be_cleared")
+      )
+    end
+    conflict
   end
 
   def sync_school_membership!(school)
@@ -162,22 +179,6 @@ class Admin::TeachersController < Admin::BaseController
     else
       SchoolMembership.create!(user: @teacher, school: school)
     end
-  end
-
-  def sync_homeroom_memberships!
-    ids = selected_classroom_ids
-    current_memberships = @teacher.classroom_memberships.teacher
-    current_ids = current_memberships.pluck(:classroom_id)
-
-    (ids - current_ids).each do |classroom_id|
-      ClassroomMembership.find_or_create_by!(
-        user_id: @teacher.id,
-        classroom_id: classroom_id,
-        role: "teacher"
-      )
-    end
-
-    current_memberships.where(classroom_id: current_ids - ids).destroy_all
   end
 
   def selected_school
@@ -200,85 +201,16 @@ class Admin::TeachersController < Admin::BaseController
     params.key?(:school_id)
   end
 
-  def classroom_assignments_submitted?
-    params.key?(:classroom_ids)
-  end
-
-  def selected_classroom_ids
-    return @selected_classroom_ids if defined?(@selected_classroom_ids)
-
-    raw_ids = Array(params[:classroom_ids]).reject(&:blank?)
-    valid_raw_ids = raw_ids.select { |value| value.to_s.match?(/\A[1-9]\d*\z/) }
-    requested_ids = valid_raw_ids.map(&:to_i).uniq
-    classrooms = policy_scope(Classroom).where(id: requested_ids).to_a
-    @selected_classroom_ids = classrooms.map(&:id)
-
-    if valid_raw_ids.size != raw_ids.size || @selected_classroom_ids.sort != requested_ids.sort
-      invalid_classroom_assignment(@selected_classroom_ids)
-    elsif requested_ids.any?
-      validate_classroom_school_assignments(classrooms)
-    end
-    @selected_classroom_ids
-  end
-
-  def invalid_classroom_assignment(selected_ids)
-    @classroom_assignments_invalid = true
-    @teacher.errors.add(:base, t("admin.teachers.errors.classroom_not_found"))
-    @selected_classroom_ids = selected_ids
-  end
-
-  def validate_classroom_school_assignments(classrooms)
-    school = selected_school_for_classroom_assignment
-    if school.nil?
-      return if school_selection_invalid?
-
-      @classroom_assignments_invalid = true
-      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_school_required"))
-    elsif classrooms.any? { |classroom| classroom.school_id != school.id }
-      @classroom_assignments_invalid = true
-      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_school_mismatch"))
-    end
-  end
-
-  def selected_school_for_classroom_assignment
-    if school_selection_submitted?
-      selected_school
-    else
-      @teacher.school_membership&.school
-    end
-  end
-
-  def classroom_assignments_invalid?
-    @classroom_assignments_invalid == true
-  end
-
   def load_edit_form
     load_school_options
     load_selected_school
-    @classrooms = classroom_options_for_selected_school
-    @teacher_classroom_ids =
-      if classroom_assignments_submitted?
-        selected_classroom_ids
-      else
-        @teacher.classroom_memberships.teacher.pluck(:classroom_id)
-      end
-    selected_classrooms = @classrooms.select { |classroom| @teacher_classroom_ids.include?(classroom.id) }
-    @teacher_classroom_names = selected_classrooms.map(&:name)
-    @teacher_classroom_count = selected_classrooms.size
+    classrooms = @teacher.classroom_memberships.teacher.includes(:classroom).map(&:classroom).compact
+    @teacher_classroom_names = classrooms.map(&:name)
+    @teacher_classroom_count = classrooms.size
   end
 
   def load_school_options
     @schools = School.order(:name, :id)
-  end
-
-  def classroom_options_for_selected_school
-    return Classroom.none unless @selected_school_id
-
-    policy_scope(Classroom)
-      .where(school_id: @selected_school_id)
-      .includes(:school)
-      .order(:created_at)
-      .load
   end
 
   def load_selected_school

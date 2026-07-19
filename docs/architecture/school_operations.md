@@ -19,6 +19,8 @@
 - 학교별 휴일
 - 학교 운영일 계산
 
+`/schools/:id`는 학교 관리자 지정, 소속 선생님과 담당 학급, 학급 구조 정보, 학교 휴일 관리로 이어지는 학교 관리 허브다.
+
 학교는 칭찬왕을 선정하거나 결과를 보존하지 않는다. 칭찬왕에는 운영일 계산 결과만 제공한다.
 
 모든 `Classroom`은 하나의 `School`과 1~6 범위의 grade를 반드시 가진다. application validation과 DB `NOT NULL` 제약을 함께 적용하며 school이나 grade가 없는 legacy classroom은 허용하지 않는다.
@@ -41,7 +43,6 @@
 - 학교별 휴일 등록·수정·삭제
 - 해당 학교의 학급 목록·상세 조회
 - 해당 학교 학급 생성·기본 정보 수정
-- 해당 학교 소속 member/manager 교사의 담당 교사 배정
 - 해당 학교 선생님 목록 조회
 - 새 선생님을 해당 학교의 일반 구성원으로 생성
 - 해당 학교 안에서 선생님의 담당 교실 배정·해제
@@ -49,6 +50,8 @@
 `SchoolPolicy`와 scope는 일반 teacher와 manager에게 자신의 학교만 노출한다. 일반 teacher는 학교를 열람할 수 있지만 운영 기능과 선생님 관리를 할 수 없고, manager는 자신의 학교 운영 기능과 학교별 선생님 관리만 사용할 수 있다. global admin은 모든 학교를 조회하고 관리하며 `/admin/teachers`에서 전체 학교 선생님을 관리한다. 학교 생성·이름 수정·삭제는 global admin 전용이다.
 
 이 policy는 학교 운영 정보, 휴일 controller·route, 학교별 선생님 관리 route에 연결되어 있다. member는 자신의 학교 현황과 휴일을 읽고, 해당 학교 manager와 global admin은 SchoolClosure를 관리한다. global admin은 manager를 지정·해제할 수 있다. manager는 학급을 다른 학교로 이동할 수 없고, teacher를 다른 학교로 이동하거나 학교 소속을 해제하거나 manager 지정·해제를 할 수 없다. 학교 manager의 teacher 생성은 URL의 학교로 고정되며 항상 일반 구성원으로 생성된다.
+
+담당 teacher 배정·해제는 `/schools/:school_id/teachers`의 선생님별 담당 교실 편집에서만 수행한다. classroom create/update는 담당 teacher를 동시에 지정하지 않는다. `/classrooms/:id/edit`에서 admin과 해당 학교 manager는 교실 이름·학년 등 구조 정보를 관리하고, 담당 teacher는 칭찬왕 사용 여부와 메시지 정책 등 운영 설정만 관리한다. manager가 담당 teacher가 아니라면 학생 관리와 운영 설정 권한은 없다.
 
 ---
 
@@ -61,7 +64,9 @@
 
 역할은 integer enum으로 구현되어 있으며 기본값은 `member`다. 현재 교사 한 명은 최대 한 학교에만 소속되고 같은 학교의 여러 학급을 담당할 수 있다. 다른 학교 소속 teacher를 담당 교사로 배정하는 것은 차단하며 여러 학교 소속 지원은 현재 범위가 아니다. 한 학교에는 여러 manager를 둘 수 있고 global admin과 student는 SchoolMembership을 갖지 않는다.
 
-학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. global admin과 학교 manager 모두 학급 배정 과정에서 미소속 teacher나 다른 학교 소속 teacher의 소속을 자동 생성·변경하지 않으며, 필요한 학교 소속 변경은 global admin의 전체 교사 수정 화면에서 먼저 수행한다. 같은 학교의 기존 member·manager는 유지하고 다른 학교 membership은 validation 오류로 배정을 차단하며, 담당 해제 시에도 학교 소속을 삭제하지 않는다. 학교별 선생님 관리 화면은 해당 학교 안의 ClassroomMembership만 추가·삭제하고 다른 학교 담당 교실은 변경하지 않는다.
+학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. global admin과 학교 manager 모두 학급 배정 과정에서 미소속 teacher나 다른 학교 소속 teacher의 소속을 자동 생성·변경하지 않는다. 같은 학교의 기존 member·manager는 유지하고 다른 학교 membership은 validation 오류로 배정을 차단하며, 담당 해제 시에도 학교 소속을 삭제하지 않는다. 학교별 선생님 관리 화면은 해당 학교 안의 ClassroomMembership만 추가·삭제하고 다른 학교 담당 교실은 변경하지 않는다.
+
+global admin이 `/admin/teachers/:id`에서 학교 소속을 변경하거나 삭제하려면 먼저 기존 학교의 `/schools/:school_id/teachers`에서 담당 학급을 모두 해제해야 한다. 담당 학급과 새 학교가 충돌하거나 담당 학급이 남은 상태에서 소속을 삭제하면 SchoolMembership 변경을 거부한다. 이 과정에서 ClassroomMembership을 자동 삭제·이동하거나 classroom의 학교를 바꾸지 않는다.
 
 기존 teacher assignment의 누락 SchoolMembership은 `bin/rails school_memberships:backfill`로 멱등하게 보완한다. backfill은 다른 학교 충돌을 자동 변경하지 않고 `conflicts`로 집계한다.
 

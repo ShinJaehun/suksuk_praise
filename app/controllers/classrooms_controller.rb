@@ -72,19 +72,17 @@ class ClassroomsController < ApplicationController
   def new
     authorize Classroom
     @classroom = Classroom.new
+    assign_manager_school
     prepare_classroom_form
-    if current_user_school_manager?
-      @classroom.school = current_user.school_membership.school
-    elsif current_user.admin?
-      load_school_options
-    end
   end
 
   def create
     authorize Classroom
-    @classroom = Classroom.new(classroom_params)
+    @classroom = Classroom.new
     assign_manager_school
-    if create_classroom_with_teacher_assignments
+    @classroom.assign_attributes(classroom_params)
+
+    if @classroom.save
       redirect_to classroom_path(@classroom), notice: t("classrooms.create.success")
     else
       prepare_classroom_form
@@ -99,7 +97,11 @@ class ClassroomsController < ApplicationController
 
   def update
     authorize @classroom
-    if update_classroom_with_teacher_assignments
+
+    if manager_school_change_attempt? || teacher_school_assignment_conflict?
+      prepare_classroom_form
+      render :edit, status: :unprocessable_entity
+    elsif @classroom.update(classroom_params)
       redirect_to @classroom, notice: t("classrooms.update.success")
     else
       prepare_classroom_form
@@ -369,9 +371,9 @@ class ClassroomsController < ApplicationController
   end
 
   def classroom_params
-    permitted = %i[name]
+    permitted = []
+    permitted.concat(%i[name grade]) if structure_settings_allowed?
     permitted.concat(operation_setting_attributes) if operation_settings_allowed?
-    permitted << :grade if current_user.admin? || current_user_school_manager?
     permitted << :school_id if current_user.admin?
 
     params.require(:classroom).permit(*permitted.uniq)
@@ -387,106 +389,32 @@ class ClassroomsController < ApplicationController
   end
 
   def operation_settings_allowed?
-    return true if current_user.admin?
     return false unless defined?(@classroom) && @classroom.present?
 
-    policy(@classroom).manage_members?
+    policy(@classroom).manage_operations?
   end
 
-  def update_classroom_with_teacher_assignments
-    return false if manager_school_change_attempt?
+  def structure_settings_allowed?
+    return false unless defined?(@classroom) && @classroom.present?
 
-    selected_teacher_ids if can_assign_teachers? && teacher_assignment_params_submitted?
-    return false if teacher_assignment_invalid?
-    return false if teacher_school_assignment_conflict?
-
-    Classroom.transaction do
-      next false unless @classroom.update(classroom_params)
-
-      sync_teacher_assignments if can_assign_teachers? && teacher_assignment_params_submitted?
-      true
-    end
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
-    false
-  end
-
-  def load_teacher_assignment_form
-    @assignable_teachers = assignable_teachers
-    @teacher_assignment_notice_key = teacher_assignment_notice_key
-    @assigned_teacher_ids = @classroom.classroom_memberships
-      .teacher
-      .joins(:user)
-      .where(users: { role: "teacher" })
-      .pluck(:user_id)
+    policy(@classroom).manage_structure?
   end
 
   def load_school_options
     @school_options = policy_scope(School).order(:name, :id)
   end
 
-  def load_new_classroom_teacher_assignment_form
-    @assignable_teachers = assignable_teachers
-    @teacher_assignment_notice_key = teacher_assignment_notice_key
-    @assigned_teacher_ids = selected_teacher_ids
-  end
+  def teacher_school_assignment_conflict?
+    return false unless current_user.admin?
 
-  def create_classroom_with_teacher_assignments
-    return false if unavailable_teacher_assignment_submitted?
+    target_school_id = params.dig(:classroom, :school_id).presence
+    return false if target_school_id.blank? || target_school_id.to_s == @classroom.school_id.to_s
 
-    selected_teacher_ids if can_assign_teachers?
-    return false if teacher_assignment_invalid?
-    return false if teacher_school_assignment_conflict?
-
-    Classroom.transaction do
-      next false unless @classroom.save
-
-      teacher_ids = can_assign_teachers? ? selected_teacher_ids : [current_user.id]
-      teacher_ids.each do |teacher_id|
-        ClassroomMembership.create!(
-          classroom: @classroom,
-          user_id: teacher_id,
-          role: "teacher"
-        )
-      end
-      true
-    end
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
-    false
-  end
-
-  def sync_teacher_assignments
-    current_teacher_memberships = @classroom.classroom_memberships
+    teacher_ids = @classroom.classroom_memberships
       .teacher
       .joins(:user)
       .where(users: { role: "teacher" })
-
-    current_teacher_ids = current_teacher_memberships.pluck(:user_id)
-    teacher_ids_to_add = selected_teacher_ids - current_teacher_ids
-    teacher_ids_to_remove = current_teacher_ids - selected_teacher_ids
-
-    teacher_ids_to_add.each do |teacher_id|
-      ClassroomMembership.find_or_create_by!(
-        classroom: @classroom,
-        user_id: teacher_id,
-        role: "teacher"
-      )
-    end
-
-    current_teacher_memberships.where(user_id: teacher_ids_to_remove).destroy_all
-  end
-
-  def teacher_school_assignment_conflict?
-    return false unless can_assign_teachers?
-
-    target_school_id = teacher_assignment_school_id
-    return false unless target_school_id
-
-    teacher_ids =
-      if teacher_assignment_params_submitted? || @classroom.new_record?
-        selected_teacher_ids
-      else
-        @classroom.classroom_memberships.teacher.joins(:user).where(users: { role: "teacher" }).pluck(:user_id)
-      end
+      .pluck(:user_id)
 
     conflict = SchoolMembership.where(user_id: teacher_ids, school_id: target_school_id).count != teacher_ids.size
     if conflict
@@ -495,88 +423,8 @@ class ClassroomsController < ApplicationController
     conflict
   end
 
-  def selected_teacher_ids
-    return @selected_teacher_ids if defined?(@selected_teacher_ids)
-
-    raw_ids = Array(params.dig(:classroom, :teacher_ids)).reject { |value| value == "" }
-    valid_raw_ids = raw_ids.select { |value| value.to_s.match?(/\A[1-9]\d*\z/) }
-    requested_ids = valid_raw_ids.map(&:to_i).uniq
-    @selected_teacher_ids = assignable_teachers.where(id: requested_ids).pluck(:id)
-
-    if valid_raw_ids.size != raw_ids.size || @selected_teacher_ids.sort != requested_ids.sort
-      invalid_teacher_assignment(
-        @selected_teacher_ids,
-        requested_ids: requested_ids,
-        malformed: valid_raw_ids.size != raw_ids.size
-      )
-    end
-    @selected_teacher_ids
-  end
-
-  def invalid_teacher_assignment(selected_ids, requested_ids:, malformed:)
-    @teacher_assignment_invalid = true
-    @classroom.errors.add(:base, t(teacher_assignment_error_key(requested_ids, malformed: malformed)))
-    @selected_teacher_ids = selected_ids
-  end
-
-  def teacher_assignment_error_key(requested_ids, malformed:)
-    return "classrooms.errors.teacher_not_found" if malformed
-    return "classrooms.errors.teacher_not_found" unless User.teacher.where(id: requested_ids).count == requested_ids.size
-
-    "classrooms.errors.teacher_school_required"
-  end
-
-  def teacher_assignment_invalid?
-    @teacher_assignment_invalid == true
-  end
-
-  def teacher_assignment_params_submitted?
-    params.require(:classroom).key?(:teacher_ids)
-  end
-
   def prepare_classroom_form
     load_school_options if current_user.admin?
-    load_new_classroom_teacher_assignment_form if @classroom.new_record? && can_assign_teachers?
-    load_teacher_assignment_form if @classroom.persisted? && can_assign_teachers?
-  end
-
-  def assignable_teachers
-    school_id = teacher_assignment_school_id
-    return User.none unless school_id
-
-    User.teacher
-      .joins(:school_membership)
-      .where(school_memberships: { school_id: school_id })
-      .order(:name, :id)
-  end
-
-  def can_assign_teachers?
-    current_user.admin? || current_user_school_manager?
-  end
-
-  def unavailable_teacher_assignment_submitted?
-    return false unless current_user.admin? && @classroom.new_record?
-    return false unless teacher_assignment_params_submitted?
-    return false if Array(params.dig(:classroom, :teacher_ids)).reject(&:blank?).empty?
-
-    @teacher_assignment_invalid = true
-    @classroom.errors.add(:base, t("classrooms.errors.teacher_assignment_after_create"))
-    true
-  end
-
-  def teacher_assignment_school_id
-    return current_user.school_membership&.school_id if current_user_school_manager?
-    return nil if @classroom.new_record?
-
-    params.dig(:classroom, :school_id).presence || @classroom.school_id
-  end
-
-  def teacher_assignment_notice_key
-    return "classrooms.form.teacher_assignment_after_create" if current_user.admin? && @classroom.new_record?
-    return "classrooms.form.teacher_assignment_school_required" if teacher_assignment_school_id.blank?
-    return "classrooms.form.teacher_assignment_empty" if @assignable_teachers.empty?
-
-    nil
   end
 
   def current_user_school_manager?

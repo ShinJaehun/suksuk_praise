@@ -131,6 +131,67 @@ RSpec.describe ClassroomPolicy do
     end
   end
 
+  describe "settings permissions" do
+    let(:school) { create(:school) }
+    let(:classroom) { create(:classroom, school: school) }
+
+    it "allows an admin to manage structure, operations, and members" do
+      policy = described_class.new(create(:user, :admin), classroom)
+
+      expect(policy.manage_structure?).to eq(true)
+      expect(policy.manage_operations?).to eq(true)
+      expect(policy.update?).to eq(true)
+      expect(policy.manage_members?).to eq(true)
+    end
+
+    it "allows an unassigned school manager to manage only structure" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: school, user: manager)
+      policy = described_class.new(manager, classroom)
+
+      expect(policy.manage_structure?).to eq(true)
+      expect(policy.manage_operations?).to eq(false)
+      expect(policy.update?).to eq(true)
+      expect(policy.manage_members?).to eq(false)
+    end
+
+    it "combines structure and teacher permissions for an assigned school manager" do
+      manager = create(:user, :teacher)
+      create(:school_membership, :manager, school: school, user: manager)
+      create(:classroom_membership, classroom: classroom, user: manager, role: :teacher)
+      policy = described_class.new(manager, classroom)
+
+      expect(policy.manage_structure?).to eq(true)
+      expect(policy.manage_operations?).to eq(true)
+      expect(policy.update?).to eq(true)
+      expect(policy.manage_members?).to eq(true)
+    end
+
+    it "allows an assigned regular teacher to manage operations and members only" do
+      teacher = create(:user, :teacher)
+      create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
+      policy = described_class.new(teacher, classroom)
+
+      expect(policy.manage_structure?).to eq(false)
+      expect(policy.manage_operations?).to eq(true)
+      expect(policy.update?).to eq(true)
+      expect(policy.manage_members?).to eq(true)
+    end
+
+    it "rejects an unassigned teacher, student, and guest" do
+      users = [create(:user, :teacher), create(:user, :student), nil]
+
+      users.each do |user|
+        policy = described_class.new(user, classroom)
+
+        expect(policy.manage_structure?).to eq(false)
+        expect(policy.manage_operations?).to eq(false)
+        expect(policy.update?).to eq(false)
+        expect(policy.manage_members?).to eq(false)
+      end
+    end
+  end
+
   describe "#destroy?" do
     let(:school) { create(:school) }
     let(:classroom) { create(:classroom, school: school) }
