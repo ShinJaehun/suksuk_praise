@@ -14,6 +14,7 @@ module CouponTemplates
       CouponTemplate.transaction do
         library_candidates = CouponTemplate
           .library_onboarding_candidates
+          .includes(image_attachment: :blob)
           .lock
           .to_a
 
@@ -34,13 +35,16 @@ module CouponTemplates
           title_downcased = tpl.title.to_s.downcase
           next if existing_titles.include?(title_downcased)
 
-          CouponTemplate.create!(
+          personal_template = CouponTemplate.create!(
             bucket:      "personal",
             created_by:  teacher,
             title:       tpl.title,
             active:      false, # 비활성 + weight=0 → 현재 불변식과 일관
-            weight:      0
+            weight:      0,
+            default_image_key: tpl.default_image_key,
+            source_template: tpl
           )
+          CouponTemplates::ImageCopier.copy!(source: tpl, target: personal_template)
         end
 
         # 새로 생성한 personal 세트를 기준으로 가중치 정규화

@@ -1,23 +1,27 @@
-<tr class="border-t">
-  <td class="py-2 text-left">
-    <div class="flex items-center gap-3">
-      <%= coupon_thumbnail(tpl) %>
-      <div class="font-medium truncate max-w-[14rem]"><%= tpl.title %></div>
-    </div>
-  </td>
+<%# locals: tpl:, adopted_source_ids: %>
+<% adopted = adopted_source_ids.include?(tpl.id) %>
 
-  <td class="py-2 text-center font-mono tabular-nums">
-    <%= tpl.weight %>
-  </td>
+<article id="<%= dom_id(tpl, :library) %>" class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:gap-x-6">
+  <div class="col-span-2 lg:col-span-1">
+    <%= render "coupon_templates/coupon_identity", tpl: tpl %>
+  </div>
 
-  <td class="py-2 text-right">
-    <%= button_to adopt_coupon_template_path(tpl),
-          method: :post,
-          form: { data: { disable_with: t("ui.processing", default: "처리중...") } },
-          class: "inline-flex h-7 w-7 items-center justify-center rounded border text-xs hover:bg-slate-50 md:h-auto md:w-auto md:border-0 md:p-0 md:text-sm md:underline md:hover:bg-transparent",
-          title: t("coupon_templates.actions.adopt", default: "가져오기") do %>
-      <span class="md:hidden" aria-hidden="true">📥</span>
-      <span class="hidden md:inline"><%= t("coupon_templates.actions.adopt", default: "가져오기") %></span>
+  <div class="flex items-center gap-2 text-sm text-slate-600">
+    <span class="font-medium"><%= t("coupon_templates.columns.weight") %></span>
+    <span class="min-w-10 text-center font-mono font-semibold tabular-nums text-slate-900"><%= tpl.weight %></span>
+  </div>
+
+  <div class="flex justify-end">
+    <% if adopted %>
+      <span class="inline-flex min-h-9 items-center rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+        <%= t("coupon_templates.status.added") %>
+      </span>
+    <% else %>
+      <%= button_to t("coupon_templates.actions.adopt"),
+            adopt_coupon_template_path(tpl),
+            method: :post,
+            form: { data: { controller: "disable-on-submit" } },
+            class: "inline-flex min-h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2" %>
     <% end %>
-  </td>
-</tr>
+  </div>
+</article>

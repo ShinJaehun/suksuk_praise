@@ -1,10 +1,10 @@
 ko:
   coupon_templates:
     index:
-      title: "쿠폰"
+      title: "쿠폰 관리"
     tabs:
       personal: "내 쿠폰"
-      library: "라이브러리"
+      library: "쿠폰 라이브러리"
     library:
       admin_title: "라이브러리(관리자)"
     columns:
@@ -12,35 +12,57 @@ ko:
       weight: "가중치"
       active: "상태"
     actions:
-      new: "새로 만들기"
-      new_in_library: "라이브러리에 새로 만들기"
-      adopt: "가져오기"
+      new: "새 쿠폰 만들기"
+      new_in_library: "라이브러리 쿠폰 만들기"
+      adopt: "내 쿠폰에 추가"
       toggle: "토글"
       activate: "활성"
       deactivate: "비활성"
-      adopt_all_from_library: "라이브러리 기본 세트 가져오기"
+      adopt_all_from_library: "추천 세트 적용"
+      rebalance_personal: "가중치 균등 분배"
       rebalance_library: "가중치 균등 분배"
+      decrease_weight: "가중치 10 낮추기"
+      increase_weight: "가중치 10 높이기"
+      remove_image: "이미지 삭제"
+      delete_coupon: "쿠폰 삭제"
+    status:
+      in_use: "사용 중"
+      not_in_use: "사용 안 함"
+      added: "추가됨 ✓"
+    empty:
+      personal: "아직 만든 쿠폰이 없습니다."
+      library: "사용 가능한 라이브러리 쿠폰이 없습니다."
+    titles:
+      minimum_weight: "이미 0입니다"
+      maximum_weight: "최대 100까지 가능합니다"
+      zero_weight_cannot_activate: "가중치가 0이면 활성화할 수 없어요"
     form:
       title: "쿠폰명"
       weight: "가중치(1~100)"
       active: "활성"
+      image: "이미지"
+      image_preview_alt: "쿠폰 이미지 미리보기"
     new:
       title: "새 쿠폰"
       library_title: "라이브러리에 추가"
     edit:
       title: "쿠폰 수정"
+      delete_warning: "삭제는 되돌릴 수 없어요."
     flash:
       created: "쿠폰을 만들었습니다."
       updated: "쿠폰을 수정했습니다."
       toggled: "상태를 변경했습니다."
       adopted: "라이브러리에서 가져왔습니다."
+      already_in_personal: "이미 내 쿠폰에 있습니다."
       adopt_duplicate: "잠시 후 다시 시도해 주세요."
       deleted: "삭제했습니다."
       deactivated_instead: "이미 발급한 쿠폰이 있어 삭제할 수 없어 비활성화했습니다."
-      adopt_all: "라이브러리 기본 세트를 내 쿠폰에 적용했습니다. (신규 %{created_count}개, 갱신 %{upserted_count}개)"
-      adopt_all_nothing: "가져올 새 활성 쿠폰이 없습니다."
+      image_removed: "이미지를 삭제했습니다."
+      adopt_all: "추천 세트에서 새 쿠폰 %{created_count}개를 추가했습니다."
+      adopt_all_nothing: "이미 추천 쿠폰을 모두 가지고 있습니다."
       library_rebalanced: "라이브러리 활성 쿠폰 가중치를 균등 분배했습니다."
     confirm:
       delete: "정말 삭제할까요? 복구할 수 없습니다."
-      adopt_all: "라이브러리의 활성 쿠폰을 모두 내 쿠폰으로 가져올까요? 이미 있는 제목은 건너뜁니다."
+      remove_image: "업로드한 이미지를 삭제할까요?"
+      adopt_all: "아직 없는 추천 쿠폰을 내 쿠폰에 추가할까요?"
       rebalance_library: "활성 라이브러리 쿠폰의 가중치를 균등 분배할까요?"

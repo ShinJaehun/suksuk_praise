@@ -1,4 +1,4 @@
-<%# locals: f %>
+<%# locals: f, remove_image_template: nil %>
 
 <div class="mb-3">
   <%= f.label :title, t("coupon_templates.form.title") %>
@@ -18,14 +18,31 @@
   <%= f.label :active, t("coupon_templates.form.active"), class: "mb-0" %>
 </div>
 
-<div class="mb-3">
-  <%= f.label :image, t("coupon_templates.form.image", default: "이미지") %>
-  <%= f.file_field :image, accept: "image/*", class: "w-full border p-2 rounded" %>
-  <p class="mt-1 text-xs text-gray-500">
-    PNG/JPG/WebP 업로드 가능. 업로드하지 않으면 기본 이미지가 사용됩니다.
-  </p>
+<% initial_image_source = coupon_thumbnail_source(f.object) %>
+<div class="mb-3"
+     data-controller="coupon-image-preview"
+     data-coupon-image-preview-initial-source-value="<%= initial_image_source %>">
+  <%= f.label :image, t("coupon_templates.form.image") %>
+  <div class="mb-3 flex items-end gap-3" data-coupon-image-preview-target="previewContainer">
+    <%= tag.img src: initial_image_source,
+          alt: t("coupon_templates.form.image_preview_alt"),
+          class: "h-24 w-24 rounded-xl border border-slate-200 bg-white object-cover",
+          data: { coupon_image_preview_target: "preview" } %>
+    <% if local_assigns[:remove_image_template] %>
+      <%= link_to t("coupon_templates.actions.remove_image"),
+            remove_image_coupon_template_path(remove_image_template),
+            data: {
+              turbo_method: :delete,
+              turbo_confirm: t("coupon_templates.confirm.remove_image")
+            },
+            class: "text-sm text-slate-500 underline hover:text-red-600" %>
+    <% end %>
+  </div>
+  <%= f.file_field :image,
+        accept: "image/*",
+        class: "w-full border p-2 rounded",
+        data: {
+          coupon_image_preview_target: "input",
+          action: "change->coupon-image-preview#update"
+        } %>
 </div>
-
-<p class="text-xs text-gray-500">
-  저장 후에도 목록에서 ← / → 버튼과 토글로 빠르게 조정할 수 있습니다.
-</p>

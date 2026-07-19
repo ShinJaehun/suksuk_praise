@@ -3,22 +3,18 @@ class CouponTemplatesController < ApplicationController
 
   before_action :authenticate_user!
   before_action :set_coupon_template,
-                only: %i[edit update toggle_active adopt destroy bump_weight]
+                only: %i[edit update toggle_active adopt destroy bump_weight remove_image]
   before_action :set_form_mode, only: %i[new edit]
 
   def index
     authorize CouponTemplate
 
-    @personal = policy_scope(CouponTemplate).order(:title)
-    @personal_rows = build_rows(@personal)
+    load_personal!
+    load_adopted_library_source_ids!
 
     # 역할별 가시성(관리자=전체, 교사=active만) + 정렬은 정책 스코프에서 처리
     load_library!
     @library_admin = current_user.admin?
-
-    return unless @library_admin
-
-    @library_active_weight_sum = @library.select(&:active).sum { _1.weight.to_i }
   end
 
   def new
@@ -84,8 +80,7 @@ class CouponTemplatesController < ApplicationController
         end
       else
 
-        @personal = policy_scope(CouponTemplate).order(:title)
-        @personal_rows = build_rows(@personal)
+        load_personal!
 
         respond_to do |f|
           f.html { redirect_to coupon_templates_path, notice: message }
@@ -99,7 +94,12 @@ class CouponTemplatesController < ApplicationController
     else
       respond_to do |f|
         f.html { render :new, status: :unprocessable_entity }
-        f.turbo_stream { render :new, status: :unprocessable_entity, layout: false }
+        f.turbo_stream do
+          render template: 'coupon_templates/new',
+                 formats: [:html],
+                 status: :unprocessable_entity,
+                 layout: false
+        end
       end
     end
   end
@@ -114,20 +114,19 @@ class CouponTemplatesController < ApplicationController
 
     # 편집 정책:
     # - library(관리자용): title/weight/active 모두 수정 가능
-    # - personal(교사용): title만 수정, weight/active는 버튼/토글로만 조정
+    # - personal(교사용): title/image만 수정, weight/active는 버튼/토글로만 조정
     attrs = coupon_template_params
 
     if @coupon_template.bucket == 'personal' && !current_user.admin?
-      # personal 세트에서는 title만 허용
+      # personal 세트에서는 title/image만 허용
       # (permit 반환값은 ActionController::Parameters 이므로 slice 사용 가능)
-      attrs = attrs.slice(:title)
+      attrs = attrs.slice(:title, :image)
     end
 
     if @coupon_template.update(attrs)
       message = t('coupon_templates.flash.updated')
 
-      @personal = policy_scope(CouponTemplate).order(:title)
-      @personal_rows = build_rows(@personal)
+      load_personal!
 
       load_library! if current_user.admin? && @coupon_template.bucket == 'library'
 
@@ -141,7 +140,12 @@ class CouponTemplatesController < ApplicationController
     else
       respond_to do |f|
         f.html { render :edit, status: :unprocessable_entity }
-        f.turbo_stream { render :edit, status: :unprocessable_entity, layout: false }
+        f.turbo_stream do
+          render template: 'coupon_templates/edit',
+                 formats: [:html],
+                 status: :unprocessable_entity,
+                 layout: false
+        end
       end
     end
   end
@@ -152,8 +156,7 @@ class CouponTemplatesController < ApplicationController
 
     @coupon_template.update!(active: !@coupon_template.active)
 
-    @personal = policy_scope(CouponTemplate).order(:title)
-    @personal_rows = build_rows(@personal)
+    load_personal!
 
     message = t('coupon_templates.flash.toggled')
 
@@ -179,9 +182,10 @@ class CouponTemplatesController < ApplicationController
     existing_by_source = CouponTemplate.find_by(created_by_id: current_user.id, bucket: 'personal',
                                                 source_template_id: source.id)
     if existing_by_source
-      @personal = policy_scope(CouponTemplate).order(:title)
-      @personal_rows = build_rows(@personal)
-      message = t('coupon_templates.flash.already_in_personal', default: '이미 내 쿠폰에 있습니다.')
+      load_personal!
+      load_library!
+      load_adopted_library_source_ids!
+      message = t('coupon_templates.flash.already_in_personal')
       respond_to do |f|
         f.html { redirect_to coupon_templates_path, notice: message }
         f.turbo_stream do
@@ -194,18 +198,18 @@ class CouponTemplatesController < ApplicationController
 
     @adopted = CouponTemplate.create!(
       title: source.title,
-      # personal 세트의 시작점은 항상 비활성/가중치 0
-      weight: 0,
-      active: false,
+      weight: source.weight,
+      active: source.active,
       default_image_key: source.default_image_key,
       bucket: 'personal',
       created_by_id: current_user.id,
       source_template_id: source.id
     )
-    @adopted.image.attach(source.image.blob) if source.image.attached?
+    CouponTemplates::ImageCopier.copy!(source:, target: @adopted)
 
-    @personal = policy_scope(CouponTemplate).order(:title)
-    @personal_rows = build_rows(@personal)
+    load_personal!
+    load_library!
+    load_adopted_library_source_ids!
 
     message = t('coupon_templates.flash.adopted')
     respond_to do |f|
@@ -219,8 +223,6 @@ class CouponTemplatesController < ApplicationController
 
   def destroy
     authorize @coupon_template
-    was_library = (@coupon_template.bucket == 'library')
-
     begin
       # 발급 이력이 없으면 정상 삭제
       @coupon_template.destroy!
@@ -233,16 +235,38 @@ class CouponTemplatesController < ApplicationController
     end
 
     # 프레임 갱신에 쓸 데이터 준비
-    @personal = policy_scope(CouponTemplate).order(:title)
-    @personal_rows = build_rows(@personal)
+    load_personal!
 
-    load_library! if current_user.admin? && was_library
+    load_library!
+    load_adopted_library_source_ids!
 
     respond_to do |f|
       f.html { redirect_to coupon_templates_path, notice: message }
       f.turbo_stream do
         flash.now[:notice] = message
         render :destroy, layout: 'application'
+      end
+    end
+  end
+
+  def remove_image
+    authorize @coupon_template, :update?
+
+    remove_coupon_image!
+
+    if @coupon_template.bucket == 'library'
+      load_library!
+    else
+      load_personal!
+    end
+
+    message = t('coupon_templates.flash.image_removed')
+
+    respond_to do |f|
+      f.html { redirect_to coupon_templates_path, notice: message }
+      f.turbo_stream do
+        flash.now[:notice] = message
+        render :remove_image, layout: 'application'
       end
     end
   end
@@ -257,8 +281,7 @@ class CouponTemplatesController < ApplicationController
     if @coupon_template.bucket == 'library' && current_user.admin?
       @coupon_template.update!(weight: snapped)
 
-      @personal      = policy_scope(CouponTemplate).order(:title)
-      @personal_rows = build_rows(@personal)
+      load_personal!
       load_library! # => @library + @library_active_weight_sum 갱신
 
       flash.now[:notice] = "라이브러리 가중치를 #{snapped}으로 변경했습니다."
@@ -276,8 +299,7 @@ class CouponTemplatesController < ApplicationController
     end
 
     # personal 전체 다시 그림(합계/버튼 disabled 반영)
-    @personal       = policy_scope(CouponTemplate).order(:title)
-    @personal_rows  = build_rows(@personal)
+    load_personal!
 
     render :update, layout: 'application' # (= personal 프레임 replace)
   end
@@ -305,60 +327,44 @@ class CouponTemplatesController < ApplicationController
     authorize CouponTemplate, :adopt?
 
     source_scope = CouponTemplatePolicy::Scope.library_scope(current_user, CouponTemplate)
-    templates = source_scope.where(active: true)
+    templates = source_scope
+                .where(active: true)
+                .includes(image_attachment: :blob)
 
-    upserted = 0
-    created  = 0
+    existing_source_ids = policy_scope(CouponTemplate)
+                          .where(source_template_id: templates.map(&:id))
+                          .pluck(:source_template_id)
+                          .to_set
+    created = 0
 
     CouponTemplate.transaction do
       templates.each do |src|
-        existing = CouponTemplate.find_by(
-          created_by_id: current_user.id,
+        next if existing_source_ids.include?(src.id)
+
+        created_template = CouponTemplate.create!(
+          title: src.title,
+          active: src.active,
+          weight: src.weight,
+          default_image_key: src.default_image_key,
           bucket: 'personal',
+          created_by_id: current_user.id,
           source_template_id: src.id
         )
-
-        if existing
-          existing.update!(
-            title: src.title,
-            active: src.active,
-            weight: src.weight,
-            default_image_key: src.default_image_key
-          )
-          if src.image.attached? && (!existing.image.attached? || existing.image.blob_id != src.image.blob_id)
-            existing.image.attach(src.image.blob)
-          end
-
-          upserted += 1
-        else
-          created_template = CouponTemplate.create!(
-            title: src.title,
-            active: src.active,
-            weight: src.weight,
-            default_image_key: src.default_image_key,
-            bucket: 'personal',
-            created_by_id: current_user.id,
-            source_template_id: src.id
-          )
-          created_template.image.attach(src.image.blob) if src.image.attached?
-          created += 1
-        end
+        CouponTemplates::ImageCopier.copy!(source: src, target: created_template)
+        created += 1
       end
     end
 
-    @personal      = policy_scope(CouponTemplate).order(:title)
-    @personal_rows = build_rows(@personal)
-    load_library! if current_user.admin?
+    load_personal!
+    load_library!
+    load_adopted_library_source_ids!
 
     message =
-      if (created + upserted) > 0
+      if created.positive?
         t('coupon_templates.flash.adopt_all',
-          default: '라이브러리 기본 세트를 내 쿠폰에 적용했습니다. (신규 %<created_count>s개, 갱신 %<upserted_count>s개)',
-          created_count: created,
-          upserted_count: upserted)
+          created_count: created)
       else
-        t('coupon_templates.flash.adopt_all_nothing',
-          default: '가져올 새 활성 쿠폰이 없습니다.')
+        t('coupon_templates.flash.adopt_all_nothing')
       end
 
     respond_to do |f|
@@ -409,9 +415,6 @@ class CouponTemplatesController < ApplicationController
       )
     end
 
-    # personal 세트의 활성 가중치 합(증가 버튼 guard에 사용)
-    active_total = rows.sum { |row| row.tpl.active? ? row.tpl.weight.to_i : 0 }
-
     rows.each do |row|
       tpl     = row.tpl
       weight  = tpl.weight.to_i
@@ -421,16 +424,15 @@ class CouponTemplatesController < ApplicationController
       row.can_decrease_weight =
         weight > 0
       row.decrease_title =
-        row.can_decrease_weight ? nil : '이미 0입니다'
+        row.can_decrease_weight ? nil : I18n.t('coupon_templates.titles.minimum_weight')
 
-      # → 버튼: 활성 쿠폰들의 가중치 합이 100 이상이면 증가 불가
-      row.can_increase_weight =
-        !(active && active_total >= 100)
+      # 증가 버튼: 개별 쿠폰의 현재 허용 범위만 확인
+      row.can_increase_weight = weight < 100
       row.increase_title =
-        if active && active_total >= 100
-          '합계가 100을 넘을 수 없어요'
-        else
+        if row.can_increase_weight
           nil
+        else
+          I18n.t('coupon_templates.titles.maximum_weight')
         end
 
       # ON/OFF 토글: weight=0 인 비활성 상태에서는 활성화할 수 없음
@@ -438,7 +440,7 @@ class CouponTemplatesController < ApplicationController
         !(!active && weight == 0)
       row.toggle_title =
         if !active && weight == 0
-          '가중치가 0이면 활성화할 수 없어요'
+          I18n.t('coupon_templates.titles.zero_weight_cannot_activate')
         else
           nil
         end
@@ -451,17 +453,19 @@ class CouponTemplatesController < ApplicationController
   def load_library!
     @library = CouponTemplatePolicy::Scope
                .library_scope(current_user, CouponTemplate)
+               .includes(image_attachment: :blob)
                .to_a
+  end
 
-    return unless current_user.admin?
-
-    @library_active_weight_sum =
-      @library.select(&:active).sum { _1.weight.to_i }
+  def load_adopted_library_source_ids!
+    @adopted_library_source_ids =
+      policy_scope(CouponTemplate)
+      .where.not(source_template_id: nil)
+      .pluck(:source_template_id)
   end
 
   def reload_personal_and_flash!(message)
-    @personal = policy_scope(CouponTemplate).order(:title)
-    @personal_rows = build_rows(@personal)
+    load_personal!
     respond_to do |f|
       f.html { redirect_to coupon_templates_path, notice: message }
       f.turbo_stream do
@@ -469,5 +473,21 @@ class CouponTemplatesController < ApplicationController
         render :update, layout: 'application'
       end
     end
+  end
+
+  def load_personal!
+    @personal = policy_scope(CouponTemplate)
+                .includes(image_attachment: :blob)
+                .order(:title)
+    @personal_rows = build_rows(@personal)
+  end
+
+  def remove_coupon_image!
+    attachment = @coupon_template.image_attachment
+    blob = attachment&.blob
+    return unless attachment
+
+    @coupon_template.image.detach
+    blob.purge if blob && !blob.attachments.exists?
   end
 end

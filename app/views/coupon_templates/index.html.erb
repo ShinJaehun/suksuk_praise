@@ -1,32 +1,20 @@
-<section class="mx-auto w-full max-w-7xl pt-4 space-y-4">
+<section class="mx-auto w-full max-w-6xl space-y-6 pt-4 pb-8">
   <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("coupon_templates.index.title") %></h1>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Personal (항상 위) -->
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-      <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.personal") %></h2>
 
-      <%= turbo_frame_tag "personal" do %>
-        <%= render partial: "personal_coupon_table_section", locals: { items: @personal_rows } %>
-      <% end %>
-    </section>
-    <!-- Library -->
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-      <h2 class="text-lg font-semibold mb-1"><%= t("coupon_templates.tabs.library") %></h2>
-      <%= turbo_frame_tag "library" do %>
-        <%= render partial: "library_coupon_table_section",
-              locals: { templates: @library, library_admin: @library_admin } %>
-      <% end %>
-    </section>
-  </div>
-  <%= turbo_frame_tag :modal %>
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <%= turbo_frame_tag "personal", class: "block" do %>
+      <%= render partial: "personal_coupon_table_section", locals: { items: @personal_rows } %>
+    <% end %>
+  </section>
+
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <%= turbo_frame_tag "library", class: "block" do %>
+      <%= render partial: "library_coupon_table_section",
+            locals: {
+              templates: @library,
+              library_admin: @library_admin,
+              adopted_source_ids: @adopted_library_source_ids
+            } %>
+    <% end %>
+  </section>
 </section>
-
-<%# Tailwind v4: helper.rb 안의 클래스는 스캔되지 않아 purge될 수 있음 %>
-<%# (이미지 썸네일에 쓰는 유틸 safelist) %>
-<div class="hidden w-10 h-10 object-cover shrink-0"></div>
-<div class="hidden
-            w-10 h-10 object-cover shrink-0
-            grid grid-cols-2 justify-items-center
-            gap-x-1 gap-y-0.5
-            col-span-2
-            mx-auto w-20"></div>

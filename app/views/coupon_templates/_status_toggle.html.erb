@@ -1,0 +1,13 @@
+<%# locals: tpl:, disabled:, title: %>
+<%= button_to toggle_active_coupon_template_path(tpl),
+      method: :patch,
+      form: { class: "shrink-0", data: { controller: "disable-on-submit" } },
+      class: class_names(
+        "inline-flex min-h-9 items-center justify-center rounded-full px-3 py-1.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40",
+        "bg-emerald-50 text-emerald-700 hover:bg-emerald-100": tpl.active?,
+        "bg-slate-100 text-slate-600 hover:bg-slate-200": !tpl.active?
+      ),
+      disabled: disabled,
+      title: title do %>
+  <%= tpl.active? ? t("coupon_templates.status.in_use") : t("coupon_templates.status.not_in_use") %>
+<% end %>

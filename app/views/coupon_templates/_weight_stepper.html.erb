@@ -1,0 +1,27 @@
+<%# locals: tpl:, can_decrease:, decrease_title:, can_increase:, increase_title: %>
+<div class="flex min-w-0 items-center justify-between gap-3 lg:justify-start">
+  <span class="shrink-0 text-sm font-medium text-slate-600"><%= t("coupon_templates.columns.weight") %></span>
+  <div class="flex items-center gap-2">
+    <%= button_to bump_weight_coupon_template_path(tpl, amount: -10),
+          method: :patch,
+          form: { class: "shrink-0", data: { controller: "disable-on-submit" } },
+          class: "inline-flex h-9 min-w-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white",
+          disabled: !can_decrease,
+          title: decrease_title,
+          "aria-label": t("coupon_templates.actions.decrease_weight") do %>
+      <span aria-hidden="true"><span class="sm:hidden">−</span><span class="hidden sm:inline">−10</span></span>
+    <% end %>
+
+    <span class="min-w-10 text-center font-mono text-sm font-semibold tabular-nums text-slate-900"><%= tpl.weight %></span>
+
+    <%= button_to bump_weight_coupon_template_path(tpl, amount: 10),
+          method: :patch,
+          form: { class: "shrink-0", data: { controller: "disable-on-submit" } },
+          class: "inline-flex h-9 min-w-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white",
+          disabled: !can_increase,
+          title: increase_title,
+          "aria-label": t("coupon_templates.actions.increase_weight") do %>
+      <span aria-hidden="true"><span class="sm:hidden">+</span><span class="hidden sm:inline">+10</span></span>
+    <% end %>
+  </div>
+</div>

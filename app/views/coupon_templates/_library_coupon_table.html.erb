@@ -1,17 +1,18 @@
-<div class="overflow-x-auto">
-<table class="w-full text-sm">
-  <thead>
-    <tr class="text-gray-600">
-      <th class="py-2 text-left"><%= t("coupon_templates.columns.title",  default: "쿠폰명") %></th>
-      <th class="text-center"><%= t("coupon_templates.columns.weight", default: "가중치") %></th>
-      <th class="text-right"><%= t("ui.actions", default: "작업") %></th>
-    </tr>
-  </thead>
-
-  <tbody>
+<%# locals: templates:, adopted_source_ids: %>
+<% if templates.any? %>
+  <div class="divide-y divide-slate-200">
     <%= render partial: "coupon_templates/library_coupon_row",
                collection: templates,
-               as: :tpl %>
-  </tbody>
-</table>
-</div>
+               as: :tpl,
+               locals: { adopted_source_ids: adopted_source_ids } %>
+  </div>
+<% else %>
+  <div class="flex flex-col items-center gap-4 px-5 py-10 text-center">
+    <p class="text-sm font-medium text-slate-600"><%= t("coupon_templates.empty.library") %></p>
+    <%= button_to t("coupon_templates.actions.adopt_all_from_library"),
+          adopt_all_from_library_coupon_templates_path,
+          method: :post,
+          form: { data: { turbo_confirm: t("coupon_templates.confirm.adopt_all") } },
+          class: "inline-flex min-h-10 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2" %>
+  </div>
+<% end %>

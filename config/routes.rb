@@ -113,6 +113,7 @@ Rails.application.routes.draw do
       post :adopt   # 라이브러리(=admin 소유) → 교사 개인 복제
       patch :toggle_active
       patch :bump_weight
+      delete :remove_image
     end
     collection do
       post :rebalance_personal

@@ -1,0 +1,14 @@
+<% if @coupon_template.bucket == "library" %>
+  <%= turbo_stream.update "library" do %>
+    <%= render partial: "library_coupon_table_section",
+          locals: { templates: @library, library_admin: true, adopted_source_ids: [] } %>
+  <% end %>
+<% else %>
+  <%= turbo_stream.update "personal" do %>
+    <%= render partial: "personal_coupon_table_section", locals: { items: @personal_rows } %>
+  <% end %>
+<% end %>
+
+<%= turbo_stream.update "modal" do %>
+  <%= render "edit_modal" %>
+<% end %>

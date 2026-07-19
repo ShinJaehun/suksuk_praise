@@ -74,11 +74,17 @@ end
 |------|------|
 | 1 | active && weight <= 0 → 금지 |
 | 2 | inactive → weight는 0으로 고정 |
-| 3 | 전체 active weight 합은 100 권장 (WeightBalancer로 정규화 가능) |
+| 3 | 가중치는 상대적인 추첨 비중이며 전체 active weight 합은 100일 필요가 없음 |
+
+각 쿠폰의 가중치는 다른 쿠폰과 독립적으로 조정한다. `WeightBalancer`를 통한 균등 분배는
+사용자가 명시적으로 실행할 때만 적용되는 선택적 편의 기능이다.
 
 ### Library 버킷
 - admin이 생성, 교사는 읽기만 가능
 - 교사는 “가져오기(adopt)”로 자신의 personal로 복제 가능
+- 라이브러리 쿠폰은 personal 쿠폰 생성 시점의 복제 원본이며 이후에는 동기화하지 않는다.
+- `source_template_id`는 출처 기록과 중복 복제 방지에만 사용한다.
+- 추천 세트 적용은 아직 가져오지 않은 라이브러리 쿠폰만 추가한다.
 
 ### Policy 요약
 | 액션 | 권한 |
@@ -157,7 +163,7 @@ end
 ## 5. WeightBalancer
 
 `CouponTemplates::WeightBalancer.normalize!(user)`  
-→ personal 세트의 active weight 합을 100으로 자동 정규화.
+→ 사용자가 균등 분배를 요청했을 때 personal 세트의 active weight를 100 안에서 분배.
 
 **규칙**
 - inactive 템플릿은 weight = 0 고정
@@ -174,15 +180,16 @@ end
 |------|------|
 | index | 내 쿠폰(@personal) + 라이브러리(@library) 프레임 렌더 |
 | rebalance_equal | WeightBalancer로 균등 분배 |
-| create / update / toggle_active / destroy | personal 관리용, 후처리로 normalize 호출 |
+| create / update / toggle_active / destroy | personal 관리용 |
 | adopt | library 템플릿을 personal로 복제 |
-| bump_weight | 10단위 증감, 합 100 초과 시 no-op, 0 → 비활성화, 양수 → 자동 활성 가능 |
+| bump_weight | 개별 쿠폰을 10단위로 증감, 0 → 비활성화 |
 
 ### Coupon image
 
 - 쿠폰 썸네일은 `CouponTemplate#image` Active Storage 첨부를 우선 사용한다.
 - 첨부 이미지가 없으면 `default_image_key`가 가리키는 asset을 사용한다.
-- `default_image_key`가 비어 있거나 실제 asset이 없으면 placeholder를 표시한다.
+- `default_image_key`가 비어 있거나 실제 asset이 없으면 범용 기본 이미지를 표시한다.
+- 라이브러리 이미지는 personal 생성 시 독립 blob으로 복제하며 생성 이후 원본과 동기화하지 않는다.
 
 ### Draw coupon / reveal
 
