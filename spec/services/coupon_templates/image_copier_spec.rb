@@ -69,7 +69,9 @@ RSpec.describe CouponTemplates::ImageCopier, type: :service do
 
     expect {
       described_class.copy!(source: source, target: target)
-    }.to raise_error(described_class::CopyError)
+    }.to raise_error(described_class::CopyError) { |error|
+      expect(error.cause).to be_a(ActiveStorage::FileNotFoundError)
+    }
 
     expect(ActiveStorage::Blob.count).to eq(blob_count)
     expect(ActiveStorage::Attachment.count).to eq(attachment_count)
@@ -92,7 +94,10 @@ RSpec.describe CouponTemplates::ImageCopier, type: :service do
 
     expect {
       described_class.copy!(source: source, target: target)
-    }.to raise_error(error)
+    }.to raise_error(described_class::CopyError) { |copy_error|
+      expect(copy_error.message).to eq("attach failed")
+      expect(copy_error.cause).to eq(error)
+    }
 
     expect(ActiveStorage::Blob.count).to eq(blob_count)
     expect(ActiveStorage::Attachment.count).to eq(attachment_count)

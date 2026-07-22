@@ -9,8 +9,17 @@ RSpec.describe CouponTemplates::AutoAdopter, type: :service do
     )
   end
 
-  def delete_blob_file(blob)
-    blob.service.delete(blob.key)
+  def fail_copy_attach_for_source(source, error: RuntimeError.new("attach failed"))
+    allow_any_instance_of(ActiveStorage::Attached::One).to receive(:attach).and_wrap_original do |method, *args, **kwargs|
+      attachment = method.receiver
+      record = attachment.instance_variable_get(:@record)
+
+      raise error if record.is_a?(CouponTemplate) && record.source_template_id == source.id
+
+      method.call(*args, **kwargs)
+    end
+
+    error
   end
 
   it "creates an onboarding coupon with its source and an independent image blob" do
@@ -80,13 +89,13 @@ RSpec.describe CouponTemplates::AutoAdopter, type: :service do
     failed_source = create(:coupon_template, created_by: admin, bucket: "library", title: "실패 추천", active: true)
     no_image_source = create(:coupon_template, created_by: admin, bucket: "library", title: "이미지 없는 추천", active: true)
     attach_image(successful_source, content: "successful image", filename: "successful.png")
-    attach_image(failed_source, content: "missing image", filename: "missing.png")
+    attach_image(failed_source, content: "failed image", filename: "failed.png")
     failed_source_blob_id = failed_source.image.blob_id
     failed_source_attachment_id = failed_source.image_attachment.id
-    delete_blob_file(failed_source.image.blob)
     blob_count = ActiveStorage::Blob.count
     attachment_count = ActiveStorage::Attachment.count
     allow(Rails.logger).to receive(:error)
+    fail_copy_attach_for_source(failed_source)
 
     expect {
       @teacher = create(:user, :teacher)

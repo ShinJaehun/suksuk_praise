@@ -16,7 +16,9 @@ module CouponTemplates
       return unless source_attachment&.persisted?
 
       copy_attachment!(source_attachment.blob)
-    rescue ActiveStorage::FileNotFoundError, IOError, SystemCallError => e
+    rescue CopyError
+      raise
+    rescue StandardError => e
       raise CopyError, e.message
     end
 
@@ -40,12 +42,17 @@ module CouponTemplates
 
       target.image.attach(copied_blob)
       target.image
-    rescue ActiveStorage::FileNotFoundError, IOError, SystemCallError
-      copied_blob&.purge
-      raise
     rescue StandardError
-      copied_blob&.purge
+      purge_copied_blob(copied_blob)
       raise
+    end
+
+    def purge_copied_blob(copied_blob)
+      copied_blob&.purge
+    rescue StandardError => e
+      Rails.logger.error(
+        "[CouponTemplates::ImageCopier] copied_blob_purge_failed blob_id=#{copied_blob&.id} #{e.class}: #{e.message}"
+      )
     end
   end
 end
