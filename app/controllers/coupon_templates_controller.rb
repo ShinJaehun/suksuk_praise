@@ -198,7 +198,7 @@ class CouponTemplatesController < ApplicationController
     end
 
     @adopted = build_adopted_coupon_template(source)
-    unless @adopted.save
+    unless @adopted.valid?
       raise ActiveRecord::RecordInvalid, @adopted unless title_uniqueness_conflict?(@adopted)
 
       load_personal!
@@ -216,7 +216,27 @@ class CouponTemplatesController < ApplicationController
       return
     end
 
-    CouponTemplates::ImageCopier.copy!(source:, target: @adopted)
+    begin
+      CouponTemplate.transaction do
+        @adopted.save!
+        CouponTemplates::ImageCopier.copy!(source:, target: @adopted)
+      end
+    rescue CouponTemplates::ImageCopier::CopyError => e
+      log_image_copy_failure(source, e)
+      load_personal!
+      load_library!
+      load_adopted_library_source_ids!
+      load_library_title_conflict_ids!
+      message = t('coupon_templates.flash.image_copy_failed')
+      respond_to do |f|
+        f.html { redirect_to coupon_templates_path, alert: message }
+        f.turbo_stream do
+          flash.now[:alert] = message
+          render :adopt, layout: 'application'
+        end
+      end
+      return
+    end
 
     load_personal!
     load_library!
@@ -350,24 +370,31 @@ class CouponTemplatesController < ApplicationController
                           .to_set
     created = 0
     skipped = 0
+    image_copy_failed = 0
 
-    CouponTemplate.transaction do
-      templates.each do |src|
-        if existing_source_ids.include?(src.id)
-          skipped += 1
-          next
+    templates.each do |src|
+      if existing_source_ids.include?(src.id)
+        skipped += 1
+        next
+      end
+
+      created_template = build_adopted_coupon_template(src)
+      unless created_template.valid?
+        raise ActiveRecord::RecordInvalid, created_template unless title_uniqueness_conflict?(created_template)
+
+        skipped += 1
+        next
+      end
+
+      begin
+        CouponTemplate.transaction do
+          created_template.save!
+          CouponTemplates::ImageCopier.copy!(source: src, target: created_template)
         end
-
-        created_template = build_adopted_coupon_template(src)
-        unless created_template.save
-          raise ActiveRecord::RecordInvalid, created_template unless title_uniqueness_conflict?(created_template)
-
-          skipped += 1
-          next
-        end
-
-        CouponTemplates::ImageCopier.copy!(source: src, target: created_template)
         created += 1
+      rescue CouponTemplates::ImageCopier::CopyError => e
+        log_image_copy_failure(src, e)
+        image_copy_failed += 1
       end
     end
 
@@ -380,10 +407,12 @@ class CouponTemplatesController < ApplicationController
       if created.positive?
         t('coupon_templates.flash.adopt_all',
           created_count: created,
-          skipped_count: skipped)
+          skipped_count: skipped,
+          image_copy_failed_count: image_copy_failed)
       else
         t('coupon_templates.flash.adopt_all_nothing',
-          skipped_count: skipped)
+          skipped_count: skipped,
+          image_copy_failed_count: image_copy_failed)
       end
 
     respond_to do |f|
@@ -527,6 +556,12 @@ class CouponTemplatesController < ApplicationController
     coupon_template.errors.where(:title).any? do |error|
       error.type == :taken || error.options[:message] == :already_in_bucket
     end
+  end
+
+  def log_image_copy_failure(source, error)
+    Rails.logger.error(
+      "[CouponTemplates::ImageCopier] source_template_id=#{source.id} #{error.class}: #{error.message}"
+    )
   end
 
   def remove_coupon_image!

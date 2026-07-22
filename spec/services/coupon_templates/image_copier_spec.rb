@@ -60,4 +60,44 @@ RSpec.describe CouponTemplates::ImageCopier, type: :service do
     expect(target.reload.image).not_to be_attached
     expect(target.default_image_key).to eq(CouponTemplate::DEFAULT_IMAGE_KEY)
   end
+
+  it "raises a copy error without attaching when the source file is missing" do
+    attach_image(source, content: "missing bytes", filename: "missing.png")
+    source.image.blob.service.delete(source.image.blob.key)
+    blob_count = ActiveStorage::Blob.count
+    attachment_count = ActiveStorage::Attachment.count
+
+    expect {
+      described_class.copy!(source: source, target: target)
+    }.to raise_error(described_class::CopyError)
+
+    expect(ActiveStorage::Blob.count).to eq(blob_count)
+    expect(ActiveStorage::Attachment.count).to eq(attachment_count)
+    expect(target.reload.image).not_to be_attached
+    expect(source.reload.image).to be_attached
+  end
+
+  it "removes the copied blob and file when attaching it raises" do
+    attach_image(source, content: "source bytes", filename: "reward.png")
+    error = RuntimeError.new("attach failed")
+    copied_blob = nil
+
+    allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_wrap_original do |method, *args, **kwargs|
+      copied_blob = method.call(*args, **kwargs)
+    end
+    allow_any_instance_of(ActiveStorage::Attached::One).to receive(:attach).and_raise(error)
+
+    blob_count = ActiveStorage::Blob.count
+    attachment_count = ActiveStorage::Attachment.count
+
+    expect {
+      described_class.copy!(source: source, target: target)
+    }.to raise_error(error)
+
+    expect(ActiveStorage::Blob.count).to eq(blob_count)
+    expect(ActiveStorage::Attachment.count).to eq(attachment_count)
+    expect(copied_blob.service.exist?(copied_blob.key)).to eq(false)
+    expect(target.reload.image).not_to be_attached
+    expect(source.reload.image).to be_attached
+  end
 end

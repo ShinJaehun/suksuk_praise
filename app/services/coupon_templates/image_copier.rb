@@ -1,5 +1,7 @@
 module CouponTemplates
   class ImageCopier
+    class CopyError < StandardError; end
+
     def self.copy!(source:, target:)
       new(source:, target:).copy!
     end
@@ -14,8 +16,8 @@ module CouponTemplates
       return unless source_attachment&.persisted?
 
       copy_attachment!(source_attachment.blob)
-    rescue ActiveStorage::FileNotFoundError
-      false
+    rescue ActiveStorage::FileNotFoundError, IOError, SystemCallError => e
+      raise CopyError, e.message
     end
 
     private
@@ -23,6 +25,8 @@ module CouponTemplates
     attr_reader :source, :target
 
     def copy_attachment!(source_blob)
+      copied_blob = nil
+
       copied_blob = source_blob.open do |file|
         file.rewind
 
@@ -36,6 +40,12 @@ module CouponTemplates
 
       target.image.attach(copied_blob)
       target.image
+    rescue ActiveStorage::FileNotFoundError, IOError, SystemCallError
+      copied_blob&.purge
+      raise
+    rescue StandardError
+      copied_blob&.purge
+      raise
     end
   end
 end

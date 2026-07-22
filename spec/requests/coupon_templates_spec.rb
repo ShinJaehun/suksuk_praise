@@ -23,6 +23,10 @@ RSpec.describe "Coupon template management", type: :request do
     )
   end
 
+  def delete_blob_file(blob)
+    blob.service.delete(blob.key)
+  end
+
   describe "GET /coupon_templates" do
     it "renders the personal section before the library with one global modal frame" do
       personal = create(
@@ -524,6 +528,42 @@ RSpec.describe "Coupon template management", type: :request do
       expect(adopted.source_template_id).to eq(library_template.id)
     end
 
+    it "adopts a library coupon without an image" do
+      library_template = create(:coupon_template, created_by: admin, bucket: "library", title: "이미지 없는 추천")
+      sign_in teacher
+
+      post adopt_coupon_template_path(library_template), headers: turbo_headers
+
+      adopted = CouponTemplate.find_by!(created_by: teacher, source_template: library_template)
+
+      expect(response).to have_http_status(:ok)
+      expect(adopted.image).not_to be_attached
+      expect(adopted.title).to eq(library_template.title)
+    end
+
+    it "does not keep a coupon or new storage records when single adoption image copy fails" do
+      library_template = create(:coupon_template, created_by: admin, bucket: "library", title: "복제 실패 추천")
+      attach_image(library_template, content: "missing source", filename: "missing.png")
+      source_blob_id = library_template.image.blob_id
+      source_attachment_id = library_template.image_attachment.id
+      delete_blob_file(library_template.image.blob)
+      sign_in teacher
+
+      expect {
+        post adopt_coupon_template_path(library_template), headers: turbo_headers
+      }.to change { CouponTemplate.where(created_by: teacher, bucket: "personal").count }.by(0)
+        .and change { ActiveStorage::Blob.count }.by(0)
+        .and change { ActiveStorage::Attachment.count }.by(0)
+
+      library_template.reload
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("이미지를 복제하지 못해 가져오지 않았습니다.")
+      expect(CouponTemplate.find_by(created_by: teacher, source_template: library_template)).to be_nil
+      expect(library_template.image.blob_id).to eq(source_blob_id)
+      expect(library_template.image_attachment.id).to eq(source_attachment_id)
+    end
+
     it "does not change an existing personal coupon when the same source is adopted again" do
       source = create(:coupon_template, created_by: admin, bucket: "library", title: "개별 멱등 추천")
       attach_image(source, content: "source image")
@@ -643,7 +683,7 @@ RSpec.describe "Coupon template management", type: :request do
       expect(adopted.weight).to eq(source.weight)
       expect(adopted.active).to eq(source.active)
       expect(adopted.default_image_key).to eq(source.default_image_key)
-      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다. 0개는 건너뛰었습니다.")
+      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다. 0개는 건너뛰고, 0개는 이미지 복제에 실패했습니다.")
     end
 
     it "skips only title conflicts when applying the recommended set" do
@@ -671,7 +711,46 @@ RSpec.describe "Coupon template management", type: :request do
       expect(existing.source_template_id).to be_nil
       expect(existing.weight).to eq(10)
       expect(existing).not_to be_active
-      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다. 1개는 건너뛰었습니다.")
+      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다. 1개는 건너뛰고, 0개는 이미지 복제에 실패했습니다.")
+    end
+
+    it "continues applying the recommended set when one image copy fails" do
+      failed_source = create(:coupon_template, created_by: admin, bucket: "library", title: "이미지 실패 세트")
+      successful_source = create(:coupon_template, created_by: admin, bucket: "library", title: "성공 세트")
+      skipped_source = create(:coupon_template, created_by: admin, bucket: "library", title: "건너뛸 세트")
+      existing = create(
+        :coupon_template,
+        created_by: teacher,
+        title: skipped_source.title,
+        weight: 10,
+        active: false,
+        source_template_id: nil
+      )
+      attach_image(failed_source, content: "missing source", filename: "missing.png")
+      attach_image(successful_source, content: "copied source", filename: "copied.png")
+      failed_source_blob_id = failed_source.image.blob_id
+      failed_source_attachment_id = failed_source.image_attachment.id
+      delete_blob_file(failed_source.image.blob)
+      sign_in teacher
+
+      expect {
+        post adopt_all_from_library_coupon_templates_path, headers: turbo_headers
+      }.to change { CouponTemplate.where(created_by: teacher, bucket: "personal").count }.by(1)
+        .and change { ActiveStorage::Blob.count }.by(1)
+        .and change { ActiveStorage::Attachment.count }.by(1)
+
+      failed_source.reload
+      successful = CouponTemplate.find_by!(created_by: teacher, source_template: successful_source)
+
+      expect(successful.image.blob_id).not_to eq(successful_source.image.blob_id)
+      expect(successful.image.download).to eq("copied source")
+      expect(CouponTemplate.find_by(created_by: teacher, source_template: failed_source)).to be_nil
+      expect(existing.reload.source_template_id).to be_nil
+      expect(existing.weight).to eq(10)
+      expect(existing).not_to be_active
+      expect(failed_source.image.blob_id).to eq(failed_source_blob_id)
+      expect(failed_source.image_attachment.id).to eq(failed_source_attachment_id)
+      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다. 1개는 건너뛰고, 1개는 이미지 복제에 실패했습니다.")
     end
 
     it "preserves every customized field on an existing adopted coupon" do
@@ -709,7 +788,7 @@ RSpec.describe "Coupon template management", type: :request do
       expect(adopted.default_image_key).to eq("coupon_templates/mychew.png")
       expect(adopted.image.blob_id).to eq(target_blob_id)
       expect(adopted.image.download).to eq("teacher custom image")
-      expect(response.body).to include("새로 추가한 쿠폰이 없습니다. 1개는 건너뛰었습니다.")
+      expect(response.body).to include("새로 추가한 쿠폰이 없습니다. 1개는 건너뛰고, 0개는 이미지 복제에 실패했습니다.")
     end
   end
 
