@@ -6,10 +6,28 @@ RSpec.describe 'Student PIN sessions', type: :request do
   let(:classroom) { create(:classroom) }
   let(:student) { create(:user, :student, student_pin: '1234') }
   let(:teacher) { create(:user, :teacher) }
+  let(:remote_ip) { '203.0.113.10' }
 
   before do
     create(:classroom_membership, classroom: classroom, user: student, role: 'student')
     create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
+  end
+
+  around do |example|
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+    example.run
+  ensure
+    Rails.cache = original_cache
+  end
+
+  def post_student_pin(pin:, target_student: student, target_classroom: classroom, ip: remote_ip)
+    post public_student_login_path(student_login_token: target_classroom.student_login_token),
+      params: {
+        student_id: target_student.id,
+        student_pin: pin
+      },
+      headers: { 'REMOTE_ADDR' => ip }
   end
 
   it 'does not expose all classrooms and students on the global login page' do
@@ -246,13 +264,111 @@ RSpec.describe 'Student PIN sessions', type: :request do
   end
 
   it 'rejects an invalid PIN' do
-    post public_student_login_path(student_login_token: classroom.student_login_token), params: {
-      student_id: student.id,
-      student_pin: '0000'
-    }
+    post_student_pin(pin: '0000')
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include('학생 PIN 로그인')
+  end
+
+  it 'keeps the existing failure response for the first four failed PIN attempts' do
+    4.times do
+      post_student_pin(pin: '0000')
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('교실, 학생, PIN을 확인해 주세요.')
+      expect(response.body).not_to include('로그인 시도가 너무 많습니다.')
+    end
+  end
+
+  it 'blocks the same student, classroom, and IP after five failed PIN attempts' do
+    4.times { post_student_pin(pin: '0000') }
+
+    post_student_pin(pin: '0000')
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.')
+    expect(response.body).to include(student.name)
+
+    post_student_pin(pin: '1234')
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.')
+    expect(response.body).to include(student.name)
+    expect(controller.current_user).to be_nil
+  end
+
+  it 'allows login again after the throttle window expires' do
+    travel_to Time.zone.local(2026, 5, 22, 10, 0, 0) do
+      5.times { post_student_pin(pin: '0000') }
+    end
+
+    travel_to Time.zone.local(2026, 5, 22, 10, 10, 1) do
+      post_student_pin(pin: '1234')
+    end
+
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
+  end
+
+  it 'resets failed attempts after a successful PIN login before throttling' do
+    4.times { post_student_pin(pin: '0000') }
+    post_student_pin(pin: '1234')
+    delete destroy_student_session_path
+
+    4.times { post_student_pin(pin: '0000') }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include('교실, 학생, PIN을 확인해 주세요.')
+    expect(response.body).not_to include('로그인 시도가 너무 많습니다.')
+  end
+
+  it 'does not throttle a different student on the same IP' do
+    other_student = create(:user, :student, student_pin: '5678')
+    create(:classroom_membership, classroom: classroom, user: other_student, role: 'student')
+    5.times { post_student_pin(pin: '0000') }
+
+    post_student_pin(pin: '5678', target_student: other_student)
+
+    expect(response).to redirect_to(classroom_student_path(classroom, other_student))
+  end
+
+  it 'does not throttle a different classroom on the same IP' do
+    other_classroom = create(:classroom)
+    other_student = create(:user, :student, student_pin: '5678')
+    create(:classroom_membership, classroom: other_classroom, user: other_student, role: 'student')
+    5.times { post_student_pin(pin: '0000') }
+
+    post_student_pin(pin: '5678', target_student: other_student, target_classroom: other_classroom)
+
+    expect(response).to redirect_to(classroom_student_path(other_classroom, other_student))
+  end
+
+  it 'does not throttle the same student from a different IP' do
+    5.times { post_student_pin(pin: '0000') }
+
+    post_student_pin(pin: '1234', ip: '203.0.113.11')
+
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
+  end
+
+  it 'keeps invalid token handling outside PIN throttling' do
+    get public_student_login_path(student_login_token: 'invalid-token')
+
+    expect(response).to have_http_status(:not_found)
+    expect(response.body).to include('학생 로그인 주소를 사용할 수 없습니다.')
+  end
+
+  it 'does not affect teacher Devise login' do
+    5.times { post_student_pin(pin: '0000') }
+
+    post user_session_path, params: {
+      user: {
+        email: teacher.email,
+        password: 'password123'
+      }
+    }
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(controller.current_user).to eq(teacher)
   end
 
   it 'rejects an inactive student with a valid PIN' do

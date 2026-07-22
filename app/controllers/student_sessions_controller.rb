@@ -16,7 +16,14 @@ class StudentSessionsController < ApplicationController
     load_students
 
     student = find_student_for_pin_login
+    attempt_limiter = student_pin_attempt_limiter(student)
+    if attempt_limiter&.blocked?
+      flash.now[:alert] = t('student_sessions.throttled')
+      return render :new, status: :unprocessable_entity
+    end
+
     if student&.student_pin_configured? && student.authenticate_student_pin(params[:student_pin].to_s)
+      attempt_limiter&.reset
       classroom_id = @classroom.id
 
       sign_out(:user) if user_signed_in?
@@ -25,9 +32,10 @@ class StudentSessionsController < ApplicationController
       sign_in(:user, student)
       session[:student_login_classroom_id] = classroom_id
       session[:student_last_seen_at] = Time.current.to_i
-      redirect_to student_landing_path(student), notice: '로그인했습니다.'
+      redirect_to student_landing_path(student), notice: t('student_sessions.signed_in')
     else
-      flash.now[:alert] = '교실, 학생, PIN을 확인해 주세요.'
+      throttled = attempt_limiter&.record_failure
+      flash.now[:alert] = throttled ? t('student_sessions.throttled') : t('student_sessions.invalid')
       render :new, status: :unprocessable_entity
     end
   end
@@ -81,6 +89,16 @@ class StudentSessionsController < ApplicationController
     return nil unless @classroom.classroom_memberships.exists?(user_id: student.id, role: 'student', status: 'active')
 
     student
+  end
+
+  def student_pin_attempt_limiter(student)
+    return nil unless @classroom && student
+
+    StudentPinAttemptLimiter.new(
+      classroom_id: @classroom.id,
+      student_id: student.id,
+      remote_ip: request.remote_ip
+    )
   end
 
   def student_landing_path(student)
