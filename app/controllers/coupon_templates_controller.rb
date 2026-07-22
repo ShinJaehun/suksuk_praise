@@ -52,6 +52,7 @@ class CouponTemplatesController < ApplicationController
              else
                'personal'
              end
+    @is_library = bucket == 'library'
 
     @coupon_template = CouponTemplate.new(
       coupon_template_params.merge(

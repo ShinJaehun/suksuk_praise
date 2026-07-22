@@ -250,6 +250,57 @@ RSpec.describe "Coupon template management", type: :request do
       expect(preview_area).to be_present
       expect(preview_area.at_css(%(input[data-action="change->coupon-image-preview#update"]))).to be_present
     end
+
+    it "keeps the library bucket field after an admin library validation failure" do
+      sign_in admin
+
+      post coupon_templates_path,
+        params: {
+          bucket: "library",
+          coupon_template: { title: "", weight: 50, active: true }
+        },
+        headers: turbo_headers
+
+      document = Nokogiri::HTML(response.body)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_present
+    end
+
+    it "keeps the library bucket field after an admin library image validation failure" do
+      sign_in admin
+
+      post coupon_templates_path,
+        params: {
+          bucket: "library",
+          coupon_template: {
+            title: "잘못된 라이브러리 이미지",
+            weight: 50,
+            active: true,
+            image: uploaded_image(content_type: "image/gif", filename: "invalid")
+          }
+        },
+        headers: turbo_headers
+
+      document = Nokogiri::HTML(response.body)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_present
+      expect(response.body).to include("JPEG, PNG, WebP")
+    end
+
+    it "does not render a library bucket field after a personal validation failure" do
+      sign_in teacher
+
+      post coupon_templates_path,
+        params: { coupon_template: { title: "", weight: 0, active: false } },
+        headers: turbo_headers
+
+      document = Nokogiri::HTML(response.body)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_nil
+    end
   end
 
   describe "Turbo frame refreshes" do
@@ -482,6 +533,13 @@ RSpec.describe "Coupon template management", type: :request do
 
     it "keeps admin library create and update weight and active behavior" do
       sign_in admin
+
+      post coupon_templates_path,
+        params: {
+          bucket: "library",
+          coupon_template: { title: "", weight: 70, active: true }
+        },
+        headers: turbo_headers
 
       post coupon_templates_path,
         params: {
