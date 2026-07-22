@@ -60,11 +60,10 @@ class CouponTemplatesController < ApplicationController
       )
     )
 
-    # personal 세트는 항상 비활성/가중치 0에서 출발한다.
-    # if bucket == "personal"
-    #   @coupon_template.active = false
-    #   @coupon_template.weight = 0
-    # end
+    if bucket == 'personal'
+      @coupon_template.active = false
+      @coupon_template.weight = 0
+    end
 
     if @coupon_template.save
       message = t('coupon_templates.flash.created')
@@ -118,7 +117,7 @@ class CouponTemplatesController < ApplicationController
     # - personal(교사용): title/image만 수정, weight/active는 버튼/토글로만 조정
     attrs = coupon_template_params
 
-    if @coupon_template.bucket == 'personal' && !current_user.admin?
+    if @coupon_template.bucket == 'personal'
       # personal 세트에서는 title/image만 허용
       # (permit 반환값은 ActionController::Parameters 이므로 slice 사용 가능)
       attrs = attrs.slice(:title, :image)

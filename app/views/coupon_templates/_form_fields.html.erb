@@ -5,18 +5,20 @@
   <%= f.text_field :title, class: "w-full border p-2 rounded" %>
 </div>
 
-<div class="mb-3">
-  <%= f.label :weight, t("coupon_templates.form.weight") %>
-  <%= f.number_field :weight,
-        in: 0..100,
-        step: 10,
-        class: "w-full border p-2 rounded" %>
-</div>
+<% if f.object.bucket == "library" %>
+  <div class="mb-3">
+    <%= f.label :weight, t("coupon_templates.form.weight") %>
+    <%= f.number_field :weight,
+          in: 0..100,
+          step: 10,
+          class: "w-full border p-2 rounded" %>
+  </div>
 
-<div class="mb-3 flex items-center gap-2">
-  <%= f.check_box :active %>
-  <%= f.label :active, t("coupon_templates.form.active"), class: "mb-0" %>
-</div>
+  <div class="mb-3 flex items-center gap-2">
+    <%= f.check_box :active %>
+    <%= f.label :active, t("coupon_templates.form.active"), class: "mb-0" %>
+  </div>
+<% end %>
 
 <% initial_image_source = coupon_thumbnail_source(f.object) %>
 <div class="mb-3"

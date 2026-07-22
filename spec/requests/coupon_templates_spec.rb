@@ -152,6 +152,8 @@ RSpec.describe "Coupon template management", type: :request do
       expect(preview["src"]).to include("coupon_templates/default")
       expect(preview["alt"]).to eq("쿠폰 이미지 미리보기")
       expect(preview_container.key?("hidden")).to eq(false)
+      expect(document.at_css(%(input[name="coupon_template[weight]"]))).to be_present
+      expect(document.at_css(%(input[type="checkbox"][name="coupon_template[active]"]))).to be_present
       expect(response.body).not_to include("이미지 삭제")
     end
 
@@ -175,6 +177,27 @@ RSpec.describe "Coupon template management", type: :request do
       expect(preview["src"]).to include("coupon_templates/mychew")
       expect(preview["alt"]).to eq("쿠폰 이미지 미리보기")
       expect(preview_container.key?("hidden")).to eq(false)
+      expect(document.at_css(%(input[name="coupon_template[weight]"]))).to be_nil
+      expect(document.at_css(%(input[type="checkbox"][name="coupon_template[active]"]))).to be_nil
+    end
+
+    it "keeps weight and active inputs in the admin library edit coupon modal" do
+      template = create(
+        :coupon_template,
+        created_by: admin,
+        bucket: "library",
+        weight: 40,
+        active: true
+      )
+      sign_in admin
+
+      get edit_coupon_template_path(template), headers: modal_headers
+
+      document = Nokogiri::HTML(response.body)
+
+      expect(response).to have_http_status(:ok)
+      expect(document.at_css(%(input[name="coupon_template[weight]"]))).to be_present
+      expect(document.at_css(%(input[type="checkbox"][name="coupon_template[active]"]))).to be_present
     end
 
     it "does not show the source attachment for an adopted coupon without its own image" do
@@ -261,13 +284,39 @@ RSpec.describe "Coupon template management", type: :request do
       sign_in teacher
 
       post coupon_templates_path,
-        params: { coupon_template: { title: "새 개인 쿠폰", weight: 0, active: false } },
+        params: { coupon_template: { title: "새 개인 쿠폰", weight: 90, active: true } },
         headers: turbo_headers
 
       targets = Nokogiri::HTML(response.body).css("turbo-stream").map { _1["target"] }
+      created = CouponTemplate.find_by!(created_by: teacher, title: "새 개인 쿠폰")
 
       expect(response.media_type).to eq("text/vnd.turbo-stream.html")
+      expect(created.weight).to eq(0)
+      expect(created).not_to be_active
       expect(targets).to include("personal", "modal", "flash")
+    end
+
+    it "keeps admin library create and update weight and active behavior" do
+      sign_in admin
+
+      post coupon_templates_path,
+        params: {
+          bucket: "library",
+          coupon_template: { title: "관리자 라이브러리", weight: 70, active: true }
+        },
+        headers: turbo_headers
+
+      created = CouponTemplate.find_by!(created_by: admin, bucket: "library", title: "관리자 라이브러리")
+
+      patch coupon_template_path(created),
+        params: { coupon_template: { title: "관리자 라이브러리 수정", weight: 20, active: false } },
+        headers: turbo_headers
+
+      created.reload
+
+      expect(created.title).to eq("관리자 라이브러리 수정")
+      expect(created.weight).to eq(20)
+      expect(created).not_to be_active
     end
 
     it "refreshes personal and library after adopting a library coupon" do
