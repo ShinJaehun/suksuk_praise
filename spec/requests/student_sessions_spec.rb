@@ -30,6 +30,16 @@ RSpec.describe 'Student PIN sessions', type: :request do
       headers: { 'REMOTE_ADDR' => ip }
   end
 
+  def capture_request_log
+    io = StringIO.new
+    original_logger = Rails.logger
+    Rails.logger = ActiveSupport::TaggedLogging.new(ActiveSupport::Logger.new(io))
+    yield
+    io.string
+  ensure
+    Rails.logger = original_logger
+  end
+
   it 'does not expose all classrooms and students on the global login page' do
     other_classroom = create(:classroom, name: '다른 교실')
     other_student = create(:user, :student, name: '다른 학생', student_pin: '5678')
@@ -107,6 +117,57 @@ RSpec.describe 'Student PIN sessions', type: :request do
     expect(response).to have_http_status(:not_found)
     expect(response.body).to include('학생 로그인 주소를 사용할 수 없습니다.')
     expect(response.body).to include('새 QR 코드나 로그인 주소')
+  end
+
+  it 'filters the raw token from valid GET student login request logs' do
+    token = classroom.student_login_token
+
+    logs = capture_request_log do
+      get public_student_login_path(student_login_token: token)
+    end
+
+    expect(response).to have_http_status(:ok)
+    expect(logs).to include('/c/[FILTERED]/login')
+    expect(logs).not_to include(token)
+  end
+
+  it 'filters the raw token and PIN from POST student login request logs' do
+    token = classroom.student_login_token
+
+    logs = capture_request_log do
+      post public_student_login_path(student_login_token: token), params: {
+        student_id: student.id,
+        student_pin: '1234'
+      }
+    end
+
+    expect(response).to redirect_to(classroom_student_path(classroom, student))
+    expect(logs).to include('/c/[FILTERED]/login')
+    expect(logs).not_to include(token)
+    expect(logs).not_to include('1234')
+    expect(logs).to include('[FILTERED]')
+  end
+
+  it 'filters an invalid raw token from request logs' do
+    invalid_token = 'invalid-student-login-token'
+
+    logs = capture_request_log do
+      get public_student_login_path(student_login_token: invalid_token)
+    end
+
+    expect(response).to have_http_status(:not_found)
+    expect(logs).to include('/c/[FILTERED]/login')
+    expect(logs).not_to include(invalid_token)
+  end
+
+  it 'does not mask ordinary request paths' do
+    logs = capture_request_log do
+      get new_student_session_path
+    end
+
+    expect(response).to have_http_status(:ok)
+    expect(logs).to include('/student_login')
+    expect(logs).not_to include('/c/[FILTERED]/login')
   end
 
   it 'does not route a numeric classroom login URL' do
