@@ -1,5 +1,6 @@
-<%# locals: tpl:, adopted_source_ids: %>
+<%# locals: tpl:, adopted_source_ids:, title_conflict_source_ids: [] %>
 <% adopted = adopted_source_ids.include?(tpl.id) %>
+<% title_conflict = local_assigns.fetch(:title_conflict_source_ids, []).include?(tpl.id) %>
 
 <article id="<%= dom_id(tpl, :library) %>" class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:gap-x-6">
   <div class="col-span-2 lg:col-span-1">
@@ -15,6 +16,10 @@
     <% if adopted %>
       <span class="inline-flex min-h-9 items-center rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">
         <%= t("coupon_templates.status.added") %>
+      </span>
+    <% elsif title_conflict %>
+      <span class="inline-flex min-h-9 items-center rounded-full bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-700">
+        <%= t("coupon_templates.status.title_conflict") %>
       </span>
     <% else %>
       <%= button_to t("coupon_templates.actions.adopt"),

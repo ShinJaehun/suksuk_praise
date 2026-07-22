@@ -6,7 +6,8 @@
         locals: {
           templates: @library,
           library_admin: current_user.admin?,
-          adopted_source_ids: @adopted_library_source_ids
+          adopted_source_ids: @adopted_library_source_ids,
+          title_conflict_source_ids: @library_title_conflict_ids
         } %>
 <% end %>
 

@@ -14,6 +14,7 @@ class CouponTemplatesController < ApplicationController
 
     # 역할별 가시성(관리자=전체, 교사=active만) + 정렬은 정책 스코프에서 처리
     load_library!
+    load_library_title_conflict_ids!
     @library_admin = current_user.admin?
   end
 
@@ -185,6 +186,7 @@ class CouponTemplatesController < ApplicationController
       load_personal!
       load_library!
       load_adopted_library_source_ids!
+      load_library_title_conflict_ids!
       message = t('coupon_templates.flash.already_in_personal')
       respond_to do |f|
         f.html { redirect_to coupon_templates_path, notice: message }
@@ -196,20 +198,31 @@ class CouponTemplatesController < ApplicationController
       return
     end
 
-    @adopted = CouponTemplate.create!(
-      title: source.title,
-      weight: source.weight,
-      active: source.active,
-      default_image_key: source.default_image_key,
-      bucket: 'personal',
-      created_by_id: current_user.id,
-      source_template_id: source.id
-    )
+    @adopted = build_adopted_coupon_template(source)
+    unless @adopted.save
+      raise ActiveRecord::RecordInvalid, @adopted unless title_uniqueness_conflict?(@adopted)
+
+      load_personal!
+      load_library!
+      load_adopted_library_source_ids!
+      load_library_title_conflict_ids!
+      message = t('coupon_templates.flash.title_conflict')
+      respond_to do |f|
+        f.html { redirect_to coupon_templates_path, alert: message }
+        f.turbo_stream do
+          flash.now[:alert] = message
+          render :adopt, layout: 'application'
+        end
+      end
+      return
+    end
+
     CouponTemplates::ImageCopier.copy!(source:, target: @adopted)
 
     load_personal!
     load_library!
     load_adopted_library_source_ids!
+    load_library_title_conflict_ids!
 
     message = t('coupon_templates.flash.adopted')
     respond_to do |f|
@@ -239,6 +252,7 @@ class CouponTemplatesController < ApplicationController
 
     load_library!
     load_adopted_library_source_ids!
+    load_library_title_conflict_ids!
 
     respond_to do |f|
       f.html { redirect_to coupon_templates_path, notice: message }
@@ -336,20 +350,23 @@ class CouponTemplatesController < ApplicationController
                           .pluck(:source_template_id)
                           .to_set
     created = 0
+    skipped = 0
 
     CouponTemplate.transaction do
       templates.each do |src|
-        next if existing_source_ids.include?(src.id)
+        if existing_source_ids.include?(src.id)
+          skipped += 1
+          next
+        end
 
-        created_template = CouponTemplate.create!(
-          title: src.title,
-          active: src.active,
-          weight: src.weight,
-          default_image_key: src.default_image_key,
-          bucket: 'personal',
-          created_by_id: current_user.id,
-          source_template_id: src.id
-        )
+        created_template = build_adopted_coupon_template(src)
+        unless created_template.save
+          raise ActiveRecord::RecordInvalid, created_template unless title_uniqueness_conflict?(created_template)
+
+          skipped += 1
+          next
+        end
+
         CouponTemplates::ImageCopier.copy!(source: src, target: created_template)
         created += 1
       end
@@ -358,13 +375,16 @@ class CouponTemplatesController < ApplicationController
     load_personal!
     load_library!
     load_adopted_library_source_ids!
+    load_library_title_conflict_ids!
 
     message =
       if created.positive?
         t('coupon_templates.flash.adopt_all',
-          created_count: created)
+          created_count: created,
+          skipped_count: skipped)
       else
-        t('coupon_templates.flash.adopt_all_nothing')
+        t('coupon_templates.flash.adopt_all_nothing',
+          skipped_count: skipped)
       end
 
     respond_to do |f|
@@ -464,6 +484,15 @@ class CouponTemplatesController < ApplicationController
       .pluck(:source_template_id)
   end
 
+  def load_library_title_conflict_ids!
+    @library_title_conflict_ids =
+      Array(@library).filter_map do |source|
+        next if Array(@adopted_library_source_ids).include?(source.id)
+
+        source.id if title_uniqueness_conflict?(build_adopted_coupon_template(source))
+      end
+  end
+
   def reload_personal_and_flash!(message)
     load_personal!
     respond_to do |f|
@@ -480,6 +509,25 @@ class CouponTemplatesController < ApplicationController
                 .includes(image_attachment: :blob)
                 .order(:title)
     @personal_rows = build_rows(@personal)
+  end
+
+  def build_adopted_coupon_template(source)
+    CouponTemplate.new(
+      title: source.title,
+      active: source.active,
+      weight: source.weight,
+      default_image_key: source.default_image_key,
+      bucket: 'personal',
+      created_by_id: current_user.id,
+      source_template_id: source.id
+    )
+  end
+
+  def title_uniqueness_conflict?(coupon_template)
+    coupon_template.valid?
+    coupon_template.errors.where(:title).any? do |error|
+      error.type == :taken || error.options[:message] == :already_in_bucket
+    end
   end
 
   def remove_coupon_image!

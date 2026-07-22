@@ -53,7 +53,7 @@ RSpec.describe "Coupon template management", type: :request do
       )
     end
 
-    it "uses source_template_id for the teacher library adoption state" do
+    it "distinguishes adopted library coupons from title conflicts" do
       adopted_source = create(:coupon_template, created_by: admin, bucket: "library", title: "추가한 추천")
       same_title_source = create(:coupon_template, created_by: admin, bucket: "library", title: "같은 제목")
       create(
@@ -74,8 +74,8 @@ RSpec.describe "Coupon template management", type: :request do
       expect(document.at_css("turbo-frame#library").text).to include("추천 세트 적용")
       expect(adopted_row.text).to include("추가됨")
       expect(adopted_row.at_css(%(form[action="#{adopt_coupon_template_path(adopted_source)}"]))).to be_nil
-      expect(same_title_row.text).to include("내 쿠폰에 추가")
-      expect(same_title_row.at_css(%(form[action="#{adopt_coupon_template_path(same_title_source)}"]))).to be_present
+      expect(same_title_row.text).to include("같은 이름의 쿠폰이 있습니다")
+      expect(same_title_row.at_css(%(form[action="#{adopt_coupon_template_path(same_title_source)}"]))).to be_nil
       expect(response.body).not_to include("라이브러리 쿠폰 만들기")
     end
 
@@ -323,6 +323,59 @@ RSpec.describe "Coupon template management", type: :request do
       expect(adopted.image.download).to eq("teacher image")
     end
 
+    it "does not create or link a coupon when adopting a library coupon with a conflicting title" do
+      source = create(:coupon_template, created_by: admin, bucket: "library", title: "겹치는 추천")
+      existing = create(
+        :coupon_template,
+        created_by: teacher,
+        title: source.title,
+        weight: 20,
+        active: false,
+        source_template_id: nil
+      )
+      sign_in teacher
+
+      expect {
+        post adopt_coupon_template_path(source), headers: turbo_headers
+      }.not_to change { CouponTemplate.where(created_by: teacher, bucket: "personal").count }
+
+      existing.reload
+      document = Nokogiri::HTML(response.body)
+      library_stream = document.at_css(%(turbo-stream[target="library"]))
+
+      expect(existing.source_template_id).to be_nil
+      expect(existing.weight).to eq(20)
+      expect(existing).not_to be_active
+      expect(response.body).to include("같은 이름의 쿠폰이 있어 가져오지 않았습니다.")
+      expect(library_stream.to_html).to include("같은 이름의 쿠폰이 있습니다")
+      expect(library_stream.at_css(%(form[action="#{adopt_coupon_template_path(source)}"]))).to be_nil
+    end
+
+    it "redirects without changing an existing personal coupon when adopting a conflicting title over HTML" do
+      source = create(:coupon_template, created_by: admin, bucket: "library", title: "HTML 겹치는 추천")
+      existing = create(
+        :coupon_template,
+        created_by: teacher,
+        title: source.title,
+        weight: 20,
+        active: false,
+        source_template_id: nil
+      )
+      sign_in teacher
+
+      expect {
+        post adopt_coupon_template_path(source)
+      }.not_to change { CouponTemplate.where(created_by: teacher, bucket: "personal").count }
+
+      existing.reload
+
+      expect(existing.source_template_id).to be_nil
+      expect(existing.weight).to eq(20)
+      expect(existing).not_to be_active
+      expect(response).to redirect_to(coupon_templates_path)
+      expect(flash[:alert]).to eq("같은 이름의 쿠폰이 있어 가져오지 않았습니다.")
+    end
+
     it "refreshes library after deleting a coupon adopted by source id" do
       library_template = create(:coupon_template, created_by: admin, bucket: "library", title: "삭제할 추천")
       adopted = create(
@@ -361,7 +414,35 @@ RSpec.describe "Coupon template management", type: :request do
       expect(adopted.weight).to eq(source.weight)
       expect(adopted.active).to eq(source.active)
       expect(adopted.default_image_key).to eq(source.default_image_key)
-      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다.")
+      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다. 0개는 건너뛰었습니다.")
+    end
+
+    it "skips only title conflicts when applying the recommended set" do
+      conflicting_source = create(:coupon_template, created_by: admin, bucket: "library", title: "겹치는 세트 쿠폰")
+      new_source = create(:coupon_template, created_by: admin, bucket: "library", title: "새 세트 쿠폰")
+      existing = create(
+        :coupon_template,
+        created_by: teacher,
+        title: conflicting_source.title,
+        weight: 10,
+        active: false,
+        source_template_id: nil
+      )
+      sign_in teacher
+
+      expect {
+        post adopt_all_from_library_coupon_templates_path, headers: turbo_headers
+      }.to change { CouponTemplate.where(created_by: teacher, bucket: "personal").count }.by(1)
+
+      existing.reload
+      adopted = CouponTemplate.find_by!(created_by: teacher, source_template: new_source)
+
+      expect(adopted.title).to eq(new_source.title)
+      expect(CouponTemplate.find_by(created_by: teacher, source_template: conflicting_source)).to be_nil
+      expect(existing.source_template_id).to be_nil
+      expect(existing.weight).to eq(10)
+      expect(existing).not_to be_active
+      expect(response.body).to include("추천 세트에서 새 쿠폰 1개를 추가했습니다. 1개는 건너뛰었습니다.")
     end
 
     it "preserves every customized field on an existing adopted coupon" do
@@ -399,7 +480,7 @@ RSpec.describe "Coupon template management", type: :request do
       expect(adopted.default_image_key).to eq("coupon_templates/mychew.png")
       expect(adopted.image.blob_id).to eq(target_blob_id)
       expect(adopted.image.download).to eq("teacher custom image")
-      expect(response.body).to include("이미 추천 쿠폰을 모두 가지고 있습니다.")
+      expect(response.body).to include("새로 추가한 쿠폰이 없습니다. 1개는 건너뛰었습니다.")
     end
   end
 

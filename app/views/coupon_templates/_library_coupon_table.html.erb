@@ -1,10 +1,13 @@
-<%# locals: templates:, adopted_source_ids: %>
+<%# locals: templates:, adopted_source_ids:, title_conflict_source_ids: [] %>
 <% if templates.any? %>
   <div class="divide-y divide-slate-200">
     <%= render partial: "coupon_templates/library_coupon_row",
                collection: templates,
                as: :tpl,
-               locals: { adopted_source_ids: adopted_source_ids } %>
+               locals: {
+                 adopted_source_ids: adopted_source_ids,
+                 title_conflict_source_ids: local_assigns.fetch(:title_conflict_source_ids, [])
+               } %>
   </div>
 <% else %>
   <div class="flex flex-col items-center gap-4 px-5 py-10 text-center">
