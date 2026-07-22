@@ -18,7 +18,7 @@ module CouponTemplates
           .lock
           .to_a
 
-        return if library_candidates.empty?
+        next if library_candidates.empty?
 
         # 이미 가진 personal(title 기준, case-insensitive)
         existing_titles = CouponTemplate
@@ -35,16 +35,24 @@ module CouponTemplates
           title_downcased = tpl.title.to_s.downcase
           next if existing_titles.include?(title_downcased)
 
-          personal_template = CouponTemplate.create!(
-            bucket:      "personal",
-            created_by:  teacher,
-            title:       tpl.title,
-            active:      false, # 비활성 + weight=0 → 현재 불변식과 일관
-            weight:      0,
-            default_image_key: tpl.default_image_key,
-            source_template: tpl
-          )
-          CouponTemplates::ImageCopier.copy!(source: tpl, target: personal_template)
+          begin
+            CouponTemplate.transaction(requires_new: true) do
+              personal_template = CouponTemplate.create!(
+                bucket:      "personal",
+                created_by:  teacher,
+                title:       tpl.title,
+                active:      false, # 비활성 + weight=0 → 현재 불변식과 일관
+                weight:      0,
+                default_image_key: tpl.default_image_key,
+                source_template: tpl
+              )
+              CouponTemplates::ImageCopier.copy!(source: tpl, target: personal_template)
+            end
+          rescue CouponTemplates::ImageCopier::CopyError => e
+            Rails.logger.error(
+              "[CouponTemplates::AutoAdopter] source_template_id=#{tpl.id} #{e.class}: #{e.message}"
+            )
+          end
         end
 
         # 새로 생성한 personal 세트를 기준으로 가중치 정규화
