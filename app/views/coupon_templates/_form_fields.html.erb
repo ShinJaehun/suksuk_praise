@@ -1,5 +1,11 @@
 <%# locals: f, remove_image_template: nil %>
 
+<% if f.object.errors.any? %>
+  <div class="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+    <%= f.object.errors.full_messages.to_sentence %>
+  </div>
+<% end %>
+
 <div class="mb-3">
   <%= f.label :title, t("coupon_templates.form.title") %>
   <%= f.text_field :title, class: "w-full border p-2 rounded" %>
@@ -41,7 +47,7 @@
     <% end %>
   </div>
   <%= f.file_field :image,
-        accept: "image/*",
+        accept: "image/jpeg,image/png,image/webp",
         class: "w-full border p-2 rounded",
         data: {
           coupon_image_preview_target: "input",

@@ -1,5 +1,7 @@
 class CouponTemplate < ApplicationRecord
   DEFAULT_IMAGE_KEY = 'coupon_templates/default.png'.freeze
+  ALLOWED_IMAGE_CONTENT_TYPES = %w[image/jpeg image/png image/webp].freeze
+  MAX_IMAGE_SIZE = 5.megabytes
 
   has_many :user_coupons, dependent: :restrict_with_exception
   has_one_attached :image
@@ -18,6 +20,8 @@ class CouponTemplate < ApplicationRecord
     case_sensitive: false,
     message: :already_in_bucket
   }
+  validate :image_content_type
+  validate :image_size
 
   scope :active, -> { where(active: true) }
   scope :by_bucket, ->(bucket) { where(bucket: bucket) }
@@ -38,5 +42,19 @@ class CouponTemplate < ApplicationRecord
     return if image.attached?
     return if default_image_key.present?
     self.default_image_key = DEFAULT_IMAGE_KEY
+  end
+
+  def image_content_type
+    return unless image.attached?
+    return if ALLOWED_IMAGE_CONTENT_TYPES.include?(image.blob.content_type)
+
+    errors.add(:image, :invalid_content_type)
+  end
+
+  def image_size
+    return unless image.attached?
+    return if image.blob.byte_size <= MAX_IMAGE_SIZE
+
+    errors.add(:image, :too_large)
   end
 end

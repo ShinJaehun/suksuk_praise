@@ -8,6 +8,8 @@ ko:
         name: "이름"
         starts_on: "시작일"
         ends_on: "종료일"
+      coupon_template:
+        image: "이미지"
     errors:
       models:
         classroom:
@@ -20,6 +22,9 @@ ko:
               active_student_membership_taken: "이 학생은 다른 학급에서 이미 활동 중입니다."
         coupon_template:
           attributes:
+            image:
+              invalid_content_type: "JPEG, PNG, WebP 형식만 사용할 수 있습니다."
+              too_large: "5MB 이하만 사용할 수 있습니다."
             title:
               already_in_bucket: "은(는) 이미 해당 버킷에 있습니다."
 

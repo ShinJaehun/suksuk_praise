@@ -14,6 +14,15 @@ RSpec.describe "Coupon template management", type: :request do
     )
   end
 
+  def uploaded_image(content_type:, content: "image", filename: "coupon")
+    extension = content_type.split("/").last
+    Rack::Test::UploadedFile.new(
+      StringIO.new(content),
+      content_type,
+      original_filename: "#{filename}.#{extension}"
+    )
+  end
+
   describe "GET /coupon_templates" do
     it "renders the personal section before the library with one global modal frame" do
       personal = create(
@@ -128,7 +137,7 @@ RSpec.describe "Coupon template management", type: :request do
       preview_container = preview_area.at_css(%([data-coupon-image-preview-target="previewContainer"]))
 
       expect(response).to have_http_status(:ok)
-      expect(input["accept"]).to eq("image/*")
+      expect(input["accept"]).to eq("image/jpeg,image/png,image/webp")
       expect(input["data-action"]).to eq("change->coupon-image-preview#update")
       preview = preview_area.at_css(%(img[data-coupon-image-preview-target="preview"]))
       expect(preview["src"]).to include("coupon_templates/default")
@@ -240,6 +249,177 @@ RSpec.describe "Coupon template management", type: :request do
   end
 
   describe "Turbo frame refreshes" do
+    it "allows JPEG, PNG, and WebP coupon image uploads" do
+      sign_in teacher
+
+      [
+        ["JPEG 쿠폰", "image/jpeg"],
+        ["PNG 쿠폰", "image/png"],
+        ["WebP 쿠폰", "image/webp"]
+      ].each do |title, content_type|
+        post coupon_templates_path,
+          params: {
+            coupon_template: {
+              title: title,
+              image: uploaded_image(content_type: content_type, filename: title)
+            }
+          },
+          headers: turbo_headers
+      end
+
+      expect(CouponTemplate.find_by!(created_by: teacher, title: "JPEG 쿠폰").image.blob.content_type).to eq("image/jpeg")
+      expect(CouponTemplate.find_by!(created_by: teacher, title: "PNG 쿠폰").image.blob.content_type).to eq("image/png")
+      expect(CouponTemplate.find_by!(created_by: teacher, title: "WebP 쿠폰").image.blob.content_type).to eq("image/webp")
+    end
+
+    it "rejects unsupported personal coupon image uploads without creating a coupon" do
+      sign_in teacher
+
+      expect {
+        post coupon_templates_path,
+          params: {
+            coupon_template: {
+              title: "잘못된 이미지 쿠폰",
+              image: uploaded_image(content_type: "image/gif", filename: "invalid")
+            }
+          },
+          headers: turbo_headers
+      }.to change { CouponTemplate.where(created_by: teacher, bucket: "personal").count }.by(0)
+        .and change { ActiveStorage::Blob.count }.by(0)
+        .and change { ActiveStorage::Attachment.count }.by(0)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("JPEG, PNG, WebP")
+    end
+
+    it "rejects oversized library coupon image uploads without saving other changes" do
+      library_template = create(
+        :coupon_template,
+        created_by: admin,
+        bucket: "library",
+        title: "기존 라이브러리",
+        weight: 30,
+        active: true
+      )
+      sign_in admin
+
+      expect {
+        patch coupon_template_path(library_template),
+          params: {
+            coupon_template: {
+              title: "변경된 라이브러리",
+              weight: 80,
+              active: false,
+              image: uploaded_image(
+                content_type: "image/png",
+                content: "a" * (CouponTemplate::MAX_IMAGE_SIZE + 1),
+                filename: "large"
+              )
+            }
+          },
+          headers: turbo_headers
+      }.to change { ActiveStorage::Blob.count }.by(0)
+        .and change { ActiveStorage::Attachment.count }.by(0)
+
+      library_template.reload
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("5MB")
+      expect(library_template.title).to eq("기존 라이브러리")
+      expect(library_template.weight).to eq(30)
+      expect(library_template).to be_active
+      expect(library_template.image).not_to be_attached
+    end
+
+    it "rejects oversized personal coupon image uploads without creating storage records" do
+      sign_in teacher
+
+      expect {
+        post coupon_templates_path,
+          params: {
+            coupon_template: {
+              title: "큰 이미지 쿠폰",
+              image: uploaded_image(
+                content_type: "image/png",
+                content: "a" * (CouponTemplate::MAX_IMAGE_SIZE + 1),
+                filename: "large"
+              )
+            }
+          },
+          headers: turbo_headers
+      }.to change { CouponTemplate.where(created_by: teacher, bucket: "personal").count }.by(0)
+        .and change { ActiveStorage::Blob.count }.by(0)
+        .and change { ActiveStorage::Attachment.count }.by(0)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("5MB")
+    end
+
+    it "keeps the existing storage records when a personal coupon image update is invalid" do
+      personal = create(
+        :coupon_template,
+        created_by: teacher,
+        title: "기존 저장소 개인",
+        weight: 30,
+        active: true
+      )
+      attach_image(personal, content: "existing image", filename: "existing.png")
+      existing_blob_id = personal.image.blob_id
+      existing_attachment_id = personal.image_attachment.id
+      sign_in teacher
+
+      expect {
+        patch coupon_template_path(personal),
+          params: {
+            coupon_template: {
+              title: "변경된 저장소 개인",
+              image: uploaded_image(content_type: "image/gif", filename: "invalid")
+            }
+          },
+          headers: turbo_headers
+      }.to change { ActiveStorage::Blob.count }.by(0)
+        .and change { ActiveStorage::Attachment.count }.by(0)
+
+      personal.reload
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("JPEG, PNG, WebP")
+      expect(personal.title).to eq("기존 저장소 개인")
+      expect(personal.image.blob_id).to eq(existing_blob_id)
+      expect(personal.image_attachment.id).to eq(existing_attachment_id)
+      expect(personal.image.download).to eq("existing image")
+    end
+
+    it "keeps the existing image when a personal coupon image update is invalid" do
+      personal = create(
+        :coupon_template,
+        created_by: teacher,
+        title: "기존 개인",
+        weight: 30,
+        active: true
+      )
+      attach_image(personal, content: "existing image", filename: "existing.png")
+      existing_blob_id = personal.image.blob_id
+      sign_in teacher
+
+      patch coupon_template_path(personal),
+        params: {
+          coupon_template: {
+            title: "변경된 개인",
+            image: uploaded_image(content_type: "text/plain", filename: "invalid")
+          }
+        },
+        headers: turbo_headers
+
+      personal.reload
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("JPEG, PNG, WebP")
+      expect(personal.title).to eq("기존 개인")
+      expect(personal.image.blob_id).to eq(existing_blob_id)
+      expect(personal.image.download).to eq("existing image")
+    end
+
     it "allows a teacher to update a personal coupon image without changing weight or active state" do
       personal = create(
         :coupon_template,
