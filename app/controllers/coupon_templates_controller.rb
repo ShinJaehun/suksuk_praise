@@ -96,10 +96,10 @@ class CouponTemplatesController < ApplicationController
       respond_to do |f|
         f.html { render :new, status: :unprocessable_entity }
         f.turbo_stream do
-          render template: 'coupon_templates/new',
-                 formats: [:html],
-                 status: :unprocessable_entity,
-                 layout: false
+          render turbo_stream: turbo_stream.update(
+            'modal',
+            partial: 'coupon_templates/new_modal'
+          ), status: :unprocessable_entity
         end
       end
     end
@@ -142,10 +142,10 @@ class CouponTemplatesController < ApplicationController
       respond_to do |f|
         f.html { render :edit, status: :unprocessable_entity }
         f.turbo_stream do
-          render template: 'coupon_templates/edit',
-                 formats: [:html],
-                 status: :unprocessable_entity,
-                 layout: false
+          render turbo_stream: turbo_stream.update(
+            'modal',
+            partial: 'coupon_templates/edit_modal'
+          ), status: :unprocessable_entity
         end
       end
     end

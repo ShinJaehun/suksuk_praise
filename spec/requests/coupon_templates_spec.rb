@@ -245,8 +245,11 @@ RSpec.describe "Coupon template management", type: :request do
 
       document = Nokogiri::HTML(response.body)
       preview_area = document.at_css(%([data-controller="coupon-image-preview"]))
+      modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
       expect(response).to have_http_status(:unprocessable_entity)
+      expect(modal_stream).to be_present
+      expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(preview_area).to be_present
       expect(preview_area.at_css(%(input[data-action="change->coupon-image-preview#update"]))).to be_present
     end
@@ -262,8 +265,11 @@ RSpec.describe "Coupon template management", type: :request do
         headers: turbo_headers
 
       document = Nokogiri::HTML(response.body)
+      modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
       expect(response).to have_http_status(:unprocessable_entity)
+      expect(modal_stream).to be_present
+      expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_present
     end
 
@@ -283,8 +289,11 @@ RSpec.describe "Coupon template management", type: :request do
         headers: turbo_headers
 
       document = Nokogiri::HTML(response.body)
+      modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
       expect(response).to have_http_status(:unprocessable_entity)
+      expect(modal_stream).to be_present
+      expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_present
       expect(response.body).to include("JPEG, PNG, WebP")
     end
@@ -297,8 +306,11 @@ RSpec.describe "Coupon template management", type: :request do
         headers: turbo_headers
 
       document = Nokogiri::HTML(response.body)
+      modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
       expect(response).to have_http_status(:unprocessable_entity)
+      expect(modal_stream).to be_present
+      expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_nil
     end
   end
@@ -467,8 +479,12 @@ RSpec.describe "Coupon template management", type: :request do
         headers: turbo_headers
 
       personal.reload
+      document = Nokogiri::HTML(response.body)
+      modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
       expect(response).to have_http_status(:unprocessable_entity)
+      expect(modal_stream).to be_present
+      expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(response.body).to include("JPEG, PNG, WebP")
       expect(personal.title).to eq("기존 개인")
       expect(personal.image.blob_id).to eq(existing_blob_id)
@@ -548,7 +564,13 @@ RSpec.describe "Coupon template management", type: :request do
         },
         headers: turbo_headers
 
+      document = Nokogiri::HTML(response.body)
+      targets = document.css("turbo-stream").map { _1["target"] }
+      modal_stream = document.at_css(%(turbo-stream[target="modal"]))
       created = CouponTemplate.find_by!(created_by: admin, bucket: "library", title: "관리자 라이브러리")
+
+      expect(targets).to include("library", "modal", "flash")
+      expect(modal_stream.to_html).to include("<template></template>")
 
       patch coupon_template_path(created),
         params: { coupon_template: { title: "관리자 라이브러리 수정", weight: 20, active: false } },
