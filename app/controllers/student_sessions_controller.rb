@@ -48,8 +48,6 @@ class StudentSessionsController < ApplicationController
         return render_invalid_link unless classroom
 
         classroom
-      elsif params[:classroom_id].present?
-        Classroom.find(params[:classroom_id])
       end
 
     true
@@ -65,7 +63,7 @@ class StudentSessionsController < ApplicationController
       if params[:student_login_token].present?
         public_student_login_path(student_login_token: params[:student_login_token])
       elsif @classroom
-        classroom_student_login_path(@classroom)
+        public_student_login_path(student_login_token: @classroom.student_login_token)
       else
         new_student_session_path
       end
@@ -93,8 +91,9 @@ class StudentSessionsController < ApplicationController
 
   def student_logout_redirect_path(classroom_id)
     return new_student_session_path if classroom_id.blank?
-    return new_student_session_path unless Classroom.exists?(id: classroom_id)
+    classroom = Classroom.find_by(id: classroom_id)
+    return new_student_session_path unless classroom
 
-    classroom_student_login_path(classroom_id)
+    public_student_login_path(student_login_token: classroom.student_login_token)
   end
 end

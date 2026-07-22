@@ -135,9 +135,10 @@ class ApplicationController < ActionController::Base
 
   def student_session_timeout_redirect_path(classroom_id)
     return new_student_session_path if classroom_id.blank?
-    return new_student_session_path unless Classroom.exists?(id: classroom_id)
+    classroom = Classroom.find_by(id: classroom_id)
+    return new_student_session_path unless classroom
 
-    classroom_student_login_path(classroom_id)
+    public_student_login_path(student_login_token: classroom.student_login_token)
   end
 
   def role_landing_path

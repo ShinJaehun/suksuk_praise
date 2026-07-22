@@ -60,7 +60,7 @@ RSpec.describe "Users::Sessions", type: :request do
   end
 
   it "still allows a student to sign in with the classroom PIN flow" do
-    post classroom_student_login_path(classroom), params: {
+    post public_student_login_path(student_login_token: classroom.student_login_token), params: {
       student_id: student.id,
       student_pin: "1234"
     }

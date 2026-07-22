@@ -254,7 +254,7 @@ RSpec.describe "Dashboards", type: :request do
           issuance_basis: "manual",
           issued_at: Time.zone.local(2026, 4, 7, 12, 0, 0))
 
-        post classroom_student_login_path(classroom), params: {
+        post public_student_login_path(student_login_token: classroom.student_login_token), params: {
           student_id: student.id,
           student_pin: "1234"
         }
@@ -319,7 +319,7 @@ RSpec.describe "Dashboards", type: :request do
       create(:classroom_membership, classroom: classroom, user: student, role: "student")
 
       travel_to Time.zone.local(2026, 4, 8, 10, 0, 0) do
-        post classroom_student_login_path(classroom), params: {
+        post public_student_login_path(student_login_token: classroom.student_login_token), params: {
           student_id: student.id,
           student_pin: "1234"
         }
