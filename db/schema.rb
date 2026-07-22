@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_18_010000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_22_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -113,8 +113,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_18_010000) do
     t.datetime "updated_at", null: false
     t.bigint "source_template_id"
     t.string "default_image_key"
+    t.index "created_by_id, bucket, lower((title)::text)", name: "idx_coupon_templates_owner_bucket_lower_title_uniqueness", unique: true
     t.index ["active"], name: "index_coupon_templates_on_active"
-    t.index ["created_by_id", "bucket", "title"], name: "idx_coupon_templates_owner_bucket_title_uniqueness", unique: true
     t.index ["created_by_id", "bucket"], name: "index_coupon_templates_on_created_by_and_bucket"
     t.index ["created_by_id", "source_template_id"], name: "index_coupon_templates_on_creator_and_source", unique: true, where: "(source_template_id IS NOT NULL)"
     t.index ["created_by_id"], name: "index_coupon_templates_on_created_by_id"
