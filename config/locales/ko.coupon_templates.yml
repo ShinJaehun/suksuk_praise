@@ -28,8 +28,8 @@ ko:
     status:
       in_use: "사용 중"
       not_in_use: "사용 안 함"
-      added: "내 쿠폰에 있음 ✓"
-      title_conflict: "같은 이름의 내 쿠폰이 있음"
+      added: "추가됨 ✓"
+      title_conflict: "같은 이름 쿠폰 있음"
     empty:
       personal: "아직 만든 쿠폰이 없습니다."
       library: "사용 가능한 라이브러리 쿠폰이 없습니다."

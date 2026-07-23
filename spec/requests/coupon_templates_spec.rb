@@ -102,9 +102,9 @@ RSpec.describe "Coupon template management", type: :request do
       available_row = document.at_css("#library_coupon_template_#{available_source.id}")
 
       expect(document.at_css("turbo-frame#library").text).to include("모두 내 쿠폰에 추가")
-      expect(adopted_row.text).to include("내 쿠폰에 있음")
+      expect(adopted_row.text).to include("추가됨")
       expect(adopted_row.at_css(%(form[action="#{adopt_coupon_template_path(adopted_source)}"]))).to be_nil
-      expect(same_title_row.text).to include("같은 이름의 내 쿠폰이 있음")
+      expect(same_title_row.text).to include("같은 이름 쿠폰 있음")
       expect(same_title_row.at_css(%(form[action="#{adopt_coupon_template_path(same_title_source)}"]))).to be_nil
       expect(available_row.text).to include("내 쿠폰에 추가")
       expect(available_row.at_css(%(form[action="#{adopt_coupon_template_path(available_source)}"]))).to be_present
@@ -142,9 +142,9 @@ RSpec.describe "Coupon template management", type: :request do
       adopted_row = document.at_css("#library_admin_coupon_template_#{adopted_source.id}")
       same_title_row = document.at_css("#library_admin_coupon_template_#{same_title_source.id}")
 
-      expect(adopted_row.text).to include("내 쿠폰에 있음")
+      expect(adopted_row.text).to include("추가됨")
       expect(adopted_row.at_css(%(form[action="#{adopt_coupon_template_path(adopted_source)}"]))).to be_nil
-      expect(same_title_row.text).to include("같은 이름의 내 쿠폰이 있음")
+      expect(same_title_row.text).to include("같은 이름 쿠폰 있음")
       expect(same_title_row.at_css(%(form[action="#{adopt_coupon_template_path(same_title_source)}"]))).to be_nil
     end
 
@@ -679,7 +679,7 @@ RSpec.describe "Coupon template management", type: :request do
       row = document.at_css("#library_admin_coupon_template_#{library_template.id}")
 
       expect(row.text).to include("내 쿠폰에 추가")
-      expect(row.text).not_to include("내 쿠폰에 있음")
+      expect(row.text).not_to include("추가됨")
 
       expect {
         post adopt_coupon_template_path(library_template), headers: turbo_headers
@@ -823,7 +823,7 @@ RSpec.describe "Coupon template management", type: :request do
       expect(existing.weight).to eq(20)
       expect(existing).not_to be_active
       expect(response.body).to include("같은 이름의 쿠폰이 있어 가져오지 않았습니다.")
-      expect(library_stream.to_html).to include("같은 이름의 내 쿠폰이 있음")
+      expect(library_stream.to_html).to include("같은 이름 쿠폰 있음")
       expect(library_stream.at_css(%(form[action="#{adopt_coupon_template_path(source)}"]))).to be_nil
     end
 
@@ -869,7 +869,7 @@ RSpec.describe "Coupon template management", type: :request do
 
       expect(library_stream).to be_present
       expect(library_stream.to_html).to include("내 쿠폰에 추가")
-      expect(library_stream.to_html).not_to include("내 쿠폰에 있음")
+      expect(library_stream.to_html).not_to include("추가됨")
     end
 
     it "refreshes personal and library after applying the recommended set" do
