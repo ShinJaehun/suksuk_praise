@@ -514,7 +514,6 @@ RSpec.describe 'Student PIN sessions', type: :request do
     patch classroom_student_path(classroom, student), params: {
       user: {
         name: student.name,
-        email: student.email,
         student_pin: '4321'
       }
     }
@@ -539,7 +538,6 @@ RSpec.describe 'Student PIN sessions', type: :request do
     patch classroom_student_path(classroom, student), params: {
       user: {
         name: '새 이름',
-        email: student.email,
         student_pin: ''
       }
     }
@@ -556,7 +554,6 @@ RSpec.describe 'Student PIN sessions', type: :request do
     patch classroom_student_path(classroom, student), params: {
       user: {
         name: student.name,
-        email: student.email,
         student_pin: '12ab'
       }
     }

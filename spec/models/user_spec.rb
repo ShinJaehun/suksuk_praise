@@ -78,4 +78,52 @@ RSpec.describe User, type: :model do
 
     expect(teacher.update(name: "Updated Teacher")).to eq(true)
   end
+
+  describe "role-specific Devise credentials" do
+    it "allows students without email or Devise password" do
+      student = build(:user, :student, email: nil, password: nil, student_pin: "1234")
+
+      expect(student).to be_valid
+      student.save!
+      expect(student.reload.email).to be_nil
+      expect(student.encrypted_password).to eq("")
+      expect(student.authenticate_student_pin("1234")).to be_truthy
+    end
+
+    it "allows multiple students with nil email" do
+      create(:user, :student, email: nil)
+
+      expect { create(:user, :student, email: nil) }.to change(described_class.student, :count).by(1)
+    end
+
+    it "keeps student PIN validation" do
+      student = build(:user, :student, student_pin: "12ab")
+
+      expect(student).not_to be_valid
+    end
+
+    it "requires email for teachers and admins" do
+      expect(build(:user, :teacher, email: nil)).not_to be_valid
+      expect(build(:user, :admin, email: nil)).not_to be_valid
+    end
+
+    it "requires password for new teachers" do
+      teacher = build(:user, :teacher, password: nil)
+
+      expect(teacher).not_to be_valid
+    end
+
+    it "keeps case-insensitive email uniqueness for staff accounts" do
+      create(:user, :teacher, email: "staff@example.com")
+
+      expect(build(:user, :admin, email: "STAFF@example.com")).not_to be_valid
+    end
+
+    it "clears student email and Devise password assignments without normalization errors" do
+      student = create(:user, :student, email: "Student@Example.com", password: "password123")
+
+      expect(student.reload.email).to be_nil
+      expect(student.encrypted_password).to eq("")
+    end
+  end
 end

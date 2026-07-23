@@ -36,6 +36,8 @@ class User < ApplicationRecord
   enum role: { student: "student", teacher: "teacher", admin: "admin" }
   has_one_attached :avatar
 
+  before_validation :clear_student_devise_credentials, if: :student?
+
   # 교실 멤버십은 유저 삭제 시 같이 삭제(조인 테이블)
   has_many :classroom_memberships, dependent: :destroy
   has_many :classrooms, through: :classroom_memberships
@@ -88,7 +90,24 @@ class User < ApplicationRecord
     student_pin_configured? && authenticate_student_pin("1234")
   end
 
+  def email_required?
+    !student?
+  end
+
+  def password_required?
+    return false if student?
+
+    super
+  end
+
   private
+
+  def clear_student_devise_credentials
+    self.email = nil
+    self.encrypted_password = ""
+    self.reset_password_token = nil
+    self.reset_password_sent_at = nil
+  end
 
   def avatar_key_allowed_for_role
     return if avatar_key.blank? || self.class.avatar_keys_for_role(role).include?(avatar_key)

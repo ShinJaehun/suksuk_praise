@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Student portal flow', type: :request do
   describe 'student landing and access boundaries' do
-    let(:student) { create(:user, :student, password: 'password123') }
+    let(:student) { create(:user, :student, student_pin: '1234') }
     let(:teacher) { create(:user, :teacher) }
     let(:classroom) { create(:classroom) }
 
@@ -11,15 +11,16 @@ RSpec.describe 'Student portal flow', type: :request do
       create(:classroom_membership, user: teacher, classroom: classroom, role: 'teacher')
     end
 
-    it 'blocks a student from signing in through Devise' do
+    it 'does not create a session from invalid Devise credentials' do
       post user_session_path, params: {
         user: {
-          email: student.email,
+          email: 'student@example.com',
           password: 'password123'
         }
       }
 
-      expect(response).to redirect_to(new_student_session_path)
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(controller.current_user).to be_nil
     end
 
     it 'redirects a signed-in student away from classrooms index' do
@@ -159,7 +160,7 @@ RSpec.describe 'Student portal flow', type: :request do
   end
 
   describe 'managed student account page' do
-    let(:student) { create(:user, :student, password: 'password123') }
+    let(:student) { create(:user, :student, student_pin: '1234') }
     let(:teacher) { create(:user, :teacher) }
     let(:classroom) { create(:classroom) }
 
@@ -188,23 +189,27 @@ RSpec.describe 'Student portal flow', type: :request do
       expect(response.body).to include('비활성화')
       expect(response.body).not_to include('계정 삭제')
       expect(response.body).not_to include('비밀번호 재설정')
+      expect(response.body).not_to include('name="user[email]"')
       expect(response.body).not_to include('name="user[password]"')
       expect(response.body).not_to include('name="user[password_confirmation]"')
     end
 
-    it 'allows a classroom teacher to update student name and email' do
+    it 'allows a classroom teacher to update student name without email or Devise password' do
       sign_in teacher
 
       patch classroom_student_path(classroom, student), params: {
         user: {
           name: '새 이름',
-          email: 'student-updated@example.com'
+          email: 'student-updated@example.com',
+          password: 'newpassword123',
+          password_confirmation: 'newpassword123'
         }
       }
 
       expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
       expect(student.reload.name).to eq('새 이름')
-      expect(student.email).to eq('student-updated@example.com')
+      expect(student.email).to be_nil
+      expect(student.encrypted_password).to eq('')
     end
 
     it 'allows a classroom teacher to update student avatar_key' do
@@ -213,7 +218,6 @@ RSpec.describe 'Student portal flow', type: :request do
       patch classroom_student_path(classroom, student), params: {
         user: {
           name: student.name,
-          email: student.email,
           gender: 'girl',
           avatar_key: 'girl03'
         }
@@ -230,7 +234,6 @@ RSpec.describe 'Student portal flow', type: :request do
       patch classroom_student_path(classroom, student), params: {
         user: {
           name: student.name,
-          email: student.email,
           gender: 'boy',
           avatar_key: 'boy04'
         }
@@ -247,7 +250,6 @@ RSpec.describe 'Student portal flow', type: :request do
       patch classroom_student_path(classroom, student), params: {
         user: {
           name: student.name,
-          email: student.email,
           avatar_key: 'unknown'
         }
       }
@@ -263,27 +265,12 @@ RSpec.describe 'Student portal flow', type: :request do
       patch classroom_student_path(classroom, student), params: {
         user: {
           name: student.name,
-          email: student.email,
           avatar_key: 'teacherM01'
         }
       }
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(student.reload.avatar_key).to eq(original_avatar_key)
-    end
-
-    it 'allows a classroom teacher to reset student password' do
-      sign_in teacher
-
-      patch reset_password_classroom_student_path(classroom, student), params: {
-        user: {
-          password: 'newpassword123',
-          password_confirmation: 'newpassword123'
-        }
-      }
-
-      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
-      expect(student.reload.valid_password?('newpassword123')).to eq(true)
     end
   end
 end

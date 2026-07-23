@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Users::Registrations", type: :request do
-  let(:student) { create(:user, :student, password: "password123") }
+  let(:student) { create(:user, :student) }
   let(:teacher) { create(:user, :teacher, password: "password123") }
   let(:admin) { create(:user, :admin, password: "password123") }
 
@@ -58,12 +58,13 @@ RSpec.describe "Users::Registrations", type: :request do
       patch user_registration_path, params: {
         user: {
           name: "바뀐 학생 이름",
-          email: student.email
+          email: "student@example.com"
         }
       }
 
       expect(response).to redirect_to(user_path(student))
       expect(student.reload.name).not_to eq("바뀐 학생 이름")
+      expect(student.email).to be_nil
     end
 
     it "updates teacher profile attributes without requiring the current password" do
@@ -195,7 +196,7 @@ RSpec.describe "Users::Registrations", type: :request do
             headers: turbo_headers
 
       expect(response).to redirect_to(user_path(student))
-      expect(student.reload.valid_password?("password123")).to eq(true)
+      expect(student.reload.encrypted_password).to eq("")
     end
 
     it "rejects teacher password changes without the current password" do

@@ -43,13 +43,12 @@
 4. 학생 본인 정보 변경 정책 정리
    - 학생이 직접 변경할 수 있는 값은 PIN으로 제한한다.
    - 학생 PIN 변경은 별도 PIN 변경 페이지에서 처리한다.
-   - 학생 이름/email/avatar/password 변경은 self-service로 제공하지 않는다.
-   - 학생 기본 정보(name/email/avatar)는 교사/admin의 학생 관리 화면에서 수정한다.
+   - 학생 이름/avatar 변경은 self-service로 제공하지 않는다.
+   - 학생 기본 정보(name/avatar/PIN)는 교사/admin의 학생 관리 화면에서 수정한다.
    - 학생 avatar 직접 업로드/커스터마이징은 추후 검토한다.
 5. 교사/관리자용 학생 상세 페이지에 관리 액션 배치
    - 이름 수정
-   - 이메일 수정
-   - 비밀번호 재설정
+   - PIN 설정
    - 운영 상태 관리(비활성화/복구)
 6. 학생 self page / 교사·관리자용 학생 상세의 역할 분리 강화
 7. 교사↔학생 메시지 기능을 수용할 수 있는 구조 정리
@@ -107,11 +106,11 @@
 - 다른 학생 쿠폰/정보 보기
 - 관리자/교사용 액션 수행
 - 자기 계정 삭제
-- Devise registration edit/update 기반 name/email/password self-service 수정
+- Devise registration edit/update 기반 name/password self-service 수정
 - 자기 avatar 직접 업로드/수정
 - 교사/관리자용 학생 상세 경로 접근
 - 교사/관리자용 학생 계정 관리 경로 접근
-- 학생 비밀번호 재설정/비활성화/복구 같은 관리 액션 수행
+- 학생 PIN 설정/비활성화/복구 같은 관리 액션 수행
 
 학생이 `classrooms#index`, `classrooms#show` 같은 기존 교실 중심 화면으로 직접 접근하더라도,
 이번 단계에서는 학생 마이페이지 중심 구조를 우선하므로 자기 마이페이지로 유도하는 방향을 우선 검토한다.
@@ -124,7 +123,6 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 - `GET /classrooms/:classroom_id/students/:id`
 - `GET /classrooms/:classroom_id/students/:id/edit`
 - `PATCH /classrooms/:classroom_id/students/:id`
-- `PATCH /classrooms/:classroom_id/students/:id/reset_password`
 - `PATCH /classrooms/:classroom_id/students/:id/deactivate`
 - `PATCH /classrooms/:classroom_id/students/:id/reactivate`
 
@@ -202,7 +200,7 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 - 업로드한 `avatar`가 없으면 `avatar_key` 기반 기본 아바타를 사용한다.
 - 저장소 구현은 Active Storage 기준으로 두고,
   개발/테스트에서는 local/test service를 사용하되 이후 production 에서 S3 같은 외부 스토리지로 교체 가능한 구조를 전제로 한다.
-- 학생 name/email/avatar는 교사/admin의 학생 관리 화면에서 수정한다.
+- 학생 name/avatar/PIN은 교사/admin의 학생 관리 화면에서 수정한다.
 - 학생 avatar는 학생 self-service가 아니라 교사/admin 학생 관리 화면에서 제공된 학생용 `avatar_key` 목록(boy/girl 기본 아바타) 중 선택한다.
 - 이번 단계에서는 이미지 크롭 UI, 직접 업로드 최적화, 실제 S3 운영 설정, 학생 self-service 업로드 변경 UI까지 포함하지 않는다.
 
@@ -265,7 +263,7 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 - Pundit policy / policy_scope
 - controller before_action/authorize
 - 기존 users, classrooms, user_coupons 관련 접근 경계 점검
-- `classroom_students#show/edit/update/reset_password/destroy` 에 대한 학생 접근 차단 검증
+- `classroom_students#show/edit/update/destroy` 에 대한 학생 접근 차단 검증
 
 이 단계에서 public behavior 가 바뀌므로,
 권한이 분산되어 있으면 가능한 한 controller+policy 기준으로 읽기 쉽게 정리한다.
@@ -296,9 +294,9 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 
 원칙:
 - Rails way 우선
-- 학생의 name/email/avatar/password 수정은 self-service로 제공하지 않는다.
+- 학생의 name/avatar/password 수정은 self-service로 제공하지 않는다.
 - 학생 PIN 변경은 별도 PIN 변경 페이지에서 처리한다.
-- 학생 기본 정보(name/email/avatar)는 교사/admin 관리 화면에서 수정한다.
+- 학생 기본 정보(name/avatar/PIN)는 교사/admin 관리 화면에서 수정한다.
 - teacher/admin의 Devise 등록정보 수정과 비밀번호 변경 흐름은 유지한다.
 
 ---
@@ -310,14 +308,13 @@ admin / teacher 는 기존 관리 권한을 유지하되,
 
 우선 고려할 액션:
 - 이름 수정
-- 이메일 수정
-- 비밀번호 재설정
+- PIN 설정
 - 운영 상태 관리(비활성화/복구)
 
 원칙:
 - 관리용 학생 상세(`classroom_student_path`)는 조회 중심으로 유지한다.
-- 실제 계정 수정/비밀번호 재설정/운영 상태 변경은 `classrooms/:classroom_id/students/:id/edit` 에서 처리한다.
-- 교사/관리자는 학생 비밀번호를 메일 reset 이 아니라 임시 비밀번호를 직접 설정하는 방식으로 관리한다.
+- 실제 계정 수정/PIN 설정/운영 상태 변경은 `classrooms/:classroom_id/students/:id/edit` 에서 처리한다.
+- 교사/관리자는 학생 Devise 비밀번호를 관리하지 않고 학생 PIN만 설정한다.
 
 ### 6단계. 학생 self page / 교사·관리자용 학생 상세 view 분리
 

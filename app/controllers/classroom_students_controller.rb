@@ -9,7 +9,7 @@ class ClassroomStudentsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_create]
-  before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :deactivate, :reactivate, :reset_password]
+  before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :deactivate, :reactivate]
   before_action :authorize_student_data!, only: [:show, :dashboard, :activity]
   before_action :ensure_active_self_student!, only: [:show, :dashboard, :activity]
 
@@ -26,8 +26,7 @@ class ClassroomStudentsController < ApplicationController
     used_avatar_keys = used_avatar_keys_in_classroom
     attrs = user_params.merge(
       role: "student",
-      points: 0,
-      password: student_devise_password
+      points: 0
     )
     attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys)
     @user = User.new(attrs)
@@ -79,13 +78,10 @@ class ClassroomStudentsController < ApplicationController
     ApplicationRecord.transaction do
       genders.each_with_index do |gender, i|
         name = format("%s%02d", prefix, i + 1)
-        email = "#{name}@suksuk.or.kr"
         avatar_key = pick_avatar_key(gender, used_avatar_keys)
         used_avatar_keys << avatar_key if avatar_key.present?
         attrs = {
           name: name,
-          email: email,
-          password: student_devise_password,
           role: "student",
           points: 0,
           gender: gender,
@@ -203,17 +199,6 @@ class ClassroomStudentsController < ApplicationController
     end
   end
 
-  def reset_password
-    authorize @classroom, :manage_members?
-    load_student_edit_form!
-
-    if @student.update(password_reset_params)
-      redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 비밀번호를 재설정했습니다."
-    else
-      render :edit, status: :unprocessable_entity
-    end
-  end
-
   def destroy
     authorize @classroom, :manage_members?
     student_membership.inactive!
@@ -252,7 +237,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :student_pin, :gender)
+    params.require(:user).permit(:name, :student_pin, :gender)
   end
 
   def set_student
@@ -290,21 +275,13 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def managed_student_params
-    params.require(:user).permit(:name, :email, :student_pin, :gender, :avatar_key).tap do |permitted|
+    params.require(:user).permit(:name, :student_pin, :gender, :avatar_key).tap do |permitted|
       permitted.delete(:student_pin) if permitted[:student_pin].blank?
     end
   end
 
-  def password_reset_params
-    params.require(:user).permit(:password, :password_confirmation)
-  end
-
   def authorize_manage!
     authorize @classroom, :manage_members?
-  end
-
-  def student_devise_password
-    Devise.friendly_token.first(24)
   end
 
   def return_to_context

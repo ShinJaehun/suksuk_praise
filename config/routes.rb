@@ -67,7 +67,6 @@ Rails.application.routes.draw do
         get :coupon_assignment
         patch :deactivate
         patch :reactivate
-        patch :reset_password
       end
     end
 

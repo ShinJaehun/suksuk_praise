@@ -63,7 +63,7 @@ student_genders = (Array.new(15, 'boy') + Array.new(15, 'girl')).shuffle
 used_student_avatar_keys = []
 
 students = 30.times.map do |i|
-  student = User.find_or_initialize_by(email: "student#{i + 1}@school.com")
+  student = User.where(role: 'student', name: "학생#{i + 1}").first_or_initialize
   gender = student_genders[i] || (i.even? ? 'boy' : 'girl')
   avatar_key = pick_demo_avatar_key(gender, used_student_avatar_keys)
 
@@ -72,9 +72,7 @@ students = 30.times.map do |i|
     role: 'student',
     gender: gender,
     avatar_key: avatar_key,
-    points: 0,
-    email: "student#{i + 1}@school.com", # Devise 필수
-    password: 'password'
+    points: 0
   }
   attrs[:student_pin] = demo_student_pin if demo_student_pin.present?
   student.assign_attributes(attrs)

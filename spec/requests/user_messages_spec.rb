@@ -4,7 +4,7 @@ RSpec.describe "User messages", type: :request do
   include ActionView::RecordIdentifier
 
   describe "teacher/admin root messages and student replies" do
-    let(:student) { create(:user, :student, password: "password123") }
+    let(:student) { create(:user, :student) }
     let(:teacher) { create(:user, :teacher) }
     let(:other_teacher) { create(:user, :teacher) }
     let(:admin) { create(:user, :admin) }
@@ -752,7 +752,7 @@ RSpec.describe "User messages", type: :request do
     end
 
     it "rejects a student from replying to another student's root thread" do
-      other_student = create(:user, :student, password: "password123")
+      other_student = create(:user, :student)
       create(:classroom_membership, user: other_student, classroom: classroom, role: "student")
       incoming = create(:user_message, classroom: classroom, sender: teacher, recipient: other_student, body: "다른 학생용")
       sign_in student

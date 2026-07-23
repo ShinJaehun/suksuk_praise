@@ -15,10 +15,6 @@
                 <%= f.text_field :name, class: "border px-2 py-1 rounded w-full" %>
             </div>
             <div class="mb-2">
-                <%= f.label :email, t('ui.user_labels.email') %>
-                <%= f.email_field :email, class: "border px-2 py-1 rounded w-full" %>
-            </div>
-            <div class="mb-2">
                 <%= f.label :gender, "성별" %>
                 <%= f.select :gender,
                     [["남학생", "boy"], ["여학생", "girl"]],

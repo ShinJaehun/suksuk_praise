@@ -87,7 +87,7 @@
 - 담당 teacher/admin은 inactive 학생의 과거 기록을 조회할 수 있으며, inactive 학생 상세에서는 `비활성` badge를 표시하고 칭찬하기, 쿠폰 지급, 새 메시지 작성 UI를 숨긴다. student 본인은 inactive 과거 학급 URL에 접근할 수 없다.
 - 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 복구 action을 제공한다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
-- teacher/admin은 학생의 name, email, gender, avatar_key, PIN 등을 관리한다.
+- teacher/admin은 학생의 name, gender, avatar_key, PIN 등을 관리한다. 학생 `User`에는 email과 Devise password를 저장하지 않으며, 학생은 classroom token URL과 PIN으로만 로그인한다.
 - teacher/admin은 구성원 관리 화면에서 현재 교실의 active 학생 PIN을 한 번에 재설정할 수 있다. inactive 학생 PIN은 일괄 재설정 대상에서 제외하며 기존 PIN 값은 화면에 표시하지 않는다.
 - 여러 학생 자동 생성은 한 번에 최대 30명까지 허용한다.
 - 여러 학생 자동 생성 제한을 초과하면 Turbo modal content-missing 없이 alert를 표시하고 modal을 닫는다.

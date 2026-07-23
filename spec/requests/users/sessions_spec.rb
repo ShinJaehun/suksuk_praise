@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Users::Sessions", type: :request do
   let(:teacher) { create(:user, :teacher, password: "password123") }
   let(:admin) { create(:user, :admin, password: "password123") }
-  let(:student) { create(:user, :student, password: "password123", student_pin: "1234") }
+  let(:student) { create(:user, :student, student_pin: "1234") }
   let(:classroom) { create(:classroom) }
 
   before do
@@ -48,14 +48,11 @@ RSpec.describe "Users::Sessions", type: :request do
   it "blocks a student from signing in with Devise" do
     post user_session_path, params: {
       user: {
-        email: student.email,
+        email: "student@example.com",
         password: "password123"
       }
     }
 
-    expect(response).to redirect_to(new_student_session_path)
-    follow_redirect!
-    expect(response.body).to include("학생은 교실별 PIN 로그인으로 접속해 주세요.")
     expect(controller.current_user).to be_nil
   end
 
