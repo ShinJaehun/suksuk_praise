@@ -18,7 +18,7 @@ ko:
       toggle: "토글"
       activate: "활성"
       deactivate: "비활성"
-      adopt_all_from_library: "추천 세트 적용"
+      adopt_all_from_library: "모두 내 쿠폰에 추가"
       rebalance_personal: "가중치 균등 분배"
       rebalance_library: "가중치 균등 분배"
       decrease_weight: "가중치 10 낮추기"
@@ -28,8 +28,8 @@ ko:
     status:
       in_use: "사용 중"
       not_in_use: "사용 안 함"
-      added: "추가됨 ✓"
-      title_conflict: "같은 이름의 쿠폰이 있습니다"
+      added: "내 쿠폰에 있음 ✓"
+      title_conflict: "같은 이름의 내 쿠폰이 있음"
     empty:
       personal: "아직 만든 쿠폰이 없습니다."
       library: "사용 가능한 라이브러리 쿠폰이 없습니다."

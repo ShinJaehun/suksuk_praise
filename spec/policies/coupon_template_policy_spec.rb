@@ -32,6 +32,7 @@ RSpec.describe CouponTemplatePolicy do
       expect(policy.update?).to eq(true)
       expect(policy.toggle_active?).to eq(true)
       expect(policy.destroy?).to eq(true)
+      expect(policy.adopt?).to eq(true)
     end
   end
 

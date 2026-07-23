@@ -10,11 +10,9 @@ class CouponTemplatesController < ApplicationController
     authorize CouponTemplate
 
     load_personal!
-    load_adopted_library_source_ids!
 
     # 역할별 가시성(관리자=전체, 교사=active만) + 정렬은 정책 스코프에서 처리
     load_library!
-    load_library_title_conflict_ids!
     @library_admin = current_user.admin?
   end
 
@@ -185,8 +183,6 @@ class CouponTemplatesController < ApplicationController
     if existing_by_source
       load_personal!
       load_library!
-      load_adopted_library_source_ids!
-      load_library_title_conflict_ids!
       message = t('coupon_templates.flash.already_in_personal')
       respond_to do |f|
         f.html { redirect_to coupon_templates_path, notice: message }
@@ -204,8 +200,6 @@ class CouponTemplatesController < ApplicationController
 
       load_personal!
       load_library!
-      load_adopted_library_source_ids!
-      load_library_title_conflict_ids!
       message = t('coupon_templates.flash.title_conflict')
       respond_to do |f|
         f.html { redirect_to coupon_templates_path, alert: message }
@@ -226,8 +220,6 @@ class CouponTemplatesController < ApplicationController
       log_image_copy_failure(source, e)
       load_personal!
       load_library!
-      load_adopted_library_source_ids!
-      load_library_title_conflict_ids!
       message = t('coupon_templates.flash.image_copy_failed')
       respond_to do |f|
         f.html { redirect_to coupon_templates_path, alert: message }
@@ -241,8 +233,6 @@ class CouponTemplatesController < ApplicationController
 
     load_personal!
     load_library!
-    load_adopted_library_source_ids!
-    load_library_title_conflict_ids!
 
     message = t('coupon_templates.flash.adopted')
     respond_to do |f|
@@ -271,8 +261,6 @@ class CouponTemplatesController < ApplicationController
     load_personal!
 
     load_library!
-    load_adopted_library_source_ids!
-    load_library_title_conflict_ids!
 
     respond_to do |f|
       f.html { redirect_to coupon_templates_path, notice: message }
@@ -401,8 +389,6 @@ class CouponTemplatesController < ApplicationController
 
     load_personal!
     load_library!
-    load_adopted_library_source_ids!
-    load_library_title_conflict_ids!
 
     message =
       if created.positive?
@@ -504,6 +490,8 @@ class CouponTemplatesController < ApplicationController
                .library_scope(current_user, CouponTemplate)
                .includes(image_attachment: :blob)
                .to_a
+    load_adopted_library_source_ids!
+    load_library_title_conflict_ids!
   end
 
   def load_adopted_library_source_ids!

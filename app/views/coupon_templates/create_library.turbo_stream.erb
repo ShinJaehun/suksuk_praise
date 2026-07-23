@@ -1,6 +1,11 @@
 <%= turbo_stream.update "library" do %>
   <%= render partial: "library_coupon_table_section",
-        locals: { templates: @library, library_admin: true, adopted_source_ids: [] } %>
+        locals: {
+          templates: @library,
+          library_admin: true,
+          adopted_source_ids: @adopted_library_source_ids,
+          title_conflict_source_ids: @library_title_conflict_ids
+        } %>
 <% end %>
 
 <%= turbo_stream.update "modal", "" %>

@@ -1,8 +1,18 @@
 <%# locals: templates:, library_admin:, adopted_source_ids:, title_conflict_source_ids: [] %>
-<header class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+<header class="flex flex-col gap-3 border-b border-slate-200 bg-slate-100/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
   <h2 class="text-lg font-bold text-slate-900"><%= t("coupon_templates.tabs.library") %></h2>
   <div class="flex flex-wrap items-center gap-2">
     <% if library_admin %>
+      <%= button_to t("coupon_templates.actions.adopt_all_from_library"),
+            adopt_all_from_library_coupon_templates_path,
+            method: :post,
+            form: {
+              class: "inline-block",
+              data: {
+                turbo_confirm: t("coupon_templates.confirm.adopt_all")
+              }
+            },
+            class: "inline-flex min-h-10 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2" %>
       <%= button_to t("coupon_templates.actions.rebalance_library"),
             rebalance_library_coupon_templates_path,
             method: :post,
@@ -33,7 +43,12 @@
 </header>
 
 <% if library_admin %>
-  <%= render partial: "library_admin_coupon_table", locals: { templates: templates } %>
+  <%= render partial: "library_admin_coupon_table",
+        locals: {
+          templates: templates,
+          adopted_source_ids: adopted_source_ids,
+          title_conflict_source_ids: local_assigns.fetch(:title_conflict_source_ids, [])
+        } %>
 <% else %>
   <%= render partial: "library_coupon_table",
         locals: {
