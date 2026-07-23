@@ -212,113 +212,315 @@ RSpec.describe 'Classroom students', type: :request do
     end
   end
 
-  describe 'POST /classrooms/:classroom_id/students/bulk_create' do
-    it 'creates students from boy_count and girl_count' do
-      post bulk_create_classroom_students_path(classroom), params: {
-        boy_count: 2,
-        girl_count: 1
+  describe 'bulk student creation' do
+    def draft_params
+      {
+        '0' => { name: '김학생', gender: 'boy', avatar_key: 'boy01' },
+        '1' => { name: '이학생', gender: 'girl', avatar_key: 'girl01' }
       }
-
-      students = classroom.students.order(:created_at).last(3)
-      expect(students.map(&:gender)).to contain_exactly('boy', 'boy', 'girl')
-      expect(students.map(&:avatar_key)).to all(be_present)
-      expect(students.map(&:email)).to all(be_nil)
-      expect(students.map(&:encrypted_password)).to all(eq(""))
-      expect(response).to redirect_to(classroom_path(classroom))
     end
 
-    it 'returns a turbo stream alert without creating students when the requested count exceeds 30' do
+    def turbo_frame_headers
+      {
+        'Turbo-Frame' => 'modal',
+        'Accept' => 'text/html'
+      }
+    end
+
+    it 'renders the setup modal without creating students' do
       expect do
-        post bulk_create_classroom_students_path(classroom),
-             params: {
-               boy_count: 30,
-               girl_count: 30
-             },
-             headers: turbo_headers
+        get bulk_new_classroom_students_path(classroom), headers: { 'Turbo-Frame' => 'modal' }
       end.not_to change(User.student, :count)
 
-      expect(response).not_to be_redirect
-      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
-      expect(response.body).to include('target="modal"')
-      expect(response.body).to include('한 번에 자동 생성할 수 있는 학생은 최대 30명입니다.')
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('id="bulk-student-setup-form"')
+      expect(response.body).to include('name="boy_count"', 'name="girl_count"', 'name="student_pin"')
+      expect(response.body).to include('required="required"')
+      expect(response.body).to include('이름 입력')
+      expect(response.body).not_to include('name="user[email]"')
+      expect(response.body).not_to include('name="user[password]"')
     end
 
-    it 'creates students and updates the students list and modal with turbo stream' do
+    it 'previews student draft rows without writing to the database' do
+      user_count = User.student.count
+      membership_count = ClassroomMembership.count
+
+      expect do
+        post bulk_preview_classroom_students_path(classroom),
+          params: { boy_count: 2, girl_count: 1, student_pin: '2468' },
+          headers: turbo_frame_headers
+      end.not_to change(User.student, :count)
+
+      document = Nokogiri::HTML.fragment(response.body)
+      rows = document.css('.bulk-student-draft-row')
+
+      expect(ClassroomMembership.count).to eq(membership_count)
+      expect(User.student.count).to eq(user_count)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('id="bulk-student-preview-form"')
+      expect(rows.size).to eq(3)
+      expect(response.body).to include('avatars/boy')
+      expect(response.body).to include('avatars/girl')
+      expect(response.body).to include('placeholder="이름"')
+      expect(response.body).to include('삭제')
+      expect(response.body).to include('name="students[0][gender]"')
+      expect(response.body).to include('name="students[0][avatar_key]"')
+      expect(response.body).not_to include('name="students[0][email]"')
+      expect(response.body).not_to include('name="students[0][password]"')
+      expect(response.request.fullpath).not_to include('2468')
+    end
+
+    it 'keeps setup values when preview validation fails' do
+      expect do
+        post bulk_preview_classroom_students_path(classroom),
+          params: { boy_count: 0, girl_count: 0, student_pin: '12ab' },
+          headers: turbo_frame_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('id="bulk-student-setup-form"')
+      expect(response.body).to include('value="0"')
+      expect(response.body).to include('value="12ab"')
+      expect(response.body).to include('생성할 학생이 없습니다.')
+    end
+
+    it 'rejects preview when the PIN format is invalid' do
+      post bulk_preview_classroom_students_path(classroom),
+        params: { boy_count: 1, girl_count: 0, student_pin: '12ab' },
+        headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('초기 PIN은 4자리 숫자여야 합니다.')
+    end
+
+    it 'rejects preview when the PIN is blank' do
+      post bulk_preview_classroom_students_path(classroom),
+        params: { boy_count: 1, girl_count: 0, student_pin: '' },
+        headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('초기 PIN은 4자리 숫자여야 합니다.')
+    end
+
+    it 'rejects preview when the classroom would exceed the student limit' do
+      29.times do |index|
+        student = create(:user, :student, name: "기존 학생 #{index}")
+        create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      end
+
+      post bulk_preview_classroom_students_path(classroom),
+        params: { boy_count: 2, girl_count: 0, student_pin: '2468' },
+        headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('최대 30명')
+    end
+
+    it 'allows preview when only active student memberships fit within the limit' do
+      29.times do |index|
+        student = create(:user, :student, name: "기존 활성 학생 #{index}")
+        create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      end
+      inactive_student = create(:user, :student, name: '기존 비활성 학생')
+      create(:classroom_membership, user: inactive_student, classroom: classroom, role: 'student', status: 'inactive')
+
+      post bulk_preview_classroom_students_path(classroom),
+        params: { boy_count: 1, girl_count: 0, student_pin: '2468' },
+        headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('id="bulk-student-preview-form"')
+    end
+
+    it 'returns to setup from preview without exposing the PIN in the URL' do
+      post bulk_preview_classroom_students_path(classroom),
+        params: { back: '1', boy_count: 2, girl_count: 3, student_pin: '2468' },
+        headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('id="bulk-student-setup-form"')
+      expect(response.body).to include('value="2"', 'value="3"', 'value="2468"')
+      expect(response.request.fullpath).not_to include('2468')
+    end
+
+    it 'creates only submitted draft rows in a transaction' do
       expect do
         post bulk_create_classroom_students_path(classroom),
-             params: {
-               boy_count: 1,
-               girl_count: 1,
-               student_pin: '2468'
-             },
-             headers: turbo_headers
+          params: {
+            student_pin: '2468',
+            students: draft_params.merge('2' => { name: '', gender: 'boy', avatar_key: 'boy02' }).except('2')
+          }
       end.to change(User.student, :count).by(2)
+        .and change(ClassroomMembership, :count).by(2)
 
-      created_students = User.student.order(:created_at).last(2)
+      created_students = classroom.students.order(:created_at).last(2)
 
-      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
-      expect(response.body).to include(%(target="students_list_#{classroom.id}"))
-      expect(response.body).to include('target="modal"')
+      expect(created_students.map(&:name)).to contain_exactly('김학생', '이학생')
+      expect(created_students.map(&:gender)).to contain_exactly('boy', 'girl')
+      expect(created_students.map(&:avatar_key)).to contain_exactly('boy01', 'girl01')
       expect(created_students.map(&:email)).to all(be_nil)
       expect(created_students.map(&:encrypted_password)).to all(eq(""))
       expect(created_students).to all(satisfy { |student| student.authenticate_student_pin('2468') })
+      expect(classroom.classroom_memberships.where(user: created_students, role: 'student').pluck(:status)).to all(eq('active'))
+      expect(flash[:notice]).to eq(I18n.t('students.bulk_create.success', count: 2))
     end
 
-    it 'creates students and refreshes member management when submitted from members' do
-      inactive_student = create(:user, :student, name: '기존 쉬는 학생')
+    it 'refreshes member management and closes the modal when submitted from members' do
+      expect do
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            return_to: 'members',
+            student_pin: '1357',
+            students: draft_params
+          },
+          headers: turbo_headers
+      end.to change(User.student, :count).by(2)
+
+      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      expect(response.body).to include('target="student-management"')
+      expect(response.body).to include('target="modal"')
+      expect(response.body).to include('김학생', '이학생')
+    end
+
+    it 'rolls back when final submitted rows are invalid and keeps entered drafts visible' do
+      expect do
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            student_pin: '2468',
+            students: {
+              '0' => { name: '유지 학생', gender: 'boy', avatar_key: 'boy01' },
+              '2' => { name: '', gender: 'girl', avatar_key: 'girl01' }
+            }
+          },
+          headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('id="bulk-student-preview-form"')
+      expect(response.body).to include('유지 학생')
+      expect(response.body).to include('bulk_student_draft_0')
+      expect(response.body).to include('bulk_student_draft_2')
+      expect(response.body).not_to include('bulk_student_draft_1')
+      expect(response.body).to include('이름을 입력해 주세요')
+    end
+
+    it 'does not create students when final submitted rows are empty' do
+      expect do
+        post bulk_create_classroom_students_path(classroom),
+          params: { student_pin: '2468', students: {} },
+          headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('생성할 학생이 없습니다.')
+    end
+
+    it 'does not create students when final PIN is blank' do
+      expect do
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            student_pin: '',
+            students: draft_params
+          },
+          headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('초기 PIN은 4자리 숫자여야 합니다.')
+    end
+
+    it 'rolls back when final create would exceed the student limit' do
+      29.times do |index|
+        student = create(:user, :student, name: "기존 학생 #{index}")
+        create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      end
+
+      expect do
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            student_pin: '2468',
+            students: draft_params
+          },
+          headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('최대 30명')
+    end
+
+    it 'allows final create when inactive memberships do not exceed the active student limit' do
+      29.times do |index|
+        student = create(:user, :student, name: "기존 활성 학생 #{index}")
+        create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      end
+      inactive_student = create(:user, :student, name: '기존 비활성 학생')
       create(:classroom_membership, user: inactive_student, classroom: classroom, role: 'student', status: 'inactive')
 
       expect do
         post bulk_create_classroom_students_path(classroom),
-             params: {
-               return_to: 'members',
-               boy_count: 1,
-               girl_count: 1
-             },
-             headers: turbo_headers
-      end.to change(User.student, :count).by(2)
+          params: {
+            student_pin: '2468',
+            students: {
+              '0' => { name: '추가 학생', gender: 'boy', avatar_key: 'boy01' }
+            }
+          }
+      end.to change(User.student, :count).by(1)
 
-      created_students = classroom.students.order(:created_at).last(2)
-
-      document = Nokogiri::HTML.fragment(response.body)
-      inactive_filter = document.at_css(
-        %(a[href="#{classroom_members_path(classroom, status: 'inactive')}"])
-      )
-
-      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
-      expect(response.body).to include('target="student-management"')
-      expect(response.body).to include(created_students.first.name)
-      expect(response.body).to include(created_students.second.name)
-
-      expect(response.body).not_to include('기존 쉬는 학생')
-      expect(response.body).not_to include(reactivate_classroom_student_path(classroom, inactive_student))
-      expect(inactive_filter.text.squish).to eq('비활성 1')
-      expect(response.body).to include(
-        classroom_edit_member_student_names_path(classroom, status: 'active')
-      )
-
-      expect(response.body).to include('target="modal"')
-      expect(created_students.map(&:email)).to all(be_nil)
-      expect(created_students.map(&:encrypted_password)).to all(eq(""))
+      expect(User.student.find_by!(name: '추가 학생').authenticate_student_pin('2468')).to be_truthy
     end
 
-    it 'keeps bulk validation errors inside the modal when submitted from members' do
+    it 'rolls back when final avatar params are not valid for students' do
       expect do
         post bulk_create_classroom_students_path(classroom),
-             params: {
-               return_to: 'members',
-               boy_count: 30,
-               girl_count: 30
-             },
-             headers: turbo_headers
+          params: {
+            student_pin: '2468',
+            students: {
+              '0' => { name: '잘못된 학생', gender: 'boy', avatar_key: 'teacherM01' }
+            }
+          },
+          headers: turbo_headers
       end.not_to change(User.student, :count)
 
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
-      expect(response.body).to include('target="modal"')
-      expect(response.body).to include('name="return_to"')
-      expect(response.body).to include('value="members"')
-      expect(response.body).to include('한 번에 자동 생성할 수 있는 학생은 최대 30명입니다.')
+      expect(response.body).to include('썸네일을 확인해 주세요')
+    end
+
+    it 'rolls back when final avatar and gender do not match' do
+      expect do
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            student_pin: '2468',
+            students: {
+              '0' => { name: '성별 불일치', gender: 'boy', avatar_key: 'girl01' }
+            }
+          },
+          headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('썸네일을 확인해 주세요')
+    end
+
+    it 'ignores arbitrary role email and password params on final create' do
+      post bulk_create_classroom_students_path(classroom),
+        params: {
+          student_pin: '2468',
+          students: {
+            '0' => {
+              name: '보안 학생',
+              gender: 'boy',
+              avatar_key: 'boy01',
+              role: 'admin',
+              email: 'ignored@example.com',
+              password: 'password123'
+            }
+          }
+        }
+
+      student = User.student.find_by!(name: '보안 학생')
+      expect(student.role).to eq('student')
+      expect(student.email).to be_nil
+      expect(student.encrypted_password).to eq("")
     end
 
     it 'rejects a teacher outside the classroom' do
@@ -327,13 +529,46 @@ RSpec.describe 'Classroom students', type: :request do
       sign_in outsider
 
       expect do
-        post bulk_create_classroom_students_path(classroom), params: {
-          boy_count: 1,
-          girl_count: 1
-        }
+        post bulk_preview_classroom_students_path(classroom), params: { boy_count: 1, girl_count: 1 }
       end.not_to change(User.student, :count)
 
       expect(response).to redirect_to(root_path)
+    end
+
+    it 'allows an admin to preview drafts' do
+      admin = create(:user, :admin)
+      sign_out teacher
+      sign_in admin
+
+      post bulk_preview_classroom_students_path(classroom),
+        params: { boy_count: 1, girl_count: 0, student_pin: '2468' },
+        headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('id="bulk-student-preview-form"')
+    end
+
+    it 'rejects a student' do
+      student = create(:user, :student)
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      sign_out teacher
+      sign_in student
+
+      expect do
+        post bulk_create_classroom_students_path(classroom), params: { students: draft_params }
+      end.not_to change(User.student, :count)
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it 'rejects a guest' do
+      sign_out teacher
+
+      expect do
+        post bulk_preview_classroom_students_path(classroom), params: { boy_count: 1, girl_count: 0 }
+      end.not_to change(User.student, :count)
+
+      expect(response).to redirect_to(new_user_session_path)
     end
   end
 

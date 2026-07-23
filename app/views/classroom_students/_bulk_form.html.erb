@@ -6,13 +6,14 @@
    
     <!-- 모달 컨테이너 -->
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-8 relative">
-      <h2 class="text-xl font-bold mb-4">여러 명 학생 자동생성</h2>
+      <h2 class="text-xl font-bold mb-4"><%= t("ui.buttons.bulk_create_students") %></h2>
       <% boy_count_value = local_assigns.fetch(:boy_count, 15) %>
       <% girl_count_value = local_assigns.fetch(:girl_count, 15) %>
-      <%= form_with url: bulk_create_classroom_students_path(classroom),
+      <% student_pin_value = local_assigns.fetch(:student_pin, nil) %>
+      <%= form_with url: bulk_preview_classroom_students_path(classroom),
           method: :post,
+          html: { id: "bulk-student-setup-form" },
           data: { turbo_frame: :modal, 
-            action: "submit->modal#showProgress",
             turbo_submits_with: "처리중..." } do |f| %>
         <%= hidden_field_tag :return_to, return_to if local_assigns[:return_to].present? %>
         <% if local_assigns[:error_message].present? %>
@@ -22,37 +23,28 @@
         <% end %>
         <div class="mb-4 grid grid-cols-2 gap-3">
           <div>
-            <%= f.label :boy_count, "남학생 수" %>
+            <%= f.label :boy_count, t("students.bulk_create.setup.boy_count") %>
             <%= f.number_field :boy_count, value: boy_count_value, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
           </div>
           <div>
-            <%= f.label :girl_count, "여학생 수" %>
+            <%= f.label :girl_count, t("students.bulk_create.setup.girl_count") %>
             <%= f.number_field :girl_count, value: girl_count_value, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
           </div>
         </div>
-        <div class="mb-4 text-sm text-slate-500">
-          <p>한 번에 최대 30명까지 생성할 수 있어요.</p>
-          <p>남학생 수와 여학생 수를 합한 인원 기준입니다.</p>
-        </div>
         <div class="mb-4">
-          <%= f.label :student_pin, "공통 초기 PIN (선택, 4자리)" %>
+          <%= f.label :student_pin, t("students.bulk_create.setup.student_pin") %>
           <%= f.password_field :student_pin,
+            value: student_pin_value,
             maxlength: 4,
             inputmode: "numeric",
             pattern: "\\d{4}",
+            required: true,
             class: "border px-2 py-1 rounded w-full" %>
         </div>
-        <!-- progressbar : hidden -->
-        <div data-modal-target="progress" class="hidden w-full mt-4">
-          <div class="w-full bg-gray-200 h-2 rounded">
-            <div class="bg-blue-500 h-2 rounded bar transition-all" style="width: 70%"></div>
-          </div>
-          <div class="text-xs mt-2 text-center">학생을 생성 중입니다...</div>
-        </div>
         <div class="flex gap-2">
-          <%= f.submit t('ui.buttons.bulk_create_students'),
+          <button type="button" data-action="modal#close" class="bg-gray-300 px-4 py-2 rounded"><%= t("ui.cancel") %></button>
+          <%= f.submit t("students.bulk_create.actions.preview"),
             class: "bg-blue-500 text-white px-4 py-2 rounded" %>
-          <button type="button" data-action="modal#close" class="bg-gray-300 px-4 py-2 rounded">닫기</button>
         </div>
       <% end %>
       <!-- 닫기(X) 아이콘 -->

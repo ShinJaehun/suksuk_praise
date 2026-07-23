@@ -1,0 +1,64 @@
+<%= turbo_frame_tag :modal do %>
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    data-controller="modal"
+    role="dialog" aria-modal="true">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-hidden p-8 relative">
+      <h2 class="text-xl font-bold mb-4"><%= t("students.bulk_create.preview.title") %></h2>
+
+      <% if local_assigns[:error_message].present? %>
+        <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+          <%= error_message %>
+        </div>
+      <% end %>
+
+      <%= form_with url: bulk_create_classroom_students_path(classroom),
+          method: :post,
+          html: { id: "bulk-student-preview-form" },
+          data: {
+            controller: "bulk-student-draft",
+            turbo_frame: :modal,
+            action: "submit->modal#showProgress",
+            turbo_submits_with: t("ui.processing"),
+            bulk_student_draft_count_value: student_drafts.size,
+            bulk_student_draft_count_label_value: t("students.bulk_create.preview.total", count: "%{count}")
+          } do %>
+        <%= hidden_field_tag :return_to, return_to if local_assigns[:return_to].present? %>
+        <%= hidden_field_tag :student_pin, student_pin %>
+        <%= hidden_field_tag :boy_count, boy_count %>
+        <%= hidden_field_tag :girl_count, girl_count %>
+
+        <div class="mb-3 text-sm font-semibold text-slate-700" data-bulk-student-draft-target="count">
+          <%= t("students.bulk_create.preview.total", count: student_drafts.size) %>
+        </div>
+
+        <div id="bulk-student-draft-list" class="max-h-[55vh] space-y-3 overflow-y-auto pr-1" data-bulk-student-draft-target="list">
+          <% student_drafts.each do |draft| %>
+            <%= render "classroom_students/student_draft_row",
+                  draft: draft,
+                  draft_error: (local_assigns[:draft_errors] || {})[draft[:index]] %>
+          <% end %>
+        </div>
+
+        <div data-modal-target="progress" class="hidden w-full mt-4">
+          <div class="w-full bg-gray-200 h-2 rounded">
+            <div class="bg-blue-500 h-2 rounded bar transition-all" style="width: 70%"></div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+          <%= button_tag t("students.bulk_create.actions.back"),
+                type: "submit",
+                name: "back",
+                value: "1",
+                formaction: bulk_preview_classroom_students_path(classroom),
+                formmethod: "post",
+                class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+          <%= submit_tag t("ui.buttons.bulk_create_students"),
+                class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+        </div>
+      <% end %>
+
+      <button type="button" data-action="modal#close" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+    </div>
+  </div>
+<% end %>

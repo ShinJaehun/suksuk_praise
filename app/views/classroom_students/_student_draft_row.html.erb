@@ -1,0 +1,26 @@
+<div id="bulk_student_draft_<%= draft[:index] %>" class="bulk-student-draft-row rounded-lg border border-slate-200 p-3" data-bulk-student-draft-target="row">
+  <div class="flex flex-wrap items-center gap-3">
+    <%= image_tag "avatars/#{draft[:avatar_key]}.png",
+          class: "h-12 w-12 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover",
+          alt: "" %>
+
+    <div class="min-w-0 flex-1">
+      <%= text_field_tag "students[#{draft[:index]}][name]",
+            draft[:name],
+            placeholder: t("students.bulk_create.preview.name_placeholder"),
+            class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+      <%= hidden_field_tag "students[#{draft[:index]}][gender]", draft[:gender] %>
+      <%= hidden_field_tag "students[#{draft[:index]}][avatar_key]", draft[:avatar_key] %>
+
+      <% if draft_error.present? %>
+        <p class="mt-1 text-sm font-medium text-rose-700"><%= draft_error %></p>
+      <% end %>
+    </div>
+
+    <button type="button"
+      class="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+      data-action="bulk-student-draft#remove">
+      <%= t("ui.delete") %>
+    </button>
+  </div>
+</div>

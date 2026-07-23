@@ -70,7 +70,7 @@ export default class extends Controller {
       // 0%에서 시작
       let progress = 0;
       let target = this.progressTarget.querySelector('.bar');
-      let count = Number(document.querySelector('input[type=number]').value || 30);
+      let count = Number(this.element.querySelector('input[type=number]')?.value || 30);
       let step = 100 / count;
       target.style.width = "0%";
       // 진짜 생성과 동기화되는 건 아니지만, UX 개선용

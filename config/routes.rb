@@ -59,6 +59,7 @@ Rails.application.routes.draw do
       resources :coupons, only: :create, controller: "user_coupons"
       collection do
         get :bulk_new
+        post :bulk_preview
         post :bulk_create
       end
       member do
