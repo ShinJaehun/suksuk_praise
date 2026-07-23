@@ -322,9 +322,18 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def load_members_student_management!
-    @student_memberships = @classroom.classroom_memberships
-      .student
+    base_scope = @classroom.classroom_memberships.student
+    status_counts = base_scope.group(:status).count
+    @member_status = "active"
+    @student_member_counts = {
+      "active" => status_counts.fetch("active", 0),
+      "inactive" => status_counts.fetch("inactive", 0)
+    }
+    @student_member_counts["all"] = @student_member_counts.values.sum
+
+    @student_memberships = base_scope
       .includes(:user)
+      .where(status: @member_status)
       .order(:status, :created_at, :id)
   end
 

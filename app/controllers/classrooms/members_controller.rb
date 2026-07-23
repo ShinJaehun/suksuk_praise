@@ -1,10 +1,20 @@
 class Classrooms::MembersController < ApplicationController
+  MEMBER_STATUS_FILTERS = %w[active inactive all].freeze
+
   before_action :authenticate_user!
   before_action :set_classroom
 
   def show
     authorize @classroom, :manage_members?
     load_members_page!
+  end
+
+  def edit_student_names
+    authorize @classroom, :manage_members?
+    @member_status = member_status_filter
+    load_student_name_memberships
+
+    render :edit_student_names, layout: false
   end
 
   def update_student_names
@@ -19,25 +29,32 @@ class Classrooms::MembersController < ApplicationController
 
     unless memberships_by_id.keys.sort == @submitted_student_names.keys.uniq.sort
       @student_name_errors_by_membership_id = {}
-      load_members_page!
-      flash.now[:alert] = t("students.members.update_names.invalid_membership")
-      return render :show, status: :unprocessable_entity
+      load_student_name_memberships
+      return render_student_name_errors(:invalid_membership)
     end
 
     @student_name_errors_by_membership_id = validate_student_names(memberships_by_id)
     if @student_name_errors_by_membership_id.any?
-      load_members_page!
-      flash.now[:alert] = t("students.members.update_names.failure")
-      return render :show, status: :unprocessable_entity
+      load_student_name_memberships
+      return render_student_name_errors(:failure)
     end
 
     ApplicationRecord.transaction do
       memberships_by_id.each_value { |membership| membership.user.save! }
     end
 
-    redirect_to classroom_members_path(@classroom),
-      notice: t("students.members.update_names.success"),
-      status: :see_other
+    respond_to do |format|
+      format.html do
+        redirect_to members_redirect_path,
+          notice: t("students.members.update_names.success"),
+          status: :see_other
+      end
+      format.turbo_stream do
+        load_members_page!
+        flash.now[:notice] = t("students.members.update_names.success")
+        render :update_student_names, layout: false
+      end
+    end
   end
 
   def edit_student_pin
@@ -90,20 +107,41 @@ class Classrooms::MembersController < ApplicationController
   end
 
   def load_student_memberships
-    @student_memberships = @classroom.classroom_memberships
-      .student
+    @member_status = member_status_filter
+    base_scope = @classroom.classroom_memberships.student
+    status_counts = base_scope.group(:status).count
+    @student_member_counts = {
+      "active" => status_counts.fetch("active", 0),
+      "inactive" => status_counts.fetch("inactive", 0)
+    }
+    @student_member_counts["all"] = @student_member_counts.values.sum
+
+    @student_memberships = base_scope
       .includes(:user)
       .order(:status, :created_at, :id)
+    @student_memberships = @student_memberships.where(status: @member_status) unless @member_status == "all"
   end
 
   def load_members_page!
     load_student_memberships
   end
 
+  def member_status_filter
+    params[:status].to_s.presence_in(MEMBER_STATUS_FILTERS) || "active"
+  end
+
   def active_student_memberships
     @classroom.classroom_memberships
       .student
       .active
+      .includes(:user)
+      .order(:created_at, :id)
+  end
+
+  def load_student_name_memberships
+    @member_status ||= member_status_filter
+    @student_name_memberships = @classroom.classroom_memberships
+      .student
       .includes(:user)
       .order(:created_at, :id)
   end
@@ -126,6 +164,25 @@ class Classrooms::MembersController < ApplicationController
         render :edit_student_pin, formats: :html, layout: false, status: :unprocessable_entity
       end
     end
+  end
+
+  def render_student_name_errors(error_key)
+    respond_to do |format|
+      format.html do
+        flash.now[:alert] = t("students.members.update_names.#{error_key}")
+        render :edit_student_names, status: :unprocessable_entity, layout: false
+      end
+      format.turbo_stream do
+        flash.now[:alert] = t("students.members.update_names.#{error_key}")
+        render :edit_student_names, formats: :html, status: :unprocessable_entity, layout: false
+      end
+    end
+  end
+
+  def members_redirect_path
+    return classroom_members_path(@classroom, status: member_status_filter) if params.key?(:status)
+
+    classroom_members_path(@classroom)
   end
 
   def student_name_params

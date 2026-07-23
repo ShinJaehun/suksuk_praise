@@ -1,0 +1,53 @@
+<%= turbo_frame_tag :modal do %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" data-controller="modal" role="dialog" aria-modal="true">
+    <div class="w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-hidden rounded-lg bg-white p-6 shadow-lg">
+      <div class="flex items-start justify-between gap-4">
+        <h2 class="text-xl font-bold text-slate-900"><%= t("students.members.actions.edit_names") %></h2>
+        <button type="button" data-action="modal#close" class="text-2xl leading-none text-slate-400 hover:text-slate-600">&times;</button>
+      </div>
+
+      <% if flash.now[:alert].present? %>
+        <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+          <%= flash.now[:alert] %>
+        </div>
+      <% end %>
+
+      <%= form_with url: classroom_member_student_names_path(@classroom, status: @member_status),
+            method: :patch,
+            data: {
+              turbo_frame: :modal,
+              turbo_submits_with: t("ui.processing")
+            },
+            html: { id: "student_names_form", class: "mt-4 space-y-4" } do %>
+        <div class="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+          <% @student_name_memberships.each do |membership| %>
+            <% student = membership.user %>
+            <div id="<%= dom_id(membership, :name_row) %>">
+              <div>
+                <%= label_tag "student_name_#{membership.id}", t("students.members.name_label"), class: "sr-only" %>
+                <%= text_field_tag "students[#{membership.id}][name]",
+                      (@submitted_student_names || {}).fetch(membership.id.to_s, student.name),
+                      id: "student_name_#{membership.id}",
+                      class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+
+                <% if (@student_name_errors_by_membership_id || {})[membership.id.to_s].present? %>
+                  <p class="mt-1 text-sm font-medium text-rose-700">
+                    <%= @student_name_errors_by_membership_id[membership.id.to_s] %>
+                  </p>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
+          <button type="button" data-action="modal#close" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2">
+            <%= t("ui.cancel") %>
+          </button>
+          <%= submit_tag t("students.members.update_names.submit"),
+                class: "inline-flex min-h-10 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

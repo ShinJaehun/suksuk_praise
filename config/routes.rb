@@ -33,6 +33,9 @@ Rails.application.routes.draw do
 
   resources :classrooms do
     resource :members, only: :show, module: :classrooms
+    get "members/students/names/edit",
+      to: "classrooms/members#edit_student_names",
+      as: :edit_member_student_names
     patch "members/students/name",
       to: "classrooms/members#update_student_names",
       as: :member_student_names

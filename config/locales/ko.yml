@@ -233,6 +233,21 @@ ko:
     members:
       empty: "표시할 학생이 없습니다."
       name_label: "학생 이름"
+      title: "학생 관리"
+      filters:
+        active: "활성"
+        inactive: "비활성"
+        all: "전체"
+      status:
+        active: "활성"
+        inactive: "비활성"
+      actions:
+        account: "계정 관리"
+        edit_names: "이름 일괄 수정"
+      empty_states:
+        active: "활성 학생이 없습니다."
+        inactive: "비활성 학생이 없습니다."
+        all: "등록된 학생이 없습니다."
       update_names:
         submit: "학생 이름 저장"
         success: "학생 이름을 저장했습니다."
