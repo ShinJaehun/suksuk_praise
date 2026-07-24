@@ -10,6 +10,8 @@ ko:
         ends_on: "종료일"
       coupon_template:
         image: "이미지"
+      compliment_preset:
+        title: "칭찬 문구"
     errors:
       models:
         classroom:
@@ -27,6 +29,12 @@ ko:
               too_large: "5MB 이하만 사용할 수 있습니다."
             title:
               already_in_bucket: "은(는) 이미 해당 버킷에 있습니다."
+        compliment_preset:
+          attributes:
+            base:
+              too_many_active_presets: "자주 쓰는 칭찬은 최대 5개까지 등록할 수 있습니다."
+            title:
+              taken: "는 이미 등록되어 있습니다."
 
   ui:
     # 공통 액션 라벨
@@ -43,6 +51,7 @@ ko:
     # 버튼 텍스트 (세부용)
     buttons:
       compliment: "칭찬하기 🥳"
+      custom_compliment: "맞춤 칭찬"
       issue_coupon: "쿠폰 발급 🎟️"
       draw_random_coupon: "쿠폰 뽑기"
       assign_selected_coupon: "쿠폰 지급"
@@ -168,6 +177,7 @@ ko:
       student_login: "학생 로그인"
       manage_classroom: "교실 관리"
       manage_members: "구성원 관리"
+      manage_compliment_presets: "자주 쓰는 칭찬"
       teacher_empty: "담당 교사 없음"
     form:
       basic_info: "교실 기본 정보"
@@ -346,10 +356,49 @@ ko:
       title: "쿠폰 이벤트 로그"
 
   compliments:
+    index:
+      title: "칭찬 로그"
+      description: "교실에서 생성된 일반 칭찬과 맞춤 칭찬을 최신순으로 확인합니다."
+      filters:
+        all_students: "전체 학생"
+        student_with_classroom: "%{classroom} · %{student}"
+        all_kinds: "전체"
+        general: "일반 칭찬"
+        custom: "맞춤 칭찬"
+      unknown_classroom: "알 수 없는 교실"
+      unknown_user: "알 수 없음"
+      received_from: "%{name} 선생님에게 칭찬을 받았습니다."
+    custom_modal:
+      title: "맞춤 칭찬"
+      student: "%{name} 학생에게 줄 칭찬을 선택하세요."
     create:
       success: "칭찬했습니다!"
       failure: "칭찬에 실패했습니다: %{detail}"
       duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
+
+  compliment_presets:
+    index:
+      title: "자주 쓰는 칭찬 관리"
+      nav_title: "자주 쓰는 칭찬"
+      description: "내가 자주 사용하는 칭찬을 최대 5개까지 등록할 수 있습니다."
+      form_title: "자주 사용하는 칭찬"
+      list_title: "등록된 자주 쓰는 칭찬"
+      empty: "등록된 자주 쓰는 칭찬이 없습니다."
+      back_to_classroom: "교실로 돌아가기"
+    edit:
+      title: "맞춤 칭찬 수정"
+      back: "목록으로 돌아가기"
+    form:
+      title: "칭찬 문구"
+      placeholder: "예: 친구와 사이좋게 지냄"
+      create: "등록"
+      update: "저장"
+    destroy:
+      confirm: "이 맞춤 칭찬을 삭제할까요? 과거 칭찬 기록은 유지됩니다."
+    flash:
+      created: "맞춤 칭찬을 등록했습니다."
+      updated: "맞춤 칭찬을 수정했습니다."
+      destroyed: "맞춤 칭찬을 삭제했습니다."
 
   errors:
     not_authorized: "권한이 없습니다."
@@ -588,6 +637,7 @@ ko:
       none_enabled: "표시할 칭찬왕 기간이 없습니다."
       pick_a_period: "보고 싶은 칭찬왕 기간을 선택해주세요."
     coupon_events: "표시할 쿠폰 이벤트가 없습니다."
+    compliments: "표시할 칭찬 로그가 없습니다."
 
   reports:
     title: "리포트"

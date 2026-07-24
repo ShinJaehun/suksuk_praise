@@ -22,6 +22,16 @@ class Classroom < ApplicationRecord
       users.merge(ClassroomMembership.where(role: "student", status: "active"))
     end
 
+    def self.accessible_for_compliments(user)
+      return none unless user
+      return all if user.admin?
+      return none unless user.teacher?
+
+      joins(:classroom_memberships)
+        .where(classroom_memberships: { user_id: user.id, role: "teacher", status: "active" })
+        .distinct
+    end
+
     def active_student_memberships_count
       classroom_memberships.student.active.count
     end

@@ -57,6 +57,7 @@ class User < ApplicationRecord
            dependent: :destroy,
            inverse_of: :receiver
 
+  has_many :compliment_presets, dependent: :destroy
   has_many :user_coupons, dependent: :destroy
   has_many :coupon_templates, through: :user_coupons
 

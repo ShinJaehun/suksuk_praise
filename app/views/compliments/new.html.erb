@@ -1,0 +1,38 @@
+<%= turbo_frame_tag :modal do %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+       data-controller="modal"
+       role="dialog"
+       aria-modal="true">
+    <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900"><%= t("compliments.custom_modal.title") %></h2>
+          <p class="mt-1 text-sm text-slate-600">
+            <%= t("compliments.custom_modal.student", name: display_name(@receiver)) %>
+          </p>
+        </div>
+        <button type="button"
+                data-action="modal#close"
+                class="rounded-lg px-2 py-1 text-2xl leading-none text-slate-400 hover:text-slate-600">
+          &times;
+        </button>
+      </div>
+
+      <div class="mt-5 space-y-2">
+        <% @compliment_presets.each do |preset| %>
+          <%= button_to preset.title,
+                classroom_compliments_path(@classroom),
+                method: :post,
+                params: {
+                  compliment: {
+                    receiver_id: @receiver.id,
+                    compliment_preset_id: preset.id
+                  }
+                },
+                form: { data: { turbo_submits_with: t("ui.processing") } },
+                class: "min-h-12 w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm font-semibold text-amber-950 hover:bg-amber-100" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>

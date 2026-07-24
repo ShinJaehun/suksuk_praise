@@ -11,7 +11,8 @@
     locals: {
       user: @receiver,
       classroom: @classroom,
-      today_compliment_count: @today_compliment_count_for_receiver
+      today_compliment_count: @today_compliment_count_for_receiver,
+      active_compliment_presets: @active_compliment_presets
     } %>
 <% end %>
 
@@ -22,6 +23,7 @@
 <% end %>
 
 <% if defined?(@created_compliment) && @created_compliment.present? %>
+  <%= turbo_stream.update "modal", "" %>
   <%= turbo_stream.append "effects" do %>
     <div data-controller="highlight"
          data-highlight-id-value="<%= dom_id(@created_compliment) %>"></div>

@@ -1,4 +1,19 @@
 module NavigationHelper
+  def can_view_compliment_logs?
+    return false unless current_user
+
+    Pundit.policy!(current_user, Compliment).index?
+  rescue Pundit::NotDefinedError
+    false
+  end
+
+  def can_manage_compliment_presets?
+    return false unless current_user&.teacher? || current_user&.admin?
+
+    Pundit.policy!(current_user, ComplimentPreset).index?
+  rescue Pundit::NotDefinedError
+    false
+  end
 
   def can_view_coupon_events?
     return false unless current_user
@@ -11,7 +26,7 @@ module NavigationHelper
     return false unless current_user
     Pundit.policy!(current_user, CouponTemplate).index?
   rescue Pundit::NotDefinedError
-    false  
+    false
   end
 
   # 관리자만 교사 관리 화면 접근 가능

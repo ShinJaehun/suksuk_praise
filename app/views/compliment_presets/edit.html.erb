@@ -1,0 +1,34 @@
+<section class="mx-auto w-full max-w-3xl space-y-6 pt-4">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("compliment_presets.edit.title") %></h1>
+    </div>
+
+    <%= link_to t("compliment_presets.edit.back"),
+          compliment_presets_path,
+          class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+  </div>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <%= form_with model: @compliment_preset, class: "space-y-3" do |f| %>
+      <% if @compliment_preset.errors.any? %>
+        <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+          <%= @compliment_preset.errors.full_messages.to_sentence %>
+        </div>
+      <% end %>
+
+      <div>
+        <%= f.label :title, t("compliment_presets.form.title"), class: "mb-2 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :title,
+              maxlength: 50,
+              required: true,
+              class: "block w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+      </div>
+
+      <div class="flex justify-end">
+        <%= f.submit t("compliment_presets.form.update"),
+              class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+      </div>
+    <% end %>
+  </section>
+</section>

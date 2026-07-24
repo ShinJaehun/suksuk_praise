@@ -72,8 +72,11 @@ Rails.application.routes.draw do
     end
 
     # RESTful 하게 칭찬은 교실 리소스 하위에 생성
-    resources :compliments, only: [:create]
+    resources :compliments, only: [:new, :create]
   end
+
+  resources :compliments, only: :index
+  resources :compliment_presets, except: %i[show new]
 
   resources :schools, only: %i[index show edit update] do
     resources :teachers, only: %i[index new create edit update], module: :schools

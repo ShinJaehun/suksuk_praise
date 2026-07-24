@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_23_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_24_002000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -72,6 +72,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_000000) do
     t.index ["student_login_token"], name: "index_classrooms_on_student_login_token", unique: true
   end
 
+  create_table "compliment_presets", force: :cascade do |t|
+    t.string "title", null: false
+    t.integer "position", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index "user_id, lower((title)::text)", name: "idx_compliment_presets_active_user_title", unique: true, where: "(active = true)"
+    t.index ["user_id", "active", "position", "id"], name: "idx_compliment_presets_user_active_position"
+    t.index ["user_id"], name: "index_compliment_presets_on_user_id"
+  end
+
   create_table "compliments", force: :cascade do |t|
     t.bigint "giver_id"
     t.bigint "receiver_id"
@@ -79,9 +91,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_000000) do
     t.datetime "given_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "compliment_preset_id"
+    t.string "reason"
     t.index ["classroom_id", "given_at"], name: "index_compliments_on_classroom_id_and_given_at"
     t.index ["classroom_id", "giver_id", "receiver_id", "given_at"], name: "idx_compliments_dup_guard"
     t.index ["classroom_id"], name: "index_compliments_on_classroom_id"
+    t.index ["compliment_preset_id"], name: "index_compliments_on_compliment_preset_id"
     t.index ["giver_id"], name: "index_compliments_on_giver_id"
     t.index ["receiver_id"], name: "index_compliments_on_receiver_id"
   end
@@ -244,7 +259,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_23_000000) do
   add_foreign_key "classroom_memberships", "classrooms", on_delete: :cascade
   add_foreign_key "classroom_memberships", "users", on_delete: :cascade
   add_foreign_key "classrooms", "schools"
+  add_foreign_key "compliment_presets", "users"
   add_foreign_key "compliments", "classrooms"
+  add_foreign_key "compliments", "compliment_presets"
   add_foreign_key "compliments", "users", column: "giver_id"
   add_foreign_key "compliments", "users", column: "receiver_id"
   add_foreign_key "coupon_events", "classrooms"

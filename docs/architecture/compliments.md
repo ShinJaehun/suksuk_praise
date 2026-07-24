@@ -21,6 +21,10 @@ end
 칭찬은 교사가 특정 교실의 학생에게 부여하는 이벤트이며,
 학생의 점수(points) 누적과 연결된다.
 
+맞춤 칭찬은 별도의 행동 기록이 아니라 `reason` snapshot이 붙은 일반 `Compliment`다.
+일반 칭찬은 `compliment_preset_id`와 `reason`이 비어 있을 수 있고, 맞춤 칭찬은 선택한
+사용자 소유 `ComplimentPreset` 참조와 생성 당시 preset 문구를 `reason`에 복사해 저장한다.
+
 ---
 
 ## 2. 관련 역할
@@ -56,6 +60,17 @@ end
 - 권한 없는 사용자는 칭찬 생성 불가
 - 동일 요청의 짧은 시간 내 중복 생성은 방지
 - 칭찬 생성과 points 증가는 함께 처리되어야 한다.
+- 맞춤 칭찬도 같은 생성 transaction 안에서 `Compliment` 생성과 points 증가를 처리한다.
+- 맞춤 칭찬 preset은 teacher/admin 사용자 개인 소유이며 사용자별 active 5개까지 허용한다.
+- 같은 사용자는 담당하는 모든 교실에서 같은 preset을 사용하고, 같은 교실의 다른 교사는 각자 자신의 preset만 사용한다.
+- preset을 수정하거나 비활성화해도 과거 칭찬 로그는 `Compliment#reason` snapshot을 표시한다.
+- 맞춤 칭찬도 총 칭찬 수, 일간·주간·월간 칭찬왕, 쿠폰 발급/추첨 정책에 일반 칭찬과 동일하게 포함된다.
+- `/compliments` 전역 칭찬 로그는 접근 가능한 교실의 일반 칭찬과 맞춤 칭찬을 같은 목록에서 최신순으로 보여준다.
+- 칭찬 로그의 맞춤 칭찬 구분은 `compliment_preset_id`가 아니라 `reason` snapshot 존재 여부를 기준으로 한다.
+- 칭찬 로그는 교실 필터, 학생 필터, 일반/맞춤 칭찬 종류 필터, pagination을 제공한다.
+- `/compliment_presets` 전역 관리 화면은 로그인한 teacher/admin 자신의 자주 쓰는 칭찬 preset만 관리하며 교실 필터는 없다.
+- 칭찬 로그와 자주 쓰는 칭찬 관리는 현재 교실 문맥 없이 navbar 전역 링크로 접근하고, 교실 show 화면은 학생 칭찬 운영에 집중한다.
+- 실제 `Compliment`는 계속 칭찬이 발생한 `classroom_id`에 소속된다.
 
 ---
 
@@ -95,8 +110,10 @@ end
 ## 8. 관련 코드 위치
 
 - `app/models/compliment.rb`
+- `app/models/compliment_preset.rb`
 - `app/services/compliment_kings/pick.rb`
 - `app/controllers/compliments_controller.rb`
+- `app/controllers/compliment_presets_controller.rb`
 - 관련 policy / request spec / service 객체(있다면)
 
 ---

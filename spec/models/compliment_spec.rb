@@ -27,4 +27,11 @@ RSpec.describe Compliment, type: :model do
 
     expect(compliment).not_to be_valid
   end
+
+  it "allows a custom compliment preset and reason snapshot" do
+    preset = create(:compliment_preset, title: "친구를 도움")
+    compliment = build(:compliment, compliment_preset: preset, giver: preset.user, reason: "친구를 도움")
+
+    expect(compliment).to be_valid
+  end
 end
