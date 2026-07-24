@@ -10,19 +10,48 @@
           local: true,
           class: "flex flex-wrap gap-2 items-end",
           data: { controller: "compliment-event-filters" } do %>
-      <%= select_tag :classroom_id,
-            options_for_select(@classroom_options, @selected_classroom&.id),
-            class: "w-full sm:w-auto border rounded px-2 py-1",
-            data: { action: "change->compliment-event-filters#classroomChanged" } %>
+      <% if @show_classroom_select %>
+        <%= select_tag :classroom_id,
+              options_for_select(@classroom_options, @selected_classroom&.id),
+              class: "w-full sm:w-auto border rounded px-2 py-1",
+              data: { action: "change->compliment-event-filters#classroomChanged" } %>
+      <% elsif @selected_classroom %>
+        <div class="w-full sm:w-auto rounded border border-slate-300 bg-slate-50 px-3 py-1 text-sm text-slate-700">
+          <span class="font-semibold"><%= t("reports.filters.classroom") %></span>
+          <span><%= @selected_classroom.name %></span>
+        </div>
+      <% end %>
 
-      <%= select_tag :student_membership_id,
-            options_for_select(@student_options, @selected_student_membership&.id),
-            disabled: @student_filter_disabled,
+      <% if @selected_classroom %>
+        <%= select_tag :student_membership_id,
+              options_for_select(@student_options, @selected_student_membership&.id),
+              class: "w-full sm:w-auto border rounded px-2 py-1",
+              data: { compliment_event_filters_target: "student" } %>
+      <% end %>
+
+      <%= select_tag :period,
+            options_for_select(@period_options, @period),
             class: "w-full sm:w-auto border rounded px-2 py-1",
-            data: { compliment_event_filters_target: "student" } %>
+            data: { action: "change->compliment-event-filters#periodChanged" } %>
+
+      <div class="<%= @period == "custom" ? "flex" : "hidden" %> w-full flex-wrap gap-2 sm:w-auto"
+           data-compliment-event-filters-target="customDates">
+        <%= date_field_tag :start_date,
+              @start_date,
+              class: "w-full sm:w-auto border rounded px-2 py-1",
+              aria: { label: t("reports.filters.start_date") } %>
+        <%= date_field_tag :end_date,
+              @end_date,
+              class: "w-full sm:w-auto border rounded px-2 py-1",
+              aria: { label: t("reports.filters.end_date") } %>
+      </div>
 
       <%= select_tag :kind,
             options_for_select(@kind_options, @kind),
+            class: "w-full sm:w-auto border rounded px-2 py-1" %>
+
+      <%= select_tag :sort,
+            options_for_select(@sort_options, @sort),
             class: "w-full sm:w-auto border rounded px-2 py-1" %>
 
       <%= submit_tag t("reports.filters.apply"),

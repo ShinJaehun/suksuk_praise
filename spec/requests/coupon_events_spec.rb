@@ -12,6 +12,10 @@ RSpec.describe 'Coupon events', type: :request do
     Nokogiri::HTML(response.body)
   end
 
+  def selected_value(selector)
+    document.at_css(selector).at_css('option[selected]')['value']
+  end
+
   it 'shows a reset link that returns to the default coupon event filters' do
     sign_in teacher
 
@@ -26,6 +30,11 @@ RSpec.describe 'Coupon events', type: :request do
 
     expect(reset_link.text).to include('필터 초기화')
     expect(response.body).to include('최근 7일')
+    expect(selected_value("select[name='period']")).to eq('all_time')
+
+    get coupon_events_path
+
+    expect(selected_value("select[name='period']")).to eq('last_7_days')
   end
 
   it 'keeps pagination styling generic for event logs' do

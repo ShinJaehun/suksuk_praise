@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Compliment events', type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:classroom) { create(:classroom, name: '햇살반') }
   let(:other_classroom) { create(:classroom, name: '달빛반') }
   let(:teacher) { create(:user, :teacher, name: '신재훈') }
@@ -13,8 +15,18 @@ RSpec.describe 'Compliment events', type: :request do
     create(:classroom_membership, classroom: other_classroom, user: other_student, role: 'student')
   end
 
+  around do |example|
+    travel_to Time.zone.local(2026, 7, 24, 14, 0) do
+      example.run
+    end
+  end
+
   def document
     Nokogiri::HTML(response.body)
+  end
+
+  def selected_value(selector)
+    document.at_css(selector).at_css('option[selected]')['value']
   end
 
   def create_compliment_for(classroom:, receiver:, given_at:, giver: teacher, reason: nil, preset: nil)
@@ -108,25 +120,57 @@ RSpec.describe 'Compliment events', type: :request do
     end
   end
 
-  it 'filters by an accessible classroom and does not expose inaccessible classroom ids' do
+  it 'auto-selects the only classroom for a regular single-classroom teacher' do
+    create_compliment_for(classroom: classroom, receiver: student, given_at: Time.zone.local(2026, 7, 24, 13, 10),
+                          reason: '담당 교실 칭찬')
+    create_compliment_for(classroom: other_classroom, receiver: other_student,
+                          given_at: Time.zone.local(2026, 7, 24, 13, 11), reason: '외부 교실 칭찬')
+    inactive_student = create(:user, :student, name: '비활성학생')
+    create(:classroom_membership, classroom: classroom, user: inactive_student, role: 'student', status: 'inactive')
+    sign_in teacher
+
+    get compliment_events_path
+
+    expect(response.body).to include('담당 교실 칭찬')
+    expect(response.body).not_to include('외부 교실 칭찬')
+    expect(document.at_css("select[name='classroom_id']")).to be_nil
+    expect(response.body).to include('햇살반')
+
+    student_select = document.at_css("select[name='student_membership_id']")
+    expect(student_select['disabled']).to be_nil
+    expect(student_select.text).to include('전체 학생')
+    expect(student_select.text).to include('김학생')
+    expect(student_select.text).to include('비활성학생')
+    expect(student_select.text).not_to include('박학생')
+  end
+
+  it 'ignores a manipulated classroom id for a regular single-classroom teacher' do
     create_compliment_for(classroom: classroom, receiver: student, given_at: Time.zone.local(2026, 7, 24, 13, 10),
                           reason: '담당 교실 칭찬')
     create_compliment_for(classroom: other_classroom, receiver: other_student,
                           given_at: Time.zone.local(2026, 7, 24, 13, 11), reason: '외부 교실 칭찬')
     sign_in teacher
 
+    get compliment_events_path(classroom_id: other_classroom.id)
+
+    expect(response.body).to include('담당 교실 칭찬')
+    expect(response.body).not_to include('외부 교실 칭찬')
+  end
+
+  it 'filters by an accessible classroom and does not expose inaccessible classroom ids for admins' do
+    create_compliment_for(classroom: classroom, receiver: student, given_at: Time.zone.local(2026, 7, 24, 13, 10),
+                          reason: '담당 교실 칭찬')
+    create_compliment_for(classroom: other_classroom, receiver: other_student,
+                          given_at: Time.zone.local(2026, 7, 24, 13, 11), reason: '외부 교실 칭찬')
+    sign_in create(:user, :admin)
+
     get compliment_events_path(classroom_id: classroom.id)
 
     expect(response.body).to include('담당 교실 칭찬')
     expect(response.body).not_to include('외부 교실 칭찬')
-
-    get compliment_events_path(classroom_id: other_classroom.id)
-
-    expect(response.body).not_to include('담당 교실 칭찬')
-    expect(response.body).not_to include('외부 교실 칭찬')
   end
 
-  it 'disables the student filter until a classroom is selected' do
+  it 'hides the student filter until a classroom is selected' do
     create(:classroom_membership, classroom: other_classroom, user: teacher, role: 'teacher')
     create_compliment_for(classroom: classroom, receiver: student, given_at: Time.zone.local(2026, 7, 24, 13, 10),
                           reason: '전체 조회 칭찬')
@@ -134,17 +178,24 @@ RSpec.describe 'Compliment events', type: :request do
 
     get compliment_events_path
 
-    student_select = document.at_css("select[name='student_membership_id']")
-    expect(student_select['disabled']).to eq('disabled')
-    expect(student_select.text).to include('교실을 먼저 선택하세요')
-    expect(student_select.text).not_to include('전체 학생')
-    expect(student_select.text).not_to include('햇살반 · 김학생')
+    expect(document.at_css("select[name='student_membership_id']")).to be_nil
+    expect(response.body).not_to include('교실을 먼저 선택하세요')
+    expect(response.body).not_to include('햇살반 · 김학생')
     expect(response.body).to include('data-controller="compliment-event-filters"')
     expect(response.body).to include('change-&gt;compliment-event-filters#classroomChanged')
     expect(response.body).to include('전체 조회 칭찬')
+
+    get compliment_events_path(classroom_id: classroom.id)
+
+    student_select = document.at_css("select[name='student_membership_id']")
+    expect(student_select).not_to be_nil
+    expect(student_select['disabled']).to be_nil
+    expect(student_select.text).to include('김학생')
+    expect(student_select.text).not_to include('박학생')
   end
 
   it 'ignores a stale student membership id when no classroom is selected' do
+    create(:classroom_membership, classroom: other_classroom, user: teacher, role: 'teacher')
     same_classroom_student = create(:user, :student, name: '다른학생')
     membership = create(:classroom_membership, classroom: classroom, user: same_classroom_student, role: 'student')
     create_compliment_for(classroom: classroom, receiver: student, given_at: Time.zone.local(2026, 7, 24, 13, 10),
@@ -155,7 +206,23 @@ RSpec.describe 'Compliment events', type: :request do
 
     get compliment_events_path(student_membership_id: membership.id)
 
+    expect(document.at_css("select[name='student_membership_id']")).to be_nil
     expect(response.body).to include('기본 학생 칭찬')
+    expect(response.body).to include('다른 학생 칭찬')
+  end
+
+  it 'filters by student membership without classroom_id for a regular single-classroom teacher' do
+    same_classroom_student = create(:user, :student, name: '다른학생')
+    membership = create(:classroom_membership, classroom: classroom, user: same_classroom_student, role: 'student')
+    create_compliment_for(classroom: classroom, receiver: student, given_at: Time.zone.local(2026, 7, 24, 13, 10),
+                          reason: '기본 학생 칭찬')
+    create_compliment_for(classroom: classroom, receiver: same_classroom_student,
+                          given_at: Time.zone.local(2026, 7, 24, 13, 11), reason: '다른 학생 칭찬')
+    sign_in teacher
+
+    get compliment_events_path(student_membership_id: membership.id)
+
+    expect(response.body).not_to include('기본 학생 칭찬')
     expect(response.body).to include('다른 학생 칭찬')
   end
 
@@ -207,6 +274,45 @@ RSpec.describe 'Compliment events', type: :request do
     end
   end
 
+  it 'shows the classroom select for admins and enables students after classroom selection' do
+    sign_in create(:user, :admin)
+
+    get compliment_events_path
+
+    expect(document.at_css("select[name='classroom_id']")).not_to be_nil
+    expect(document.at_css("select[name='student_membership_id']")).to be_nil
+    expect(response.body).not_to include('교실을 먼저 선택하세요')
+
+    get compliment_events_path(classroom_id: other_classroom.id)
+
+    student_select = document.at_css("select[name='student_membership_id']")
+    expect(student_select).not_to be_nil
+    expect(student_select['disabled']).to be_nil
+    expect(student_select.text).to include('박학생')
+    expect(student_select.text).not_to include('김학생')
+  end
+
+  it 'does not grant school managers school-wide compliment logs' do
+    manager = create(:user, :teacher)
+    manager_classroom = create(:classroom, name: '매니저담당반', school: classroom.school)
+    manager_student = create(:user, :student, name: '담당학생')
+    create(:school_membership, :manager, school: classroom.school, user: manager)
+    create(:classroom_membership, classroom: manager_classroom, user: manager, role: 'teacher')
+    create(:classroom_membership, classroom: manager_classroom, user: manager_student, role: 'student')
+    create_compliment_for(classroom: classroom, receiver: student, giver: teacher,
+                          given_at: Time.zone.local(2026, 7, 24, 13, 10), reason: '학교 전체 칭찬')
+    create_compliment_for(classroom: manager_classroom, receiver: manager_student, giver: manager,
+                          given_at: Time.zone.local(2026, 7, 24, 13, 11), reason: '담당 교실 칭찬')
+    sign_in manager
+
+    get compliment_events_path
+
+    expect(document.at_css("select[name='classroom_id']")).not_to be_nil
+    expect(response.body).to include('담당 교실 칭찬')
+    expect(response.body).not_to include('학교 전체 칭찬')
+    expect(response.body).not_to include('햇살반')
+  end
+
   it 'filters by compliment kind using the reason snapshot' do
     create_compliment_for(classroom: classroom, receiver: student, given_at: Time.zone.local(2026, 7, 24, 13, 10),
                           reason: nil)
@@ -254,6 +360,7 @@ RSpec.describe 'Compliment events', type: :request do
   end
 
   it 'paginates on the event URL and keeps valid query parameters' do
+    create(:classroom_membership, classroom: other_classroom, user: teacher, role: 'teacher')
     11.times do |index|
       create_compliment_for(
         classroom: classroom,
@@ -265,21 +372,41 @@ RSpec.describe 'Compliment events', type: :request do
     membership = ClassroomMembership.find_by!(classroom: classroom, user: student, role: 'student')
     sign_in teacher
 
-    get compliment_events_path(classroom_id: classroom.id, student_membership_id: membership.id, kind: 'custom')
+    get compliment_events_path(
+      classroom_id: classroom.id,
+      student_membership_id: membership.id,
+      period: 'custom',
+      start_date: '2026-07-24',
+      end_date: '2026-07-24',
+      kind: 'custom',
+      sort: 'given_at_asc'
+    )
 
-    expect(response.body).to include('페이지 칭찬 10')
-    expect(response.body).not_to include('페이지 칭찬 0')
+    expect(response.body).to include('페이지 칭찬 0')
+    expect(response.body).not_to include('페이지 칭찬 10')
     expect(response.body).to include('event-log-pagination')
     expect(response.body).to include('/compliment_events')
     expect(response.body).not_to include('/compliments?')
     expect(response.body).to include("classroom_id=#{classroom.id}")
     expect(response.body).to include("student_membership_id=#{membership.id}")
+    expect(response.body).to include('period=custom')
+    expect(response.body).to include('start_date=2026-07-24')
+    expect(response.body).to include('end_date=2026-07-24')
     expect(response.body).to include('kind=custom')
+    expect(response.body).to include('sort=given_at_asc')
 
-    get compliment_events_path(classroom_id: classroom.id, student_membership_id: membership.id, kind: 'custom',
-                               page: 2)
+    get compliment_events_path(
+      classroom_id: classroom.id,
+      student_membership_id: membership.id,
+      period: 'custom',
+      start_date: '2026-07-24',
+      end_date: '2026-07-24',
+      kind: 'custom',
+      sort: 'given_at_asc',
+      page: 2
+    )
 
-    expect(response.body).to include('페이지 칭찬 0')
+    expect(response.body).to include('페이지 칭찬 10')
   end
 
   it 'resets filters to the event URL' do
@@ -293,6 +420,105 @@ RSpec.describe 'Compliment events', type: :request do
 
     expect(reset_link).not_to be_nil
     expect(reset_link.text).to include('필터 초기화')
+
+    get compliment_events_path
+
+    expect(selected_value("select[name='period']")).to eq('last_7_days')
+    expect(selected_value("select[name='sort']")).to eq('given_at_desc')
+  end
+
+  it 'filters by period using given_at and falls back safely' do
+    in_range = create_compliment_for(
+      classroom: classroom,
+      receiver: student,
+      given_at: Time.zone.local(2026, 7, 23, 13, 10),
+      reason: '최근 7일 칭찬'
+    )
+    create_compliment_for(
+      classroom: classroom,
+      receiver: student,
+      given_at: Time.zone.local(2026, 7, 10, 13, 10),
+      reason: '최근 30일 칭찬'
+    )
+    create_compliment_for(
+      classroom: classroom,
+      receiver: student,
+      given_at: Time.zone.local(2026, 6, 1, 13, 10),
+      reason: '오래된 칭찬'
+    )
+    in_range.update_columns(created_at: Time.zone.local(2026, 6, 1, 13, 10))
+    sign_in teacher
+
+    get compliment_events_path
+    expect(response.body).to include('최근 7일 칭찬')
+    expect(response.body).not_to include('최근 30일 칭찬')
+
+    get compliment_events_path(period: 'last_30_days')
+    expect(response.body).to include('최근 30일 칭찬')
+    expect(response.body).not_to include('오래된 칭찬')
+
+    get compliment_events_path(period: 'all_time')
+    expect(response.body).to include('오래된 칭찬')
+
+    get compliment_events_path(period: 'unknown')
+    expect(selected_value("select[name='period']")).to eq('last_7_days')
+    expect(response.body).to include('최근 7일 칭찬')
+    expect(response.body).not_to include('최근 30일 칭찬')
+  end
+
+  it 'supports today, this week, this month, and custom compliment periods' do
+    create_compliment_for(classroom: classroom, receiver: student,
+                          given_at: Time.zone.local(2026, 7, 24, 9, 0), reason: '오늘 칭찬')
+    create_compliment_for(classroom: classroom, receiver: student,
+                          given_at: Time.zone.local(2026, 7, 20, 9, 0), reason: '이번 주 칭찬')
+    create_compliment_for(classroom: classroom, receiver: student,
+                          given_at: Time.zone.local(2026, 7, 1, 9, 0), reason: '이번 달 칭찬')
+    create_compliment_for(classroom: classroom, receiver: student,
+                          given_at: Time.zone.local(2026, 6, 30, 9, 0), reason: '지난 달 칭찬')
+    sign_in teacher
+
+    get compliment_events_path(period: 'today')
+    expect(response.body).to include('오늘 칭찬')
+    expect(response.body).not_to include('이번 주 칭찬')
+
+    get compliment_events_path(period: 'this_week')
+    expect(response.body).to include('이번 주 칭찬')
+    expect(response.body).not_to include('이번 달 칭찬')
+
+    get compliment_events_path(period: 'this_month')
+    expect(response.body).to include('이번 달 칭찬')
+    expect(response.body).not_to include('지난 달 칭찬')
+
+    get compliment_events_path(period: 'custom', start_date: '2026-07-20', end_date: '2026-07-24')
+    expect(response.body).to include('오늘 칭찬')
+    expect(response.body).to include('이번 주 칭찬')
+    expect(response.body).not_to include('이번 달 칭찬')
+
+    get compliment_events_path(period: 'custom', start_date: 'invalid', end_date: '2026-07-24')
+    expect(response).to have_http_status(:ok)
+  end
+
+  it 'sorts by compliment given_at with stable id tie-breakers' do
+    older = create_compliment_for(classroom: classroom, receiver: student,
+                                  given_at: Time.zone.local(2026, 7, 24, 12, 0), reason: '오래된 정렬')
+    same_time_first = create_compliment_for(classroom: classroom, receiver: student,
+                                            given_at: Time.zone.local(2026, 7, 24, 13, 0), reason: '같은 시각 첫 정렬')
+    same_time_second = create_compliment_for(classroom: classroom, receiver: student,
+                                             given_at: same_time_first.given_at, reason: '같은 시각 둘째 정렬')
+    sign_in teacher
+
+    get compliment_events_path(sort: 'given_at_desc')
+    body = response.body
+    expect(body.index(same_time_second.reason)).to be < body.index(same_time_first.reason)
+    expect(body.index(same_time_first.reason)).to be < body.index(older.reason)
+
+    get compliment_events_path(sort: 'given_at_asc')
+    body = response.body
+    expect(body.index(older.reason)).to be < body.index(same_time_first.reason)
+    expect(body.index(same_time_first.reason)).to be < body.index(same_time_second.reason)
+
+    get compliment_events_path(sort: 'unknown')
+    expect(selected_value("select[name='sort']")).to eq('given_at_desc')
   end
 
   it 'shows an empty state when no compliments match' do

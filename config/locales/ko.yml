@@ -371,7 +371,6 @@ ko:
       description: "교실에서 생성된 일반 칭찬과 맞춤 칭찬을 최신순으로 확인합니다."
       filters:
         all_students: "전체 학생"
-        select_classroom_first: "교실을 먼저 선택하세요"
         all_kinds: "전체"
         general: "일반 칭찬"
         custom: "맞춤 칭찬"
@@ -677,6 +676,8 @@ ko:
       used_at_asc: "사용시각 ↑ 오래된순"
       created_at_desc: "생성시각 ↓ 최신순"
       created_at_asc: "생성시각 ↑ 오래된순"
+      given_at_desc: "칭찬 시각 ↓ 최신순"
+      given_at_asc: "칭찬 시각 ↑ 오래된순"
     columns:
       classroom: "교실"
       student: "학생"

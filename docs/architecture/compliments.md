@@ -67,7 +67,12 @@ end
 - 맞춤 칭찬도 총 칭찬 수, 일간·주간·월간 칭찬왕, 쿠폰 발급/추첨 정책에 일반 칭찬과 동일하게 포함된다.
 - `/compliment_events` 전역 칭찬 로그는 접근 가능한 교실의 일반 칭찬과 맞춤 칭찬을 같은 목록에서 최신순으로 보여준다.
 - 칭찬 로그의 맞춤 칭찬 구분은 `compliment_preset_id`가 아니라 `reason` snapshot 존재 여부를 기준으로 한다.
-- 칭찬 로그는 교실 필터, 교실 선택 후 사용할 수 있는 학생 필터, 일반/맞춤 칭찬 종류 필터, pagination을 제공한다.
+- 칭찬 로그는 일반 단일 교실 teacher에게 유일한 담당 교실을 자동 적용하고, admin·복수 교실 teacher·school manager는 교실 선택 UI를 사용한다.
+- school manager는 manager 권한만으로 학교 전체 칭찬 로그를 볼 수 없고, active teacher membership이 있는 교실만 기존 teacher 범위로 조회한다.
+- 칭찬 로그는 교실 필터, 교실 선택 또는 자동 선택 후 사용할 수 있는 학생 필터, 기간 필터, 일반/맞춤 칭찬 종류 필터, 칭찬 시각 정렬, pagination을 제공한다.
+- 칭찬 로그의 기본 기간은 최근 7일이며 기간 계산은 `Compliment#given_at`을 기준으로 한다.
+- 칭찬 로그 정렬은 기본 최신순 `given_at DESC, id DESC`이고 오래된순은 `given_at ASC, id ASC`으로 tie-breaker를 유지한다.
+- pagination은 유효한 filter parameter를 `/compliment_events` 경로에서 보존한다.
 - `/compliment_templates` 전역 관리 화면은 로그인한 teacher/admin 자신의 자주 쓰는 칭찬 preset만 관리하며 교실 필터는 없다. 내부 모델과 테이블은 `ComplimentPreset`, `compliment_presets`를 유지한다.
 - 칭찬 로그와 자주 쓰는 칭찬 관리는 현재 교실 문맥 없이 navbar 전역 링크로 접근하고, 교실 show 화면은 학생 칭찬 운영에 집중한다.
 - 실제 `Compliment`는 계속 칭찬이 발생한 `classroom_id`에 소속된다.
