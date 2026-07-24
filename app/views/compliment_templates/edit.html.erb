@@ -5,12 +5,14 @@
     </div>
 
     <%= link_to t("compliment_presets.edit.back"),
-          compliment_presets_path,
+          compliment_templates_path,
           class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
   </div>
 
   <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-    <%= form_with model: @compliment_preset, class: "space-y-3" do |f| %>
+    <%= form_with model: @compliment_preset,
+          url: compliment_template_path(@compliment_preset),
+          class: "space-y-3" do |f| %>
       <% if @compliment_preset.errors.any? %>
         <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
           <%= @compliment_preset.errors.full_messages.to_sentence %>

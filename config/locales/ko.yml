@@ -354,20 +354,9 @@ ko:
       used: "사용"
     index:
       title: "쿠폰 이벤트 로그"
+      description: "쿠폰 발급과 사용 기록을 최신순으로 확인합니다."
 
   compliments:
-    index:
-      title: "칭찬 로그"
-      description: "교실에서 생성된 일반 칭찬과 맞춤 칭찬을 최신순으로 확인합니다."
-      filters:
-        all_students: "전체 학생"
-        student_with_classroom: "%{classroom} · %{student}"
-        all_kinds: "전체"
-        general: "일반 칭찬"
-        custom: "맞춤 칭찬"
-      unknown_classroom: "알 수 없는 교실"
-      unknown_user: "알 수 없음"
-      received_from: "%{name} 선생님에게 칭찬을 받았습니다."
     custom_modal:
       title: "맞춤 칭찬"
       student: "%{name} 학생에게 줄 칭찬을 선택하세요."
@@ -375,6 +364,20 @@ ko:
       success: "칭찬했습니다!"
       failure: "칭찬에 실패했습니다: %{detail}"
       duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
+
+  compliment_events:
+    index:
+      title: "칭찬 로그"
+      description: "교실에서 생성된 일반 칭찬과 맞춤 칭찬을 최신순으로 확인합니다."
+      filters:
+        all_students: "전체 학생"
+        select_classroom_first: "교실을 먼저 선택하세요"
+        all_kinds: "전체"
+        general: "일반 칭찬"
+        custom: "맞춤 칭찬"
+      unknown_classroom: "알 수 없는 교실"
+      unknown_user: "알 수 없음"
+      received_from: "%{name} 선생님에게 칭찬을 받았습니다."
 
   compliment_presets:
     index:

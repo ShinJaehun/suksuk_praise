@@ -1,4 +1,4 @@
-class ComplimentPresetsController < ApplicationController
+class ComplimentTemplatesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_compliment_preset, only: %i[edit update destroy]
 
@@ -18,7 +18,7 @@ class ComplimentPresetsController < ApplicationController
       if current_user.compliment_presets.active.count >= ComplimentPreset::MAX_ACTIVE_PER_USER
         @compliment_preset.errors.add(:base, :too_many_active_presets)
       elsif @compliment_preset.save
-        redirect_to compliment_presets_path,
+        redirect_to compliment_templates_path,
           notice: t("compliment_presets.flash.created"),
           status: :see_other
         return
@@ -38,7 +38,7 @@ class ComplimentPresetsController < ApplicationController
 
   def update
     if @compliment_preset.update(compliment_preset_params)
-      redirect_to compliment_presets_path,
+      redirect_to compliment_templates_path,
         notice: t("compliment_presets.flash.updated"),
         status: :see_other
     else
@@ -52,7 +52,7 @@ class ComplimentPresetsController < ApplicationController
   def destroy
     @compliment_preset.update!(active: false)
 
-    redirect_to compliment_presets_path,
+    redirect_to compliment_templates_path,
       notice: t("compliment_presets.flash.destroyed"),
       status: :see_other
   end

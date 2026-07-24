@@ -75,8 +75,16 @@ Rails.application.routes.draw do
     resources :compliments, only: [:new, :create]
   end
 
-  resources :compliments, only: :index
-  resources :compliment_presets, except: %i[show new]
+  get "/compliments", to: redirect { |_params, request|
+    query_string = request.query_string.presence
+    "/compliment_events#{query_string ? "?#{query_string}" : ""}"
+  }
+  get "/compliment_presets", to: redirect { |_params, request|
+    query_string = request.query_string.presence
+    "/compliment_templates#{query_string ? "?#{query_string}" : ""}"
+  }
+  resources :compliment_events, only: :index
+  resources :compliment_templates, except: %i[show new]
 
   resources :schools, only: %i[index show edit update] do
     resources :teachers, only: %i[index new create edit update], module: :schools

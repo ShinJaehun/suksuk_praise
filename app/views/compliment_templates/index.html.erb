@@ -9,7 +9,7 @@
   <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <h2 class="text-base font-semibold text-slate-900"><%= t("compliment_presets.index.form_title") %></h2>
 
-    <%= form_with model: @compliment_preset, url: compliment_presets_path, class: "mt-4 space-y-3" do |f| %>
+    <%= form_with model: @compliment_preset, url: compliment_templates_path, class: "mt-4 space-y-3" do |f| %>
       <% if @compliment_preset.errors.any? %>
         <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
           <%= @compliment_preset.errors.full_messages.to_sentence %>
@@ -46,10 +46,10 @@
             </div>
             <div class="flex shrink-0 gap-2">
               <%= link_to t("ui.edit"),
-                    edit_compliment_preset_path(preset),
+                    edit_compliment_template_path(preset),
                     class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
               <%= button_to t("ui.delete"),
-                    compliment_preset_path(preset),
+                    compliment_template_path(preset),
                     method: :delete,
                     data: { turbo_confirm: t("compliment_presets.destroy.confirm") },
                     class: "inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>

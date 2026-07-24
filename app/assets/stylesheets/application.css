@@ -14,16 +14,16 @@
  *= require_self
  */
 
-.coupon-events-pagy .pagy {
+.event-log-pagination .pagy {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.375rem;
 }
 
-.coupon-events-pagy .pagy a,
-.coupon-events-pagy .pagy .current,
-.coupon-events-pagy .pagy .gap {
+.event-log-pagination .pagy a,
+.event-log-pagination .pagy .current,
+.event-log-pagination .pagy .gap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -36,14 +36,14 @@
   text-decoration: none;
 }
 
-.coupon-events-pagy .pagy .current {
+.event-log-pagination .pagy .current {
   border-color: #2563eb;
   background: #eff6ff;
   color: #1d4ed8;
   font-weight: 600;
 }
 
-.coupon-events-pagy .pagy .gap {
+.event-log-pagination .pagy .gap {
   border-color: transparent;
   min-width: auto;
   padding: 0 0.25rem;

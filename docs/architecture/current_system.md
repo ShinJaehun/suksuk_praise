@@ -120,10 +120,10 @@
 - 맞춤 칭찬 preset은 교실 설정이 아니라 teacher/admin 사용자 개인의 자주 쓰는 칭찬 문구이며, 사용자별 active preset은 최대 5개다.
 - 같은 사용자는 자신이 담당하거나 admin 권한으로 접근 가능한 모든 교실에서 같은 preset을 사용하고, 같은 교실의 여러 담당 교사는 각자 자신의 preset만 사용한다.
 - 맞춤 칭찬 생성 시 `Compliment`에 preset 참조와 당시 문구 snapshot을 저장한다. preset 수정·비활성화는 과거 칭찬 로그 문구를 변경하지 않는다.
-- `/compliments`는 접근 가능한 교실의 일반 칭찬과 맞춤 칭찬을 같은 목록에서 조회하는 전역 칭찬 로그 화면이다.
-- 칭찬 로그는 교실, 학생, 일반/맞춤 칭찬 종류 필터와 pagination을 제공하며, 맞춤 칭찬 구분은 `reason` snapshot 존재 여부를 기준으로 한다.
+- `/compliment_events`는 접근 가능한 교실의 일반 칭찬과 맞춤 칭찬을 같은 목록에서 조회하는 전역 칭찬 로그 화면이다.
+- 칭찬 로그는 교실, 교실 선택 후 사용할 수 있는 학생, 일반/맞춤 칭찬 종류 필터와 pagination을 제공하며, 맞춤 칭찬 구분은 `reason` snapshot 존재 여부를 기준으로 한다.
 - 각 `Compliment`는 계속 `classroom_id`에 소속되며, 실제 칭찬 생성은 교실 문맥이 필요한 nested `GET /classrooms/:classroom_id/compliments/new`, `POST /classrooms/:classroom_id/compliments`를 사용한다.
-- `/compliment_presets`는 로그인한 teacher/admin이 자신의 자주 쓰는 칭찬을 관리하는 전역 화면이며 교실 필터를 제공하지 않는다.
+- `/compliment_templates`는 로그인한 teacher/admin이 자신의 자주 쓰는 칭찬을 관리하는 전역 화면이며 교실 필터를 제공하지 않는다. 내부 모델과 테이블은 `ComplimentPreset`, `compliment_presets`를 유지한다.
 - navbar의 관리 링크 명칭은 `자주 쓰는 칭찬`이고, 학생 카드와 modal의 동작 명칭은 계속 `맞춤 칭찬`이다.
 - 칭찬 로그와 자주 쓰는 칭찬 관리는 현재 교실 문맥 없이 navbar의 전역 링크로 접근하며, `/classrooms/:id`는 학생에게 칭찬을 주는 교실 운영 화면에 집중한다.
 - 짧은 시간 안의 같은 giver/receiver/classroom 중복 요청은 차단된다.

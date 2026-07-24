@@ -1,33 +1,40 @@
 <section class="mx-auto w-full max-w-6xl pt-4 space-y-4">
   <div>
-    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("compliments.index.title") %></h1>
-    <p class="mt-1 text-sm text-slate-600"><%= t("compliments.index.description") %></p>
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("compliment_events.index.title") %></h1>
+    <p class="mt-1 text-sm text-slate-600"><%= t("compliment_events.index.description") %></p>
   </div>
 
   <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-    <%= form_with url: compliments_path, method: :get, local: true, class: "flex flex-wrap gap-2 items-end" do %>
+    <%= form_with url: compliment_events_path,
+          method: :get,
+          local: true,
+          class: "flex flex-wrap gap-2 items-end",
+          data: { controller: "compliment-event-filters" } do %>
       <%= select_tag :classroom_id,
-            options_for_select(@classroom_options, params[:classroom_id]),
-            class: "w-full sm:w-auto border rounded px-2 py-1" %>
+            options_for_select(@classroom_options, @selected_classroom&.id),
+            class: "w-full sm:w-auto border rounded px-2 py-1",
+            data: { action: "change->compliment-event-filters#classroomChanged" } %>
 
       <%= select_tag :student_membership_id,
-            options_for_select(@student_options, params[:student_membership_id]),
-            class: "w-full sm:w-auto border rounded px-2 py-1" %>
+            options_for_select(@student_options, @selected_student_membership&.id),
+            disabled: @student_filter_disabled,
+            class: "w-full sm:w-auto border rounded px-2 py-1",
+            data: { compliment_event_filters_target: "student" } %>
 
       <%= select_tag :kind,
             options_for_select(@kind_options, @kind),
             class: "w-full sm:w-auto border rounded px-2 py-1" %>
 
-      <%= submit_tag t("reports.filters.apply", default: "적용"),
+      <%= submit_tag t("reports.filters.apply"),
             class: "w-full sm:w-auto bg-blue-500 text-white px-3 py-1 rounded" %>
 
-      <%= link_to t("reports.filters.reset", default: "초기화"),
-            compliments_path,
+      <%= link_to t("reports.filters.reset"),
+            compliment_events_path,
             class: "w-full sm:w-auto border border-slate-300 px-3 py-1 rounded text-center text-slate-700 hover:bg-slate-50" %>
     <% end %>
 
     <div class="text-sm text-gray-700">
-      <span class="font-semibold"><%= t("reports.summary.total", default: "총") %></span>
+      <span class="font-semibold"><%= t("reports.summary.total") %></span>
       <%= @summary_total %>
     </div>
 
@@ -36,11 +43,11 @@
         <% @compliments.each do |compliment| %>
           <li class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
             <div class="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-              <span class="font-semibold text-slate-800"><%= compliment.classroom&.name || t("compliments.index.unknown_classroom") %></span>
+              <span class="font-semibold text-slate-800"><%= compliment.classroom&.name || t("compliment_events.index.unknown_classroom") %></span>
               <span class="hidden text-slate-400 sm:inline">→</span>
-              <span class="font-semibold text-slate-800"><%= compliment.receiver&.name || t("compliments.index.unknown_user") %></span>
+              <span class="font-semibold text-slate-800"><%= compliment.receiver&.name || t("compliment_events.index.unknown_user") %></span>
               <span class="text-slate-700">
-                <%= t("compliments.index.received_from", name: compliment.giver&.name || compliment.giver&.email || t("compliments.index.unknown_user")) %>
+                <%= t("compliment_events.index.received_from", name: compliment.giver&.name || compliment.giver&.email || t("compliment_events.index.unknown_user")) %>
               </span>
               <% if compliment.reason.present? %>
                 <span class="inline-flex w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
@@ -53,7 +60,7 @@
         <% end %>
       </ul>
 
-      <div class="mt-4 coupon-events-pagy">
+      <div class="mt-4 event-log-pagination">
         <%== @pagy.series_nav if @pagy %>
       </div>
     <% else %>
