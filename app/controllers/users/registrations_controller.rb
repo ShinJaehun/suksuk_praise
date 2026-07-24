@@ -1,4 +1,5 @@
 class Users::RegistrationsController < Devise::RegistrationsController
+  before_action :disable_public_registration!, only: %i[new create]
   before_action :redirect_student_self_account_edit!, only: [:edit, :update, :edit_password, :update_password]
   before_action :set_account_avatar_keys, only: [:edit, :update]
   before_action :authenticate_scope!, only: [:edit_password, :update_password]
@@ -44,6 +45,12 @@ class Users::RegistrationsController < Devise::RegistrationsController
   end
 
   private
+
+  def disable_public_registration!
+    redirect_to new_user_session_path,
+      alert: I18n.t("users.registrations.public_registration_disabled"),
+      status: :see_other
+  end
 
   def redirect_student_self_account_edit!
     return unless current_user&.student?

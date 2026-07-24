@@ -5,6 +5,36 @@ RSpec.describe "Users::Registrations", type: :request do
   let(:teacher) { create(:user, :teacher, password: "password123") }
   let(:admin) { create(:user, :admin, password: "password123") }
 
+  describe "GET /users/sign_up" do
+    it "blocks public registration" do
+      expect {
+        get new_user_registration_path
+      }.not_to change(User, :count)
+
+      expect(response).to redirect_to(new_user_session_path)
+      expect(response.body).not_to include('name="user[email]"')
+    end
+  end
+
+  describe "POST /users" do
+    it "does not create a public signup user" do
+      expect {
+        post user_registration_path, params: {
+          user: {
+            name: "외부 가입자",
+            email: "outsider@example.com",
+            password: "password123",
+            password_confirmation: "password123"
+          }
+        }
+      }.not_to change(User, :count)
+
+      expect(response).to redirect_to(new_user_session_path)
+      expect(User.find_by(email: "outsider@example.com")).to be_nil
+      expect(User.find_by(name: "외부 가입자", role: "student")).to be_nil
+    end
+  end
+
   describe "GET /users/edit" do
     it "blocks student access" do
       sign_in student

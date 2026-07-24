@@ -18,6 +18,8 @@
 
 - root(`/`)는 교사/관리자 로그인 진입으로 사용하며, 비로그인 사용자를 Devise 로그인 화면으로 보낸다.
 - admin/teacher는 Devise 로그인을 사용한다.
+- 공개 self-sign-up은 제공하지 않는다. teacher/admin 계정은 관리 흐름에서 생성하고, student 계정은 교실 구성원 관리에서 생성한다.
+- Devise registration controller는 기존 계정 수정 기능 때문에 유지하되 공개 `new/create`는 로그인 화면으로 redirect해 차단한다.
 - student는 root나 `/users/sign_in`에서 로그인하지 않는다.
 - student는 일반 Devise 로그인 흐름에서 차단되며, 교실 범위 PIN 로그인으로 접근한다.
 - 학생 공개 로그인 URL은 교실별 token URL인 `GET /c/:student_login_token/login`을 사용한다.

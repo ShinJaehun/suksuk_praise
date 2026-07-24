@@ -10,6 +10,15 @@ RSpec.describe "Users::Sessions", type: :request do
     create(:classroom_membership, classroom: classroom, user: student, role: "student")
   end
 
+  it "does not show a public sign up link on the login page" do
+    get new_user_session_path
+
+    expect(response.body).not_to include("Sign up")
+    expect(response.body).not_to include(new_user_registration_path)
+    expect(response.body).to include("Forgot your password?")
+    expect(response.body).to include(new_user_password_path)
+  end
+
   it "signs a teacher in and redirects directly to classrooms index" do
     post user_session_path, params: {
       user: {

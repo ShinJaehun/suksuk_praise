@@ -86,6 +86,10 @@ ko:
     invalid: "교실, 학생, PIN을 확인해 주세요."
     throttled: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."
 
+  users:
+    registrations:
+      public_registration_disabled: "공개 회원가입은 제공하지 않습니다."
+
   dashboard:
     title: "한눈에 보기"
     heading: "%{classroom} · %{period}"
