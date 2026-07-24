@@ -225,7 +225,10 @@ ko:
         compliments: "칭찬 타임라인"
     create:
       success: "학생이 추가되었습니다."
-      failure_fallback: "이름과 이메일을 확인해주세요."
+      failure_fallback: "학생 정보를 확인해 주세요."
+      errors:
+        invalid_pin: "PIN은 4자리 숫자여야 합니다."
+        invalid_avatar: "성별에 맞는 아바타를 선택해 주세요."
     bulk_create:
       success: "%{count}명의 학생이 자동 생성되었습니다."
       failure: "생성 실패: %{detail}"
@@ -294,6 +297,7 @@ ko:
     reactivate:
       success: "학생을 복구했습니다."
       active_membership_conflict: "이 학생은 다른 학급에서 활동 중이어서 복구할 수 없습니다."
+      too_many: "한 교실에는 최대 %{count}명까지 등록할 수 있습니다."
 
   coupons:
     assign:

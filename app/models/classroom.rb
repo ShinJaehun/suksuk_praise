@@ -1,4 +1,5 @@
 class Classroom < ApplicationRecord
+    MAX_ACTIVE_STUDENTS = 30
     COMPLIMENT_KING_PERIODS = %w[daily weekly monthly].freeze
     MESSAGE_POLICIES = %w[disabled replies_only student_initiated].freeze
 
@@ -19,6 +20,10 @@ class Classroom < ApplicationRecord
 
     def students
       users.merge(ClassroomMembership.where(role: "student", status: "active"))
+    end
+
+    def active_student_memberships_count
+      classroom_memberships.student.active.count
     end
 
     def enabled_compliment_king_periods

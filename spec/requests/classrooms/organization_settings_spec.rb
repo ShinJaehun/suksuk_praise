@@ -107,6 +107,26 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).not_to include(other_student.name)
   end
 
+  it 'counts and previews only active students on the classrooms index' do
+    classroom = create(:classroom, school: school, name: '활성 기준 학급')
+    active_student = create(:user, :student, name: '활성 미리보기 학생', gender: 'boy', avatar_key: 'boy01')
+    inactive_student = create(:user, :student, name: '비활성 제외 학생', gender: 'girl', avatar_key: 'girl01')
+    create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
+    create(:classroom_membership, classroom: classroom, user: active_student, role: :student, status: :active)
+    create(:classroom_membership, classroom: classroom, user: inactive_student, role: :student, status: :inactive)
+    sign_in teacher
+
+    get classrooms_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('활성 기준 학급')
+    expect(response.body).to include('학생 1명')
+    expect(response.body).to include('활성 미리보기 학생 avatar')
+    expect(response.body).not_to include('학생 2명')
+    expect(response.body).not_to include('비활성 제외 학생')
+    expect(response.body).not_to include('비활성 제외 학생 avatar')
+  end
+
   it 'treats an invalid admin classroom school filter as the full list' do
     classroom = create(:classroom, school: school, name: '새싹 학급')
     other_classroom = create(:classroom, school: create(:school), name: '다른 학급')

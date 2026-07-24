@@ -12,6 +12,13 @@ RSpec.describe 'Classroom students', type: :request do
     sign_in teacher
   end
 
+  def create_active_students(count, classroom:)
+    count.times do |index|
+      student = create(:user, :student, name: "기존 활성 학생 #{index}")
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student', status: 'active')
+    end
+  end
+
   describe 'GET /classrooms/:classroom_id/students/new' do
     it 'shows PIN fields without student password inputs' do
       get new_classroom_student_path(classroom)
@@ -19,6 +26,7 @@ RSpec.describe 'Classroom students', type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('학생 개별 추가')
       expect(response.body).to include('name="user[student_pin]"')
+      expect(response.body).to include('required="required"')
       expect(response.body).not_to include('name="user[email]"')
       expect(response.body).not_to include('name="user[password]"')
       expect(response.body).not_to include('name="user[password_confirmation]"')
@@ -210,6 +218,118 @@ RSpec.describe 'Classroom students', type: :request do
 
       expect(response).to redirect_to(root_path)
     end
+
+    it 'allows creating one student when the classroom has 29 active students' do
+      create_active_students(29, classroom: classroom)
+
+      expect do
+        post classroom_students_path(classroom), params: {
+          user: {
+            name: '30번째 학생',
+            student_pin: '1234',
+            gender: 'boy'
+          }
+        }
+      end.to change(User.student, :count).by(1)
+
+      expect(response).to redirect_to(classroom_path(classroom))
+    end
+
+    it 'rejects creating one student when the classroom already has 30 active students' do
+      create_active_students(30, classroom: classroom)
+
+      expect do
+        post classroom_students_path(classroom), params: {
+          user: {
+            name: '초과 학생',
+            student_pin: '1234',
+            gender: 'girl'
+          }
+        }
+      end.not_to change(User.student, :count)
+
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(flash[:alert]).to include('최대 30명')
+      expect(User.find_by(name: '초과 학생')).to be_nil
+    end
+
+    it 'does not count inactive students toward the individual create limit' do
+      create_active_students(29, classroom: classroom)
+      inactive_student = create(:user, :student, name: '기존 비활성 학생')
+      create(:classroom_membership, user: inactive_student, classroom: classroom, role: 'student', status: 'inactive')
+
+      expect do
+        post classroom_students_path(classroom), params: {
+          user: {
+            name: '활성 추가 학생',
+            student_pin: '1234',
+            gender: 'girl'
+          }
+        }
+      end.to change(User.student, :count).by(1)
+
+      expect(response).to redirect_to(classroom_path(classroom))
+    end
+
+    it 'rejects blank PIN values on individual create' do
+      expect do
+        post classroom_students_path(classroom),
+             params: {
+               user: {
+                 name: 'PIN 없는 학생',
+                 student_pin: '',
+                 gender: 'boy'
+               }
+             },
+             headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      expect(response.body).to include('target="modal"')
+      expect(response.body).to include('PIN은 4자리 숫자여야 합니다.')
+    end
+
+    it 'rejects invalid PIN values on individual create' do
+      expect do
+        post classroom_students_path(classroom),
+             params: {
+               user: {
+                 name: 'PIN 오류 학생',
+                 student_pin: '12ab',
+                 gender: 'girl'
+               }
+             },
+             headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('PIN은 4자리 숫자여야 합니다.')
+    end
+
+    it 'rolls back the user when classroom membership creation fails' do
+      invalid_membership = build(:classroom_membership, classroom: classroom, role: 'student')
+      invalid_membership.errors.add(:base, 'membership failed')
+      allow_any_instance_of(ClassroomMembership).to receive(:save!).and_raise(
+        ActiveRecord::RecordInvalid.new(invalid_membership)
+      )
+
+      expect do
+        post classroom_students_path(classroom),
+             params: {
+               user: {
+                 name: '롤백 학생',
+                 student_pin: '1234',
+                 gender: 'boy'
+               }
+             },
+             headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('target="modal"')
+      expect(User.find_by(name: '롤백 학생')).to be_nil
+    end
   end
 
   describe 'bulk student creation' do
@@ -317,10 +437,7 @@ RSpec.describe 'Classroom students', type: :request do
     end
 
     it 'allows preview when only active student memberships fit within the limit' do
-      29.times do |index|
-        student = create(:user, :student, name: "기존 활성 학생 #{index}")
-        create(:classroom_membership, user: student, classroom: classroom, role: 'student')
-      end
+      create_active_students(29, classroom: classroom)
       inactive_student = create(:user, :student, name: '기존 비활성 학생')
       create(:classroom_membership, user: inactive_student, classroom: classroom, role: 'student', status: 'inactive')
 
@@ -330,6 +447,34 @@ RSpec.describe 'Classroom students', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('id="bulk-student-preview-form"')
+    end
+
+    it 'rejects final create when active students changed after preview' do
+      create_active_students(28, classroom: classroom)
+
+      post bulk_preview_classroom_students_path(classroom),
+        params: { boy_count: 2, girl_count: 0, student_pin: '2468' },
+        headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+
+      added_student = create(:user, :student, name: '중간 추가 학생')
+      create(:classroom_membership, user: added_student, classroom: classroom, role: 'student', status: 'active')
+
+      expect do
+        post bulk_create_classroom_students_path(classroom),
+          params: {
+            student_pin: '2468',
+            students: {
+              '0' => { name: '최종 학생 1', gender: 'boy', avatar_key: 'boy01' },
+              '1' => { name: '최종 학생 2', gender: 'boy', avatar_key: 'boy02' }
+            }
+          },
+          headers: turbo_headers
+      end.not_to change(User.student, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('최대 30명')
     end
 
     it 'returns to setup from preview without exposing the PIN in the URL' do
@@ -430,10 +575,7 @@ RSpec.describe 'Classroom students', type: :request do
     end
 
     it 'rolls back when final create would exceed the student limit' do
-      29.times do |index|
-        student = create(:user, :student, name: "기존 학생 #{index}")
-        create(:classroom_membership, user: student, classroom: classroom, role: 'student')
-      end
+      create_active_students(29, classroom: classroom)
 
       expect do
         post bulk_create_classroom_students_path(classroom),
@@ -449,10 +591,7 @@ RSpec.describe 'Classroom students', type: :request do
     end
 
     it 'allows final create when inactive memberships do not exceed the active student limit' do
-      29.times do |index|
-        student = create(:user, :student, name: "기존 활성 학생 #{index}")
-        create(:classroom_membership, user: student, classroom: classroom, role: 'student')
-      end
+      create_active_students(29, classroom: classroom)
       inactive_student = create(:user, :student, name: '기존 비활성 학생')
       create(:classroom_membership, user: inactive_student, classroom: classroom, role: 'student', status: 'inactive')
 
@@ -906,6 +1045,90 @@ RSpec.describe 'Classroom students', type: :request do
       expect(student.encrypted_password).to eq("")
       expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
     end
+
+    it 'reassigns avatar_key when the form submits the previous avatar with a changed gender' do
+      student = create(:user, :student, gender: 'boy', avatar_key: 'boy01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          gender: 'girl',
+          avatar_key: 'boy01'
+        }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.gender).to eq('girl')
+      expect(student.avatar_key).to be_in(User::GIRL_AVATAR_KEYS)
+    end
+
+    it 'allows a matching avatar_key when gender is submitted together' do
+      student = create(:user, :student, gender: 'boy', avatar_key: 'boy01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          gender: 'girl',
+          avatar_key: 'girl03'
+        }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.gender).to eq('girl')
+      expect(student.avatar_key).to eq('girl03')
+    end
+
+    it 'rejects a non-current avatar_key that does not match the changed gender' do
+      student = create(:user, :student, gender: 'boy', avatar_key: 'boy01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          gender: 'girl',
+          avatar_key: 'boy02'
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.gender).to eq('boy')
+      expect(student.avatar_key).to eq('boy01')
+      expect(response.body).to include('성별에 맞는 아바타를 선택해 주세요.')
+    end
+
+    it 'rejects an opposite-gender avatar_key when gender is unchanged' do
+      student = create(:user, :student, gender: 'girl', avatar_key: 'girl01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: student.name,
+          avatar_key: 'boy01'
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(student.reload.avatar_key).to eq('girl01')
+    end
+
+    it 'allows unrelated updates for legacy students without gender' do
+      student = create(:user, :student, gender: nil)
+      student.update_column(:avatar_key, 'boy01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          name: 'legacy renamed'
+        }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.name).to eq('legacy renamed')
+      expect(student.avatar_key).to eq('boy01')
+      expect(student.gender).to be_nil
+    end
   end
 
   describe 'PATCH /classrooms/:classroom_id/students/:id/deactivate' do
@@ -970,6 +1193,7 @@ RSpec.describe 'Classroom students', type: :request do
 
   describe 'PATCH /classrooms/:classroom_id/students/:id/reactivate' do
     it 'lets the classroom teacher reactivate an inactive student' do
+      create_active_students(29, classroom: classroom)
       student = create(:user, :student)
       membership = create(:classroom_membership, user: student, classroom: classroom, role: 'student',
                                                  status: 'inactive')
@@ -1008,6 +1232,35 @@ RSpec.describe 'Classroom students', type: :request do
       expect(flash[:alert]).to eq(I18n.t('students.reactivate.active_membership_conflict'))
       expect(active_membership.reload).to be_active
       expect(inactive_membership.reload).to be_inactive
+    end
+
+    it 'rejects reactivation when the classroom already has 30 active students' do
+      create_active_students(30, classroom: classroom)
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: 'student',
+                                                 status: 'inactive')
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(flash[:alert]).to eq(I18n.t('students.reactivate.too_many', count: Classroom::MAX_ACTIVE_STUDENTS))
+      expect(membership.reload).to be_inactive
+    end
+
+    it 'applies the active student limit to an admin reactivation' do
+      admin = create(:user, :admin)
+      create_active_students(30, classroom: classroom)
+      student = create(:user, :student)
+      membership = create(:classroom_membership, user: student, classroom: classroom, role: 'student',
+                                                 status: 'inactive')
+      sign_out teacher
+      sign_in admin
+
+      patch reactivate_classroom_student_path(classroom, student)
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(flash[:alert]).to eq(I18n.t('students.reactivate.too_many', count: Classroom::MAX_ACTIVE_STUDENTS))
+      expect(membership.reload).to be_inactive
     end
 
     it 'applies the same active membership conflict rule to an admin' do

@@ -25,8 +25,16 @@ class ClassroomsController < ApplicationController
       .where(classroom_id: classroom_ids, role: "teacher", users: { role: "teacher" })
     @classroom_teacher_counts = teacher_memberships.group(:classroom_id).count
     @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", user_role: "teacher", limit_per_classroom: 1)
-    @classroom_student_counts = ClassroomMembership.where(classroom_id: classroom_ids, role: "student").group(:classroom_id).count
-    @classroom_student_previews = classroom_membership_previews(classroom_ids, role: "student", limit_per_classroom: 5)
+    @classroom_student_counts = ClassroomMembership
+      .where(classroom_id: classroom_ids, role: "student", status: "active")
+      .group(:classroom_id)
+      .count
+    @classroom_student_previews = classroom_membership_previews(
+      classroom_ids,
+      role: "student",
+      status: "active",
+      limit_per_classroom: 5
+    )
     @manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
@@ -464,10 +472,11 @@ class ClassroomsController < ApplicationController
     redirect_to user_path(current_user)
   end
 
-  def classroom_membership_previews(classroom_ids, role:, limit_per_classroom:, user_role: nil)
+  def classroom_membership_previews(classroom_ids, role:, limit_per_classroom:, user_role: nil, status: nil)
     return {} if classroom_ids.empty?
 
     membership_scope = ClassroomMembership.where(classroom_id: classroom_ids, role: role)
+    membership_scope = membership_scope.where(status: status) if status
     membership_scope = membership_scope.joins(:user).where(users: { role: user_role }) if user_role
 
     ranked_membership_ids = ClassroomMembership

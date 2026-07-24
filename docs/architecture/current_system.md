@@ -81,6 +81,9 @@
 - 직접 `DELETE /classrooms/:classroom_id/students/:id` 요청이 들어와도 `User` hard delete 대신 현재 membership을 inactive 처리한다.
 - teacher/admin은 구성원 관리 화면에서 학생을 비활성화하거나 inactive 학생을 복구할 수 있다.
 - 구성원 관리 화면은 active/inactive 학생 membership을 한 목록에 보여준다.
+- 한 교실의 active student membership은 최대 30개까지 허용하며, 개별 생성·여러 학생 자동 생성·inactive 학생 복구에 동일하게 적용한다.
+- inactive 학생은 최대 인원 계산에서 제외하며, 최종 생성·복구 저장 직전 classroom lock 안에서 active 학생 수를 다시 검증한다.
+- 학생 신규 생성에는 4자리 숫자 PIN이 필수이며, student는 Devise email/password 없이 교실 token URL과 PIN으로 로그인한다.
 - inactive 학생은 teacher 기본 교실 화면과 PIN 로그인 목록에서 제외된다.
 - 이미 로그인한 학생이 inactive가 되면 다음 요청에서 로그아웃 후 학생 로그인 화면으로 redirect된다.
 - inactive 학생은 칭찬, 쿠폰 발급, 새 메시지 발신/수신 대상에서 제외된다.
@@ -89,9 +92,10 @@
 - 담당 teacher/admin은 inactive 학생의 과거 기록을 조회할 수 있으며, inactive 학생 상세에서는 `비활성` badge를 표시하고 칭찬하기, 쿠폰 지급, 새 메시지 작성 UI를 숨긴다. student 본인은 inactive 과거 학급 URL에 접근할 수 없다.
 - 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 복구 action을 제공한다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
-- teacher/admin은 학생의 name, gender, avatar_key, PIN 등을 관리한다. 학생 `User`에는 email과 Devise password를 저장하지 않으며, 학생은 classroom token URL과 PIN으로만 로그인한다.
+- teacher/admin은 학생의 name, gender, avatar_key, PIN 등을 관리한다. 학생 `User`에는 email과 Devise password를 저장하지 않는다.
 - teacher/admin은 구성원 관리 화면에서 현재 교실의 active 학생 PIN을 한 번에 재설정할 수 있다. inactive 학생 PIN은 일괄 재설정 대상에서 제외하며 기존 PIN 값은 화면에 표시하지 않는다.
-- 여러 학생 자동 생성은 한 번에 최대 30명까지 허용한다.
+- `/classrooms` 교실 카드의 학생 수와 학생 avatar preview는 active student membership 기준이다.
+- 여러 학생 자동 생성은 교실의 기존 active 학생과 새 draft를 합산해 최대 30명까지 허용한다.
 - 여러 학생 자동 생성 제한을 초과하면 Turbo modal content-missing 없이 alert를 표시하고 modal을 닫는다.
 - 여러 학생 자동 생성 submit 중에는 modal 입력과 버튼 조작을 잠그고, 응답 실패 시 잠금을 복구한다.
 - teacher/admin은 교실 화면에서 학생 로그인 modal을 열어 학생 로그인 URL을 확인할 수 있다.
@@ -103,7 +107,7 @@
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
 - 학생 PIN 로그인 화면에서 학생을 선택하면 해당 학생의 avatar와 이름을 preview로 표시한다.
-- 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다.
+- 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다. 학생 gender가 `boy`이면 boy avatar만, `girl`이면 girl avatar만 허용한다.
 - avatar 선택 목록은 역할별로 제한한다: student는 boy/girl, teacher는 teacherM/teacherF, admin은 admin과 teacherM/teacherF 계열을 사용한다.
 - `avatar_key`가 현재 역할에서 허용되지 않거나 asset 파일이 없으면 역할별 기본 avatar로 fallback한다: student는 `boy01`, teacher는 `teacherM01`, admin은 `admin`.
 

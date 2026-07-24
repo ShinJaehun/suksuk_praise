@@ -3,7 +3,6 @@ class ClassroomStudentsController < ApplicationController
   include StudentWeeklyDashboardLoader
   include ActionView::RecordIdentifier
 
-  MAX_BULK_STUDENTS = 30
   helper_method :return_to_context
 
   before_action :authenticate_user!
@@ -30,9 +29,10 @@ class ClassroomStudentsController < ApplicationController
     )
     attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys)
     @user = User.new(attrs)
-    if @user.save
-      @classroom.classroom_memberships.create!(user: @user, role: "student")
+    validate_new_student_pin!
+    validate_student_avatar_params!(@user, attrs)
 
+    if @user.errors.empty? && save_student_with_membership
       respond_to do |f|
         f.html { redirect_to create_success_path, notice: t("students.create.success"), status: :see_other }
         f.turbo_stream do
@@ -99,7 +99,13 @@ class ClassroomStudentsController < ApplicationController
 
     student_pin = bulk_student_pin
 
-    ApplicationRecord.transaction do
+    limit_error = nil
+    @classroom.with_lock do
+      if active_student_limit_exceeded?(@student_drafts.size)
+        limit_error = active_student_limit_error
+        next
+      end
+
       @student_drafts.each do |draft|
         attrs = {
           name: draft[:name],
@@ -114,6 +120,7 @@ class ClassroomStudentsController < ApplicationController
         created << user
       end
     end
+    return render_bulk_preview_error(limit_error, {}) if limit_error.present?
 
     @students = @classroom.students.reload
 
@@ -203,11 +210,13 @@ class ClassroomStudentsController < ApplicationController
     authorize @classroom, :manage_members?
     load_student_edit_form!
     attrs = managed_student_params
+    attrs.delete(:avatar_key) if retained_current_avatar_after_gender_change?(attrs)
     if reassign_avatar_key?(attrs)
       attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys_in_classroom(excluding: @student))
     end
+    validate_managed_student_avatar_params!(attrs)
 
-    if @student.update(attrs)
+    if @student.errors.empty? && @student.update(attrs)
       redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 계정 정보를 수정했습니다."
     else
       render :edit, status: :unprocessable_entity
@@ -234,7 +243,32 @@ class ClassroomStudentsController < ApplicationController
 
   def reactivate
     authorize @classroom, :manage_members?
-    student_membership.active!
+    reactivate_error = nil
+
+    @classroom.with_lock do
+      @student.with_lock do
+        membership = student_membership.reload
+
+        if active_student_membership_in_other_classroom?
+          reactivate_error = t("students.reactivate.active_membership_conflict")
+          next
+        end
+
+        if active_student_limit_exceeded?(membership.active? ? 0 : 1)
+          reactivate_error = t("students.reactivate.too_many", count: Classroom::MAX_ACTIVE_STUDENTS)
+          next
+        end
+
+        membership.active! unless membership.active?
+      end
+    end
+
+    if reactivate_error.present?
+      redirect_to classroom_members_path(@classroom),
+        alert: reactivate_error,
+        status: :see_other
+      return
+    end
 
     redirect_to classroom_members_path(@classroom),
       notice: t("students.reactivate.success"),
@@ -364,7 +398,7 @@ class ClassroomStudentsController < ApplicationController
   def bulk_setup_error_message
     return t("students.bulk_create.errors.invalid_count") unless bulk_count_param_valid?(:boy_count) && bulk_count_param_valid?(:girl_count)
     return t("students.bulk_create.errors.empty") if bulk_setup_count.zero?
-    return t("students.bulk_create.errors.too_many", count: MAX_BULK_STUDENTS) if exceeds_bulk_limit?(bulk_setup_count)
+    return active_student_limit_error if active_student_limit_exceeded?(bulk_setup_count)
     return t("students.bulk_create.errors.invalid_pin") unless bulk_student_pin.match?(/\A\d{4}\z/)
 
     nil
@@ -378,8 +412,12 @@ class ClassroomStudentsController < ApplicationController
     params[key].to_s.match?(/\A\d+\z/)
   end
 
-  def exceeds_bulk_limit?(new_count)
-    @classroom.classroom_memberships.student.active.count + new_count > MAX_BULK_STUDENTS
+  def active_student_limit_exceeded?(new_count)
+    @classroom.active_student_memberships_count + new_count > Classroom::MAX_ACTIVE_STUDENTS
+  end
+
+  def active_student_limit_error
+    t("students.bulk_create.errors.too_many", count: Classroom::MAX_ACTIVE_STUDENTS)
   end
 
   def build_student_drafts
@@ -412,22 +450,74 @@ class ClassroomStudentsController < ApplicationController
   def validate_student_drafts(drafts)
     errors = {}
     errors[:base] = t("students.bulk_create.errors.empty") if drafts.empty?
-    errors[:base] = t("students.bulk_create.errors.too_many", count: MAX_BULK_STUDENTS) if exceeds_bulk_limit?(drafts.size)
+    errors[:base] = active_student_limit_error if active_student_limit_exceeded?(drafts.size)
     errors[:base] = t("students.bulk_create.errors.invalid_pin") unless bulk_student_pin.match?(/\A\d{4}\z/)
 
     drafts.each do |draft|
       row_errors = []
       row_errors << t("students.bulk_create.errors.name_required") if draft[:name].blank?
-      row_errors << t("students.bulk_create.errors.invalid_avatar") unless valid_student_avatar?(draft[:gender], draft[:avatar_key])
+      row_errors << t("students.bulk_create.errors.invalid_avatar") unless student_avatar_matches_gender?(draft[:gender], draft[:avatar_key])
       errors[draft[:index]] = row_errors.join(", ") if row_errors.any?
     end
 
     [errors[:base] || errors.values.first, errors.except(:base)]
   end
 
-  def valid_student_avatar?(gender, avatar_key)
+  def student_avatar_matches_gender?(gender, avatar_key)
     User.avatar_keys_for_role("student").include?(avatar_key) &&
       User.avatar_keys_for(gender).include?(avatar_key)
+  end
+
+  def validate_new_student_pin!
+    return if @user.student_pin.to_s.match?(/\A\d{4}\z/)
+
+    @user.errors.add(:student_pin, t("students.create.errors.invalid_pin"))
+  end
+
+  def validate_student_avatar_params!(user, attrs)
+    return if attrs[:gender].blank? || attrs[:avatar_key].blank?
+    return if student_avatar_matches_gender?(attrs[:gender], attrs[:avatar_key])
+
+    user.errors.add(:avatar_key, t("students.create.errors.invalid_avatar"))
+  end
+
+  def validate_managed_student_avatar_params!(attrs)
+    avatar_key = attrs[:avatar_key]
+    return if avatar_key.blank?
+
+    gender = attrs[:gender].presence || @student.gender
+    return if gender.blank?
+    return if student_avatar_matches_gender?(gender, avatar_key)
+
+    @student.errors.add(:avatar_key, t("students.create.errors.invalid_avatar"))
+  end
+
+  def retained_current_avatar_after_gender_change?(attrs)
+    attrs[:gender].present? &&
+      attrs[:gender] != @student.gender &&
+      attrs[:avatar_key].present? &&
+      attrs[:avatar_key] == @student.avatar_key &&
+      !student_avatar_matches_gender?(attrs[:gender], attrs[:avatar_key])
+  end
+
+  def save_student_with_membership
+    saved = false
+
+    @classroom.with_lock do
+      if active_student_limit_exceeded?(1)
+        @user.errors.add(:base, active_student_limit_error)
+        next
+      end
+
+      @user.save!
+      @classroom.classroom_memberships.create!(user: @user, role: "student")
+      saved = true
+    end
+
+    saved
+  rescue ActiveRecord::RecordInvalid => e
+    @user.errors.add(:base, e.record.errors.full_messages.to_sentence) unless e.record == @user
+    false
   end
 
   def render_bulk_setup(error_message: nil, status: :ok)
@@ -460,6 +550,13 @@ class ClassroomStudentsController < ApplicationController
     attrs[:gender].present? &&
       attrs[:gender] != @student.gender &&
       !@student.avatar.attached?
+  end
+
+  def active_student_membership_in_other_classroom?
+    ClassroomMembership.student.active
+      .where(user_id: @student.id)
+      .where.not(classroom_id: @classroom.id)
+      .exists?
   end
 
   def mark_managed_student_messages_read
