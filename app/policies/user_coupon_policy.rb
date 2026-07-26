@@ -13,7 +13,12 @@ class UserCouponPolicy < ApplicationPolicy
       end
 
       # 학생: 본인 것만
-      return scope.where(user_id: user.id) if user.student?
+      if user.student?
+        student_classroom_ids = user.classroom_memberships
+          .where(role: "student", status: "active")
+          .select(:classroom_id)
+        return scope.where(user_id: user.id, classroom_id: student_classroom_ids)
+      end
 
       scope.none
     end

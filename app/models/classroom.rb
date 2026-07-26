@@ -28,7 +28,7 @@ class Classroom < ApplicationRecord
       return none unless user.teacher?
 
       joins(:classroom_memberships)
-        .where(classroom_memberships: { user_id: user.id, role: "teacher", status: "active" })
+        .where(classroom_memberships: { user_id: user.id, role: "teacher" })
         .distinct
     end
 

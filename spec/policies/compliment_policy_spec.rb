@@ -52,6 +52,18 @@ RSpec.describe ComplimentPolicy do
       expect(described_class.new(student, compliment).show?).to eq(true)
     end
 
+    it "rejects an inactive student membership" do
+      student.classroom_memberships.find_by!(classroom: classroom).inactive!
+
+      expect(described_class.new(student, compliment).show?).to eq(false)
+    end
+
+    it "allows an assigned teacher to view an inactive student's past compliment" do
+      student.classroom_memberships.find_by!(classroom: classroom).inactive!
+
+      expect(described_class.new(teacher, compliment).show?).to eq(true)
+    end
+
     it "rejects a teacher outside the classroom" do
       outsider = create(:user, :teacher)
 

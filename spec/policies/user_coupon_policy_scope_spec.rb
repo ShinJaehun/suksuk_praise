@@ -30,6 +30,16 @@ RSpec.describe UserCouponPolicy::Scope do
       expect(resolved).to contain_exactly(first_coupon)
     end
 
+    it "lets an assigned teacher view an inactive student's past coupons" do
+      teacher = create(:user, :teacher)
+      create(:classroom_membership, user: teacher, classroom: first_classroom, role: "teacher")
+      first_membership.inactive!
+
+      resolved = described_class.new(teacher, UserCoupon.all).resolve
+
+      expect(resolved).to contain_exactly(first_coupon)
+    end
+
     it "returns coupons from every classroom assigned to a teacher" do
       teacher = create(:user, :teacher)
       create(:classroom_membership, user: teacher, classroom: first_classroom, role: "teacher")
@@ -53,6 +63,14 @@ RSpec.describe UserCouponPolicy::Scope do
       resolved = described_class.new(first_student, UserCoupon.all).resolve
 
       expect(resolved).to contain_exactly(first_coupon)
+    end
+
+    it "returns no coupons from an inactive student membership" do
+      first_membership.inactive!
+
+      resolved = described_class.new(first_student, UserCoupon.all).resolve
+
+      expect(resolved).to be_empty
     end
 
     it "returns no coupons for a guest" do

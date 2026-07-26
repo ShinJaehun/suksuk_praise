@@ -6,6 +6,7 @@ class ClassroomMembership < ApplicationRecord
   enum :status, { active: "active", inactive: "inactive" }
 
   validate :one_active_classroom_per_student, if: :active_student_membership?
+  validate :teacher_membership_must_be_active
 
   private
 
@@ -21,5 +22,11 @@ class ClassroomMembership < ApplicationRecord
     return unless existing_memberships.exists?
 
     errors.add(:base, :active_student_membership_taken)
+  end
+
+  def teacher_membership_must_be_active
+    return unless teacher? && inactive?
+
+    errors.add(:status, :teacher_must_be_active)
   end
 end

@@ -138,7 +138,12 @@ class Admin::TeachersController < Admin::BaseController
       @teacher.save!
       SchoolMembership.create!(user: @teacher, school: school) if school
       classroom_ids.each do |classroom_id|
-        ClassroomMembership.create!(user: @teacher, classroom_id: classroom_id, role: :teacher)
+        ClassroomMembership.create!(
+          user: @teacher,
+          classroom_id: classroom_id,
+          role: :teacher,
+          status: :active
+        )
       end
     end
     true
@@ -193,7 +198,12 @@ class Admin::TeachersController < Admin::BaseController
       current_memberships.where(classroom_id: current_ids - classroom_ids).find_each(&:destroy!)
     else
       (classroom_ids - current_ids).each do |classroom_id|
-        ClassroomMembership.create!(user: @teacher, classroom_id: classroom_id, role: :teacher)
+        ClassroomMembership.create!(
+          user: @teacher,
+          classroom_id: classroom_id,
+          role: :teacher,
+          status: :active
+        )
       end
     end
   end

@@ -41,7 +41,7 @@
 - 학교 manager가 실제 담당 교사로도 배정된 학급에서는 manager 권한과 기존 담당 교사 권한을 함께 가진다.
 - 일반 teacher는 기존처럼 자신이 `ClassroomMembership(role: teacher)`로 담당하는 학급만 조회·관리한다. 같은 학교 소속이라는 이유만으로 다른 학급에 접근하거나 담당 교사를 변경할 수 없다.
 - teacher의 학교 소속은 `SchoolMembership`으로 관리하며, 현재 교사당 한 학교만 허용한다. 담당 teacher는 반드시 SchoolMembership을 가져야 하고 그 학교는 모든 담당 Classroom의 학교와 같아야 한다. 같은 학교의 여러 학급 담당은 가능하지만 학급 담당 교사 배정은 학급과 같은 학교의 SchoolMembership을 가진 teacher만 허용한다. 학교 manager의 학급 배정은 SchoolMembership을 자동 생성하거나 이동하지 않는다. 학교 manager는 `/schools/:school_id/teachers`에서 자기 학교의 새 teacher를 일반 구성원으로 생성하고 자기 학교 안의 담당 교실만 배정·해제할 수 있다. `bin/rails school_memberships:backfill`은 누락 소속을 멱등하게 보완하고 기존 다른 학교 충돌은 변경하지 않은 채 집계한다.
-- 담당 학급의 기준은 기존 teacher 역할 `ClassroomMembership`이며, 담당 학년은 연결된 Classroom의 `grade`를 통해 계산하고 별도로 저장하지 않는다.
+- 담당 학급의 기준은 teacher 역할 `ClassroomMembership`의 존재 여부이며, 담당 해제는 membership 삭제로 처리한다. teacher membership은 항상 active이고, active/inactive lifecycle은 student membership에만 적용한다. 담당 학년은 연결된 Classroom의 `grade`를 통해 계산하고 별도로 저장하지 않는다.
 - teacher 생성 시 기본 개인 쿠폰 준비는 User 생성 transaction 안에서 동기적으로 수행하며, 생성 후 비동기 보정이 아닌 teacher 생성 불변식으로 취급한다. 전체 admin의 교사 생성에서는 User, 기본 개인 쿠폰, 선택한 SchoolMembership과 teacher ClassroomMembership을 하나의 transaction으로 처리해 어느 하나라도 실패하면 전체 rollback한다.
 - global admin은 `/admin/teachers`에서 선생님 계정과 학교 소속·담당 교실을 통합 관리한다. 학교와 담당 교실의 최종 상태를 명시적으로 함께 선택하며 controller는 조합을 검증한 뒤 기존 담당 해제, SchoolMembership 변경, 새 담당 생성을 한 transaction에서 처리한다. 같은 학교면 manager/member 역할을 유지하고, 학교가 바뀌면 새 학교의 member가 되며, 소속을 제거하면 teacher ClassroomMembership도 함께 제거한다. 이름·이메일·비밀번호·성별·아바타·전역 role은 수정하지 않는다.
 - 해당 학교 manager는 `/schools/:school_id/teachers`에서 자기 학교 소속 선생님을 조회·생성하고 담당 교실 설정 modal을 연다. 해당 학교 교실만 선택하며 다른 학교 담당 교실은 변경하지 않는다. global admin은 이 endpoint를 사용하지 않고 `/admin/teachers`를 사용한다. 학교 manager는 학교 이동·소속 해제·manager 지정/해제·다른 학교 교실 배정을 할 수 없다.
@@ -72,25 +72,10 @@
 - 교실 이름은 최대 50자로 제한한다.
 - teacher/admin은 교실 범위 학생 페이지에서 학생을 조회하고 관리한다.
 - 학생 canonical page는 `GET /classrooms/:classroom_id/students/:id`이다.
-- 학생의 교실 활동 상태는 `User`가 아니라 `ClassroomMembership.status`로 관리하며, 허용값은 `active`, `inactive`, 기본값은 `active`다.
-- student `User`는 전체 시스템에서 active student membership을 최대 하나만 가지며, 과거 학급의 inactive membership은 여러 개 보존할 수 있다. teacher membership에는 이 제한을 적용하지 않는다.
-- inactive 학생을 복구할 때 다른 학급의 active student membership이 있으면 복구를 거부하고 어느 membership도 자동 변경하지 않는다. 명시적인 학생 학급 이동 기능은 아직 제공하지 않는다.
-- `Classroom#students`는 일반 운영 화면에서 사용하는 active 학생 목록이다.
-- teacher 교실 화면, 학생 PIN 로그인 목록, 칭찬 대상, 쿠폰 발급 대상, 새 메시지 생성 대상은 active 학생 기준이다.
-- 학생은 운영 UI에서 기본적으로 삭제하지 않고 현재 교실 membership을 inactive 처리한다.
-- 직접 `DELETE /classrooms/:classroom_id/students/:id` 요청이 들어와도 `User` hard delete 대신 현재 membership을 inactive 처리한다.
-- teacher/admin은 구성원 관리 화면에서 학생을 비활성화하거나 inactive 학생을 복구할 수 있다.
-- 구성원 관리 화면은 active/inactive 학생 membership을 한 목록에 보여준다.
-- 한 교실의 active student membership은 최대 30개까지 허용하며, 개별 생성·여러 학생 자동 생성·inactive 학생 복구에 동일하게 적용한다.
-- inactive 학생은 최대 인원 계산에서 제외하며, 최종 생성·복구 저장 직전 classroom lock 안에서 active 학생 수를 다시 검증한다.
-- 학생 신규 생성에는 4자리 숫자 PIN이 필수이며, student는 Devise email/password 없이 교실 token URL과 PIN으로 로그인한다.
-- inactive 학생은 teacher 기본 교실 화면과 PIN 로그인 목록에서 제외된다.
-- 이미 로그인한 학생이 inactive가 되면 다음 요청에서 로그아웃 후 학생 로그인 화면으로 redirect된다.
-- inactive 학생은 칭찬, 쿠폰 발급, 새 메시지 발신/수신 대상에서 제외된다.
-- inactive 처리 후에도 기존 메시지 thread와 과거 칭찬/쿠폰 기록 조회는 유지된다.
-- global admin은 모든 학급의 학생 데이터를 조회할 수 있다. teacher는 URL에 지정된 classroom의 teacher membership이 있을 때만 active/inactive 학생 상세, 한눈에 보기, 활동 기록과 메시지 기록을 조회할 수 있다. 학교 manager도 실제 담당 teacher가 아니면 학생 데이터에 접근할 수 없다.
-- 담당 teacher/admin은 inactive 학생의 과거 기록을 조회할 수 있으며, inactive 학생 상세에서는 `비활성` badge를 표시하고 칭찬하기, 쿠폰 지급, 새 메시지 작성 UI를 숨긴다. student 본인은 inactive 과거 학급 URL에 접근할 수 없다.
-- 구성원 관리 화면에서는 inactive 학생을 흐리게 표시하고 복구 action을 제공한다.
+- student membership은 active/inactive lifecycle을 사용하고, teacher membership은 존재 여부로 현재 담당을 나타내며 담당 해제 시 삭제한다.
+- inactive 학생은 자기 권한으로 현재 교실 활동을 만들 수 없지만, 담당 teacher/admin은 과거 기록 조회·계정 관리·복구를 수행할 수 있다.
+- 특정 교실 PIN session의 membership이 inactive가 되면 로그아웃하며, active membership 부재만으로 일반 학생 요청을 전역 로그아웃시키지는 않는다.
+- 상세 정책과 권한 불변식은 [`student_membership_lifecycle.md`](../specs/student_membership_lifecycle.md)를 기준으로 한다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
 - teacher/admin은 학생의 name, gender, avatar_key, PIN 등을 관리한다. 학생 `User`에는 email과 Devise password를 저장하지 않는다.
 - teacher/admin은 구성원 관리 화면에서 현재 교실의 active 학생 PIN을 한 번에 재설정할 수 있다. inactive 학생 PIN은 일괄 재설정 대상에서 제외하며 기존 PIN 값은 화면에 표시하지 않는다.
@@ -122,7 +107,7 @@
 - 맞춤 칭찬 생성 시 `Compliment`에 preset 참조와 당시 문구 snapshot을 저장한다. preset 수정·비활성화는 과거 칭찬 로그 문구를 변경하지 않는다.
 - `/compliment_events`는 접근 가능한 교실의 일반 칭찬과 맞춤 칭찬을 같은 목록에서 조회하는 전역 칭찬 로그 화면이다.
 - 칭찬 로그는 일반 단일 교실 teacher에게 유일한 담당 교실을 자동 적용하고, admin·복수 교실 teacher·school manager는 교실 선택 UI를 사용한다.
-- school manager는 manager 권한만으로 학교 전체 칭찬 로그를 볼 수 없고, active teacher membership이 있는 교실만 기존 teacher 범위로 조회한다.
+- school manager는 manager 권한만으로 학교 전체 칭찬 로그를 볼 수 없고, teacher membership이 있는 교실만 기존 teacher 범위로 조회한다.
 - 칭찬 로그는 교실, 교실 선택 또는 자동 선택 후 사용할 수 있는 학생, 기간, 일반/맞춤 칭찬 종류, 칭찬 시각 정렬 필터와 pagination을 제공하며, 맞춤 칭찬 구분은 `reason` snapshot 존재 여부를 기준으로 한다.
 - 칭찬 로그의 기본 기간은 최근 7일이며 기간 계산은 `Compliment#given_at`을 기준으로 한다. pagination은 유효한 filter parameter를 `/compliment_events` 경로에서 보존한다.
 - 각 `Compliment`는 계속 `classroom_id`에 소속되며, 실제 칭찬 생성은 교실 문맥이 필요한 nested `GET /classrooms/:classroom_id/compliments/new`, `POST /classrooms/:classroom_id/compliments`를 사용한다.

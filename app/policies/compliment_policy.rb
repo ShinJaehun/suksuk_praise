@@ -14,8 +14,10 @@ class ComplimentPolicy < ApplicationPolicy
       end
 
       if user&.student?
-        # 학생은 자신이 받은 칭찬만
-        return scope.where(receiver_id: user.id)
+        student_classroom_ids = user.classroom_memberships
+          .where(role: "student", status: "active")
+          .select(:classroom_id)
+        return scope.where(receiver_id: user.id, classroom_id: student_classroom_ids)
       end
 
       scope.none
@@ -51,6 +53,9 @@ class ComplimentPolicy < ApplicationPolicy
   end
 
   def member_of?(classroom)
-    classroom.classroom_memberships.exists?(user_id: user.id)
+    return teacher_of?(classroom) if teacher?
+    return classroom.classroom_memberships.exists?(user_id: user.id, role: "student", status: "active") if student?
+
+    false
   end
 end

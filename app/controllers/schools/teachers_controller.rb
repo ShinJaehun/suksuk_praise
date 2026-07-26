@@ -131,14 +131,16 @@ class Schools::TeachersController < ApplicationController
         .teacher
         .joins(:classroom)
         .where(classrooms: { school_id: @school.id })
-      current_ids = current_memberships.pluck(:classroom_id)
       ids = selected_classroom_ids
 
+      current_ids = current_memberships.pluck(:classroom_id)
+
       (ids - current_ids).each do |classroom_id|
-        ClassroomMembership.find_or_create_by!(
+        ClassroomMembership.create!(
           user_id: @teacher.id,
           classroom_id: classroom_id,
-          role: "teacher"
+          role: "teacher",
+          status: "active"
         )
       end
 
@@ -177,7 +179,10 @@ class Schools::TeachersController < ApplicationController
       if params.key?(:classroom_ids)
         selected_classroom_ids
       else
-        @teacher.classroom_memberships.teacher.joins(:classroom).where(classrooms: { school_id: @school.id }).pluck(:classroom_id)
+        @teacher.classroom_memberships.teacher
+          .joins(:classroom)
+          .where(classrooms: { school_id: @school.id })
+          .pluck(:classroom_id)
       end
     @teacher_classroom_names = @classrooms.select { |classroom| @teacher_classroom_ids.include?(classroom.id) }.map(&:name)
     @teacher_classroom_count = @teacher_classroom_names.size

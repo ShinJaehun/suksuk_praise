@@ -22,6 +22,8 @@ ko:
           attributes:
             base:
               active_student_membership_taken: "이 학생은 다른 학급에서 이미 활동 중입니다."
+            status:
+              teacher_must_be_active: "교사 소속은 비활성화할 수 없습니다."
         coupon_template:
           attributes:
             image:

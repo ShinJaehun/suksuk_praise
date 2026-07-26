@@ -9,8 +9,8 @@ class ClassroomStudentsController < ApplicationController
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_preview, :bulk_create]
   before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :deactivate, :reactivate]
-  before_action :authorize_student_data!, only: [:show, :dashboard, :activity]
   before_action :ensure_active_self_student!, only: [:show, :dashboard, :activity]
+  before_action :authorize_student_data!, only: [:show, :dashboard, :activity]
 
   def new
     @user = User.new

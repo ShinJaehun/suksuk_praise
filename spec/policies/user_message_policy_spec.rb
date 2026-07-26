@@ -14,6 +14,18 @@ RSpec.describe UserMessagePolicy do
     create(:classroom_membership, user: other_student, classroom: create(:classroom), role: "student")
   end
 
+  describe "Scope" do
+    let!(:message) do
+      create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "기록")
+    end
+
+    it "limits a student to messages in an active student classroom" do
+      student.classroom_memberships.find_by!(classroom: classroom).inactive!
+
+      expect(described_class::Scope.new(student, UserMessage.all).resolve).to be_empty
+    end
+  end
+
   describe "#create?" do
     it "allows a teacher to send a managed root message" do
       message = build(:user_message, classroom: classroom, sender: teacher, recipient: student)
@@ -52,6 +64,14 @@ RSpec.describe UserMessagePolicy do
       reply = build(:user_message, classroom: classroom, sender: student, recipient: teacher, parent_message: root, body: "학생 답장")
 
       expect(described_class.new(student, reply).create?).to eq(true)
+    end
+
+    it "rejects a new message from an inactive student membership" do
+      classroom.update!(message_policy: "student_initiated")
+      student.classroom_memberships.find_by!(classroom: classroom).inactive!
+      message = build(:user_message, classroom: classroom, sender: student, recipient: teacher)
+
+      expect(described_class.new(student, message).create?).to eq(false)
     end
 
     it "rejects a student reply when classroom messages are disabled" do
@@ -126,5 +146,15 @@ RSpec.describe UserMessagePolicy do
 
       expect(described_class.new(student, nested_reply).create?).to eq(false)
     end
+  end
+
+  describe "#show?" do
+    it "allows an assigned teacher to view an inactive student's past message" do
+      message = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "과거 기록")
+      student.classroom_memberships.find_by!(classroom: classroom).inactive!
+
+      expect(described_class.new(teacher, message).show?).to eq(true)
+    end
+
   end
 end

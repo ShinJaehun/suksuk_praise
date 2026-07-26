@@ -35,6 +35,13 @@ RSpec.describe ClassroomPolicy do
 
       expect(Pundit.policy_scope!(student, Classroom)).to contain_exactly(classroom)
     end
+
+    it "excludes classrooms with only an inactive student membership" do
+      student = create(:user, :student)
+      create(:classroom_membership, classroom: classroom, user: student, role: :student, status: :inactive)
+
+      expect(Pundit.policy_scope!(student, Classroom)).to be_empty
+    end
   end
 
   describe "#show?" do
@@ -129,6 +136,7 @@ RSpec.describe ClassroomPolicy do
       expect(policy.draw_coupon?).to eq(true)
       expect(policy.destroy?).to eq(false)
     end
+
   end
 
   describe "settings permissions" do

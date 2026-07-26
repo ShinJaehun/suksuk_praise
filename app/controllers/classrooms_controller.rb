@@ -24,7 +24,12 @@ class ClassroomsController < ApplicationController
       .joins(:user)
       .where(classroom_id: classroom_ids, role: "teacher", users: { role: "teacher" })
     @classroom_teacher_counts = teacher_memberships.group(:classroom_id).count
-    @classroom_teacher_previews = classroom_membership_previews(classroom_ids, role: "teacher", user_role: "teacher", limit_per_classroom: 1)
+    @classroom_teacher_previews = classroom_membership_previews(
+      classroom_ids,
+      role: "teacher",
+      user_role: "teacher",
+      limit_per_classroom: 1
+    )
     @classroom_student_counts = ClassroomMembership
       .where(classroom_id: classroom_ids, role: "student", status: "active")
       .group(:classroom_id)
@@ -41,7 +46,10 @@ class ClassroomsController < ApplicationController
       elsif current_user_school_manager?
         classroom_ids.to_set
       elsif current_user.teacher?
-        current_user.classroom_memberships.where(role: "teacher", classroom_id: classroom_ids).pluck(:classroom_id).to_set
+        current_user.classroom_memberships
+          .where(role: "teacher", classroom_id: classroom_ids)
+          .pluck(:classroom_id)
+          .to_set
       else
         Set.new
       end

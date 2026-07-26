@@ -62,6 +62,28 @@ RSpec.describe ClassroomMembership, type: :model do
     expect(memberships).to all(be_persisted)
   end
 
+  it "rejects an inactive teacher membership" do
+    teacher = create(:user, :teacher)
+    membership = build(
+      :classroom_membership,
+      user: teacher,
+      classroom: first_classroom,
+      role: "teacher",
+      status: "inactive"
+    )
+
+    expect(membership).not_to be_valid
+    expect(membership.errors.added?(:status, :teacher_must_be_active)).to eq(true)
+  end
+
+  it "allows both active and inactive student memberships" do
+    active_membership = build(:classroom_membership, user: student, classroom: first_classroom, role: "student", status: "active")
+    inactive_membership = build(:classroom_membership, user: student, classroom: second_classroom, role: "student", status: "inactive")
+
+    expect(active_membership).to be_valid
+    expect(inactive_membership).to be_valid
+  end
+
   it "allows different students to each have an active membership" do
     other_student = create(:user, :student)
     first_membership = create(:classroom_membership, user: student, classroom: first_classroom, role: "student", status: "active")

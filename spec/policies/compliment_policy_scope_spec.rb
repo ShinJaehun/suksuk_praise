@@ -37,7 +37,7 @@ RSpec.describe ComplimentPolicy::Scope do
       expect(resolved).to contain_exactly(visible_compliment)
     end
 
-    it 'returns only compliments received by the student' do
+    it 'returns only compliments received by the student in an active classroom' do
       create(
         :classroom_membership,
         user: student,
@@ -55,7 +55,16 @@ RSpec.describe ComplimentPolicy::Scope do
 
       resolved = described_class.new(student, Compliment.all).resolve
 
-      expect(resolved).to contain_exactly(visible_compliment, received_in_other_classroom)
+      expect(resolved).to contain_exactly(visible_compliment)
+      expect(resolved).not_to include(received_in_other_classroom)
+    end
+
+    it "returns no compliments for an inactive student membership" do
+      student_membership.inactive!
+
+      resolved = described_class.new(student, Compliment.all).resolve
+
+      expect(resolved).to be_empty
     end
 
     it 'returns no compliments for guest' do

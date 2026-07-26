@@ -331,4 +331,5 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).not_to include(school_teachers_path(school))
     expect(response.body).not_to include("담당 학급은 해당 학교의 선생님 관리 화면에서 배정합니다.")
   end
+
 end

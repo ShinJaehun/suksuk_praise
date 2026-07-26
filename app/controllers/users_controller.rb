@@ -59,14 +59,21 @@ class UsersController < ApplicationController
     session_classroom = session_classroom_for(user)
     return session_classroom if session_classroom
 
-    user.classrooms.order(created_at: :asc).first
+    active_student_classrooms_for(user).order(created_at: :asc).first
   end
 
   def session_classroom_for(user)
     classroom_id = session[:student_login_classroom_id]
     return nil if classroom_id.blank?
 
-    user.classrooms.where(id: classroom_id).first
+    active_student_classrooms_for(user).find_by(id: classroom_id)
+  end
+
+  def active_student_classrooms_for(user)
+    Classroom
+      .joins(:classroom_memberships)
+      .where(classroom_memberships: { user_id: user.id, role: "student", status: "active" })
+      .distinct
   end
 
   def teacher_managed_classroom_for(user)
@@ -81,7 +88,7 @@ class UsersController < ApplicationController
   def message_teacher_options
     return User.none unless @user.student?
 
-    classroom_ids = @user.classroom_memberships.where(role: "student").select(:classroom_id)
+    classroom_ids = @user.classroom_memberships.where(role: "student", status: "active").select(:classroom_id)
     User.teacher
       .joins(classroom_memberships: :classroom)
       .where(

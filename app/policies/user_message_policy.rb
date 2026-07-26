@@ -9,7 +9,12 @@ class UserMessagePolicy < ApplicationPolicy
       end
 
       if user&.student?
-        return scope.where("sender_id = :id OR recipient_id = :id", id: user.id)
+        student_classroom_ids = user.classroom_memberships
+          .where(role: "student", status: "active")
+          .select(:classroom_id)
+        return scope
+          .where(classroom_id: student_classroom_ids)
+          .where("sender_id = :id OR recipient_id = :id", id: user.id)
       end
 
       scope.none
@@ -36,7 +41,8 @@ class UserMessagePolicy < ApplicationPolicy
     end
 
     if user&.student?
-      return record.sender_id == user.id || record.recipient_id == user.id
+      return student_in_classroom?(user, record.classroom) &&
+        (record.sender_id == user.id || record.recipient_id == user.id)
     end
 
     false
@@ -87,7 +93,7 @@ class UserMessagePolicy < ApplicationPolicy
     return false unless record.sender_id == user.id
     return false unless record.parent_message.present?
     return false unless record.parent_message.parent_message_id.nil?
-    return false unless student_in_classroom?(user, record.classroom)
+    return false unless student_has_classroom_membership?(user, record.classroom)
     return false unless [record.parent_message.sender_id, record.parent_message.recipient_id].include?(user.id)
     return false unless [record.parent_message.sender_id, record.parent_message.recipient_id].include?(record.recipient_id)
     return false unless record.recipient_id != user.id
@@ -115,6 +121,12 @@ class UserMessagePolicy < ApplicationPolicy
   end
 
   def student_in_classroom?(student, classroom)
+    return false if classroom.blank? || student.blank?
+
+    classroom.classroom_memberships.exists?(user_id: student.id, role: "student", status: "active")
+  end
+
+  def student_has_classroom_membership?(student, classroom)
     return false if classroom.blank? || student.blank?
 
     classroom.classroom_memberships.exists?(user_id: student.id, role: "student")

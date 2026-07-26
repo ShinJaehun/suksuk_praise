@@ -5,18 +5,30 @@
 학생의 교실 활동 상태는 `User`가 아니라 `ClassroomMembership`으로 관리한다.
 운영 화면에서는 학생 계정을 기본적으로 삭제하지 않고, 교실 membership을 비활성화하거나 복구한다.
 
-## Membership 상태
+## Membership 역할별 정책
 
 `ClassroomMembership`에 `status`를 둔다.
 
+### 학생 membership
+
 - 허용값: `active`, `inactive`
 - 기본값: `active`
+- `active`는 학생의 현재 교실 소속을 의미한다.
+- `inactive`는 과거 소속 기록이며 삭제하지 않는다.
 - student `User`는 전체 시스템에서 active student membership을 최대 하나만 가진다.
 - 한 교실의 active student membership은 최대 30개까지 허용한다.
 - inactive student membership은 교실 active 학생 수 계산에서 제외한다.
 - inactive student membership은 과거 학급 이력으로 여러 개 보존할 수 있다.
-- teacher membership에는 active 학급 수 제한을 적용하지 않는다.
+- inactive 학생은 자기 권한으로 현재 교실 기능에 접근하거나 새 메시지, 쿠폰 사용 요청 등 새로운 활동을 만들 수 없다.
+- 담당 teacher는 inactive 학생의 과거 칭찬·쿠폰·메시지 기록을 조회하고 계정 관리와 복구를 수행할 수 있다.
 - 현재 단계에서는 `transferred`, `graduated`, `archived` 같은 상태를 추가하지 않는다.
+
+### 교사 membership
+
+- teacher membership은 존재 여부로 현재 담당 여부를 나타낸다.
+- membership이 존재하면 현재 담당 teacher이며, 담당 해제는 membership 삭제로 처리한다.
+- active/inactive lifecycle을 사용하지 않고 항상 `active` 상태로 저장한다.
+- inactive teacher membership은 모델 validation에서 허용하지 않는다.
 
 `Classroom#students`는 일반 교실 운영에서 사용하는 active 학생 목록을 의미한다.
 inactive 학생은 교사 일반 운영 화면, 칭찬 대상, 쿠폰 추첨 대상, 학생 PIN 로그인 선택 목록,
@@ -50,12 +62,15 @@ transfer service를 만들지 않으며, 기존 active membership과 대상 학�
 `DELETE /classrooms/:classroom_id/students/:id` 요청이 직접 들어와도 `User` hard delete를 수행하지 않는다.
 현재 교실의 student membership을 `inactive`로 변경하는 안전한 동작으로 처리한다.
 
-## 권한
+## 권한 불변식
 
 - 비활성화/복구는 `ClassroomPolicy#manage_members?`를 기준으로 한다.
 - admin은 가능하다.
 - teacher는 해당 classroom의 teacher membership이 있을 때만 가능하다.
 - student는 불가하다.
+- 접근 주체가 학생이면 해당 교실의 active student membership이 필요하다.
+- 관리 대상이 학생이면 inactive membership도 과거 기록 조회·계정 관리·복구 대상으로 허용한다.
+- 접근 주체가 teacher이면 해당 교실의 teacher membership 존재가 필요하다.
 
 학생 상세, 한눈에 보기, 활동 기록과 메시지 기록은 URL에 지정된 classroom을 기준으로 권한을 확인한다.
 global admin은 모든 학급에 접근할 수 있고, teacher는 해당 classroom의 teacher membership이 있을 때만
@@ -68,13 +83,14 @@ global admin은 모든 학급에 접근할 수 있고, teacher는 해당 classro
 - 복구한 경우: 학생을 다시 운영 대상으로 복구했다는 취지로 안내한다.
 - active 학생 PIN을 일괄 재설정하는 경우: 현재 교실의 활성 학생 PIN만 변경하며 inactive 학생은 변경하지 않는다는 취지로 안내한다.
 
-## 이미 로그인한 inactive 학생
+## 학생 session
 
 inactive 학생은 PIN 로그인 목록과 로그인 검증에서 제외한다.
 
-학생이 로그인한 뒤 membership이 inactive로 바뀐 경우에는 다음 요청에서 active membership을
-확인한다. 유효한 active membership이 없으면 학생 세션을 종료하고 학생 로그인 화면으로
-redirect한다.
+특정 교실 PIN 로그인 session이 설정된 학생은 해당 session 교실의 membership이 inactive로
+바뀌면 다음 요청에서 로그아웃하고 그 교실의 학생 로그인 화면으로 redirect한다.
+일반 학생 요청 전체를 active membership 부재만으로 전역 로그아웃시키지는 않으며,
+각 controller와 policy가 요청별 접근 권한을 판단한다.
 
 ## 구현 원칙
 

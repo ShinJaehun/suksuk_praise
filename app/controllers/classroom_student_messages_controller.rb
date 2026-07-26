@@ -5,8 +5,8 @@ class ClassroomStudentMessagesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_classroom
   before_action :set_student
-  before_action :authorize_student_data!
   before_action :ensure_active_self_student!, only: :index
+  before_action :authorize_student_data!
   before_action :ensure_active_student!, only: :create
 
   def index

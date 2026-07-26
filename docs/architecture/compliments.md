@@ -31,13 +31,14 @@ end
 
 ### teacher
 - 자신의 교실 학생에게 칭찬 생성 가능
+- 담당 교실의 inactive 학생이 받은 과거 칭찬은 조회 가능
 
 ### admin
 - 전체 조회/관리 가능(정책에 따라)
 
 ### student
 - 직접 칭찬 생성 불가
-- 본인 관련 칭찬 결과는 조회 가능 범위 내에서만 접근
+- active student membership이 있는 교실에서 본인이 받은 칭찬만 접근 가능
 
 ---
 
@@ -58,6 +59,7 @@ end
 - 칭찬은 교실(context)을 가진다.
 - giver / receiver / classroom 관계가 일관되어야 한다.
 - 권한 없는 사용자는 칭찬 생성 불가
+- 새 칭찬 대상은 active 학생으로 제한하며, inactive 학생의 과거 칭찬 기록은 보존한다.
 - 동일 요청의 짧은 시간 내 중복 생성은 방지
 - 칭찬 생성과 points 증가는 함께 처리되어야 한다.
 - 맞춤 칭찬도 같은 생성 transaction 안에서 `Compliment` 생성과 points 증가를 처리한다.
@@ -68,7 +70,7 @@ end
 - `/compliment_events` 전역 칭찬 로그는 접근 가능한 교실의 일반 칭찬과 맞춤 칭찬을 같은 목록에서 최신순으로 보여준다.
 - 칭찬 로그의 맞춤 칭찬 구분은 `compliment_preset_id`가 아니라 `reason` snapshot 존재 여부를 기준으로 한다.
 - 칭찬 로그는 일반 단일 교실 teacher에게 유일한 담당 교실을 자동 적용하고, admin·복수 교실 teacher·school manager는 교실 선택 UI를 사용한다.
-- school manager는 manager 권한만으로 학교 전체 칭찬 로그를 볼 수 없고, active teacher membership이 있는 교실만 기존 teacher 범위로 조회한다.
+- school manager는 manager 권한만으로 학교 전체 칭찬 로그를 볼 수 없고, teacher membership이 있는 교실만 기존 teacher 범위로 조회한다.
 - 칭찬 로그는 교실 필터, 교실 선택 또는 자동 선택 후 사용할 수 있는 학생 필터, 기간 필터, 일반/맞춤 칭찬 종류 필터, 칭찬 시각 정렬, pagination을 제공한다.
 - 칭찬 로그의 기본 기간은 최근 7일이며 기간 계산은 `Compliment#given_at`을 기준으로 한다.
 - 칭찬 로그 정렬은 기본 최신순 `given_at DESC, id DESC`이고 오래된순은 `given_at ASC, id ASC`으로 tie-breaker를 유지한다.
