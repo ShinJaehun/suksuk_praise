@@ -17,7 +17,9 @@
         student_active: @student_active_in_classroom %>
 
   <% if @can_issue_coupon %>
-    <%= turbo_frame_tag dom_id(@user, :coupon_assignment), class: "block empty:hidden" %>
+    <%= turbo_frame_tag dom_id(@user, :coupon_assignment),
+          src: (@open_coupon_assignment ? coupon_assignment_classroom_student_path(@classroom, @user) : nil),
+          class: "block empty:hidden scroll-mt-24" %>
   <% end %>
 
   <% if !current_user.student? && @pending_coupon_use_request_count.positive? %>

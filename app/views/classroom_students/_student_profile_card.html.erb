@@ -82,10 +82,22 @@
                     class: "inline-flex items-center rounded-lg border border-amber-400 bg-amber-300 px-3 py-2 text-sm font-semibold text-amber-950 shadow-sm transition hover:bg-amber-400" %>
             <% end %>
             <% if can_issue_coupon %>
-              <%= link_to t("students.show.coupon_assignment.title"),
-                    coupon_assignment_classroom_student_path(classroom, user),
-                    data: { turbo_frame: dom_id(user, :coupon_assignment) },
-                    class: "inline-flex items-center rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700" %>
+              <% if current_section == :coupons %>
+                <%= link_to t("students.show.coupon_assignment.title"),
+                      coupon_assignment_classroom_student_path(classroom, user),
+                      data: { turbo_frame: dom_id(user, :coupon_assignment) },
+                      class: "inline-flex items-center rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700" %>
+              <% else %>
+                <%= link_to t("students.show.coupon_assignment.title"),
+                      classroom_student_path(
+                        classroom,
+                        user,
+                        open_coupon_assignment: "1",
+                        anchor: dom_id(user, :coupon_assignment)
+                      ),
+                      data: { turbo_frame: "_top" },
+                      class: "inline-flex items-center rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700" %>
+              <% end %>
             <% end %>
             <%= link_to t("students.show.actions.back_to_classroom"),
                   classroom_path(classroom),

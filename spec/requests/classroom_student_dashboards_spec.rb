@@ -1,6 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Classroom student dashboards", type: :request do
+  include ActionView::RecordIdentifier
   include ActiveSupport::Testing::TimeHelpers
 
   let(:classroom) { create(:classroom, name: "대상 교실") }
@@ -37,7 +38,13 @@ RSpec.describe "Classroom student dashboards", type: :request do
     expect(response.body).to include(student.name)
     expect(response.body).to include(classroom.name)
     expect(response.body).to include("한눈에 보기")
-    expect(response.body).not_to include("쿠폰 지급")
+    profile_card = document.at_css("[data-student-profile-card]")
+    assignment_link = profile_card.at_css("a[data-turbo-frame='_top']")
+    assignment_uri = URI.parse(assignment_link["href"])
+    expect(assignment_link.text).to include("쿠폰 지급")
+    expect(assignment_uri.path).to eq(classroom_student_path(classroom, student))
+    expect(Rack::Utils.parse_nested_query(assignment_uri.query)).to include("open_coupon_assignment" => "1")
+    expect(assignment_uri.fragment).to eq(dom_id(student, :coupon_assignment))
     expect(response.body).not_to include("쿠폰 뽑기")
     expect(response.body).not_to include("선택한 쿠폰 지급")
     expect(response.body).to include("2026.04.06 ~ 2026.04.10")

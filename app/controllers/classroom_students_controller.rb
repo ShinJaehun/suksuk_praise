@@ -146,6 +146,7 @@ class ClassroomStudentsController < ApplicationController
   def show
     @user = @student
     load_student_profile_permissions!
+    @open_coupon_assignment = @can_issue_coupon && params[:open_coupon_assignment] == "1"
     read_count = @student_messages_enabled ? mark_managed_student_messages_read : 0
 
     load_user_show_data!(
@@ -155,7 +156,6 @@ class ClassroomStudentsController < ApplicationController
       recent_in_classroom: true
     )
     @pending_coupon_use_request_count = @pending_coupon_use_requests_by_coupon_id.size
-    @can_issue_coupon = @can_draw_coupon && @student_active_in_classroom
 
     broadcast_student_card_alerts_for(@classroom, @student) if read_count.positive?
 
@@ -570,6 +570,7 @@ class ClassroomStudentsController < ApplicationController
     @student_active_in_classroom = active_student_in_classroom?
     @can_create_compliment = policy(@classroom).create_compliment? && @student_active_in_classroom
     @can_draw_coupon = policy(@classroom).draw_coupon?
+    @can_issue_coupon = @can_draw_coupon && @student_active_in_classroom
     @student_messages_enabled = @classroom.student_messages_enabled?
   end
 
