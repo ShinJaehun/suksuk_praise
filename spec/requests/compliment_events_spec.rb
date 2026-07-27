@@ -554,14 +554,14 @@ RSpec.describe 'Compliment events', type: :request do
     end
   end
 
-  it 'shows the frequent compliment link to teachers and admins without classroom inference' do
+  it 'shows the compliment phrase management link to teachers and admins without classroom inference' do
     [teacher, create(:user, :teacher), create(:user, :admin)].each do |user|
       sign_in user
       get root_path
       follow_redirect! if response.redirect?
 
       expect(response.body).to include(compliment_templates_path)
-      expect(response.body).to include('자주 쓰는 칭찬')
+      expect(response.body).to include(I18n.t('navigation.compliment_phrase_management'))
       expect(response.body).not_to include('/compliment_presets')
       sign_out user
     end
@@ -570,7 +570,7 @@ RSpec.describe 'Compliment events', type: :request do
     get root_path
     follow_redirect! if response.redirect?
 
-    expect(response.body).not_to include('자주 쓰는 칭찬')
+    expect(response.body).not_to include(I18n.t('navigation.compliment_phrase_management'))
     expect(response.body).not_to include(compliment_templates_path)
   end
 

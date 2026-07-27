@@ -467,16 +467,19 @@ RSpec.describe 'Classroom members', type: :request do
 
       get classroom_edit_member_student_pin_path(classroom)
 
+      document = Nokogiri::HTML(response.body)
+      pin_input = document.at_css('input[name="student_pin"]')
+
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('활성 학생 PIN 재설정')
       expect(response.body).to include('새 PIN')
       expect(response.body).to include('PIN 재설정 적용')
       expect(response.body).to include(classroom_member_student_pin_path(classroom))
-      expect(response.body).to include('name="student_pin"')
-      expect(response.body).to include('type="password"')
+      expect(pin_input).not_to be_nil
+      expect(pin_input['type']).to eq('password')
+      expect(pin_input['value'].to_s).to be_empty
       expect(response.body).to include('type="submit"')
       expect(response.body).to include('data-testid="active-student-pin-reset-submit"')
-      expect(response.body).not_to include('1234')
     end
 
     it 'lets a classroom teacher reset active student PINs without changing inactive students' do
