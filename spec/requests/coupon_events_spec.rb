@@ -63,6 +63,18 @@ RSpec.describe 'Coupon events', type: :request do
     expect(frame.at_css("[data-student-activity-note-panel]")).to be_nil
   end
 
+  it "keeps an inactive teacher visible as a past event actor" do
+    event = create(:coupon_event, actor: teacher, classroom: classroom)
+    teacher.update!(active: false)
+    sign_in create(:user, :admin)
+
+    get coupon_events_path(period: "all_time")
+
+    item = document.at_css(%([data-activity-source="CouponEvent"][data-activity-source-id="#{event.id}"]))
+    expect(item).to be_present
+    expect(item.text).to include(teacher.name)
+  end
+
   it 'shows source-scoped note controls and existing notes' do
     other_teacher = create(:user, :teacher, name: "다른 교사")
     create(:classroom_membership, classroom: classroom, user: other_teacher, role: "teacher")

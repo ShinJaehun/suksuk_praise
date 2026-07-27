@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   helper_method :teacher_nav_classrooms
   
   before_action :configure_permitted_parameters, if: :devise_controller?
+  before_action :expire_inactive_teacher_session
   before_action :expire_student_session_if_inactive
 
   def after_sign_in_path_for(resource_or_scope)
@@ -44,10 +45,17 @@ class ApplicationController < ActionController::Base
   private
 
   def teacher_nav_classrooms
-    return [] unless current_user&.teacher?
+    return [] unless current_user&.active_teacher?
     return @teacher_nav_classrooms if defined?(@teacher_nav_classrooms)
 
     @teacher_nav_classrooms = current_user.classroom_memberships.teacher.includes(:classroom).map(&:classroom)
+  end
+
+  def expire_inactive_teacher_session
+    return unless current_user&.teacher? && current_user.inactive?
+
+    sign_out(:user)
+    redirect_to new_user_session_path, alert: t("devise.failure.inactive")
   end
 
   def broadcast_student_card_alerts_for(classroom, student)

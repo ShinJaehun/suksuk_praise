@@ -126,4 +126,24 @@ RSpec.describe User, type: :model do
       expect(student.encrypted_password).to eq("")
     end
   end
+
+  describe "teacher account status" do
+    it "defaults to active and exposes status scopes and predicates" do
+      teacher = create(:user, :teacher)
+      inactive_teacher = create(:user, :teacher, active: false)
+
+      expect(teacher).to be_active
+      expect(teacher).to be_active_teacher
+      expect(inactive_teacher).to be_inactive
+      expect(described_class.active).to include(teacher)
+      expect(described_class.inactive).to include(inactive_teacher)
+    end
+
+    it "blocks only inactive teachers from Devise authentication" do
+      expect(build(:user, :teacher, active: false).active_for_authentication?).to eq(false)
+      expect(build(:user, :teacher).active_for_authentication?).to eq(true)
+      expect(build(:user, :student).active_for_authentication?).to eq(true)
+      expect(build(:user, :admin).active_for_authentication?).to eq(true)
+    end
+  end
 end

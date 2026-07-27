@@ -22,7 +22,7 @@ class ClassroomsController < ApplicationController
     classroom_ids = @classrooms.map(&:id)
     teacher_memberships = ClassroomMembership
       .joins(:user)
-      .where(classroom_id: classroom_ids, role: "teacher", users: { role: "teacher" })
+      .where(classroom_id: classroom_ids, role: "teacher", users: { role: "teacher", active: true })
     @classroom_teacher_counts = teacher_memberships.group(:classroom_id).count
     @classroom_teacher_previews = classroom_membership_previews(
       classroom_ids,
@@ -45,7 +45,7 @@ class ClassroomsController < ApplicationController
         classroom_ids.to_set
       elsif current_user_school_manager?
         classroom_ids.to_set
-      elsif current_user.teacher?
+      elsif current_user.active_teacher?
         current_user.classroom_memberships
           .where(role: "teacher", classroom_id: classroom_ids)
           .pluck(:classroom_id)
@@ -62,7 +62,7 @@ class ClassroomsController < ApplicationController
     @can_manage_classroom_members = policy(@classroom).manage_members?
     @can_refresh_compliment_king = policy(@classroom).refresh_compliment_king?
     @students = @classroom.students.order(created_at: :asc)
-    @homeroom_teachers = User.teacher
+    @homeroom_teachers = User.teacher.active
       .joins(:classroom_memberships)
       .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
       .with_attached_avatar
@@ -487,6 +487,7 @@ class ClassroomsController < ApplicationController
     membership_scope = ClassroomMembership.where(classroom_id: classroom_ids, role: role)
     membership_scope = membership_scope.where(status: status) if status
     membership_scope = membership_scope.joins(:user).where(users: { role: user_role }) if user_role
+    membership_scope = membership_scope.where(users: { active: true }) if user_role == "teacher"
 
     ranked_membership_ids = ClassroomMembership
       .from(

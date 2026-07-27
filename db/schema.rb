@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_27_025137) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_27_063110) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -268,8 +268,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_27_025137) do
     t.string "student_pin_digest"
     t.string "gender"
     t.string "avatar_key"
+    t.boolean "active", default: true, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["role", "active"], name: "index_users_on_role_and_active"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

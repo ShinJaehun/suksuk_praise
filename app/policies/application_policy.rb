@@ -39,7 +39,7 @@ class ApplicationPolicy
   end
 
   def teacher?
-    user&.teacher?
+    user&.active_teacher?
   end
 
   def student?

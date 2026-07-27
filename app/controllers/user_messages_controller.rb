@@ -109,7 +109,7 @@ class UserMessagesController < ApplicationController
   def classroom_teachers_for(classroom)
     return User.none if classroom.blank?
 
-    User.teacher
+    User.teacher.active
       .joins(:classroom_memberships)
       .where(classroom_memberships: { classroom_id: classroom.id, role: "teacher" })
       .distinct
@@ -152,7 +152,7 @@ class UserMessagesController < ApplicationController
 
   def message_teacher_options
     classroom_ids = current_user.classroom_memberships.where(role: "student", status: "active").select(:classroom_id)
-    User.teacher
+    User.teacher.active
       .joins(classroom_memberships: :classroom)
       .where(
         classrooms: { message_policy: "student_initiated" },

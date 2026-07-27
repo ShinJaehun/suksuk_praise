@@ -134,6 +134,43 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).not_to include('비활성 제외 학생 avatar')
   end
 
+  it "counts and previews only active teachers on the classrooms index" do
+    classroom = create(:classroom, school: school, name: "운영 교사 학급")
+    active_teacher = create(:user, :teacher, name: "활성 담당 교사")
+    inactive_teacher = create(:user, :teacher, name: "비활성 담당 교사", active: false)
+    create(:classroom_membership, classroom: classroom, user: active_teacher, role: :teacher)
+    create(:classroom_membership, classroom: classroom, user: inactive_teacher, role: :teacher)
+    sign_in admin
+
+    get classrooms_path
+
+    card = Nokogiri::HTML(response.body)
+      .at_xpath("//h2[normalize-space()='#{classroom.name}']/ancestor::article[1]")
+    expect(card.text).to include(active_teacher.name)
+    expect(card.text).not_to include(inactive_teacher.name, "외 1명")
+
+    inactive_teacher.update!(active: true)
+    get classrooms_path
+
+    card = Nokogiri::HTML(response.body)
+      .at_xpath("//h2[normalize-space()='#{classroom.name}']/ancestor::article[1]")
+    expect(card.text).to include(active_teacher.name, "외 1명")
+  end
+
+  it "shows only active homeroom teachers on the classroom page" do
+    classroom = create(:classroom, school: school)
+    active_teacher = create(:user, :teacher, name: "활성 담임")
+    inactive_teacher = create(:user, :teacher, name: "비활성 담임", active: false)
+    create(:classroom_membership, classroom: classroom, user: active_teacher, role: :teacher)
+    create(:classroom_membership, classroom: classroom, user: inactive_teacher, role: :teacher)
+    sign_in admin
+
+    get classroom_path(classroom)
+
+    expect(response.body).to include(active_teacher.name)
+    expect(response.body).not_to include(inactive_teacher.name)
+  end
+
   it 'treats an invalid admin classroom school filter as the full list' do
     classroom = create(:classroom, school: school, name: '새싹 학급')
     other_classroom = create(:classroom, school: create(:school), name: '다른 학급')

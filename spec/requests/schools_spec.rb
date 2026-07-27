@@ -43,6 +43,32 @@ RSpec.describe 'School workspaces', type: :request do
     expect(other_school_card.at_css(".bg-violet-500")).to be_present
   end
 
+  it "counts and names only active teachers on the school index" do
+    active_manager = manager
+    inactive_manager = create(
+      :school_membership,
+      :manager,
+      school: school,
+      user: create(:user, :teacher, name: "비활성 관리자", active: false)
+    ).user
+    create(:school_membership, school: school, user: create(:user, :teacher, active: false))
+    sign_in admin
+
+    get schools_path
+
+    card = Nokogiri::HTML(response.body)
+      .at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
+    expect(card.text).to include("소속 교사 2명", active_manager.name)
+    expect(card.text).not_to include(inactive_manager.name, "소속 교사 4명")
+
+    inactive_manager.update!(active: true)
+    get schools_path
+
+    card = Nokogiri::HTML(response.body)
+      .at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
+    expect(card.text).to include("소속 교사 3명", inactive_manager.name)
+  end
+
   it 'redirects a member or manager index to their only school without exposing others' do
     [member, manager].each do |teacher|
       sign_in teacher

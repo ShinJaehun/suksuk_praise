@@ -18,7 +18,7 @@ class CouponUseRequestPolicy < ApplicationPolicy
     return false unless user
     return true if user.admin?
 
-    user.teacher? && ClassroomMembership.exists?(
+    user.active_teacher? && ClassroomMembership.exists?(
       classroom_id: record.classroom_id,
       user_id: user.id,
       role: "teacher"

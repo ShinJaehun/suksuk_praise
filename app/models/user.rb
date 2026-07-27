@@ -34,6 +34,8 @@ class User < ApplicationRecord
   validates :student_pin, format: { with: /\A\d{4}\z/, message: "must be 4 digits" }, allow_blank: true
 
   enum role: { student: "student", teacher: "teacher", admin: "admin" }
+  scope :active, -> { where(active: true) }
+  scope :inactive, -> { where(active: false) }
   has_one_attached :avatar
 
   before_validation :clear_student_devise_credentials, if: :student?
@@ -85,6 +87,22 @@ class User < ApplicationRecord
 
   def student_pin_configured?
     student_pin_digest.present?
+  end
+
+  def inactive?
+    !active?
+  end
+
+  def active_teacher?
+    teacher? && active?
+  end
+
+  def active_for_authentication?
+    super && (!teacher? || active?)
+  end
+
+  def inactive_message
+    teacher? && inactive? ? :inactive : super
   end
 
   def default_student_pin?

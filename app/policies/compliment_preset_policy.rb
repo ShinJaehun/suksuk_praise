@@ -1,7 +1,7 @@
 class ComplimentPresetPolicy < ApplicationPolicy
   class Scope < ApplicationPolicy::Scope
     def resolve
-      return scope.none unless user&.teacher? || user&.admin?
+      return scope.none unless user&.active_teacher? || user&.admin?
 
       scope.where(user_id: user.id)
     end

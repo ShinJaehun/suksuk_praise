@@ -5,7 +5,7 @@ class UserCouponPolicy < ApplicationPolicy
 
       return scope.all if user.admin?
 
-      if user.teacher?
+      if user.active_teacher?
         teacher_classroom_ids = ClassroomMembership
           .where(user_id: user.id, role: "teacher")
           .select(:classroom_id)

@@ -3,7 +3,7 @@ class CouponEventsController < ApplicationController
 
   def index
     authorize CouponEvent
-    current_user.classroom_memberships.load if current_user.teacher?
+    current_user.classroom_memberships.load if current_user.active_teacher?
 
     # 드롭다운 데이터 준비
     @classrooms = policy_scope(Classroom).select(:id, :name).order(:name)

@@ -10,12 +10,12 @@ class SchoolsController < ApplicationController
     @schools = policy_scope(School).order(:name, :id).load
     authorize School
 
-    redirect_to school_path(@schools.first) and return if current_user.teacher? && @schools.one?
+    redirect_to school_path(@schools.first) and return if current_user.active_teacher? && @schools.one?
 
     school_ids = @schools.map(&:id)
     @classroom_counts = Classroom.where(school_id: school_ids).group(:school_id).count
-    @teacher_counts = SchoolMembership.where(school_id: school_ids).group(:school_id).count
-    @managers_by_school_id = SchoolMembership.manager.includes(:user).where(school_id: school_ids).group_by(&:school_id)
+    @teacher_counts = SchoolMembership.joins(:user).where(school_id: school_ids, users: { active: true }).group(:school_id).count
+    @managers_by_school_id = SchoolMembership.manager.joins(:user).includes(:user).where(school_id: school_ids, users: { active: true }).group_by(&:school_id)
     prepare_public_holiday_sync_years if current_user.admin?
   end
 

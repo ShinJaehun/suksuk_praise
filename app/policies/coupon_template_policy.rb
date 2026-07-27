@@ -22,15 +22,15 @@ class CouponTemplatePolicy < ApplicationPolicy
   end
 
   def index?
-    user.admin? || user.teacher?
+    user.admin? || user.active_teacher?
   end
 
   def library?
-    user.admin? || user.teacher?
+    user.admin? || user.active_teacher?
   end
 
   def create?
-    user.admin? || user.teacher?
+    user.admin? || user.active_teacher?
   end
 
   def update?
@@ -46,7 +46,7 @@ class CouponTemplatePolicy < ApplicationPolicy
   end
 
   def adopt?
-    user.admin? || user.teacher?
+    user.admin? || user.active_teacher?
   end
 
   def bump_weight?
@@ -54,7 +54,7 @@ class CouponTemplatePolicy < ApplicationPolicy
   end
 
   def rebalance_equal?
-    user.admin? || user.teacher?
+    user.admin? || user.active_teacher?
   end
 
   private

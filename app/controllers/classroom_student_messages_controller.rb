@@ -174,7 +174,7 @@ class ClassroomStudentMessagesController < ApplicationController
   def student_message_teacher_options
     return User.none unless current_user == @student && @classroom.student_can_start_messages?
 
-    User.teacher
+    User.teacher.active
       .joins(:classroom_memberships)
       .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
       .distinct
@@ -182,7 +182,7 @@ class ClassroomStudentMessagesController < ApplicationController
   end
 
   def mark_managed_student_messages_read
-    return 0 unless current_user.admin? || current_user.teacher?
+    return 0 unless current_user.admin? || current_user.active_teacher?
 
     mark_unread_student_messages_read_for(@classroom, @student)
   end

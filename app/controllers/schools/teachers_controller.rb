@@ -2,11 +2,12 @@ class Schools::TeachersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_school
   before_action :authorize_school_teacher_management
-  before_action :set_teacher, only: %i[edit update]
+  before_action :set_teacher, only: %i[edit update deactivate reactivate]
 
   layout -> { turbo_frame_request? ? false : "application" }
 
   def index
+    @teacher_status = params[:status].presence_in(%w[active inactive all]) || "active"
     @teacher_rows = teacher_rows
   end
 
@@ -52,6 +53,16 @@ class Schools::TeachersController < ApplicationController
     end
   end
 
+  def deactivate
+    authorize @teacher, :deactivate_teacher?
+    update_teacher_status(false)
+  end
+
+  def reactivate
+    authorize @teacher, :reactivate_teacher?
+    update_teacher_status(true)
+  end
+
   private
 
   def set_school
@@ -73,6 +84,7 @@ class Schools::TeachersController < ApplicationController
       .includes(user: [{ avatar_attachment: :blob }, { classroom_memberships: :classroom }])
       .order(:role, :id)
       .select { |membership| membership.user.teacher? }
+      .select { |membership| @teacher_status == "all" || membership.user.active? == (@teacher_status == "active") }
       .map do |membership|
         teacher = membership.user
         classrooms = school_teacher_classrooms(teacher)
@@ -102,6 +114,16 @@ class Schools::TeachersController < ApplicationController
 
   def teacher_params
     params.require(:user).permit(:name, :email, :password, :password_confirmation, :gender, :avatar_key)
+  end
+
+  def update_teacher_status(active)
+    if @teacher.update(active: active, remember_created_at: nil)
+      redirect_to school_teachers_path(@school, status: params[:status]),
+        notice: t(active ? "teacher_status.reactivated" : "teacher_status.deactivated"),
+        status: :see_other
+    else
+      redirect_to school_teachers_path(@school), alert: t("teacher_status.failure"), status: :see_other
+    end
   end
 
   def avatar_keys_for_gender(gender)

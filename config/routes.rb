@@ -88,7 +88,10 @@ Rails.application.routes.draw do
   resources :compliment_templates, except: %i[show new]
 
   resources :schools, only: %i[index show edit update] do
-    resources :teachers, only: %i[index new create edit update], module: :schools
+    resources :teachers, only: %i[index new create edit update], module: :schools do
+      patch :deactivate, on: :member
+      patch :reactivate, on: :member
+    end
     resources :school_closures, except: %i[index show]
   end
 
@@ -140,7 +143,10 @@ Rails.application.routes.draw do
   namespace :admin do
     root to: redirect("/classrooms")
 
-    resources :teachers, only: [:index, :new, :create, :edit, :update]
+    resources :teachers, only: [:index, :new, :create, :edit, :update] do
+      patch :deactivate, on: :member
+      patch :reactivate, on: :member
+    end
     resources :public_holidays, only: [] do
       post :sync, on: :collection
     end

@@ -3,7 +3,7 @@ class UserMessagePolicy < ApplicationPolicy
     def resolve
       return scope.all if user&.admin?
 
-      if user&.teacher?
+      if user&.active_teacher?
         teacher_classroom_ids = user.classroom_memberships.where(role: "teacher").pluck(:classroom_id)
         return scope.where(classroom_id: teacher_classroom_ids)
       end
@@ -25,7 +25,7 @@ class UserMessagePolicy < ApplicationPolicy
     return false unless record.classroom&.student_messages_enabled?
 
     return admin_message_to_student? if user&.admin?
-    return teacher_message_to_managed_student? if user&.teacher?
+    return teacher_message_to_managed_student? if user&.active_teacher?
     return student_message_to_classroom_teacher? if user&.student?
 
     false
@@ -34,7 +34,7 @@ class UserMessagePolicy < ApplicationPolicy
   def show?
     return true if user&.admin?
 
-    if user&.teacher?
+    if user&.active_teacher?
       return false unless record.classroom.present?
 
       return teacher_manages_classroom?(record.classroom)

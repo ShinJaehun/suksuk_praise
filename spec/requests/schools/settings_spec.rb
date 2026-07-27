@@ -29,6 +29,21 @@ RSpec.describe "School settings", type: :request do
     expect(response.body).not_to include("Translation missing")
   end
 
+  it "excludes inactive teachers from manager candidates" do
+    active_candidate = member
+    inactive_candidate = create(
+      :school_membership,
+      school: school,
+      user: create(:user, :teacher, name: "비활성 후보", active: false)
+    ).user
+    sign_in admin
+
+    get edit_school_path(school)
+
+    expect(response.body).to include(active_candidate.name)
+    expect(response.body).not_to include(inactive_candidate.name)
+  end
+
   it "updates the name and refreshes the overview for Turbo" do
     manager
     sign_in admin

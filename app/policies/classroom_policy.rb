@@ -3,12 +3,12 @@ class ClassroomPolicy < ApplicationPolicy
     def resolve
       return scope.all if user&.admin?
 
-      if user&.teacher? && user.school_membership&.manager?
+      if user&.active_teacher? && user.school_membership&.manager?
         return scope.where(school_id: user.school_membership.school_id)
       end
 
       # Teachers can see only their classrooms
-      if user&.teacher?
+      if user&.active_teacher?
         return scope.joins(:classroom_memberships)
                     .where(classroom_memberships: { user_id: user.id, role: 'teacher' })
                     .distinct
@@ -98,7 +98,7 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def teacher_of?(classroom)
-    return false unless user&.teacher?
+    return false unless user&.active_teacher?
 
     classroom.classroom_memberships.exists?(user_id: user.id, role: 'teacher')
   end

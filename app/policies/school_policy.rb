@@ -2,7 +2,7 @@ class SchoolPolicy < ApplicationPolicy
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.all if user&.admin?
-      return scope.where(id: user.school_membership.school_id) if user&.teacher? && user.school_membership
+      return scope.where(id: user.school_membership.school_id) if user&.active_teacher? && user.school_membership
 
       scope.none
     end

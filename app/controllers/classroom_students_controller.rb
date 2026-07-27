@@ -560,7 +560,7 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def mark_managed_student_messages_read
-    return 0 unless current_user.admin? || current_user.teacher?
+    return 0 unless current_user.admin? || current_user.active_teacher?
 
     mark_unread_student_messages_read_for(@classroom, @student)
   end

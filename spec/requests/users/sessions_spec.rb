@@ -1,29 +1,29 @@
-require "rails_helper"
+require 'rails_helper'
 
-RSpec.describe "Users::Sessions", type: :request do
-  let(:teacher) { create(:user, :teacher, password: "password123") }
-  let(:admin) { create(:user, :admin, password: "password123") }
-  let(:student) { create(:user, :student, student_pin: "1234") }
+RSpec.describe 'Users::Sessions', type: :request do
+  let(:teacher) { create(:user, :teacher, password: 'password123') }
+  let(:admin) { create(:user, :admin, password: 'password123') }
+  let(:student) { create(:user, :student, student_pin: '1234') }
   let(:classroom) { create(:classroom) }
 
   before do
-    create(:classroom_membership, classroom: classroom, user: student, role: "student")
+    create(:classroom_membership, classroom: classroom, user: student, role: 'student')
   end
 
-  it "does not show a public sign up link on the login page" do
+  it 'does not show a public sign up link on the login page' do
     get new_user_session_path
 
-    expect(response.body).not_to include("Sign up")
+    expect(response.body).not_to include('Sign up')
     expect(response.body).not_to include(new_user_registration_path)
-    expect(response.body).to include("Forgot your password?")
+    expect(response.body).to include('Forgot your password?')
     expect(response.body).to include(new_user_password_path)
   end
 
-  it "signs a teacher in and redirects directly to classrooms index" do
+  it 'signs a teacher in and redirects directly to classrooms index' do
     post user_session_path, params: {
       user: {
         email: teacher.email,
-        password: "password123"
+        password: 'password123'
       }
     }
 
@@ -31,22 +31,61 @@ RSpec.describe "Users::Sessions", type: :request do
     expect(controller.current_user).to eq(teacher)
   end
 
-  it "keeps the teacher Devise sign out path available" do
+  it 'rejects an inactive teacher with valid credentials' do
+    teacher.update!(active: false)
+
+    post user_session_path, params: {
+      user: {
+        email: teacher.email,
+        password: 'password123'
+      }
+    }
+
+    expect(response).to redirect_to(new_user_session_path)
+
+    follow_redirect!
+
+    expect(response.body).to include(I18n.t('devise.failure.inactive'))
+
+    get classrooms_path
+
+    expect(response).to redirect_to(new_user_session_path)
+  end
+
+  it 'signs out a teacher on the next request after deactivation' do
+    sign_in teacher
+    teacher.update!(active: false)
+
+    get classrooms_path
+
+    expect(response).to redirect_to(new_user_session_path)
+    expect(flash[:alert]).to eq(I18n.t('devise.failure.inactive'))
+
+    follow_redirect!
+
+    expect(response.body).to include(I18n.t('devise.failure.inactive'))
+
+    get classrooms_path
+
+    expect(response).to redirect_to(new_user_session_path)
+  end
+
+  it 'keeps the teacher Devise sign out path available' do
     sign_in teacher
 
     get classrooms_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("Sign out")
+    expect(response.body).to include('Sign out')
     expect(response.body).to include(destroy_user_session_path)
     expect(response.body).not_to include(destroy_student_session_path)
   end
 
-  it "signs an admin in and redirects directly to schools index" do
+  it 'signs an admin in and redirects directly to schools index' do
     post user_session_path, params: {
       user: {
         email: admin.email,
-        password: "password123"
+        password: 'password123'
       }
     }
 
@@ -54,21 +93,21 @@ RSpec.describe "Users::Sessions", type: :request do
     expect(controller.current_user).to eq(admin)
   end
 
-  it "blocks a student from signing in with Devise" do
+  it 'blocks a student from signing in with Devise' do
     post user_session_path, params: {
       user: {
-        email: "student@example.com",
-        password: "password123"
+        email: 'student@example.com',
+        password: 'password123'
       }
     }
 
     expect(controller.current_user).to be_nil
   end
 
-  it "still allows a student to sign in with the classroom PIN flow" do
+  it 'still allows a student to sign in with the classroom PIN flow' do
     post public_student_login_path(student_login_token: classroom.student_login_token), params: {
       student_id: student.id,
-      student_pin: "1234"
+      student_pin: '1234'
     }
 
     expect(response).to redirect_to(classroom_student_path(classroom, student))

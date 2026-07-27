@@ -7,7 +7,7 @@ class ComplimentPolicy < ApplicationPolicy
     def resolve
       return scope.all if user&.admin?
 
-      if user&.teacher?
+      if user&.active_teacher?
         # 교사가 볼 수 있는 교실에서 발생한 칭찬만
         teacher_classroom_ids = Classroom.accessible_for_compliments(user).reorder(nil).pluck(:id)
         return scope.where(classroom_id: teacher_classroom_ids)

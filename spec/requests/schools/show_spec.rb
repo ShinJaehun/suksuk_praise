@@ -50,4 +50,22 @@ RSpec.describe "School overview", type: :request do
     expect(overview.text).to include(school_manager.name)
     expect(overview.at_css(%(a[href="#{edit_school_path(school)}"]))).to be_nil
   end
+
+  it "excludes inactive teachers and managers from the overview" do
+    active_manager = manager
+    inactive_manager = create(
+      :school_membership,
+      :manager,
+      school: school,
+      user: create(:user, :teacher, name: "비활성 관리자", active: false)
+    ).user
+    create(:school_membership, school: school, user: create(:user, :teacher, active: false))
+    sign_in create(:user, :admin)
+
+    get school_path(school)
+
+    overview = Nokogiri::HTML(response.body).at_css("turbo-frame#school_overview")
+    expect(overview.text).to include("소속 교사", "1명", active_manager.name)
+    expect(overview.text).not_to include(inactive_manager.name, "3명")
+  end
 end

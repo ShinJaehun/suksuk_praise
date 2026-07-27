@@ -4,7 +4,7 @@ class CouponEventPolicy < ApplicationPolicy
       return scope.none unless user
       return scope.all  if user.admin?
 
-      if user.teacher?
+      if user.active_teacher?
         teacher_classroom_ids = user.classroom_memberships
                                     .where(role: "teacher")
                                     .pluck(:classroom_id)
@@ -20,7 +20,7 @@ class CouponEventPolicy < ApplicationPolicy
 
   # /admin/coupon_events#index 에서 authorize CouponEvent 호출 시 사용됨
   def index?
-    user&.admin? || user&.teacher?
+    user&.admin? || user&.active_teacher?
   end
 
 end

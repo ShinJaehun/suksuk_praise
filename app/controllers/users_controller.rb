@@ -43,7 +43,7 @@ class UsersController < ApplicationController
 
   def managed_page_classroom_for(user)
     return user.classrooms.order(created_at: :asc).first if current_user.admin?
-    return teacher_managed_classroom_for(user) if current_user.teacher?
+    return teacher_managed_classroom_for(user) if current_user.active_teacher?
 
     nil
   end
@@ -89,7 +89,7 @@ class UsersController < ApplicationController
     return User.none unless @user.student?
 
     classroom_ids = @user.classroom_memberships.where(role: "student", status: "active").select(:classroom_id)
-    User.teacher
+    User.teacher.active
       .joins(classroom_memberships: :classroom)
       .where(
         classrooms: { message_policy: "student_initiated" },

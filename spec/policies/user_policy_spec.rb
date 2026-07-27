@@ -82,4 +82,30 @@ RSpec.describe UserPolicy do
       expect(described_class.new(student, student).destroy_student?).to eq(false)
     end
   end
+
+  describe "teacher status actions" do
+    let(:school) { create(:school) }
+    let(:manager) { create(:user, :teacher) }
+    let(:member) { create(:user, :teacher) }
+
+    before do
+      create(:school_membership, :manager, school: school, user: manager)
+      create(:school_membership, school: school, user: member)
+    end
+
+    it "allows admins to change teacher status" do
+      admin = create(:user, :admin)
+      expect(described_class.new(admin, member).deactivate_teacher?).to eq(true)
+      member.update!(active: false)
+      expect(described_class.new(admin, member).reactivate_teacher?).to eq(true)
+    end
+
+    it "allows a manager only for another same-school member" do
+      expect(described_class.new(manager, member).deactivate_teacher?).to eq(true)
+      expect(described_class.new(manager, manager).deactivate_teacher?).to eq(false)
+      expect(described_class.new(member, manager).deactivate_teacher?).to eq(false)
+      expect(described_class.new(manager, create(:user, :teacher)).deactivate_teacher?).to eq(false)
+      expect(described_class.new(manager, create(:user, :student)).deactivate_teacher?).to eq(false)
+    end
+  end
 end

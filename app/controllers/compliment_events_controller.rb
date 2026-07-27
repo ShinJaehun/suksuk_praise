@@ -3,7 +3,7 @@ class ComplimentEventsController < ApplicationController
 
   def index
     authorize Compliment
-    current_user.classroom_memberships.load if current_user.teacher?
+    current_user.classroom_memberships.load if current_user.active_teacher?
 
     @accessible_classrooms = Classroom.accessible_for_compliments(current_user).order(:name)
     @accessible_classroom_ids = @accessible_classrooms.reorder(nil).pluck(:id)
@@ -56,7 +56,7 @@ class ComplimentEventsController < ApplicationController
   private
 
   def auto_select_single_classroom?
-    current_user.teacher? &&
+    current_user.active_teacher? &&
       !current_user.admin? &&
       !current_user.school_membership&.manager? &&
       @accessible_classroom_ids.one?

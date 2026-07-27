@@ -1,6 +1,7 @@
 class Admin::TeachersController < Admin::BaseController
   before_action :set_teacher, only: %i[edit update]
-  layout -> { turbo_frame_request? ? false : "application" }
+  before_action :set_status_teacher, only: %i[deactivate reactivate]
+  layout -> { turbo_frame_request? ? false : 'application' }
 
   def index
     prepare_school_filter
@@ -24,10 +25,10 @@ class Admin::TeachersController < Admin::BaseController
 
     if create_teacher_with_assignments
       redirect_to admin_teachers_path,
-        notice: t("admin.teachers.create.success"),
-        status: :see_other
+                  notice: t('admin.teachers.create.success'),
+                  status: :see_other
     else
-      flash.now[:alert] = t("admin.teachers.create.failure")
+      flash.now[:alert] = t('admin.teachers.create.failure')
       load_school_assignment_form
       render_teacher_form(:new)
     end
@@ -42,7 +43,7 @@ class Admin::TeachersController < Admin::BaseController
     authorize @teacher, @teacher.teacher? ? :update? : :index?
 
     unless @teacher.teacher?
-      @teacher.errors.add(:base, t("admin.teachers.errors.teacher_required"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.teacher_required'))
       load_edit_form
       render_teacher_form(:edit)
       return
@@ -50,50 +51,67 @@ class Admin::TeachersController < Admin::BaseController
 
     if update_teacher_assignments
       redirect_to admin_teachers_path,
-        notice: t("admin.teachers.update.success"),
-        status: :see_other
+                  notice: t('admin.teachers.update.success'),
+                  status: :see_other
     else
       load_edit_form
       render_teacher_form(:edit)
     end
   end
 
+  def deactivate
+    authorize @teacher, :deactivate_teacher?
+    update_teacher_status(false)
+  end
+
+  def reactivate
+    authorize @teacher, :reactivate_teacher?
+    update_teacher_status(true)
+  end
+
   private
 
   def teacher_rows
     scope = policy_scope(User)
-      .teacher
-      .with_attached_avatar
-      .includes(school_membership: :school, classroom_memberships: :classroom)
+            .teacher
+            .with_attached_avatar
+            .includes(school_membership: :school, classroom_memberships: :classroom)
+    scope = scope.where(active: @teacher_status == 'active') unless @teacher_status == 'all'
 
     if @selected_school
       scope = scope.joins(:school_membership)
-        .where(school_memberships: { school_id: @selected_school.id })
+                   .where(school_memberships: { school_id: @selected_school.id })
     end
 
     scope.order(:created_at)
-      .map do |teacher|
-        school = teacher.school_membership&.school
-        classrooms = teacher.classroom_memberships
-          .select(&:teacher?)
-          .map(&:classroom)
-          .compact
-        classroom_names = classrooms.map(&:name)
-        grades = classrooms.filter_map(&:grade).uniq.sort
+         .map do |teacher|
+           school = teacher.school_membership&.school
+           classrooms = teacher.classroom_memberships
+                               .select(&:teacher?)
+                               .map(&:classroom)
+                               .compact
+           classroom_names = classrooms.map(&:name)
+           grades = classrooms.filter_map(&:grade).uniq.sort
 
-        {
-          teacher: teacher,
-          school_name: school&.name || t("admin.teachers.index.unassigned_school"),
-          school_color_key: school&.color_key,
-          school_role_label: teacher_school_role_label(teacher),
-          grade_label: grades.any? ? t("classrooms.index.grades", grades: grades.join(", ")) : t("classrooms.index.grade_unspecified"),
-          classroom_names: classroom_names,
-          classroom_count: classroom_names.size
-        }
-      end
+           {
+             teacher: teacher,
+             school_name: school&.name || t('admin.teachers.index.unassigned_school'),
+             school_color_key: school&.color_key,
+             school_role_label: teacher_school_role_label(teacher),
+             grade_label: if grades.any?
+                            t('classrooms.index.grades',
+                              grades: grades.join(', '))
+                          else
+                            t('classrooms.index.grade_unspecified')
+                          end,
+             classroom_names: classroom_names,
+             classroom_count: classroom_names.size
+           }
+    end
   end
 
   def prepare_school_filter
+    @teacher_status = params[:status].presence_in(%w[active inactive all]) || 'active'
     @filter_schools = policy_scope(School).order(:name, :id).load
     @selected_school = @filter_schools.detect { |school| school.id == school_filter_id }
   end
@@ -107,13 +125,27 @@ class Admin::TeachersController < Admin::BaseController
 
   def teacher_school_role_label(teacher)
     membership = teacher.school_membership
-    return t("admin.teachers.index.unassigned_role") unless membership
+    return t('admin.teachers.index.unassigned_role') unless membership
 
-    t(membership.manager? ? "admin.teachers.index.manager" : "admin.teachers.index.member")
+    t(membership.manager? ? 'admin.teachers.index.manager' : 'admin.teachers.index.member')
   end
 
   def set_teacher
     @teacher = User.find(params[:id])
+  end
+
+  def set_status_teacher
+    @teacher = User.teacher.find(params[:id])
+  end
+
+  def update_teacher_status(active)
+    if @teacher.update(active: active, remember_created_at: nil)
+      redirect_to admin_teachers_path(school_id: params[:school_id], status: params[:status]),
+                  notice: t(active ? 'teacher_status.reactivated' : 'teacher_status.deactivated'),
+                  status: :see_other
+    else
+      redirect_to admin_teachers_path, alert: t('teacher_status.failure'), status: :see_other
+    end
   end
 
   def teacher_params
@@ -121,14 +153,14 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def avatar_keys_for_gender(gender)
-    return User::TEACHER_MALE_AVATAR_KEYS if gender == "male"
-    return User::TEACHER_FEMALE_AVATAR_KEYS if gender == "female"
+    return User::TEACHER_MALE_AVATAR_KEYS if gender == 'male'
+    return User::TEACHER_FEMALE_AVATAR_KEYS if gender == 'female'
 
     teacher_avatar_keys
   end
 
   def teacher_avatar_keys
-    User.avatar_keys_for_role("teacher")
+    User.avatar_keys_for_role('teacher')
   end
 
   def create_teacher_with_assignments
@@ -149,13 +181,13 @@ class Admin::TeachersController < Admin::BaseController
       end
     end
     true
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
-    handle_teacher_creation_error(error)
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
+    handle_teacher_creation_error(e)
   end
 
   def update_teacher_assignments
     unless school_selection_submitted? && classroom_selection_submitted?
-      @teacher.errors.add(:base, t("admin.teachers.errors.assignment_selection_required"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.assignment_selection_required'))
       return false
     end
 
@@ -169,11 +201,11 @@ class Admin::TeachersController < Admin::BaseController
       sync_teacher_classroom_assignments!(classroom_ids, before: false)
     end
     true
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
-    if error.respond_to?(:record)
-      copy_assignment_errors(error.record)
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
+    if e.respond_to?(:record)
+      copy_assignment_errors(e.record)
     else
-      @teacher.errors.add(:base, t("admin.teachers.errors.assignment_save_failed"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.assignment_save_failed'))
     end
     false
   end
@@ -218,7 +250,7 @@ class Admin::TeachersController < Admin::BaseController
     return @selected_school if @selected_school
 
     @school_selection_invalid = true
-    @teacher.errors.add(:base, t("admin.teachers.errors.school_not_found"))
+    @teacher.errors.add(:base, t('admin.teachers.errors.school_not_found'))
     nil
   end
 
@@ -236,13 +268,13 @@ class Admin::TeachersController < Admin::BaseController
 
     if valid_raw_ids.size != raw_ids.size || Classroom.where(id: requested_ids).count != requested_ids.size
       @classroom_selection_invalid = true
-      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_not_found"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.classroom_not_found'))
     elsif !school_selection_invalid? && school.nil? && requested_ids.any?
       @classroom_selection_invalid = true
-      @teacher.errors.add(:base, t("admin.teachers.errors.school_required_for_classrooms"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.school_required_for_classrooms'))
     elsif school && Classroom.where(id: requested_ids).where.not(school_id: school.id).exists?
       @classroom_selection_invalid = true
-      @teacher.errors.add(:base, t("admin.teachers.errors.classroom_school_mismatch"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.classroom_school_mismatch'))
     end
 
     @selected_classroom_ids
@@ -304,7 +336,7 @@ class Admin::TeachersController < Admin::BaseController
 
   def handle_teacher_creation_error(error)
     unless error.respond_to?(:record)
-      @teacher.errors.add(:base, t("admin.teachers.errors.assignment_save_failed"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.assignment_save_failed'))
       return false
     end
 
@@ -316,7 +348,7 @@ class Admin::TeachersController < Admin::BaseController
       copy_assignment_errors(record)
       false
     elsif record.is_a?(CouponTemplate)
-      @teacher.errors.add(:base, t("admin.teachers.errors.default_coupons_failed"))
+      @teacher.errors.add(:base, t('admin.teachers.errors.default_coupons_failed'))
       false
     else
       raise error
@@ -327,7 +359,7 @@ class Admin::TeachersController < Admin::BaseController
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(
-          "modal",
+          'modal',
           partial: "admin/teachers/#{template}_modal"
         ), status: :unprocessable_entity
       end

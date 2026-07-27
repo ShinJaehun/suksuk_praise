@@ -25,7 +25,7 @@ class Classroom < ApplicationRecord
     def self.accessible_for_compliments(user)
       return none unless user
       return all if user.admin?
-      return none unless user.teacher?
+      return none unless user.active_teacher?
 
       joins(:classroom_memberships)
         .where(classroom_memberships: { user_id: user.id, role: "teacher" })
