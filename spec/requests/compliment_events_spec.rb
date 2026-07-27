@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Compliment events', type: :request do
+  include ActionView::RecordIdentifier
   include ActiveSupport::Testing::TimeHelpers
 
   let(:classroom) { create(:classroom, name: '햇살반') }
@@ -39,6 +40,25 @@ RSpec.describe 'Compliment events', type: :request do
       compliment_preset: preset,
       reason: reason
     )
+  end
+
+  it "shows a matching note frame and new-note link" do
+    compliment = create_compliment_for(
+      classroom: classroom,
+      receiver: student,
+      given_at: Time.zone.now,
+      reason: "메모 대상"
+    )
+    sign_in teacher
+
+    get compliment_events_path(period: "all_time")
+
+    panel = document.at_css(%([data-activity-source="Compliment"][data-activity-source-id="#{compliment.id}"]))
+    frame_id = dom_id(compliment, :activity_notes)
+    expect(panel.at_css(%(turbo-frame[id="#{frame_id}"]))).to be_present
+    new_link = panel.at_css('[data-activity-note-action="new"]')
+    expect(new_link["href"]).to include("source_type=Compliment", "source_id=#{compliment.id}")
+    expect(new_link["data-turbo-frame"]).to eq(frame_id)
   end
 
   it 'uses the global event route while keeping nested compliment creation routes' do

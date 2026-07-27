@@ -48,6 +48,7 @@ ko:
     cancel: "취소"
     edit: "수정"
     delete: "삭제"
+
     processing: "처리중..."
 
     # 버튼 텍스트 (세부용)
@@ -84,6 +85,18 @@ ko:
     headings:
       classrooms_index: "교실 목록"
       students: "학생 목록"
+
+  student_activity_notes:
+    actions:
+      new: "메모"
+    placeholder: "학생의 행동이나 상황을 기록하세요."
+    confirm_destroy: "이 메모를 삭제할까요?"
+    notices:
+      created: "메모를 저장했습니다."
+      updated: "메모를 수정했습니다."
+      destroyed: "메모를 삭제했습니다."
+    errors:
+      duplicate: "이미 이 활동에 작성한 메모가 있습니다."
 
   navigation:
     dashboard: "한눈에 보기"

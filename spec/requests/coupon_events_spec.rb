@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Coupon events', type: :request do
+  include ActionView::RecordIdentifier
+
   let(:classroom) { create(:classroom, name: '햇살반') }
   let(:teacher) { create(:user, :teacher, name: '신재훈') }
 
@@ -45,5 +47,24 @@ RSpec.describe 'Coupon events', type: :request do
 
     expect(response.body).to include('event-log-pagination')
     expect(response.body).not_to include('coupon-events-pagy')
+  end
+
+  it 'shows source-scoped note controls and existing notes' do
+    other_teacher = create(:user, :teacher, name: "다른 교사")
+    create(:classroom_membership, classroom: classroom, user: other_teacher, role: "teacher")
+    event = create(:coupon_event, actor: teacher, classroom: classroom)
+    own_note = create(:student_activity_note, source: event, author: teacher, body: "내 메모")
+    create(:student_activity_note, source: event, author: other_teacher, body: "다른 메모")
+    sign_in teacher
+
+    get coupon_events_path(period: "all_time")
+
+    panel = document.at_css(%([data-activity-source="CouponEvent"][data-activity-source-id="#{event.id}"]))
+    frame_id = dom_id(event, :activity_notes)
+    expect(panel.at_css(%(turbo-frame[id="#{frame_id}"]))).to be_present
+    expect(panel.text).to include("내 메모", "다른 메모", teacher.name, other_teacher.name)
+    expect(panel.at_css(%(a[href^="#{edit_student_activity_note_path(own_note)}"][data-activity-note-action="edit"]))).to be_present
+    expect(panel.css('[data-activity-note-action="edit"]').size).to eq(1)
+    expect(panel.at_css('[data-activity-note-action="new"]')).to be_nil
   end
 end

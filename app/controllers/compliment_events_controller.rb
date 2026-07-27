@@ -30,7 +30,7 @@ class ComplimentEventsController < ApplicationController
       [t("reports.sort.given_at_asc"), "given_at_asc"]
     ]
 
-    base = policy_scope(Compliment).includes(:classroom, :giver, :receiver)
+    base = policy_scope(Compliment).includes(:classroom, :giver, :receiver, student_activity_notes: :author)
     base = base.none if @invalid_classroom_filter
     base = base.where(classroom_id: @selected_classroom.id) if @selected_classroom
     base = apply_student_filter(base)

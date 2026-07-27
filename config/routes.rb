@@ -84,6 +84,7 @@ Rails.application.routes.draw do
     "/compliment_templates#{query_string ? "?#{query_string}" : ""}"
   }
   resources :compliment_events, only: :index
+  resources :student_activity_notes, only: %i[new create edit update destroy]
   resources :compliment_templates, except: %i[show new]
 
   resources :schools, only: %i[index show edit update] do

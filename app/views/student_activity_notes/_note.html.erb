@@ -1,0 +1,33 @@
+<%# locals: (note:, source:, return_to:) %>
+<article class="py-2 text-sm text-slate-700" data-student-activity-note="<%= note.id %>">
+  <p class="whitespace-pre-wrap"><%= note.body %></p>
+  <div class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+    <span><%= note.author.name %> · <%= l(note.created_at, format: :short) %></span>
+    <span class="flex items-center gap-2">
+      <% if policy(note).update? %>
+        <%= link_to t("ui.edit"),
+              edit_student_activity_note_path(note, return_to: return_to),
+              data: {
+                turbo_frame: dom_id(source, :activity_notes),
+                activity_note_action: "edit"
+              },
+              class: "font-semibold text-slate-600 hover:text-slate-900" %>
+      <% end %>
+      <% if policy(note).destroy? %>
+        <%= button_to t("ui.delete"),
+              student_activity_note_path(note, return_to: return_to),
+              method: :delete,
+              form: {
+                class: "inline-flex",
+                data: {
+                  turbo_confirm: t("student_activity_notes.confirm_destroy")
+                }
+              },
+              data: {
+                activity_note_action: "delete"
+              },
+              class: "font-semibold text-rose-600 hover:text-rose-700" %>
+      <% end %>
+    </span>
+  </div>
+</article>

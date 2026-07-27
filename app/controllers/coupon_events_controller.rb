@@ -27,7 +27,7 @@ class CouponEventsController < ApplicationController
     ]
 
     base = policy_scope(CouponEvent)
-           .includes(:actor, :classroom, :coupon_template, user_coupon: :user)
+           .includes(:actor, :classroom, :coupon_template, student_activity_notes: :author, user_coupon: :user)
 
     base = base.where(classroom_id: params[:classroom_id]) if params[:classroom_id].present?
     base = base.where(action: params[:event_action]) if params[:event_action].present?
