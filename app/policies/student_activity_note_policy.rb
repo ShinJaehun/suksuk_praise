@@ -1,10 +1,10 @@
 class StudentActivityNotePolicy < ApplicationPolicy
   def create?
-    admin? || current_classroom_teacher?
+    active_classroom? && (admin? || current_classroom_teacher?)
   end
 
   def update?
-    admin? || (current_classroom_teacher? && record.author_id == user.id)
+    active_classroom? && (admin? || (current_classroom_teacher? && record.author_id == user.id))
   end
 
   def destroy?
@@ -12,6 +12,11 @@ class StudentActivityNotePolicy < ApplicationPolicy
   end
 
   private
+
+  def active_classroom?
+    classroom_id = record.classroom_id || record.source&.classroom_id
+    Classroom.joins(:school).merge(School.active).exists?(id: classroom_id)
+  end
 
   def current_classroom_teacher?
     return false unless teacher?

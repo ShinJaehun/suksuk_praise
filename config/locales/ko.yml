@@ -102,6 +102,19 @@ ko:
     failure: "선생님 계정 상태를 변경하지 못했습니다."
     confirm_deactivate: "이 선생님 계정을 비활성화하면 로그인과 현재 운영 권한이 중단됩니다. 과거 기록과 담당 정보는 유지됩니다."
 
+  school_status:
+    filter_label: "학교 상태"
+    active: "활성"
+    inactive: "비활성"
+    all: "전체"
+    deactivate: "학교 비활성화"
+    reactivate: "학교 재활성화"
+    deactivated: "학교를 비활성화했습니다."
+    reactivated: "학교를 재활성화했습니다."
+    failure: "학교 상태를 변경하지 못했습니다."
+    confirm_deactivate: "이 학교를 비활성화하면 선생님과 학생의 학교·교실 운영이 중단됩니다. 기존 교실과 활동 기록은 삭제되지 않습니다."
+    inactive_school: "현재 사용할 수 없는 학교입니다."
+
   student_activity_notes:
     actions:
       new: "메모"

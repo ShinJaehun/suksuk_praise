@@ -15,6 +15,8 @@ class ComplimentPolicy < ApplicationPolicy
 
       if user&.student?
         student_classroom_ids = user.classroom_memberships
+          .joins(classroom: :school)
+          .merge(School.active)
           .where(role: "student", status: "active")
           .select(:classroom_id)
         return scope.where(receiver_id: user.id, classroom_id: student_classroom_ids)
@@ -29,16 +31,17 @@ class ComplimentPolicy < ApplicationPolicy
   end
 
   def show?
-    admin? || member_of?(record.classroom)
+    admin? || (record.classroom.school.active? && member_of?(record.classroom))
   end
 
   def create?
+    return false unless record.classroom&.school&.active?
     return true if admin?
     teacher_of?(record.classroom)
   end
 
   def update?
-    admin? || teacher_of?(record.classroom)
+    record.classroom&.school&.active? && (admin? || teacher_of?(record.classroom))
   end
 
   def destroy?

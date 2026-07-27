@@ -15,7 +15,7 @@ class ClassroomsController < ApplicationController
   def index
     # index는 policy_scope만 요구(verify_policy_scoped 훅 통과)
     prepare_school_filter if current_user.admin?
-    classrooms_scope = policy_scope(Classroom)
+    classrooms_scope = policy_scope(Classroom).joins(:school).merge(School.active)
     classrooms_scope = classrooms_scope.where(school_id: @selected_school.id) if current_user.admin? && @selected_school
     @classrooms = classrooms_scope.includes(:school).order(created_at: :desc)
     @classrooms_index_title = t(classrooms_index_title_key)
@@ -99,7 +99,11 @@ class ClassroomsController < ApplicationController
     assign_manager_school
     @classroom.assign_attributes(classroom_params)
 
-    if @classroom.save
+    if @classroom.school&.inactive?
+      @classroom.errors.add(:school, t("school_status.inactive_school"))
+      prepare_classroom_form
+      render :new, status: :unprocessable_entity
+    elsif @classroom.save
       redirect_to classroom_path(@classroom), notice: t("classrooms.create.success")
     else
       prepare_classroom_form
@@ -115,7 +119,7 @@ class ClassroomsController < ApplicationController
   def update
     authorize @classroom
 
-    if manager_school_change_attempt? || teacher_school_assignment_conflict?
+    if inactive_target_school? || manager_school_change_attempt? || teacher_school_assignment_conflict?
       prepare_classroom_form
       render :edit, status: :unprocessable_entity
     elsif @classroom.update(classroom_params)
@@ -418,7 +422,7 @@ class ClassroomsController < ApplicationController
   end
 
   def load_school_options
-    @school_options = policy_scope(School).order(:name, :id)
+    @school_options = policy_scope(School).active.order(:name, :id)
   end
 
   def teacher_school_assignment_conflict?
@@ -445,11 +449,13 @@ class ClassroomsController < ApplicationController
   end
 
   def current_user_school_manager?
-    current_user&.teacher? && current_user.school_membership&.manager?
+    current_user&.active_teacher? &&
+      current_user.school_membership&.manager? &&
+      current_user.school_membership.school.active?
   end
 
   def prepare_school_filter
-    @filter_schools = policy_scope(School).order(:name, :id).load
+    @filter_schools = policy_scope(School).active.order(:name, :id).load
     @selected_school = @filter_schools.detect { |school| school.id == school_filter_id }
   end
 
@@ -472,6 +478,17 @@ class ClassroomsController < ApplicationController
     return false if params.dig(:classroom, :school_id).to_s == @classroom.school_id.to_s
 
     @classroom.errors.add(:base, t("classrooms.errors.manager_school_change"))
+    true
+  end
+
+  def inactive_target_school?
+    return false unless current_user.admin?
+
+    target_school_id = params.dig(:classroom, :school_id).presence
+    return false if target_school_id.blank?
+    return false if School.active.exists?(id: target_school_id)
+
+    @classroom.errors.add(:school, t("school_status.inactive_school"))
     true
   end
 

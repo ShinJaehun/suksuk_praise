@@ -440,4 +440,38 @@ RSpec.describe 'Admin teachers', type: :request do
     patch reactivate_admin_teacher_path(teacher)
     expect(teacher.reload).to be_active
   end
+
+  it "does not offer or accept a new assignment to an inactive school" do
+    inactive_school = create(:school, name: "운영 중단 학교", active: false)
+    sign_in admin
+
+    get new_admin_teacher_path
+    expect(response.body).not_to include(inactive_school.name)
+
+    expect do
+      post admin_teachers_path, params: {
+        user: {
+          name: "배정 금지 교사",
+          email: "inactive-school@example.com",
+          password: "password123"
+        },
+        school_id: inactive_school.id,
+        classroom_ids: [""]
+      }
+    end.not_to change(User.teacher, :count)
+  end
+
+  it "keeps an existing inactive-school assignment visible while allowing removal" do
+    inactive_school = create(:school, active: false)
+    membership = create(:school_membership, school: inactive_school, user: teacher)
+    sign_in admin
+
+    get edit_admin_teacher_path(teacher)
+    expect(response.body).to include(inactive_school.name)
+
+    patch admin_teacher_path(teacher), params: { school_id: "", classroom_ids: [""] }
+    expect(response).to redirect_to(admin_teachers_path)
+    expect { membership.reload }.to raise_error(ActiveRecord::RecordNotFound)
+    expect(inactive_school.reload).to be_inactive
+  end
 end

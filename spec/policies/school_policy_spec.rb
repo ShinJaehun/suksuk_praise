@@ -25,6 +25,15 @@ RSpec.describe SchoolPolicy do
       expect(described_class::Scope.new(teacher, School).resolve).to contain_exactly(school)
     end
 
+    it "hides an inactive member school from teachers but not admins" do
+      teacher = create(:user, :teacher)
+      create(:school_membership, school: school, user: teacher)
+      school.update!(active: false)
+
+      expect(described_class::Scope.new(teacher, School).resolve).to be_empty
+      expect(described_class::Scope.new(create(:user, :admin), School).resolve).to include(school)
+    end
+
     it "returns an empty relation for a teacher without a school and for a student" do
       teacher = create(:user, :teacher)
       student = create(:user, :student)
@@ -112,10 +121,26 @@ RSpec.describe SchoolPolicy do
 
       expect(admin_policy.create?).to eq(true)
       expect(admin_policy.update?).to eq(true)
-      expect(admin_policy.destroy?).to eq(true)
+      expect(admin_policy.destroy?).to eq(false)
       expect(manager_policy.create?).to eq(false)
       expect(manager_policy.update?).to eq(false)
       expect(manager_policy.destroy?).to eq(false)
+    end
+
+    it "allows only admins to change school lifecycle state" do
+      admin = create(:user, :admin)
+      manager = create(:school_membership, :manager, school: school).user
+
+      expect(described_class.new(admin, school).deactivate?).to eq(true)
+      expect(described_class.new(manager, school).deactivate?).to eq(false)
+
+      school.update!(active: false)
+      expect(described_class.new(admin, school).reactivate?).to eq(true)
+      expect(described_class.new(admin, school).show?).to eq(true)
+      expect(described_class.new(admin, school).update?).to eq(true)
+      expect(described_class.new(admin, school).manage_operations?).to eq(false)
+      expect(described_class.new(manager, school).show?).to eq(false)
+      expect(described_class.new(manager, school).manage_teachers?).to eq(false)
     end
   end
 end

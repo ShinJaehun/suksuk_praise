@@ -4,19 +4,22 @@ class ClassroomPolicy < ApplicationPolicy
       return scope.all if user&.admin?
 
       if user&.active_teacher? && user.school_membership&.manager?
-        return scope.where(school_id: user.school_membership.school_id)
+        return scope.joins(:school).merge(School.active)
+          .where(school_id: user.school_membership.school_id)
       end
 
       # Teachers can see only their classrooms
       if user&.active_teacher?
-        return scope.joins(:classroom_memberships)
+        return scope.joins(:school, :classroom_memberships)
+                    .merge(School.active)
                     .where(classroom_memberships: { user_id: user.id, role: 'teacher' })
                     .distinct
       end
 
       # Students can see only their classrooms
       if user&.student?
-        return scope.joins(:classroom_memberships)
+        return scope.joins(:school, :classroom_memberships)
+                    .merge(School.active)
                     .where(classroom_memberships: { user_id: user.id, role: 'student', status: 'active' })
                     .distinct
       end
@@ -31,12 +34,13 @@ class ClassroomPolicy < ApplicationPolicy
 
   def show?
     return true if admin?
+    return false unless active_school?
 
     school_manager_of?(record) || member_of?(record)
   end
 
   def create?
-    admin? || school_manager?
+    admin? || (school_manager? && user.school_membership.school.active?)
   end
 
   def new?
@@ -52,22 +56,23 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def destroy?
-    !!admin?
+    active_school? && !!admin?
   end
 
   def manage_members?
-    admin? || teacher_of?(record)
+    active_school? && (admin? || teacher_of?(record))
   end
 
   def manage_structure?
-    !!(admin? || school_manager_of?(record))
+    active_school? && !!(admin? || school_manager_of?(record))
   end
 
   def manage_operations?
-    !!(admin? || teacher_of?(record))
+    active_school? && !!(admin? || teacher_of?(record))
   end
 
   def view_student_data?
+    return false unless active_school?
     return true if admin?
     return teacher_of?(record) if teacher?
     return student_of?(record) if student?
@@ -76,18 +81,24 @@ class ClassroomPolicy < ApplicationPolicy
   end
 
   def create_compliment?
-    admin? || teacher_of?(record)
+    active_school? && (admin? || teacher_of?(record))
   end
 
   def refresh_compliment_king?
-    admin? || teacher_of?(record)
+    active_school? && (admin? || teacher_of?(record))
   end
 
   def draw_coupon?
-    admin? || teacher_of?(record)
+    active_school? && (admin? || teacher_of?(record))
   end
 
   private
+
+  def active_school?
+    return true if admin? && record.respond_to?(:new_record?) && record.new_record?
+
+    record.respond_to?(:school) && record.school&.active?
+  end
 
   def school_manager?
     teacher? && user.school_membership&.manager?

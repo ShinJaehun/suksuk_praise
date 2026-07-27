@@ -171,6 +171,49 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).not_to include(inactive_teacher.name)
   end
 
+  it "hides inactive-school classrooms from index while keeping admin read access" do
+    inactive_school = create(:school, active: false)
+    classroom = create(:classroom, school: inactive_school, name: "중단된 학교 교실")
+    assigned_teacher = create(:user, :teacher)
+    create(:school_membership, school: inactive_school, user: assigned_teacher)
+    create(:classroom_membership, classroom: classroom, user: assigned_teacher, role: :teacher)
+    sign_in admin
+
+    get classrooms_path
+    expect(response.body).not_to include(classroom.name)
+
+    get classroom_path(classroom)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).not_to include(classroom_members_path(classroom))
+
+    sign_in assigned_teacher
+    get classroom_path(classroom)
+    expect(response).to redirect_to(root_path)
+
+    inactive_school.update!(active: true)
+    get classroom_path(classroom)
+    expect(response).to have_http_status(:ok)
+  end
+
+  it "rejects creating or moving a classroom into an inactive school" do
+    inactive_school = create(:school, active: false)
+    classroom = create(:classroom, school: school)
+    sign_in admin
+
+    expect do
+      post classrooms_path, params: {
+        classroom: { name: "금지된 교실", school_id: inactive_school.id, grade: 1 }
+      }
+    end.not_to change(Classroom, :count)
+    expect(response).to have_http_status(:unprocessable_entity)
+
+    patch classroom_path(classroom), params: {
+      classroom: classroom_update_params(classroom).merge(school_id: inactive_school.id)
+    }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(classroom.reload.school).to eq(school)
+  end
+
   it 'treats an invalid admin classroom school filter as the full list' do
     classroom = create(:classroom, school: school, name: '새싹 학급')
     other_classroom = create(:classroom, school: create(:school), name: '다른 학급')

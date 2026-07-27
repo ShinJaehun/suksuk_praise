@@ -1,8 +1,7 @@
 module Admin
-  class SchoolManagersController < ApplicationController
+  class SchoolManagersController < Admin::BaseController
     include SchoolWorkspacePrepareable
 
-    before_action :authenticate_user!
     before_action :set_school
     before_action :authorize_admin
 
@@ -26,8 +25,8 @@ module Admin
       @school = School.find(params[:school_id])
     end
 
-    def authorize_admin
-      authorize @school, :update?
+  def authorize_admin
+      authorize @school, :manage_operations?
     end
 
     def render_manager_success(message_key)

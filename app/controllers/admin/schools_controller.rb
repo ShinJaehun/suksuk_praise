@@ -1,5 +1,5 @@
 class Admin::SchoolsController < Admin::BaseController
-  before_action :set_school, only: %i[edit update]
+  before_action :set_school, only: %i[edit update deactivate reactivate]
   layout -> { turbo_frame_request? ? false : "application" }
 
   def new
@@ -36,6 +36,16 @@ class Admin::SchoolsController < Admin::BaseController
     end
   end
 
+  def deactivate
+    authorize @school, :deactivate?
+    update_school_status(false)
+  end
+
+  def reactivate
+    authorize @school, :reactivate?
+    update_school_status(true)
+  end
+
   private
 
   def set_school
@@ -44,6 +54,18 @@ class Admin::SchoolsController < Admin::BaseController
 
   def school_params
     params.require(:school).permit(:name)
+  end
+
+  def update_school_status(active)
+    if @school.update(active: active)
+      redirect_to schools_path(status: params[:status]),
+        notice: t(active ? "school_status.reactivated" : "school_status.deactivated"),
+        status: :see_other
+    else
+      redirect_to schools_path,
+        alert: t("school_status.failure"),
+        status: :see_other
+    end
   end
 
   def render_school_form(template)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_27_063110) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_27_070000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -188,6 +188,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_27_063110) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "color_key", null: false
+    t.boolean "active", default: true, null: false
+    t.index ["active"], name: "index_schools_on_active"
   end
 
   create_table "student_activity_notes", force: :cascade do |t|

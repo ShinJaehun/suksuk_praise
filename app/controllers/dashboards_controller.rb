@@ -20,7 +20,11 @@ class DashboardsController < ApplicationController
 
   def load_student_dashboard
     classroom_id = session[:student_login_classroom_id]
-    membership = current_user.classroom_memberships.active.student.includes(:classroom).find_by(classroom_id: classroom_id)
+    membership = current_user.classroom_memberships.active.student
+      .joins(classroom: :school)
+      .merge(School.active)
+      .includes(:classroom)
+      .find_by(classroom_id: classroom_id)
 
     unless membership
       sign_out(:user)
@@ -39,9 +43,9 @@ class DashboardsController < ApplicationController
     set_period_range
     @period_options = PERIODS.map { |period| [t("dashboard.filters.#{period}"), period] }
 
-    @accessible_classrooms = policy_scope(Classroom)
+    @accessible_classrooms = policy_scope(Classroom).joins(:school).merge(School.active)
     if @show_school_filter
-      @filter_schools = policy_scope(School).order(:name).load
+      @filter_schools = policy_scope(School).active.order(:name).load
       @selected_school = selected_school
       @available_classrooms = if @selected_school
         @accessible_classrooms.where(school_id: @selected_school.id).order(:name).load

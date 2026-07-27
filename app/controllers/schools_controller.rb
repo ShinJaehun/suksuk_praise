@@ -7,7 +7,12 @@ class SchoolsController < ApplicationController
   layout -> { turbo_frame_request? ? false : "application" }
 
   def index
-    @schools = policy_scope(School).order(:name, :id).load
+    schools_scope = policy_scope(School)
+    if current_user.admin?
+      @school_status = params[:status].presence_in(%w[active inactive all]) || "active"
+      schools_scope = schools_scope.where(active: @school_status == "active") unless @school_status == "all"
+    end
+    @schools = schools_scope.order(:name, :id).load
     authorize School
 
     redirect_to school_path(@schools.first) and return if current_user.active_teacher? && @schools.one?

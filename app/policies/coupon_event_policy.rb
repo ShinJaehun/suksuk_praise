@@ -5,12 +5,18 @@ class CouponEventPolicy < ApplicationPolicy
       return scope.all  if user.admin?
 
       if user.active_teacher?
+        active_classroom_ids = Classroom
+          .joins(:school)
+          .merge(School.active)
+          .select(:id)
         teacher_classroom_ids = user.classroom_memberships
+                                    .joins(classroom: :school)
+                                    .merge(School.active)
                                     .where(role: "teacher")
                                     .pluck(:classroom_id)
 
         scope.where(classroom_id: teacher_classroom_ids)
-             .or(scope.where(actor_id: user.id)) # 본인이 행한 이벤트는 항상 볼 수 있게
+             .or(scope.where(actor_id: user.id, classroom_id: active_classroom_ids))
              .distinct
       else
         scope.none

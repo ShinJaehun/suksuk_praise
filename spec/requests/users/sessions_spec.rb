@@ -112,4 +112,32 @@ RSpec.describe 'Users::Sessions', type: :request do
 
     expect(response).to redirect_to(classroom_student_path(classroom, student))
   end
+
+  it "blocks an inactive school's PIN page and restores it after reactivation" do
+    classroom.school.update!(active: false)
+
+    get public_student_login_path(student_login_token: classroom.student_login_token)
+    expect(response).to have_http_status(:not_found)
+    expect(response.body).not_to include(student.name)
+
+    classroom.school.update!(active: true)
+    get public_student_login_path(student_login_token: classroom.student_login_token)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(student.name)
+  end
+
+  it "expires an existing student session when the school becomes inactive" do
+    post public_student_login_path(student_login_token: classroom.student_login_token), params: {
+      student_id: student.id,
+      student_pin: "1234"
+    }
+    classroom.school.update!(active: false)
+
+    get classroom_student_path(classroom, student)
+
+    expect(response).to redirect_to(
+      public_student_login_path(student_login_token: classroom.student_login_token)
+    )
+    expect(controller.current_user).to be_nil
+  end
 end

@@ -66,6 +66,7 @@ RSpec.describe 'Coupon events', type: :request do
   it "keeps an inactive teacher visible as a past event actor" do
     event = create(:coupon_event, actor: teacher, classroom: classroom)
     teacher.update!(active: false)
+    classroom.school.update!(active: false)
     sign_in create(:user, :admin)
 
     get coupon_events_path(period: "all_time")

@@ -32,6 +32,46 @@ RSpec.describe 'Admin schools', type: :request do
     expect(response.body).to include('data-turbo-frame="modal"')
   end
 
+  it "filters schools by lifecycle status" do
+    active_school = school
+    inactive_school = create(:school, name: "비활성 학교", active: false)
+    sign_in admin
+
+    get schools_path
+    expect(response.body).to include(active_school.name)
+    expect(response.body).not_to include(inactive_school.name)
+    expect(Nokogiri::HTML(response.body).at_css('select[name="status"] option[selected]')["value"]).to eq("active")
+
+    get schools_path(status: "inactive")
+    expect(response.body).to include(inactive_school.name, "비활성")
+    expect(response.body).not_to include(active_school.name)
+
+    get schools_path(status: "all")
+    expect(response.body).to include(active_school.name, inactive_school.name)
+
+    get schools_path(status: "unknown")
+    expect(response.body).to include(active_school.name)
+    expect(response.body).not_to include(inactive_school.name)
+  end
+
+  it "deactivates and reactivates a school without removing related data" do
+    classroom = create(:classroom, school: school)
+    membership = create(:school_membership, school: school)
+    closure = create(:school_closure, school: school)
+    sign_in admin
+
+    patch deactivate_admin_school_path(school)
+
+    expect(school.reload).to be_inactive
+    expect(classroom.reload.school).to eq(school)
+    expect(membership.reload.school).to eq(school)
+    expect(closure.reload.school).to eq(school)
+
+    patch reactivate_admin_school_path(school, status: "inactive")
+    expect(school.reload).to be_active
+    expect(response).to redirect_to(schools_path(status: "inactive"))
+  end
+
   it 'does not show school management in a teacher classrooms index' do
     sign_in teacher
 
@@ -183,6 +223,9 @@ RSpec.describe 'Admin schools', type: :request do
     patch admin_school_path(school), params: { school: { name: '조작된 이름' } }
     expect(response).to redirect_to(root_path)
     expect(school.reload.name).to eq('새싹초등학교')
+
+    patch deactivate_admin_school_path(school)
+    expect(response).to redirect_to(root_path)
   end
 
   it 'requires authentication' do

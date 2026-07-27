@@ -65,6 +65,20 @@ RSpec.describe CouponEventPolicy do
       expect(resolved).to contain_exactly(classroom_event, actor_event)
     end
 
+    it "excludes assigned and actor events from inactive schools for teachers" do
+      teacher = create(:user, :teacher)
+      school = create(:school, active: false)
+      assigned_classroom = create(:classroom, school: school)
+      actor_classroom = create(:classroom, school: school)
+      create(:classroom_membership, user: teacher, classroom: assigned_classroom, role: "teacher")
+      assigned_event = create_event(classroom: assigned_classroom, actor: create(:user, :admin))
+      actor_event = create_event(classroom: actor_classroom, actor: teacher)
+
+      resolved = described_class::Scope.new(teacher, CouponEvent.all).resolve
+
+      expect(resolved).not_to include(assigned_event, actor_event)
+    end
+
     it "returns no events for student and guest" do
       event = create_event(classroom: create(:classroom), actor: create(:user, :teacher))
       student = create(:user, :student)

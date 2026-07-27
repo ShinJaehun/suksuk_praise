@@ -2,7 +2,7 @@ class SchoolPolicy < ApplicationPolicy
   class Scope < ApplicationPolicy::Scope
     def resolve
       return scope.all if user&.admin?
-      return scope.where(id: user.school_membership.school_id) if user&.active_teacher? && user.school_membership
+      return scope.active.where(id: user.school_membership.school_id) if user&.active_teacher? && user.school_membership
 
       scope.none
     end
@@ -13,15 +13,15 @@ class SchoolPolicy < ApplicationPolicy
   end
 
   def show?
-    admin? || school_member?
+    admin? || (record.active? && school_member?)
   end
 
   def manage_operations?
-    admin? || school_manager?
+    record.active? && (admin? || school_manager?)
   end
 
   def manage_teachers?
-    school_manager?
+    record.active? && school_manager?
   end
 
   def create?
@@ -32,8 +32,16 @@ class SchoolPolicy < ApplicationPolicy
     admin?
   end
 
+  def deactivate?
+    admin? && record.active?
+  end
+
+  def reactivate?
+    admin? && record.inactive?
+  end
+
   def destroy?
-    admin?
+    false
   end
 
   private

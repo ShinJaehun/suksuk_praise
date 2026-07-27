@@ -68,4 +68,24 @@ RSpec.describe "School overview", type: :request do
     expect(overview.text).to include("소속 교사", "1명", active_manager.name)
     expect(overview.text).not_to include(inactive_manager.name, "3명")
   end
+
+  it "keeps an inactive school readable to admins but blocks members until reactivation" do
+    school_manager = manager
+    school.update!(active: false)
+    sign_in create(:user, :admin)
+
+    get school_path(school)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include(school.name, "비활성")
+    expect(response.body).not_to include('data-controller="school-closure-picker"')
+    expect(response.body).not_to include(school_school_closures_path(school))
+
+    sign_in school_manager
+    get school_path(school)
+    expect(response).to have_http_status(:not_found)
+
+    school.update!(active: true)
+    get school_path(school)
+    expect(response).to have_http_status(:ok)
+  end
 end

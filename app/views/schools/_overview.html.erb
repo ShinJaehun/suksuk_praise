@@ -3,6 +3,7 @@
     <div>
       <p class="text-sm font-semibold text-sky-700"><%= t("schools.show.operations_title") %></p>
       <h1 class="mt-1 text-3xl font-extrabold tracking-tight text-slate-900"><%= school.name %></h1>
+      <span class="mt-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold <%= school.active? ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600" %>"><%= t(school.active? ? "school_status.active" : "school_status.inactive") %></span>
     </div>
     <div class="flex flex-wrap items-center gap-2">
       <%= link_to t("schools.show.back_to_classrooms"), classrooms_path,

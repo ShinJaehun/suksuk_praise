@@ -71,4 +71,28 @@ RSpec.describe School, type: :model do
 
     expect(school.teachers).to contain_exactly(teacher)
   end
+
+  it "defaults to active and provides active lifecycle scopes" do
+    active_school = create(:school)
+    inactive_school = create(:school, active: false)
+
+    expect(active_school).to be_active
+    expect(inactive_school).to be_inactive
+    expect(described_class.active).to include(active_school)
+    expect(described_class.active).not_to include(inactive_school)
+    expect(described_class.inactive).to include(inactive_school)
+  end
+
+  it "keeps related records when deactivated" do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
+    membership = create(:school_membership, school: school)
+    closure = create(:school_closure, school: school)
+
+    school.update!(active: false)
+
+    expect(classroom.reload.school).to eq(school)
+    expect(membership.reload.school).to eq(school)
+    expect(closure.reload.school).to eq(school)
+  end
 end

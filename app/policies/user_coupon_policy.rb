@@ -7,6 +7,8 @@ class UserCouponPolicy < ApplicationPolicy
 
       if user.active_teacher?
         teacher_classroom_ids = ClassroomMembership
+          .joins(classroom: :school)
+          .merge(School.active)
           .where(user_id: user.id, role: "teacher")
           .select(:classroom_id)
         return scope.where(classroom_id: teacher_classroom_ids)
@@ -15,6 +17,8 @@ class UserCouponPolicy < ApplicationPolicy
       # 학생: 본인 것만
       if user.student?
         student_classroom_ids = user.classroom_memberships
+          .joins(classroom: :school)
+          .merge(School.active)
           .where(role: "student", status: "active")
           .select(:classroom_id)
         return scope.where(user_id: user.id, classroom_id: student_classroom_ids)
@@ -32,6 +36,7 @@ class UserCouponPolicy < ApplicationPolicy
   # 쿠폰 사용: 해당 교실의 교사 or 관리자
   def use?
     return false unless user
+    return false unless record.classroom&.school&.active?
 
     user.admin? || teacher_of?(record.classroom)
   end

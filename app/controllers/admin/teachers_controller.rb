@@ -247,7 +247,10 @@ class Admin::TeachersController < Admin::BaseController
     return nil if teacher_assignment_params[:school_id].blank?
 
     @selected_school = School.find_by(id: teacher_assignment_params[:school_id])
-    return @selected_school if @selected_school
+    if @selected_school&.active? ||
+        @selected_school&.id == @teacher.school_membership&.school_id
+      return @selected_school
+    end
 
     @school_selection_invalid = true
     @teacher.errors.add(:base, t('admin.teachers.errors.school_not_found'))
@@ -275,6 +278,12 @@ class Admin::TeachersController < Admin::BaseController
     elsif school && Classroom.where(id: requested_ids).where.not(school_id: school.id).exists?
       @classroom_selection_invalid = true
       @teacher.errors.add(:base, t('admin.teachers.errors.classroom_school_mismatch'))
+    elsif school&.inactive?
+      current_ids = @teacher.classroom_memberships.teacher.pluck(:classroom_id)
+      if (requested_ids - current_ids).any?
+        @classroom_selection_invalid = true
+        @teacher.errors.add(:base, t("school_status.inactive_school"))
+      end
     end
 
     @selected_classroom_ids
@@ -300,7 +309,8 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def load_school_assignment_form
-    @schools = School.order(:name, :id).load
+    current_school_id = @teacher.school_membership&.school_id
+    @schools = School.active.or(School.where(id: current_school_id)).order(:name, :id).load
     @classrooms_by_school = Classroom.where(school_id: @schools.map(&:id)).order(:name, :id).group_by(&:school_id)
     load_selected_school
     @selected_classroom_ids =

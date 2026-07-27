@@ -4,12 +4,18 @@ class UserMessagePolicy < ApplicationPolicy
       return scope.all if user&.admin?
 
       if user&.active_teacher?
-        teacher_classroom_ids = user.classroom_memberships.where(role: "teacher").pluck(:classroom_id)
+        teacher_classroom_ids = user.classroom_memberships
+          .joins(classroom: :school)
+          .merge(School.active)
+          .where(role: "teacher")
+          .pluck(:classroom_id)
         return scope.where(classroom_id: teacher_classroom_ids)
       end
 
       if user&.student?
         student_classroom_ids = user.classroom_memberships
+          .joins(classroom: :school)
+          .merge(School.active)
           .where(role: "student", status: "active")
           .select(:classroom_id)
         return scope
@@ -22,6 +28,7 @@ class UserMessagePolicy < ApplicationPolicy
   end
 
   def create?
+    return false unless record.classroom&.school&.active?
     return false unless record.classroom&.student_messages_enabled?
 
     return admin_message_to_student? if user&.admin?
@@ -33,6 +40,7 @@ class UserMessagePolicy < ApplicationPolicy
 
   def show?
     return true if user&.admin?
+    return false unless record.classroom&.school&.active?
 
     if user&.active_teacher?
       return false unless record.classroom.present?

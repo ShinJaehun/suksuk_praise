@@ -1,5 +1,6 @@
 class CouponUseRequestPolicy < ApplicationPolicy
   def create?
+    return false unless record.classroom&.school&.active?
     return false unless user&.student?
     return false unless record.student_id == user.id
     return false unless record.requested_by_id == user.id
@@ -16,6 +17,7 @@ class CouponUseRequestPolicy < ApplicationPolicy
 
   def approve?
     return false unless user
+    return false unless record.classroom&.school&.active?
     return true if user.admin?
 
     user.active_teacher? && ClassroomMembership.exists?(

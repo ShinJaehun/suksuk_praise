@@ -78,6 +78,35 @@ RSpec.describe 'School workspaces', type: :request do
     end
   end
 
+  it "shows school navigation only while a manager's school is active" do
+    school_manager = manager
+    sign_in school_manager
+
+    get classrooms_path
+    expect(response.body.scan(%(href="#{school_path(school)}")).size).to eq(2)
+    expect(response.body.scan(%(href="#{school_teachers_path(school)}")).size).to eq(2)
+
+    school.update!(active: false)
+    get classrooms_path
+    expect(response.body).not_to include(%(href="#{school_path(school)}"))
+    expect(response.body).not_to include(%(href="#{school_teachers_path(school)}"))
+
+    school.update!(active: true)
+    get classrooms_path
+    expect(response.body.scan(%(href="#{school_path(school)}")).size).to eq(2)
+    expect(response.body.scan(%(href="#{school_teachers_path(school)}")).size).to eq(2)
+  end
+
+  it "does not show school navigation to a member of an inactive school" do
+    school.update!(active: false)
+    sign_in member
+
+    get classrooms_path
+
+    expect(response.body).not_to include(%(href="#{school_path(school)}"))
+    expect(response.body).not_to include(%(href="#{school_teachers_path(school)}"))
+  end
+
   it 'allows members and managers to view only their school' do
     [member, manager].each do |teacher|
       sign_in teacher

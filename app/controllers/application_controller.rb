@@ -48,7 +48,11 @@ class ApplicationController < ActionController::Base
     return [] unless current_user&.active_teacher?
     return @teacher_nav_classrooms if defined?(@teacher_nav_classrooms)
 
-    @teacher_nav_classrooms = current_user.classroom_memberships.teacher.includes(:classroom).map(&:classroom)
+    @teacher_nav_classrooms = current_user.classroom_memberships.teacher
+      .joins(classroom: :school)
+      .merge(School.active)
+      .includes(:classroom)
+      .map(&:classroom)
   end
 
   def expire_inactive_teacher_session
@@ -129,7 +133,7 @@ class ApplicationController < ActionController::Base
   end
 
   def active_student_membership?(classroom_id)
-    ClassroomMembership.exists?(
+    ClassroomMembership.joins(classroom: :school).merge(School.active).exists?(
       classroom_id: classroom_id,
       user_id: current_user.id,
       role: "student",
@@ -157,7 +161,10 @@ class ApplicationController < ActionController::Base
     return user_path(user) if user.student?
     return schools_path if user.admin?
 
-    managed_membership = user.school_membership&.manager? ? user.school_membership : nil
+    managed_membership =
+      if user.school_membership&.manager? && user.school_membership.school.active?
+        user.school_membership
+      end
     return school_path(managed_membership.school) if managed_membership
 
     regular_teacher_landing_path_for(user)
@@ -165,7 +172,8 @@ class ApplicationController < ActionController::Base
 
   def regular_teacher_landing_path_for(user)
     classrooms = Classroom
-      .joins(:classroom_memberships)
+      .joins(:school, :classroom_memberships)
+      .merge(School.active)
       .where(classroom_memberships: { user_id: user.id, role: "teacher" })
       .distinct
       .order(:id)

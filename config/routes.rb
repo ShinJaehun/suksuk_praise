@@ -151,6 +151,8 @@ Rails.application.routes.draw do
       post :sync, on: :collection
     end
     resources :schools, only: %i[new create edit update] do
+      patch :deactivate, on: :member
+      patch :reactivate, on: :member
       resources :school_managers, only: :create, path: :managers
       delete "managers/:user_id", to: "school_managers#destroy", as: :manager
     end
