@@ -13,6 +13,41 @@ RSpec.describe School, type: :model do
     expect(school).not_to be_valid
   end
 
+  it "accepts a palette color key" do
+    school = described_class.new(name: "보라초등학교", color_key: "violet")
+
+    expect(school).to be_valid
+  end
+
+  it "rejects a color outside the palette" do
+    school = described_class.new(name: "빨강초등학교", color_key: "red")
+
+    expect(school).not_to be_valid
+  end
+
+  it "assigns sky to the first school without a color" do
+    school = create(:school)
+
+    expect(school.color_key).to eq("sky")
+  end
+
+  it "preserves an explicitly assigned color" do
+    school = create(:school, color_key: "violet")
+
+    expect(school.color_key).to eq("violet")
+  end
+
+  it "assigns the earliest least-used palette color" do
+    described_class::COLOR_KEYS.each do |color_key|
+      create(:school, color_key: color_key)
+    end
+    create(:school, color_key: "sky")
+
+    school = create(:school)
+
+    expect(school.color_key).to eq("emerald")
+  end
+
   it "can have many classrooms" do
     school = create(:school)
     first_classroom = create(:classroom, school: school)
