@@ -64,6 +64,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
   end
 
   it 'shows a school filter to an admin while keeping the full classroom list by default' do
+    school.update!(color_key: "emerald")
     other_school = create(:school, name: '나래초등학교')
     classroom = create(:classroom, school: school, name: '새싹 학급')
     other_classroom = create(:classroom, school: other_school, name: '나래 학급')
@@ -80,6 +81,12 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).to include(classroom_path(classroom), classroom_path(other_classroom))
     expect(response.body).not_to include(new_admin_school_path)
     expect(response.body).not_to include(edit_admin_school_path(school))
+
+    document = Nokogiri::HTML(response.body)
+    classroom_card = document.at_xpath("//h2[normalize-space()='#{classroom.name}']/ancestor::article[1]")
+
+    expect(classroom_card["class"]).to include("border-emerald-200", "bg-emerald-50/70")
+    expect(classroom_card.at_css(".bg-emerald-500")).to be_present
   end
 
   it 'filters classrooms by selected school for an admin' do

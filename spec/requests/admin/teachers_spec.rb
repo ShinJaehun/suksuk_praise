@@ -5,7 +5,7 @@ RSpec.describe "Admin teachers", type: :request do
   let(:teacher) { create(:user, :teacher, name: "담당 교사") }
 
   it "shows the teacher management index to an admin" do
-    school = create(:school, name: "새싹초등학교")
+    school = create(:school, name: "새싹초등학교", color_key: "orange")
     other_school = create(:school, name: "나래초등학교")
     classroom = create(:classroom, school: school, grade: 4, name: "4학년 1반")
     manager = create(:school_membership, :manager, school: school, user: teacher).user
@@ -30,6 +30,15 @@ RSpec.describe "Admin teachers", type: :request do
     expect(response.body).to include(edit_admin_teacher_path(manager))
     expect(response.body).to include(edit_admin_teacher_path(member_teacher))
     expect(response.body).to include('data-turbo-frame="modal"')
+
+    document = Nokogiri::HTML(response.body)
+    teacher_row = document.at_xpath("//p[normalize-space()='#{teacher.name}']/ancestor::article[1]")
+    unassigned_row = document.at_xpath("//p[normalize-space()='#{unassigned_teacher.name}']/ancestor::article[1]")
+
+    expect(teacher_row["class"]).to include("border-l-orange-400", "bg-orange-50/60")
+    expect(teacher_row.at_css(".bg-orange-500")).to be_present
+    expect(unassigned_row["class"]).to include("border-l-slate-200", "bg-white")
+    expect(unassigned_row.css("[class*='bg-orange-500']").to_a).to be_empty
   end
 
   it "filters the teacher management index by school" do

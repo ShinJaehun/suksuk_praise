@@ -73,6 +73,7 @@ class Admin::TeachersController < Admin::BaseController
 
     scope.order(:created_at)
       .map do |teacher|
+        school = teacher.school_membership&.school
         classrooms = teacher.classroom_memberships
           .select(&:teacher?)
           .map(&:classroom)
@@ -82,7 +83,8 @@ class Admin::TeachersController < Admin::BaseController
 
         {
           teacher: teacher,
-          school_name: teacher.school_membership&.school&.name || t("admin.teachers.index.unassigned_school"),
+          school_name: school&.name || t("admin.teachers.index.unassigned_school"),
+          school_color_key: school&.color_key,
           school_role_label: teacher_school_role_label(teacher),
           grade_label: grades.any? ? t("classrooms.index.grades", grades: grades.join(", ")) : t("classrooms.index.grade_unspecified"),
           classroom_names: classroom_names,

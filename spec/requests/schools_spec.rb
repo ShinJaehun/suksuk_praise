@@ -3,8 +3,8 @@ require 'rails_helper'
 RSpec.describe 'School workspaces', type: :request do
   include ActiveSupport::Testing::TimeHelpers
 
-  let!(:school) { create(:school, name: '새싹초등학교') }
-  let!(:other_school) { create(:school, name: '다른초등학교') }
+  let!(:school) { create(:school, name: '새싹초등학교', color_key: 'sky') }
+  let!(:other_school) { create(:school, name: '다른초등학교', color_key: 'violet') }
   let(:admin) { create(:user, :admin) }
   let(:member) { create(:user, :teacher) }
   let(:manager) { create(:user, :teacher) }
@@ -32,6 +32,15 @@ RSpec.describe 'School workspaces', type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(school.name, other_school.name)
     expect(response.body).not_to include('translation missing')
+
+    document = Nokogiri::HTML(response.body)
+    school_card = document.at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
+    other_school_card = document.at_xpath("//h2[normalize-space()='#{other_school.name}']/ancestor::article[1]")
+
+    expect(school_card["class"]).to include("border-sky-200", "bg-sky-50/70")
+    expect(school_card.at_css(".bg-sky-500")).to be_present
+    expect(other_school_card["class"]).to include("border-violet-200", "bg-violet-50/70")
+    expect(other_school_card.at_css(".bg-violet-500")).to be_present
   end
 
   it 'redirects a member or manager index to their only school without exposing others' do
