@@ -428,7 +428,7 @@ RSpec.describe 'Student PIN sessions', type: :request do
       }
     }
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(classroom_path(classroom))
     expect(controller.current_user).to eq(teacher)
   end
 

@@ -152,7 +152,19 @@ class ApplicationController < ActionController::Base
     managed_membership = user.school_membership&.manager? ? user.school_membership : nil
     return school_path(managed_membership.school) if managed_membership
 
-    classrooms_path
+    regular_teacher_landing_path_for(user)
+  end
+
+  def regular_teacher_landing_path_for(user)
+    classrooms = Classroom
+      .joins(:classroom_memberships)
+      .where(classroom_memberships: { user_id: user.id, role: "teacher" })
+      .distinct
+      .order(:id)
+      .limit(2)
+      .to_a
+
+    classrooms.one? ? classroom_path(classrooms.first) : classrooms_path
   end
 
   # index가 아닌 액션에서는 authorize 검증, Devise 컨트롤러는 제외

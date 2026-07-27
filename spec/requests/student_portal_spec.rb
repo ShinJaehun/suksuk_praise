@@ -64,12 +64,12 @@ RSpec.describe 'Student portal flow', type: :request do
       expect(response).to redirect_to(schools_path)
     end
 
-    it 'redirects a teacher from their own user show to classrooms index' do
+    it 'redirects a teacher from their own user show to their one assigned classroom' do
       sign_in teacher
 
       get user_path(teacher)
 
-      expect(response).to redirect_to(classrooms_path)
+      expect(response).to redirect_to(classroom_path(classroom))
     end
 
     it 'redirects a teacher from their own user show to classrooms index when they have multiple assigned classrooms' do

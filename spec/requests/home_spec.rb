@@ -20,13 +20,13 @@ RSpec.describe 'Home', type: :request do
     expect(response).to redirect_to(classrooms_path)
   end
 
-  it 'redirects a signed-in teacher to classrooms index' do
+  it 'redirects a signed-in teacher with one assigned classroom to that classroom' do
     create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
     sign_in teacher
 
     get root_path
 
-    expect(response).to redirect_to(classrooms_path)
+    expect(response).to redirect_to(classroom_path(classroom))
   end
 
   it 'redirects a signed-in teacher with multiple assigned classrooms to classrooms index' do
