@@ -73,13 +73,16 @@
         />
       <% end %>
 
+      <% zero_axis_y = @y_axis_ticks.find { |tick| tick[:value].zero? }.fetch(:y) %>
+      <% marker_step = 11 %>
+      <% stack_bottom_y = zero_axis_y - 8 %>
       <% @weekly_activity.each do |activity| %>
         <g data-graph-weekday="<%= activity[:label] %>"
            data-graph-date="<%= activity[:date].strftime("%-m/%-d") %>"
            data-praise-count="<%= activity[:praise_count] %>"
            data-issued-coupon-count="<%= activity[:issued_coupon_count] %>"
            data-used-coupon-count="<%= activity[:used_coupon_count] %>">
-          <title><%= activity[:label] %>요일 받은 칭찬 <%= activity[:praise_count] %>개</title>
+          <title><%= activity[:label] %>요일 받은 칭찬 <%= activity[:praise_count] %>개, 받은 쿠폰 <%= activity[:issued_coupon_count] %>개, 사용한 쿠폰 <%= activity[:used_coupon_count] %>개</title>
           <% unless @weekly_activity_empty %>
             <circle cx="<%= activity[:x] %>"
                     cy="<%= activity[:y] %>"
@@ -90,18 +93,33 @@
                     data-graph-point="praise" />
           <% end %>
 
-          <% marker_y = [activity[:y] - 22, 17].max %>
-          <% if activity[:issued_coupon_count].positive? %>
-            <text x="<%= activity[:x] - (activity[:used_coupon_count].positive? ? 10 : 0) %>"
-                  y="<%= marker_y %>"
-                  text-anchor="middle"
-                  class="text-[15px]">🎁</text>
+          <% issued_count = activity[:issued_coupon_count] %>
+          <% used_count = activity[:used_coupon_count] %>
+          <% if issued_count.positive? %>
+            <g data-coupon-marker-stack="issued"
+               data-marker-count="<%= issued_count %>">
+              <% issued_count.times do |index| %>
+                <text x="<%= activity[:x] - 11 %>"
+                      y="<%= stack_bottom_y - (index * marker_step) %>"
+                      text-anchor="middle"
+                      class="text-[15px]"
+                      data-coupon-marker="issued"
+                      data-marker-index="<%= index %>">🎁</text>
+              <% end %>
+            </g>
           <% end %>
-          <% if activity[:used_coupon_count].positive? %>
-            <text x="<%= activity[:x] + (activity[:issued_coupon_count].positive? ? 10 : 0) %>"
-                  y="<%= marker_y %>"
-                  text-anchor="middle"
-                  class="text-[15px]">✅</text>
+          <% if used_count.positive? %>
+            <g data-coupon-marker-stack="used"
+               data-marker-count="<%= used_count %>">
+              <% used_count.times do |index| %>
+                <text x="<%= activity[:x] + 11 %>"
+                      y="<%= stack_bottom_y - (index * marker_step) %>"
+                      text-anchor="middle"
+                      class="text-[15px]"
+                      data-coupon-marker="used"
+                      data-marker-index="<%= index %>">✅</text>
+              <% end %>
+            </g>
           <% end %>
 
           <text x="<%= activity[:x] %>"

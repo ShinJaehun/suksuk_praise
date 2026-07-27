@@ -217,6 +217,15 @@ RSpec.describe "Dashboards", type: :request do
           classroom: classroom,
           issuance_basis: "manual",
           issued_at: Time.zone.local(2026, 4, 6, 12, 0, 0))
+        2.times do |index|
+          create(:user_coupon,
+            user: student,
+            classroom: classroom,
+            status: :used,
+            issuance_basis: "manual",
+            issued_at: Time.zone.local(2026, 4, 6, 13 + index, 0, 0),
+            used_at: Time.zone.local(2026, 4, 6, 15 + index, 0, 0))
+        end
         create(:user_coupon,
           user: student,
           classroom: classroom,
@@ -273,8 +282,8 @@ RSpec.describe "Dashboards", type: :request do
       expect(document.at_css('[data-summary="total-praise"]')["data-count"]).to eq("10")
       expect(document.at_css('[data-summary="weekly-praise"]')["data-count"]).to eq("9")
       expect(document.at_css('[data-summary="held-coupons"]')["data-count"]).to eq("3")
-      expect(document.at_css('[data-summary="weekly-issued-coupons"]')["data-count"]).to eq("2")
-      expect(document.at_css('[data-summary="weekly-used-coupons"]')["data-count"]).to eq("2")
+      expect(document.at_css('[data-summary="weekly-issued-coupons"]')["data-count"]).to eq("4")
+      expect(document.at_css('[data-summary="weekly-used-coupons"]')["data-count"]).to eq("4")
       graph = document.at_css('svg[aria-label="월요일부터 금요일까지 받은 칭찬과 쿠폰 활동 그래프"]')
       expect(graph).to be_present
       expect(graph.at_css('[data-graph-series="praise"]')["stroke"]).to eq("#3b82f6")
@@ -282,7 +291,7 @@ RSpec.describe "Dashboards", type: :request do
       expect(graph.css("[data-y-axis-tick]").map { |tick| tick["data-y-axis-tick"] }).to contain_exactly("0", "2", "4", "6", "8")
 
       expected_activity = {
-        "월" => %w[8 1 0],
+        "월" => %w[8 3 2],
         "화" => %w[0 1 0],
         "수" => %w[1 0 1],
         "목" => %w[0 0 1],
@@ -297,6 +306,39 @@ RSpec.describe "Dashboards", type: :request do
           graph_activity["data-used-coupon-count"]
         ]).to eq(counts)
       end
+
+      monday_activity = document.at_css('[data-graph-weekday="월"]')
+      praise_point_x = monday_activity.at_css('[data-graph-point="praise"]')["cx"].to_f
+      praise_point_y = monday_activity.at_css('[data-graph-point="praise"]')["cy"].to_f
+      zero_y = graph.at_css('[data-grid-line="0"]')["y1"].to_f
+      issued_stack = monday_activity.at_css('[data-coupon-marker-stack="issued"]')
+      used_stack = monday_activity.at_css('[data-coupon-marker-stack="used"]')
+      issued_markers = monday_activity.css('[data-coupon-marker="issued"]')
+      used_markers = monday_activity.css('[data-coupon-marker="used"]')
+      issued_bottom_marker = monday_activity.at_css('[data-coupon-marker="issued"][data-marker-index="0"]')
+      used_bottom_marker = monday_activity.at_css('[data-coupon-marker="used"][data-marker-index="0"]')
+      tuesday_issued_bottom_marker = document.at_css(
+        '[data-graph-weekday="화"] [data-coupon-marker="issued"][data-marker-index="0"]'
+      )
+
+      expect(issued_stack["data-marker-count"]).to eq("3")
+      expect(used_stack["data-marker-count"]).to eq("2")
+      expect(issued_markers.size).to eq(3)
+      expect(used_markers.size).to eq(2)
+      expect(issued_markers.map { |node| node.text.strip }).to all(eq("🎁"))
+      expect(used_markers.map { |node| node.text.strip }).to all(eq("✅"))
+      expect(issued_markers.map { |node| node["x"].to_f }).to all(be < praise_point_x)
+      expect(used_markers.map { |node| node["x"].to_f }).to all(be > praise_point_x)
+      expect(issued_markers.map { |node| node["x"] }.uniq.size).to eq(1)
+      expect(used_markers.map { |node| node["x"] }.uniq.size).to eq(1)
+      expect(issued_markers.map { |node| node["y"] }.uniq.size).to eq(3)
+      expect(used_markers.map { |node| node["y"] }.uniq.size).to eq(2)
+      expect(issued_bottom_marker["y"].to_f).to be < zero_y
+      expect(used_bottom_marker["y"].to_f).to be < zero_y
+      expect(issued_bottom_marker["y"]).to eq(used_bottom_marker["y"])
+      expect(issued_bottom_marker["y"]).to eq(tuesday_issued_bottom_marker["y"])
+      expect(issued_bottom_marker["y"].to_f).not_to eq(praise_point_y)
+      expect(monday_activity.at_css("title").text).to include("받은 칭찬 8개", "받은 쿠폰 3개", "사용한 쿠폰 2개")
       expect(response.body).to include("2026.04.06 ~ 2026.04.10")
       expect(document.at_css('a[aria-label="이전 주 보기"]')["href"]).to eq(dashboard_path(week_offset: -1))
       expect(document.at_css('a[aria-label="다음 주 보기"]')["href"]).to eq(dashboard_path(week_offset: 1))
