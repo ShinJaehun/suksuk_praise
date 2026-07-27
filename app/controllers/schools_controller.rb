@@ -66,7 +66,7 @@ class SchoolsController < ApplicationController
   end
 
   def school_params
-    params.require(:school).permit(:name)
+    params.require(:school).permit(:name, :color_key)
   end
 
   def school_overview_locals

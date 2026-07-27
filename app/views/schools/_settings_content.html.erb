@@ -17,6 +17,36 @@
 </section>
 
 <section class="rounded-xl border border-slate-200 p-4">
+  <h2 class="text-base font-bold text-slate-900"><%= t("schools.settings.color_title") %></h2>
+  <p class="mt-1 text-sm text-slate-500"><%= t("schools.settings.color_description") %></p>
+
+  <%= form_with model: @school, class: "mt-3 space-y-3", data: { turbo_frame: "_top" } do |form| %>
+    <fieldset>
+      <legend class="sr-only"><%= t("schools.settings.color_label") %></legend>
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <% School::COLOR_KEYS.each do |color_key| %>
+          <label class="relative cursor-pointer">
+            <%= form.radio_button :color_key,
+                  color_key,
+                  class: "peer sr-only" %>
+            <span class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 peer-checked:border-slate-900 peer-checked:ring-2 peer-checked:ring-slate-300 peer-focus-visible:ring-2 peer-focus-visible:ring-sky-500">
+              <span class="h-4 w-4 shrink-0 rounded-full <%= school_color_swatch_class(color_key) %>"></span>
+              <%= t("schools.settings.colors.#{color_key}") %>
+            </span>
+          </label>
+        <% end %>
+      </div>
+      <% if @school.errors[:color_key].any? %>
+        <p class="mt-2 text-sm text-rose-600"><%= @school.errors.full_messages_for(:color_key).to_sentence %></p>
+      <% end %>
+    </fieldset>
+    <%= form.submit t("schools.settings.color_submit"),
+          data: { turbo_submits_with: t("ui.processing") },
+          class: "rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white" %>
+  <% end %>
+</section>
+
+<section class="rounded-xl border border-slate-200 p-4">
   <h2 class="text-base font-bold text-slate-900"><%= t("schools.settings.managers_title") %></h2>
   <div class="mt-3 space-y-2">
     <% if @managers.any? %>

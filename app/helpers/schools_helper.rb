@@ -1,4 +1,19 @@
 module SchoolsHelper
+  SCHOOL_COLOR_SWATCH_CLASSES = {
+    "sky" => "bg-sky-500",
+    "emerald" => "bg-emerald-500",
+    "violet" => "bg-violet-500",
+    "amber" => "bg-amber-500",
+    "rose" => "bg-rose-500",
+    "teal" => "bg-teal-500",
+    "indigo" => "bg-indigo-500",
+    "orange" => "bg-orange-500"
+  }.freeze
+
+  def school_color_swatch_class(color_key)
+    SCHOOL_COLOR_SWATCH_CLASSES.fetch(color_key, SCHOOL_COLOR_SWATCH_CLASSES.fetch("sky"))
+  end
+
   def school_calendar_day_classes(date:, calendar_month:, today:, closures:, public_holidays:)
     classes = ["school-closure-calendar__day"]
     classes << "school-closure-calendar__day--saturday" if date.saturday?
