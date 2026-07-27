@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_27_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_27_025137) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -190,6 +190,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_27_000000) do
     t.string "color_key", null: false
   end
 
+  create_table "student_activity_notes", force: :cascade do |t|
+    t.bigint "student_id", null: false
+    t.bigint "classroom_id", null: false
+    t.bigint "author_id", null: false
+    t.string "source_type", null: false
+    t.bigint "source_id", null: false
+    t.text "body", null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_id"], name: "index_student_activity_notes_on_author_id"
+    t.index ["classroom_id"], name: "index_student_activity_notes_on_classroom_id"
+    t.index ["source_type", "source_id", "author_id"], name: "idx_activity_notes_source_author", unique: true
+    t.index ["student_id", "occurred_at"], name: "idx_activity_notes_student_occurred"
+    t.index ["student_id"], name: "index_student_activity_notes_on_student_id"
+  end
+
   create_table "user_coupons", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "coupon_template_id", null: false
@@ -279,6 +296,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_27_000000) do
   add_foreign_key "school_closures", "schools"
   add_foreign_key "school_memberships", "schools"
   add_foreign_key "school_memberships", "users", on_delete: :cascade
+  add_foreign_key "student_activity_notes", "classrooms"
+  add_foreign_key "student_activity_notes", "users", column: "author_id"
+  add_foreign_key "student_activity_notes", "users", column: "student_id"
   add_foreign_key "user_coupons", "classrooms"
   add_foreign_key "user_coupons", "coupon_templates"
   add_foreign_key "user_coupons", "users"

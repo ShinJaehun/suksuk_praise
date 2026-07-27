@@ -3,6 +3,7 @@ class CouponEvent < ApplicationRecord
   belongs_to :user_coupon
   belongs_to :classroom
   belongs_to :coupon_template
+  has_many :student_activity_notes, as: :source, dependent: :destroy
 
   validates :action, presence: true, inclusion: { in: %w[issued used] }
 end
