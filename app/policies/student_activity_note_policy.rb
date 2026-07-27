@@ -17,6 +17,13 @@ class StudentActivityNotePolicy < ApplicationPolicy
     return false unless teacher?
 
     classroom_id = record.classroom_id || record.source&.classroom_id
-    classroom_id && user.classroom_memberships.exists?(classroom_id: classroom_id, role: "teacher")
+    return false unless classroom_id
+
+    memberships = user.classroom_memberships
+    if memberships.loaded?
+      memberships.any? { |membership| membership.classroom_id == classroom_id && membership.teacher? }
+    else
+      memberships.exists?(classroom_id: classroom_id, role: "teacher")
+    end
   end
 end

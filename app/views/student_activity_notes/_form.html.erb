@@ -1,6 +1,6 @@
 <%# locals: (note:, source:, return_to:) %>
 <% cancel_to = return_to.to_s.sub(/#.*\z/, "") %>
-<div class="mt-2 border-t border-slate-200 bg-slate-100/70 p-3">
+<div class="mt-2 basis-full w-full border-t border-slate-200 bg-slate-100/70 p-3">
   <% if note.errors.any? %>
     <p class="mb-2 text-sm text-rose-600"><%= note.errors.full_messages.to_sentence %></p>
   <% end %>

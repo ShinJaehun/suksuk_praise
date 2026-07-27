@@ -1,10 +1,11 @@
 <%# locals: (note:, source:, return_to:) %>
+<% note_policy = policy(note) %>
 <article class="py-2 text-sm text-slate-700" data-student-activity-note="<%= note.id %>">
   <p class="whitespace-pre-wrap"><%= note.body %></p>
   <div class="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
     <span><%= note.author.name %> · <%= l(note.created_at, format: :short) %></span>
     <span class="flex items-center gap-2">
-      <% if policy(note).update? %>
+      <% if note_policy.update? %>
         <%= link_to t("ui.edit"),
               edit_student_activity_note_path(note, return_to: return_to),
               data: {
@@ -13,7 +14,7 @@
               },
               class: "font-semibold text-slate-600 hover:text-slate-900" %>
       <% end %>
-      <% if policy(note).destroy? %>
+      <% if note_policy.destroy? %>
         <%= button_to t("ui.delete"),
               student_activity_note_path(note, return_to: return_to),
               method: :delete,

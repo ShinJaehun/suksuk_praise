@@ -24,6 +24,18 @@ RSpec.describe StudentActivityNotePolicy do
     expect(described_class.new(author, note).create?).to eq(true)
   end
 
+  it "uses loaded classroom memberships without an exists query" do
+    note
+    memberships = author.classroom_memberships
+    memberships.load
+    expect(memberships).not_to receive(:exists?)
+
+    policy = described_class.new(author, note)
+    expect(policy.create?).to eq(true)
+    expect(policy.update?).to eq(true)
+    expect(policy.destroy?).to eq(true)
+  end
+
   it "rejects creation by an outside teacher, student, or unassigned school manager" do
     manager = create(:user, :teacher)
     create(:school_membership, :manager, school: classroom.school, user: manager)

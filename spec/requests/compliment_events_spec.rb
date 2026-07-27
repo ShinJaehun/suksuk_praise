@@ -55,10 +55,32 @@ RSpec.describe 'Compliment events', type: :request do
 
     panel = document.at_css(%([data-activity-source="Compliment"][data-activity-source-id="#{compliment.id}"]))
     frame_id = dom_id(compliment, :activity_notes)
-    expect(panel.at_css(%(turbo-frame[id="#{frame_id}"]))).to be_present
-    new_link = panel.at_css('[data-activity-note-action="new"]')
+    line = panel.at_css("[data-activity-log-line]")
+    frame = line.at_css(%(turbo-frame[id="#{frame_id}"]))
+    expect(frame["class"]).to include("contents")
+    new_link = frame.at_css('[data-activity-note-action="new"]')
     expect(new_link["href"]).to include("source_type=Compliment", "source_id=#{compliment.id}")
     expect(new_link["data-turbo-frame"]).to eq(frame_id)
+    expect(frame.at_css("[data-student-activity-note-panel]")).to be_nil
+  end
+
+  it "shows another teacher's note with the current teacher's new-note action" do
+    other_teacher = create(:user, :teacher, name: "다른 교사")
+    compliment = create_compliment_for(
+      classroom: classroom,
+      receiver: student,
+      given_at: Time.zone.now
+    )
+    create(:student_activity_note, source: compliment, author: other_teacher, body: "다른 교사 메모")
+    sign_in teacher
+
+    get compliment_events_path(period: "all_time")
+
+    item = document.at_css(%([data-activity-source="Compliment"][data-activity-source-id="#{compliment.id}"]))
+    frame = item.at_css(%(turbo-frame[id="#{dom_id(compliment, :activity_notes)}"]))
+    expect(frame.at_css('[data-activity-note-action="new"]')).to be_present
+    expect(frame.at_css("[data-student-activity-note-panel]")["class"]).to include("basis-full", "w-full")
+    expect(frame.text).to include("다른 교사 메모")
   end
 
   it 'uses the global event route while keeping nested compliment creation routes' do
