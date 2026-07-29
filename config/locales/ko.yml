@@ -172,9 +172,7 @@ ko:
       compliments: "받은 칭찬"
       issued: "쿠폰 발급"
       used: "쿠폰 사용"
-      zero_compliments: "칭찬 0회 학생"
     comparison:
-      title: "학생별 비교"
       metric_navigation: "비교 지표 선택"
       compliments: "받은 칭찬"
       issued: "쿠폰 발급"
@@ -183,7 +181,6 @@ ko:
       compliments: "%{count}회"
       issued: "%{count}장"
       used: "%{count}장"
-      students: "%{count}명"
 
   filters:
     apply: "적용"
