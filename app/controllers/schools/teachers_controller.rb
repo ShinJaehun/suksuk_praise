@@ -218,9 +218,6 @@ class Schools::TeachersController < ApplicationController
     elsif record.is_a?(SchoolMembership)
       record.errors.full_messages.each { |message| @teacher.errors.add(:base, message) }
       false
-    elsif record.is_a?(CouponTemplate)
-      @teacher.errors.add(:base, t("schools.teachers.errors.default_coupons_failed"))
-      false
     else
       raise error
     end

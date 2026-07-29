@@ -218,7 +218,7 @@ RSpec.describe 'School teachers', type: :request do
 
   describe 'POST /schools/:school_id/teachers' do
     it 'creates a member teacher for the URL school as its manager' do
-      library_template = create(:coupon_template, created_by: admin, bucket: 'library', active: true, title: '기본 쿠폰')
+      create(:coupon_template, created_by: admin, bucket: 'library', active: true, title: '기본 쿠폰')
 
       sign_in manager
       post school_teachers_path(school), params: {
@@ -231,7 +231,7 @@ RSpec.describe 'School teachers', type: :request do
       expect(response).to redirect_to(school_teachers_path(school))
       expect(created_teacher.role).to eq('teacher')
       expect(created_teacher.school_membership).to have_attributes(school: school, role: 'member')
-      expect(CouponTemplate.personal_for(created_teacher).find_by(title: library_template.title)).to be_present
+      expect(CouponTemplate.personal_for(created_teacher)).to be_empty
     end
 
     it 'rolls back user, coupons, and membership on validation failure' do
@@ -249,25 +249,6 @@ RSpec.describe 'School teachers', type: :request do
       expect(response.body).to include(%(value="invalid-school-teacher@example.com"))
       expect(response.body).to include('<option selected="selected" value="female">여자</option>')
       expect(response.body).not_to include('name="school_id"')
-    end
-
-    it 'rolls back user and membership when default coupon creation fails' do
-      actor = manager
-      allow(CouponTemplates::AutoAdopter).to receive(:setup_for_teacher!)
-        .and_raise(ActiveRecord::RecordInvalid.new(CouponTemplate.new.tap { |template|
-                     template.errors.add(:title, :blank)
-                   }))
-      sign_in actor
-
-      expect do
-        post school_teachers_path(school),
-             params: { user: valid_teacher_params(email: 'coupon-failure@example.com') },
-             headers: { 'Accept' => Mime[:turbo_stream].to_s }
-      end.not_to(change { [User.count, SchoolMembership.count, CouponTemplate.count] })
-
-      expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include('선생님 계정의 기본 쿠폰을 준비하지 못했습니다.')
-      expect(User.find_by(email: 'coupon-failure@example.com')).to be_nil
     end
 
     it 'blocks direct posts outside the allowed school scope' do

@@ -146,4 +146,15 @@ RSpec.describe User, type: :model do
       expect(build(:user, :admin).active_for_authentication?).to eq(true)
     end
   end
+
+  describe "teacher coupon setup" do
+    it "does not copy library coupons when a teacher is created" do
+      admin = create(:user, :admin)
+      create(:coupon_template, created_by: admin, bucket: "library", active: true)
+
+      teacher = create(:user, :teacher)
+
+      expect(CouponTemplate.personal_for(teacher)).to be_empty
+    end
+  end
 end

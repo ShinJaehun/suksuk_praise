@@ -75,8 +75,6 @@ class User < ApplicationRecord
            dependent: :destroy,
            inverse_of: :recipient
 
-  after_create :setup_default_coupons_for_teacher
-
   def self.avatar_keys_for(gender)
     AVATAR_KEYS_BY_GENDER.fetch(gender.to_s, [])
   end
@@ -134,8 +132,4 @@ class User < ApplicationRecord
     errors.add(:avatar_key, :inclusion)
   end
 
-  def setup_default_coupons_for_teacher
-    return unless teacher?
-    CouponTemplates::AutoAdopter.setup_for_teacher!(self)
-  end
 end

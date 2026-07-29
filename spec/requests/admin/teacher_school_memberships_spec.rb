@@ -66,9 +66,9 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
     expect(created_teacher.classroom_memberships.teacher).to be_empty
   end
 
-  it 'creates a teacher with a school, classrooms, and default personal coupons' do
+  it 'creates a teacher with a school and classrooms without personal coupons' do
     classrooms = create_list(:classroom, 2, school: school)
-    library_template = create(:coupon_template, created_by: admin, bucket: 'library', active: true, title: '칭찬 쿠폰')
+    create(:coupon_template, created_by: admin, bucket: 'library', active: true, title: '칭찬 쿠폰')
     sign_in admin
 
     post admin_teachers_path, params: {
@@ -81,7 +81,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
     expect(response).to redirect_to(admin_teachers_path)
     expect(created_teacher.school_membership).to have_attributes(school: school, role: 'member')
     expect(created_teacher.classroom_memberships.teacher.pluck(:classroom_id)).to match_array(classrooms.map(&:id))
-    expect(CouponTemplate.personal_for(created_teacher).find_by(title: library_template.title)).to be_present
+    expect(CouponTemplate.personal_for(created_teacher)).to be_empty
   end
 
   it 'rejects a classroom from another school and rolls back teacher creation' do
@@ -142,28 +142,6 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include('담당 학급을 저장하지 못했습니다.')
-  end
-
-  it 'rolls back the user, coupons, membership, and assignments when coupon preparation fails' do
-    classroom = create(:classroom, school: school)
-    invalid_template = CouponTemplate.new
-    invalid_template.errors.add(:title, :blank)
-    allow(CouponTemplates::AutoAdopter).to receive(:setup_for_teacher!)
-      .and_raise(ActiveRecord::RecordInvalid.new(invalid_template))
-    sign_in admin
-
-    expect do
-      post admin_teachers_path,
-           params: {
-             user: valid_teacher_params,
-             school_id: school.id,
-             classroom_ids: [classroom.id]
-           },
-           headers: { 'Accept' => Mime[:turbo_stream].to_s }
-    end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count, CouponTemplate.count] })
-
-    expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include('선생님 계정의 기본 쿠폰을 준비하지 못했습니다.')
   end
 
   it 'changes classroom assignments in the same school while preserving the manager role' do

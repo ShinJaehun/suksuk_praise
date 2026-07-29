@@ -357,9 +357,6 @@ class Admin::TeachersController < Admin::BaseController
     elsif record.is_a?(SchoolMembership) || record.is_a?(ClassroomMembership)
       copy_assignment_errors(record)
       false
-    elsif record.is_a?(CouponTemplate)
-      @teacher.errors.add(:base, t('admin.teachers.errors.default_coupons_failed'))
-      false
     else
       raise error
     end

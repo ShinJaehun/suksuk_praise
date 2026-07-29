@@ -34,6 +34,7 @@ RSpec.describe CouponTemplates::AutoAdopter, type: :service do
     attach_image(source, content: "onboarding image", filename: "onboarding.png")
 
     teacher = create(:user, :teacher)
+    described_class.setup_for_teacher!(teacher)
     personal = CouponTemplate.find_by!(created_by: teacher, source_template: source)
 
     expect(personal.image).to be_attached
@@ -54,6 +55,7 @@ RSpec.describe CouponTemplates::AutoAdopter, type: :service do
     )
     attach_image(source, content: "original image", filename: "original.png")
     teacher = create(:user, :teacher)
+    described_class.setup_for_teacher!(teacher)
     personal = CouponTemplate.find_by!(created_by: teacher, source_template: source)
     personal_blob_id = personal.image.blob_id
 
@@ -77,6 +79,7 @@ RSpec.describe CouponTemplates::AutoAdopter, type: :service do
     )
 
     teacher = create(:user, :teacher)
+    described_class.setup_for_teacher!(teacher)
     personal = CouponTemplate.find_by!(created_by: teacher, source_template: source)
 
     expect(personal.image).not_to be_attached
@@ -97,14 +100,16 @@ RSpec.describe CouponTemplates::AutoAdopter, type: :service do
     allow(Rails.logger).to receive(:error)
     fail_copy_attach_for_source(failed_source)
 
+    teacher = create(:user, :teacher)
+
     expect {
-      @teacher = create(:user, :teacher)
+      described_class.setup_for_teacher!(teacher)
     }.not_to raise_error
 
-    successful_personal = CouponTemplate.find_by!(created_by: @teacher, source_template: successful_source)
-    no_image_personal = CouponTemplate.find_by!(created_by: @teacher, source_template: no_image_source)
+    successful_personal = CouponTemplate.find_by!(created_by: teacher, source_template: successful_source)
+    no_image_personal = CouponTemplate.find_by!(created_by: teacher, source_template: no_image_source)
 
-    expect(CouponTemplate.find_by(created_by: @teacher, source_template: failed_source)).to be_nil
+    expect(CouponTemplate.find_by(created_by: teacher, source_template: failed_source)).to be_nil
     expect(successful_personal.image.blob_id).not_to eq(successful_source.image.blob_id)
     expect(successful_personal.image.download).to eq("successful image")
     expect(no_image_personal.image).not_to be_attached
