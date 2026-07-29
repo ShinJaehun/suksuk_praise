@@ -33,7 +33,7 @@
                 class: "w-full rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 sm:w-auto" %>
         <% end %>
         <% if @can_manage_classroom %>
-          <%= link_to t("classrooms.show.manage_classroom"),
+          <%= link_to t("classrooms.actions.settings"),
                 edit_classroom_path(@classroom),
                 class: "w-full rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 sm:w-auto" %>
         <% end %>

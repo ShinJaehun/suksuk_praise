@@ -1,4 +1,12 @@
 module ClassroomsHelper
+  def classroom_display_name(classroom)
+    grade_label = "#{classroom.grade}학년" if classroom.grade
+    name = classroom.name.to_s.strip
+    return name if grade_label.blank? || name.start_with?(grade_label)
+
+    "#{grade_label} #{name}"
+  end
+
   def compliment_king_frame_id(classroom, period)
     dom_id(classroom, :"compliment_king_#{period}")
   end

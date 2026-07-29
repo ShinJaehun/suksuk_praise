@@ -39,6 +39,12 @@ RSpec.describe 'Classroom organization settings', type: :request do
       new_classroom_path
     )
     expect(response.body).to include(classroom_path(assigned_classroom), classroom_path(unassigned_classroom))
+    expect(response.body).to include(
+      classroom_members_path(assigned_classroom),
+      edit_classroom_path(assigned_classroom),
+      edit_classroom_path(unassigned_classroom)
+    )
+    expect(response.body).not_to include(classroom_members_path(unassigned_classroom))
     expect(response.body).to include(school_path(school))
     expect(response.body).not_to include('다른 학교 학급')
     expect(response.body).to include(school_teachers_path(school))
@@ -83,7 +89,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response.body).not_to include(edit_admin_school_path(school))
 
     document = Nokogiri::HTML(response.body)
-    classroom_card = document.at_xpath("//h2[normalize-space()='#{classroom.name}']/ancestor::article[1]")
+    classroom_card = document.at_xpath("//h2[contains(normalize-space(), '#{classroom.name}')]/ancestor::article[1]")
 
     expect(classroom_card["class"]).to include("border-emerald-200", "bg-emerald-50/70")
     expect(classroom_card.at_css(".bg-emerald-500")).to be_present
@@ -145,7 +151,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
     get classrooms_path
 
     card = Nokogiri::HTML(response.body)
-      .at_xpath("//h2[normalize-space()='#{classroom.name}']/ancestor::article[1]")
+      .at_xpath("//h2[contains(normalize-space(), '#{classroom.name}')]/ancestor::article[1]")
     expect(card.text).to include(active_teacher.name)
     expect(card.text).not_to include(inactive_teacher.name, "외 1명")
 
@@ -153,8 +159,23 @@ RSpec.describe 'Classroom organization settings', type: :request do
     get classrooms_path
 
     card = Nokogiri::HTML(response.body)
-      .at_xpath("//h2[normalize-space()='#{classroom.name}']/ancestor::article[1]")
+      .at_xpath("//h2[contains(normalize-space(), '#{classroom.name}')]/ancestor::article[1]")
     expect(card.text).to include(active_teacher.name, "외 1명")
+
+    additional_teachers = 2.times.map do |index|
+      create(:user, :teacher, name: "추가 담당 #{index + 1}")
+    end
+    additional_teachers.each do |additional_teacher|
+      create(:classroom_membership, classroom: classroom, user: additional_teacher, role: :teacher)
+    end
+
+    get classrooms_path
+
+    card = Nokogiri::HTML(response.body)
+      .at_xpath("//h2[contains(normalize-space(), '#{classroom.name}')]/ancestor::article[1]")
+    expect(card.text).to include(active_teacher.name, "외 3명")
+    expect(card.css("img[alt$=' avatar']").size).to eq(3)
+    expect(card.to_html).not_to include("#{additional_teachers.last.name} avatar")
   end
 
   it "shows only active homeroom teachers on the classroom page" do
@@ -236,7 +257,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
     get classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('교실 관리')
+    expect(response.body).to include('교실 설정')
     expect(response.body).not_to include('오늘의 칭찬왕')
     expect(response.body).not_to include('학생 로그인')
     expect(response.body).not_to include(classroom_members_path(classroom))
@@ -600,15 +621,31 @@ RSpec.describe 'Classroom organization settings', type: :request do
   end
 
   it 'keeps classroom identification while removing school and teacher management sections' do
-    classroom = create(:classroom, name: '지정 교실', school: school, grade: 2)
+    classroom = create(:classroom, name: '2학년 지정 교실', school: school, grade: 2)
     homeroom = create(:school_membership, school: school, user: create(:user, :teacher, name: '담당 선생님')).user
     create(:classroom_membership, classroom: classroom, user: homeroom, role: :teacher)
     sign_in admin
 
     get classrooms_path
 
-    expect(response.body).to include('지정 교실', school.name, '2학년', '담당 선생님')
-    expect(response.body).to include(classroom_path(classroom), edit_classroom_path(classroom))
+    document = Nokogiri::HTML(response.body)
+    classroom_card = document.at_xpath("//h2[normalize-space()='2학년 지정 교실']/ancestor::article[1]")
+    action_paths = classroom_card.css("a").map { |link| link["href"] }
+
+    expect(classroom_card.text).to include(school.name, '2학년 지정 교실', '담당 선생님')
+    expect(classroom_card.text).not_to include('2학년 2학년 지정 교실')
+    expect(classroom_card.at_css("p").text).to include(school.name)
+    expect(action_paths).to eq([
+      classroom_path(classroom),
+      classroom_members_path(classroom),
+      edit_classroom_path(classroom)
+    ])
+    expect(classroom_card.at_css(%(a[href="#{classroom_members_path(classroom)}"]))["class"]).to include(
+      "border-indigo-300",
+      "bg-indigo-50",
+      "text-indigo-700"
+    )
+    expect(classroom_card.at_css(%(a[href="#{edit_classroom_path(classroom)}"])).text).to include("교실 설정")
     expect(response.body).not_to include(new_admin_teacher_path)
     expect(response.body).not_to include(edit_admin_teacher_path(homeroom))
     expect(response.body).not_to include(new_admin_school_path)

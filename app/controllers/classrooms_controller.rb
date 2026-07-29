@@ -28,7 +28,7 @@ class ClassroomsController < ApplicationController
       classroom_ids,
       role: "teacher",
       user_role: "teacher",
-      limit_per_classroom: 1
+      limit_per_classroom: 3
     )
     @classroom_student_counts = ClassroomMembership
       .where(classroom_id: classroom_ids, role: "student", status: "active")
@@ -44,6 +44,17 @@ class ClassroomsController < ApplicationController
       if current_user.admin?
         classroom_ids.to_set
       elsif current_user_school_manager?
+        classroom_ids.to_set
+      elsif current_user.active_teacher?
+        current_user.classroom_memberships
+          .where(role: "teacher", classroom_id: classroom_ids)
+          .pluck(:classroom_id)
+          .to_set
+      else
+        Set.new
+      end
+    @member_manageable_classroom_ids =
+      if current_user.admin?
         classroom_ids.to_set
       elsif current_user.active_teacher?
         current_user.classroom_memberships

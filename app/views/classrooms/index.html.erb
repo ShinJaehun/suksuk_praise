@@ -31,37 +31,36 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <% @classrooms.each do |classroom| %>
         <% teacher_count = @classroom_teacher_counts.fetch(classroom.id, 0) %>
-        <% teacher = @classroom_teacher_previews.fetch(classroom.id, []).first %>
+        <% teacher_previews = @classroom_teacher_previews.fetch(classroom.id, []) %>
+        <% teacher = teacher_previews.first %>
         <% student_count = @classroom_student_counts.fetch(classroom.id, 0) %>
         <% student_previews = @classroom_student_previews.fetch(classroom.id, []) %>
 
         <article class="flex min-h-64 flex-col justify-between rounded-2xl border p-5 shadow-sm <%= school_color_card_class(classroom.school&.color_key) %>">
           <div class="min-w-0 space-y-5">
-            <h2 class="truncate text-lg font-bold text-slate-900">
-              <%= classroom.name %>
-            </h2>
-            <p class="text-xs font-medium text-slate-500">
-              <% if classroom.school.nil? && classroom.grade.nil? %>
-                <%= t("classrooms.index.unspecified") %>
-              <% else %>
-                <span class="inline-flex items-center gap-1.5">
-                  <% if classroom.school %>
-                    <span aria-hidden="true" class="h-2.5 w-2.5 shrink-0 rounded-full <%= school_color_swatch_class(classroom.school.color_key) %>"></span>
-                  <% end %>
-                  <span><%= classroom.school&.name || t("classrooms.index.school_unspecified") %> · <%= classroom.grade ? t("classrooms.index.grade", grade: classroom.grade) : t("classrooms.index.grade_unspecified") %></span>
-                </span>
-              <% end %>
-            </p>
+            <div>
+              <p class="flex items-center gap-1.5 truncate text-xs font-semibold text-slate-500">
+                <% if classroom.school %>
+                  <span aria-hidden="true" class="h-2.5 w-2.5 shrink-0 rounded-full <%= school_color_swatch_class(classroom.school.color_key) %>"></span>
+                <% end %>
+                <span class="truncate"><%= classroom.school&.name || t("classrooms.index.school_unspecified") %></span>
+              </p>
+              <h2 class="mt-1 truncate text-lg font-bold text-slate-900"><%= classroom_display_name(classroom) %></h2>
+            </div>
 
             <div class="space-y-3">
               <% if teacher %>
                 <div class="flex min-w-0 items-center gap-2">
-                  <%= user_avatar_image(
-                        teacher,
-                        size: 128,
-                        class: "h-12 w-12 shrink-0 rounded-xl border border-slate-200 bg-slate-100 object-cover",
-                        alt: "#{display_name(teacher)} avatar"
-                      ) %>
+                  <div class="flex max-w-28 shrink-0 -space-x-2 overflow-hidden">
+                    <% teacher_previews.each do |teacher_preview| %>
+                      <%= user_avatar_image(
+                            teacher_preview,
+                            size: 128,
+                            class: "h-10 w-10 rounded-xl border-2 border-white bg-slate-100 object-cover",
+                            alt: "#{display_name(teacher_preview)} avatar"
+                          ) %>
+                    <% end %>
+                  </div>
                   <div class="flex min-w-0 items-center gap-1 text-sm">
                     <span class="min-w-0 truncate font-semibold text-slate-800"><%= display_name(teacher) %></span>
                     <% if teacher_count > 1 %>
@@ -93,12 +92,17 @@
             </div>
           </div>
 
-          <div class="mt-6 flex items-center gap-2">
+          <div class="mt-6 flex flex-wrap items-center gap-2">
             <%= link_to t("classrooms.index.open"),
                   classroom_path(classroom),
                   class: "inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+            <% if @member_manageable_classroom_ids.include?(classroom.id) %>
+              <%= link_to t("classrooms.show.manage_members"),
+                    classroom_members_path(classroom),
+                    class: "inline-flex flex-1 items-center justify-center rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100" %>
+            <% end %>
             <% if @manageable_classroom_ids.include?(classroom.id) %>
-              <%= link_to t("classrooms.index.manage"),
+              <%= link_to t("classrooms.actions.settings"),
                     edit_classroom_path(classroom),
                     class: "inline-flex flex-1 items-center justify-center rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
             <% end %>

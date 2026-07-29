@@ -32,7 +32,7 @@
                     disabled: @selected_school_id != school.id,
                     class: "peer sr-only" %>
               <span aria-hidden="true" class="hidden text-blue-600 peer-checked:inline">✓</span>
-              <span><%= teacher_classroom_label(classroom) %></span>
+              <span><%= classroom_display_name(classroom) %></span>
             </label>
           <% end %>
         <% else %>
