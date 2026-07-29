@@ -50,7 +50,7 @@
     <% if @managers.any? %>
       <% @managers.each do |membership| %>
         <div class="flex items-center justify-between gap-3">
-          <span class="text-sm font-semibold text-slate-800"><%= display_name(membership.user) %></span>
+          <%= render "schools/manager_identity", user: membership.user %>
           <%= link_to t("schools.settings.manager_remove"),
                 admin_school_manager_path(@school, membership.user),
                 data: { turbo_method: :delete, turbo_confirm: t("schools.settings.manager_remove_confirm") },

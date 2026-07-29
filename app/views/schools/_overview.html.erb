@@ -27,7 +27,17 @@
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <dt class="text-sm text-slate-500"><%= t("schools.show.administrators") %></dt>
-      <dd class="mt-2 text-sm font-semibold text-slate-900"><%= managers.any? ? managers.map { |manager| display_name(manager) }.join(", ") : t("schools.show.administrators_empty") %></dd>
+      <dd class="mt-2">
+        <% if managers.any? %>
+          <div class="space-y-2">
+            <% managers.each do |manager| %>
+              <%= render "schools/manager_identity", user: manager %>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm font-semibold text-slate-900"><%= t("schools.show.administrators_empty") %></p>
+        <% end %>
+      </dd>
     </div>
   </dl>
 <% end %>
