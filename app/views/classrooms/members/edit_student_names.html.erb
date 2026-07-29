@@ -23,12 +23,20 @@
           <% @student_name_memberships.each do |membership| %>
             <% student = membership.user %>
             <div id="<%= dom_id(membership, :name_row) %>">
-              <div>
+              <div class="min-w-0">
                 <%= label_tag "student_name_#{membership.id}", t("students.members.name_label"), class: "sr-only" %>
-                <%= text_field_tag "students[#{membership.id}][name]",
-                      (@submitted_student_names || {}).fetch(membership.id.to_s, student.name),
-                      id: "student_name_#{membership.id}",
-                      class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+                <div class="flex min-w-0 items-center gap-2">
+                  <%= user_avatar_image(
+                        student,
+                        size: 32,
+                        class: "h-8 w-8 shrink-0 rounded-full border border-slate-200 bg-slate-100 object-cover",
+                        alt: ""
+                      ) %>
+                  <%= text_field_tag "students[#{membership.id}][name]",
+                        (@submitted_student_names || {}).fetch(membership.id.to_s, student.name),
+                        id: "student_name_#{membership.id}",
+                        class: "min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+                </div>
 
                 <% if (@student_name_errors_by_membership_id || {})[membership.id.to_s].present? %>
                   <p class="mt-1 text-sm font-medium text-rose-700">
