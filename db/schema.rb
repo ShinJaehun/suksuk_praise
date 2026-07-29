@@ -73,12 +73,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_27_070000) do
   end
 
   create_table "compliment_presets", force: :cascade do |t|
+    t.bigint "user_id", null: false
     t.string "title", null: false
     t.integer "position", null: false
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
     t.index "user_id, lower((title)::text)", name: "idx_compliment_presets_active_user_title", unique: true, where: "(active = true)"
     t.index ["user_id", "active", "position", "id"], name: "idx_compliment_presets_user_active_position"
     t.index ["user_id"], name: "index_compliment_presets_on_user_id"
