@@ -1,5 +1,8 @@
 <section class="mx-auto w-full max-w-6xl space-y-6 pt-4 pb-8">
-  <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("coupon_templates.index.title") %></h1>
+  <div>
+    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("coupon_templates.index.title") %></h1>
+    <p class="mt-1 text-sm text-slate-600"><%= t("coupon_templates.index.description") %></p>
+  </div>
 
   <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <%= turbo_frame_tag "personal", class: "block" do %>
