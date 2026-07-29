@@ -41,7 +41,6 @@
         <% @teacher_rows.each do |row| %>
           <% teacher = row[:teacher] %>
           <% classroom_names = row[:classroom_names] %>
-          <% visible_classroom_names = classroom_names.first(3) %>
 
           <article class="grid gap-4 px-5 py-4 <%= school_color_row_class(row[:school_color_key]) %> lg:grid-cols-[minmax(12rem,1.1fr)_minmax(9rem,0.8fr)_minmax(8rem,0.7fr)_minmax(14rem,1.4fr)_auto] lg:items-center">
             <div class="flex min-w-0 items-center gap-3">
@@ -60,34 +59,38 @@
 
             <div>
               <p class="text-xs font-semibold text-slate-500"><%= t("admin.teachers.index.school") %></p>
-              <p class="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-800">
-                <% if row[:school_color_key] %>
+              <% if row[:school_color_key] %>
+                <p class="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-800">
                   <span aria-hidden="true" class="h-2.5 w-2.5 shrink-0 rounded-full <%= school_color_swatch_class(row[:school_color_key]) %>"></span>
-                <% end %>
-                <span class="truncate"><%= row[:school_name] %></span>
-              </p>
+                  <span class="truncate"><%= row[:school_name] %></span>
+                </p>
+              <% else %>
+                <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600"><%= row[:school_name] %></span>
+              <% end %>
             </div>
 
             <div>
               <p class="text-xs font-semibold text-slate-500"><%= t("admin.teachers.index.school_role") %></p>
-              <p class="mt-1 text-sm text-slate-800"><%= row[:school_role_label] %></p>
+              <% role_classes =
+                   case row[:school_role]
+                   when "manager" then "bg-violet-100 text-violet-700"
+                   when "member" then "bg-sky-100 text-sky-700"
+                   else "bg-slate-100 text-slate-600"
+                   end %>
+              <span class="mt-1 inline-flex rounded-full px-2 py-1 text-xs font-semibold <%= role_classes %>"><%= row[:school_role_label] %></span>
             </div>
 
             <div class="min-w-0">
               <p class="text-xs font-semibold text-slate-500"><%= t("admin.teachers.index.classrooms") %></p>
-              <p class="mt-1 truncate text-sm text-slate-800">
+              <div class="mt-1 flex flex-wrap gap-1.5">
                 <% if classroom_names.any? %>
-                  <%= visible_classroom_names.join(", ") %>
-                  <% if classroom_names.size > visible_classroom_names.size %>
-                    <%= t("classrooms.index.additional_classrooms", count: classroom_names.size - visible_classroom_names.size) %>
+                  <% classroom_names.each do |classroom_name| %>
+                    <span class="inline-flex rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700"><%= classroom_name %></span>
                   <% end %>
                 <% else %>
-                  <%= t("admin.teachers.index.unassigned_classroom") %>
+                  <span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600"><%= t("admin.teachers.index.unassigned_classroom") %></span>
                 <% end %>
-              </p>
-              <p class="mt-0.5 text-xs text-slate-500">
-                <%= t("classrooms.index.assigned_count", count: row[:classroom_count]) %> · <%= row[:grade_label] %>
-              </p>
+              </div>
             </div>
 
             <div class="flex flex-wrap justify-start gap-2 lg:justify-end">

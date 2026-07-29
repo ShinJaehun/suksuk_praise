@@ -8,9 +8,11 @@ RSpec.describe 'Admin teachers', type: :request do
     school = create(:school, name: '새싹초등학교', color_key: 'orange')
     other_school = create(:school, name: '나래초등학교')
     classroom = create(:classroom, school: school, grade: 4, name: '4학년 1반')
+    later_classroom = create(:classroom, school: school, grade: 6, name: '기러기반')
     manager = create(:school_membership, :manager, school: school, user: teacher).user
     member_teacher = create(:school_membership, school: school, user: create(:user, :teacher, name: '일반 선생님')).user
     unassigned_teacher = create(:user, :teacher, name: '미배정 선생님')
+    create(:classroom_membership, classroom: later_classroom, user: manager, role: :teacher)
     create(:classroom_membership, classroom: classroom, user: manager, role: :teacher)
     sign_in admin
 
@@ -23,9 +25,10 @@ RSpec.describe 'Admin teachers', type: :request do
     expect(response.body).to include('name="school_id"')
     expect(response.body).to include('전체 학교')
     expect(response.body).to include(school.name, other_school.name)
-    expect(response.body).to include('담당 교사', '새싹초등학교', '학교 관리자', '4학년 1반', '4학년')
-    expect(response.body).to include('일반 선생님', '일반 구성원')
+    expect(response.body).to include('담당 교사', '새싹초등학교', '대표 선생님', '4학년 1반', '6학년 기러기반')
+    expect(response.body).to include('일반 선생님', '선생님')
     expect(response.body).to include('미배정 선생님', '학교 미지정', '해당 없음', '담당 교실 없음')
+    expect(response.body).not_to include('학교 역할', '학교 관리자', '일반 구성원', '담당 교실 2개')
     expect(response.body).to include(new_admin_teacher_path)
     expect(response.body).to include(edit_admin_teacher_path(manager))
     expect(response.body).to include(edit_admin_teacher_path(member_teacher))
@@ -33,11 +36,16 @@ RSpec.describe 'Admin teachers', type: :request do
 
     document = Nokogiri::HTML(response.body)
     teacher_row = document.at_xpath("//p[normalize-space()='#{teacher.name}']/ancestor::article[1]")
+    member_row = document.at_xpath("//p[normalize-space()='#{member_teacher.name}']/ancestor::article[1]")
     unassigned_row = document.at_xpath("//p[normalize-space()='#{unassigned_teacher.name}']/ancestor::article[1]")
 
     expect(teacher_row['class']).to include('border-l-orange-400', 'bg-orange-50/60')
     expect(teacher_row.at_css('.bg-orange-500')).to be_present
+    expect(teacher_row.at_css('.bg-violet-100')&.text).to include('대표 선생님')
+    expect(member_row.at_css('.bg-sky-100')&.text).to include('선생님')
+    expect(teacher_row.text.index('4학년 1반')).to be < teacher_row.text.index('6학년 기러기반')
     expect(unassigned_row['class']).to include('border-l-slate-200', 'bg-white')
+    expect(unassigned_row.css('.bg-slate-100').map(&:text)).to include('학교 미지정', '해당 없음', '담당 교실 없음')
     expect(unassigned_row.css("[class*='bg-orange-500']").to_a).to be_empty
   end
 

@@ -88,22 +88,16 @@ class Admin::TeachersController < Admin::BaseController
                                .select(&:teacher?)
                                .map(&:classroom)
                                .compact
-           classroom_names = classrooms.map(&:name)
-           grades = classrooms.filter_map(&:grade).uniq.sort
+                               .sort_by { |classroom| [classroom.grade || Float::INFINITY, classroom.name.to_s, classroom.id] }
+           membership = teacher.school_membership
 
            {
              teacher: teacher,
              school_name: school&.name || t('admin.teachers.index.unassigned_school'),
              school_color_key: school&.color_key,
+             school_role: membership&.role,
              school_role_label: teacher_school_role_label(teacher),
-             grade_label: if grades.any?
-                            t('classrooms.index.grades',
-                              grades: grades.join(', '))
-                          else
-                            t('classrooms.index.grade_unspecified')
-                          end,
-             classroom_names: classroom_names,
-             classroom_count: classroom_names.size
+             classroom_names: classrooms.map { |classroom| teacher_classroom_label(classroom) }
            }
     end
   end
@@ -126,6 +120,14 @@ class Admin::TeachersController < Admin::BaseController
     return t('admin.teachers.index.unassigned_role') unless membership
 
     t(membership.manager? ? 'admin.teachers.index.manager' : 'admin.teachers.index.member')
+  end
+
+  def teacher_classroom_label(classroom)
+    grade_label = "#{classroom.grade}학년" if classroom.grade
+    name = classroom.name.to_s.strip
+    return name if grade_label.blank? || name.start_with?(grade_label)
+
+    "#{grade_label} #{name}"
   end
 
   def set_teacher
