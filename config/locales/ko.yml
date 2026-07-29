@@ -57,18 +57,18 @@ ko:
 
     # 버튼 텍스트 (세부용)
     buttons:
-      compliment: "칭찬하기 🥳"
+      compliment: "칭찬하기"
       custom_compliment: "맞춤 칭찬"
-      issue_coupon: "쿠폰 발급 🎟️"
+      issue_coupon: "쿠폰 발급"
       draw_random_coupon: "쿠폰 뽑기"
       assign_selected_coupon: "쿠폰 지급"
       use_coupon: "사용하기"
       create_student: "학생 추가"
-      back_to_classroom: "⬅ %{name} 교실로 돌아가기"
+      back_to_classroom: "%{name} 교실로 돌아가기"
       bulk_create_students: "여러 학생 자동 생성"
-      new_classroom: "교실 생성 🏫"
-      edit_classroom: "교실 정보 수정 ✏️"
-      delete_classroom: "교실 삭제 🗑"
+      new_classroom: "교실 생성"
+      edit_classroom: "교실 정보 수정"
+      delete_classroom: "교실 삭제"
       confirm_delete_classroom: "정말 이 교실을 삭제할까요? 이 작업은 되돌릴 수 없습니다."
       refresh_king_for:
         daily: "오늘의 칭찬왕"
