@@ -1,13 +1,12 @@
-<% if turbo_frame_request? %>
-  <%= render "new_modal" %>
-<% else %>
-  <section class="mx-auto w-full max-w-6xl pt-4">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h1 class="mb-4 text-2xl font-extrabold tracking-tight text-slate-900"><%= t("admin.teachers.new_title") %></h1>
-      <%= render "form", teacher: @teacher %>
-      <div class="mt-4">
-        <%= link_to t("admin.teachers.back_to_index"), admin_teachers_path, class: "text-blue-600 hover:underline" %>
-      </div>
-    </div>
+<section class="mx-auto w-full max-w-4xl space-y-6 py-6">
+  <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900"><%= t("admin.teachers.new_title") %></h1>
+    <%= link_to t("admin.teachers.back_to_index"),
+          admin_teachers_path,
+          class: "inline-flex items-center justify-center self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+  </header>
+
+  <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <%= render "form", teacher: @teacher %>
   </section>
-<% end %>
+</section>

@@ -1,7 +1,6 @@
 class Admin::TeachersController < Admin::BaseController
   before_action :set_teacher, only: %i[edit update]
   before_action :set_status_teacher, only: %i[deactivate reactivate]
-  layout -> { turbo_frame_request? ? false : 'application' }
 
   def index
     prepare_school_filter
@@ -9,8 +8,7 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def new
-    @teacher = User.new
-    @teacher.avatar_key = teacher_avatar_keys.sample
+    @teacher = User.new(role: :teacher)
     authorize @teacher
     load_school_assignment_form
   end
@@ -30,7 +28,7 @@ class Admin::TeachersController < Admin::BaseController
     else
       flash.now[:alert] = t('admin.teachers.create.failure')
       load_school_assignment_form
-      render_teacher_form(:new)
+      render :new, formats: :html, status: :unprocessable_entity
     end
   end
 
@@ -45,17 +43,17 @@ class Admin::TeachersController < Admin::BaseController
     unless @teacher.teacher?
       @teacher.errors.add(:base, t('admin.teachers.errors.teacher_required'))
       load_edit_form
-      render_teacher_form(:edit)
+      render :edit, formats: :html, status: :unprocessable_entity
       return
     end
 
     if update_teacher_assignments
-      redirect_to admin_teachers_path,
+      redirect_to edit_admin_teacher_path(@teacher),
                   notice: t('admin.teachers.update.success'),
                   status: :see_other
     else
       load_edit_form
-      render_teacher_form(:edit)
+      render :edit, formats: :html, status: :unprocessable_entity
     end
   end
 
@@ -140,11 +138,13 @@ class Admin::TeachersController < Admin::BaseController
 
   def update_teacher_status(active)
     if @teacher.update(active: active, remember_created_at: nil)
-      redirect_to admin_teachers_path(school_id: params[:school_id], status: params[:status]),
+      redirect_to edit_admin_teacher_path(@teacher),
                   notice: t(active ? 'teacher_status.reactivated' : 'teacher_status.deactivated'),
                   status: :see_other
     else
-      redirect_to admin_teachers_path, alert: t('teacher_status.failure'), status: :see_other
+      @teacher.errors.add(:base, t('teacher_status.failure')) if @teacher.errors.empty?
+      load_edit_form
+      render :edit, formats: :html, status: :unprocessable_entity
     end
   end
 
@@ -302,9 +302,6 @@ class Admin::TeachersController < Admin::BaseController
   end
 
   def load_edit_form
-    classrooms = @teacher.classroom_memberships.teacher.includes(:classroom).map(&:classroom).compact
-    @teacher_classroom_names = classrooms.map(&:name)
-    @teacher_classroom_count = classrooms.size
     load_school_assignment_form
   end
 
@@ -362,17 +359,4 @@ class Admin::TeachersController < Admin::BaseController
     end
   end
 
-  def render_teacher_form(template)
-    respond_to do |format|
-      format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          'modal',
-          partial: "admin/teachers/#{template}_modal"
-        ), status: :unprocessable_entity
-      end
-      format.html do
-        render template, formats: :html, status: :unprocessable_entity
-      end
-    end
-  end
 end

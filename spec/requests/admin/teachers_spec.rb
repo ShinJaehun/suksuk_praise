@@ -29,7 +29,7 @@ RSpec.describe 'Admin teachers', type: :request do
     expect(response.body).to include(new_admin_teacher_path)
     expect(response.body).to include(edit_admin_teacher_path(manager))
     expect(response.body).to include(edit_admin_teacher_path(member_teacher))
-    expect(response.body).to include('data-turbo-frame="modal"')
+    expect(response.body).not_to include('data-turbo-frame="modal"')
 
     document = Nokogiri::HTML(response.body)
     teacher_row = document.at_xpath("//p[normalize-space()='#{teacher.name}']/ancestor::article[1]")
@@ -139,38 +139,41 @@ RSpec.describe 'Admin teachers', type: :request do
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('등록된 선생님이 없습니다.')
     expect(response.body).to include(new_admin_teacher_path)
-    expect(response.body).to include('data-turbo-frame="modal"')
+    expect(response.body).not_to include('data-turbo-frame="modal"')
   end
 
-  it 'keeps the new teacher page fallback' do
+  it 'renders the new teacher page' do
+    sign_in admin
+
+    get new_admin_teacher_path
+
+    document = Nokogiri::HTML(response.body)
+    avatar_key_input = document.at_css('input[name="user[avatar_key]"]')
+    avatar_section = document.at_css('[data-teacher-avatar-preview-target="avatarSection"]')
+    expect(response.body).to include('선생님 목록으로 돌아가기')
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('선생님 추가')
+
+    expect(response.body).to include('name="user[gender]"')
+    expect(avatar_key_input['value']).to be_blank
+    expect(avatar_section['hidden']).not_to be_nil
+    expect(response.body).not_to include('type="radio"')
+  end
+
+  it 'renders school and classroom assignment fields on the new teacher page' do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
     sign_in admin
 
     get new_admin_teacher_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('새 선생님 추가')
-    expect(response.body).to include('선생님 관리로 돌아가기')
-    expect(response.body).to match(%r{src="[^"]*avatars/teacher[MF]\d{2}[^"]*\.png"})
-    expect(response.body).to include('name="user[gender]"')
-    expect(response.body).to include('name="user[avatar_key]"')
-    expect(response.body).not_to include('type="radio"')
-  end
-
-  it 'targets modal form submissions to the top frame' do
-    school = create(:school)
-    classroom = create(:classroom, school: school)
-    sign_in admin
-
-    get new_admin_teacher_path, headers: { 'Turbo-Frame' => 'modal' }
-
-    expect(response).to have_http_status(:ok)
-    expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
-    expect(response.body).to include('새 선생님 추가')
-    expect(response.body).to include('data-turbo-frame="_top"')
+    expect(response.body).to include('<!DOCTYPE html>')
+    expect(response.body).to include('선생님 추가')
     expect(response.body).to include('data-turbo-submits-with="저장 중..."')
-    expect(response.body).not_to include('<!DOCTYPE html>')
+    expect(response.body).not_to include('data-turbo-frame="_top"')
+    expect(response.body).not_to include('data-turbo-frame="modal"')
     expect(response.body).not_to include('translation missing')
-    expect(response.body).to match(%r{src="[^"]*avatars/teacher[MF]\d{2}[^"]*\.png"})
     expect(response.body).to include('name="user[gender]"')
     expect(response.body).to include('name="user[avatar_key]"')
     expect(response.body).to include('data-controller="teacher-school-classrooms"')
@@ -243,7 +246,7 @@ RSpec.describe 'Admin teachers', type: :request do
     expect(User.teacher.find_by!(email: 'ignored-avatar-teacher@example.com').avatar_key).to be_in(User::TEACHER_MALE_AVATAR_KEYS)
   end
 
-  it 'keeps gender and avatar preview when teacher creation fails' do
+  it 'keeps gender and the submitted avatar when teacher creation fails' do
     sign_in admin
 
     post admin_teachers_path, params: {
@@ -251,18 +254,22 @@ RSpec.describe 'Admin teachers', type: :request do
         name: '',
         email: 'invalid-teacher@example.com',
         password: 'password123',
-        gender: 'female'
+        gender: 'female',
+        avatar_key: 'teacherF03'
       }
     }
 
+    document = Nokogiri::HTML(response.body)
+    avatar_section = document.at_css('[data-teacher-avatar-preview-target="avatarSection"]')
+
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include('<option selected="selected" value="female">여자</option>')
-    avatar_key = response.body[/<input(?=[^>]*name="user\[avatar_key\]")(?=[^>]*value="(teacherF\d{2})")[^>]*>/, 1]
-    expect(avatar_key).to be_present
-    expect(response.body).to match(%r{src="[^"]*avatars/#{avatar_key}[^"]*\.png"})
+    expect(document.at_css('input[name="user[avatar_key]"]')['value']).to eq('teacherF03')
+    expect(avatar_section['hidden']).to be_nil
+    expect(response.body).to match(%r{src="[^"]*avatars/teacherF03[^"]*\.png"})
   end
 
-  it 'opens teacher school membership links from the teacher management index in the modal frame' do
+  it 'links to the dedicated teacher management page from the index' do
     teacher
     sign_in admin
 
@@ -270,32 +277,34 @@ RSpec.describe 'Admin teachers', type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(edit_admin_teacher_path(teacher))
-    expect(response.body).to include('data-turbo-frame="modal"')
+    expect(response.body).not_to include('data-turbo-frame="modal"')
   end
 
-  it 'keeps the teacher school membership page fallback' do
+  it 'renders the dedicated teacher management page' do
     sign_in admin
 
     get edit_admin_teacher_path(teacher)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('선생님 설정')
-    expect(response.body).to include('선생님 관리로 돌아가기')
-    expect(response.body).to include('data-turbo-frame="_top"')
+    expect(response.body).to include('운영 설정')
+    expect(response.body).to include("#{teacher.name} 선생님")
+    expect(response.body).to include('기본 정보', '학교 소속 및 운영 권한')
+    expect(response.body).to include('선생님 목록으로 돌아가기')
+    expect(response.body).not_to include('data-turbo-frame="_top"')
   end
 
-  it 'renders teacher school membership in the modal frame' do
+  it 'renders the full teacher management page even with a Turbo Frame header' do
     sign_in admin
 
     get edit_admin_teacher_path(teacher), headers: { 'Turbo-Frame' => 'modal' }
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include('<!DOCTYPE html>')
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
-    expect(response.body).to include('선생님 설정')
-    expect(response.body).to include('data-turbo-frame="_top"')
+    expect(response.body).to include('운영 설정')
     expect(response.body).to include('data-turbo-submits-with="저장 중..."')
-    expect(response.body).not_to include('<!DOCTYPE html>')
-    expect(response.body).to include('선생님 관리로 돌아가기')
+    expect(response.body).to include('선생님 목록으로 돌아가기')
+    expect(response.body).not_to include('data-turbo-frame="_top"')
     expect(response.body).not_to include('translation missing')
   end
 
@@ -441,8 +450,8 @@ RSpec.describe 'Admin teachers', type: :request do
     expect(teacher.reload).to be_active
   end
 
-  it "does not offer or accept a new assignment to an inactive school" do
-    inactive_school = create(:school, name: "운영 중단 학교", active: false)
+  it 'does not offer or accept a new assignment to an inactive school' do
+    inactive_school = create(:school, name: '운영 중단 학교', active: false)
     sign_in admin
 
     get new_admin_teacher_path
@@ -451,17 +460,17 @@ RSpec.describe 'Admin teachers', type: :request do
     expect do
       post admin_teachers_path, params: {
         user: {
-          name: "배정 금지 교사",
-          email: "inactive-school@example.com",
-          password: "password123"
+          name: '배정 금지 교사',
+          email: 'inactive-school@example.com',
+          password: 'password123'
         },
         school_id: inactive_school.id,
-        classroom_ids: [""]
+        classroom_ids: ['']
       }
     end.not_to change(User.teacher, :count)
   end
 
-  it "keeps an existing inactive-school assignment visible while allowing removal" do
+  it 'keeps an existing inactive-school assignment visible while allowing removal' do
     inactive_school = create(:school, active: false)
     membership = create(:school_membership, school: inactive_school, user: teacher)
     sign_in admin
@@ -469,8 +478,8 @@ RSpec.describe 'Admin teachers', type: :request do
     get edit_admin_teacher_path(teacher)
     expect(response.body).to include(inactive_school.name)
 
-    patch admin_teacher_path(teacher), params: { school_id: "", classroom_ids: [""] }
-    expect(response).to redirect_to(admin_teachers_path)
+    patch admin_teacher_path(teacher), params: { school_id: '', classroom_ids: [''] }
+    expect(response).to redirect_to(edit_admin_teacher_path(teacher))
     expect { membership.reload }.to raise_error(ActiveRecord::RecordNotFound)
     expect(inactive_school.reload).to be_inactive
   end

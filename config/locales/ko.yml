@@ -489,15 +489,18 @@ ko:
       update:
         success: "학교 이름을 수정했습니다."
     teachers:
-      new_title: "새 선생님 추가"
-      edit_title: "선생님 설정"
-      info_title: "선생님 정보"
-      school_membership_title: "학교 소속과 담당 학급"
-      back_to_index: "선생님 관리로 돌아가기"
+      new_title: "선생님 추가"
+      edit_title: "운영 설정"
+      info_title: "기본 정보"
+      school_membership_title: "학교 소속 및 운영 권한"
+      back_to_index: "선생님 목록으로 돌아가기"
+      edit:
+        target: "%{name} 선생님"
       index:
         title: "선생님 관리"
         list_title: "선생님 목록"
         add_teacher: "선생님 추가"
+        manage: "설정"
         empty: "등록된 선생님이 없습니다."
         school: "소속 학교"
         school_role: "학교 역할"
@@ -518,6 +521,7 @@ ko:
         classrooms_label: "담당 학급"
         classrooms_help: "학교를 선택하면 담당 학급을 지정할 수 있습니다."
         classrooms_empty: "담당 학급 없음"
+        avatar_select: "썸네일 선택"
         submitting: "저장 중..."
       info:
         teacher_role: "선생님"
@@ -535,10 +539,14 @@ ko:
         assignment_selection_required: "학교와 담당 학급의 최종 상태를 함께 선택해 주세요."
         teacher_required: "선생님 계정만 학교와 담당 학급을 변경할 수 있습니다."
       create:
-        success: "새 선생님 계정이 생성되었습니다."
+        success: "선생님 계정이 생성되었습니다."
         failure: "선생님 계정 생성에 실패했습니다."
       update:
         success: "학교와 담당 학급을 저장했습니다."
+      account_status:
+        title: "계정 상태"
+        deactivate: "비활성화"
+        reactivate: "재활성화"
 
   school_memberships:
     errors:

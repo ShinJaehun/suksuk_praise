@@ -16,14 +16,14 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
   let(:school) { create(:school, name: '가온초등학교') }
   let(:other_school) { create(:school, name: '나래초등학교') }
 
-  it 'shows the selected school and classroom groups in the edit modal' do
+  it 'shows the selected school and classroom groups on the edit page' do
     classroom = create(:classroom, school: school, name: '4학년 1반')
     other_classroom = create(:classroom, school: other_school, name: '다른 학교 학급')
     create(:school_membership, user: teacher, school: school)
     create(:classroom_membership, user: teacher, classroom: classroom, role: :teacher)
     sign_in admin
 
-    get edit_admin_teacher_path(teacher), headers: { 'Turbo-Frame' => 'modal' }
+    get edit_admin_teacher_path(teacher)
 
     document = Nokogiri::HTML(response.body)
     expect(response).to have_http_status(:ok)
@@ -158,7 +158,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
       classroom_ids: [kept_classroom.id, added_classroom.id]
     }
 
-    expect(response).to redirect_to(admin_teachers_path)
+    expect(response).to redirect_to(edit_admin_teacher_path(teacher))
     expect(membership.reload).to be_manager
     expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(kept_classroom.id,
                                                                                           added_classroom.id)
@@ -177,7 +177,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
       classroom_ids: new_classrooms.map(&:id)
     }
 
-    expect(response).to redirect_to(admin_teachers_path)
+    expect(response).to redirect_to(edit_admin_teacher_path(teacher))
     expect(membership.reload).to have_attributes(school: other_school, role: 'member')
     expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to match_array(new_classrooms.map(&:id))
   end
@@ -190,7 +190,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
 
     patch admin_teacher_path(teacher), params: { school_id: '', classroom_ids: [''] }
 
-    expect(response).to redirect_to(admin_teachers_path)
+    expect(response).to redirect_to(edit_admin_teacher_path(teacher))
     expect(teacher.reload.school_membership).to be_nil
     expect(teacher.classroom_memberships.teacher).to be_empty
   end
@@ -268,7 +268,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
       school_membership: { role: 'manager' }
     }
 
-    expect(response).to redirect_to(admin_teachers_path)
+    expect(response).to redirect_to(edit_admin_teacher_path(teacher))
     expect(teacher.reload.attributes.slice(*original_attributes.keys)).to eq(original_attributes)
     expect(teacher.school_membership).to have_attributes(school: school, role: 'member')
     expect(teacher.classroom_memberships.teacher.exists?(classroom: classroom)).to eq(true)

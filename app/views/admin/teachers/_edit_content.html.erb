@@ -1,4 +1,12 @@
-<h1 class="text-2xl font-extrabold tracking-tight text-slate-900"><%= t("admin.teachers.edit_title") %></h1>
+<header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div class="min-w-0">
+    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900"><%= t("admin.teachers.edit_title") %></h1>
+    <p class="mt-1 truncate text-base font-semibold text-slate-600"><%= t("admin.teachers.edit.target", name: display_name(@teacher)) %></p>
+  </div>
+  <%= link_to t("admin.teachers.back_to_index"),
+        admin_teachers_path,
+        class: "inline-flex items-center justify-center self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+</header>
 
 <% if @teacher.errors.any? %>
   <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -6,43 +14,76 @@
   </div>
 <% end %>
 
-<div class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
-  <h2 class="mb-2 text-base font-semibold"><%= t("admin.teachers.info_title") %></h2>
-  <div class="flex items-center gap-3">
+<section class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
+  <h2 class="text-base font-semibold text-slate-900"><%= t("admin.teachers.info_title") %></h2>
+  <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
     <%= user_avatar_image(
           @teacher,
           size: 128,
-          class: "h-20 w-20 rounded-xl border border-slate-200 bg-slate-100 object-cover",
-          alt: "#{@teacher.name} avatar"
+          class: "h-20 w-20 shrink-0 rounded-xl border border-slate-200 bg-slate-100 object-cover",
+          alt: "#{display_name(@teacher)} avatar"
         ) %>
-    <div class="space-y-1">
-      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.name") %>:</span> <span class="ml-2"><%= @teacher.name %></span></p>
-      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.email") %>:</span> <span class="ml-2"><%= @teacher.email %></span></p>
-      <p><span class="font-medium text-gray-700"><%= t("ui.user_labels.role") %>:</span> <span class="ml-2"><%= t("admin.teachers.info.teacher_role") %></span></p>
-      <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.created_at") %></span> <span class="ml-2"><%= l(@teacher.created_at, format: :short) %></span></p>
-      <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.classroom_count") %></span> <span class="ml-2"><%= t("admin.teachers.info.classroom_count_value", count: @teacher_classroom_count) %></span></p>
-      <p><span class="font-medium text-gray-700"><%= t("admin.teachers.info.classrooms") %></span> <span class="ml-2"><%= @teacher_classroom_names.any? ? @teacher_classroom_names.join(", ") : t("admin.teachers.info.unassigned") %></span></p>
-    </div>
+    <dl class="grid min-w-0 flex-1 gap-4 sm:grid-cols-2">
+      <div>
+        <dt class="text-xs font-semibold text-slate-500"><%= t("ui.user_labels.name") %></dt>
+        <dd class="mt-1 font-semibold text-slate-900"><%= display_name(@teacher) %></dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold text-slate-500"><%= t("ui.user_labels.email") %></dt>
+        <dd class="mt-1 break-all text-slate-800"><%= @teacher.email %></dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold text-slate-500"><%= t("ui.user_labels.role") %></dt>
+        <dd class="mt-1 text-slate-800"><%= t("admin.teachers.info.teacher_role") %></dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold text-slate-500"><%= t("admin.teachers.info.created_at") %></dt>
+        <dd class="mt-1 text-slate-800"><%= l(@teacher.created_at, format: :short) %></dd>
+      </div>
+      <div>
+        <dt class="text-xs font-semibold text-slate-500"><%= t("teacher_status.filter_label") %></dt>
+        <dd class="mt-1">
+          <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold <%= @teacher.active? ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600" %>"><%= t(@teacher.active? ? "teacher_status.active" : "teacher_status.inactive") %></span>
+        </dd>
+      </div>
+    </dl>
   </div>
-</div>
+</section>
 
 <%= form_with model: @teacher,
       url: admin_teacher_path(@teacher),
       method: :patch,
-      class: "space-y-6",
-      data: { turbo_frame: "_top" } do |f| %>
+      class: "space-y-6" do |f| %>
   <section class="rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
-    <h2 class="mb-3 text-base font-semibold"><%= t("admin.teachers.school_membership_title") %></h2>
-    <%= render "admin/teachers/school_classroom_fields" %>
+    <h2 class="text-base font-semibold text-slate-900"><%= t("admin.teachers.school_membership_title") %></h2>
 
-    <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+    <div class="mt-4">
+      <%= render "admin/teachers/school_classroom_fields" %>
+    </div>
+
+    <div class="mt-5">
       <%= f.submit t("ui.save"),
             data: { turbo_submits_with: t("admin.teachers.form.submitting") },
             class: "inline-flex justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
-      <%= link_to t("admin.teachers.back_to_index"),
-            admin_teachers_path,
-            data: { turbo_frame: "_top" },
-            class: "inline-flex justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
     </div>
   </section>
 <% end %>
+
+<section class="rounded-2xl border border-rose-200 bg-rose-50/40 p-5 text-sm">
+  <h2 class="text-base font-semibold text-rose-900"><%= t("admin.teachers.account_status.title") %></h2>
+  <div class="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <span class="inline-flex self-start rounded-full px-2 py-0.5 text-xs font-semibold <%= @teacher.active? ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600" %>"><%= t(@teacher.active? ? "teacher_status.active" : "teacher_status.inactive") %></span>
+    <% if @teacher.active? %>
+      <%= button_to t("admin.teachers.account_status.deactivate"),
+            deactivate_admin_teacher_path(@teacher),
+            method: :patch,
+            form: { data: { turbo_confirm: t("teacher_status.confirm_deactivate") } },
+            class: "inline-flex justify-center rounded-lg border border-rose-300 bg-white px-4 py-2 font-semibold text-rose-700 hover:bg-rose-50" %>
+    <% else %>
+      <%= button_to t("admin.teachers.account_status.reactivate"),
+            reactivate_admin_teacher_path(@teacher),
+            method: :patch,
+            class: "inline-flex justify-center rounded-lg border border-emerald-300 bg-white px-4 py-2 font-semibold text-emerald-700 hover:bg-emerald-50" %>
+    <% end %>
+  </div>
+</section>
