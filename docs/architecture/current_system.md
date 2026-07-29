@@ -57,7 +57,7 @@
 - `SchoolCalendar`는 주말, 전국 공통 공휴일과 해당 학교의 휴일을 기준으로 운영일과 주·월의 마지막 운영일을 계산한다.
 - `/classrooms`는 사용자가 접근할 수 있는 교실을 확인하고 진입하는 교실 전용 목록이다.
 - global admin은 `/classrooms`와 `/admin/teachers`에서 학교 필터를 사용해 전체 목록 또는 특정 학교의 교실·선생님 목록을 조회할 수 있다.
-- `/schools/:id`는 학교 이름, 교실·교사 수와 관리자 현황, 학교 휴일을 표시한다. 교실·교사 상세 목록은 표시하지 않으며 상단에는 `/classrooms` 이동과 global admin 전용 학교 설정 modal 진입을 제공한다. 학교 이름과 manager 역할은 이 설정 modal에서 관리한다.
+- `/schools/:id`는 학교 이름, 교실·교사 수와 관리자 현황, 학교 휴일을 표시한다. 교실·교사 상세 목록은 표시하지 않으며 상단에는 `/classrooms` 이동과 global admin 전용 `/schools/:id/edit` 학교 설정 진입을 제공한다. 학교 이름, 표시 색상, manager 역할과 학교 활성 상태는 독립된 설정 페이지에서 관리한다.
 - `/admin/teachers`는 global admin 전용 전체 선생님 계정·학교 소속·담당 교실 통합 관리 화면이다.
 - `/schools/:school_id/teachers`는 해당 학교 manager 전용 선생님 관리 목록이며 manager navbar에서 진입한다. `new/create/edit/update`는 이 목록에서 여는 modal과 저장 endpoint다.
 - global admin은 학교 운영 정보에서 teacher를 학교 manager로 지정하거나 member로 해제할 수 있다. member는 자기 학교를 읽고, manager와 global admin은 SchoolClosure를 등록·수정·삭제할 수 있다.

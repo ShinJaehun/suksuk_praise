@@ -19,7 +19,9 @@ RSpec.describe "School overview", type: :request do
     expect(overview.at_css(%(a[href="#{classrooms_path}"]))).to be_present
     expect(overview.text).to include("교실 목록으로")
     expect(overview.text).not_to include("교실 목록으로 돌아가기")
-    expect(overview.at_css(%(a[href="#{edit_school_path(school)}"][data-turbo-frame="modal"]))).to be_present
+    settings_link = overview.at_css(%(a[href="#{edit_school_path(school)}"]))
+    expect(settings_link).to be_present
+    expect(settings_link["data-turbo-frame"]).to be_nil
     expect(response.body).to include("학교 휴일")
     expect(response.body).not_to include(classroom.name, teacher.name)
     expect(overview.at_css(%(a[href="#{new_classroom_path}"]))).to be_nil

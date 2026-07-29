@@ -28,8 +28,12 @@ RSpec.describe 'Admin schools', type: :request do
     expect(response.body).to include('학급 2개')
     expect(response.body).to include('소속 교사 0명')
     expect(response.body).to include(new_admin_school_path)
-    expect(response.body).to include(edit_admin_school_path(school))
-    expect(response.body).to include('data-turbo-frame="modal"')
+    expect(response.body).to include(school_path(school), '활성')
+    expect(response.body).not_to include(
+      edit_admin_school_path(school),
+      deactivate_admin_school_path(school),
+      reactivate_admin_school_path(school)
+    )
   end
 
   it "filters schools by lifecycle status" do
@@ -69,7 +73,7 @@ RSpec.describe 'Admin schools', type: :request do
 
     patch reactivate_admin_school_path(school, status: "inactive")
     expect(school.reload).to be_active
-    expect(response).to redirect_to(schools_path(status: "inactive"))
+    expect(response).to redirect_to(edit_school_path(school))
   end
 
   it 'does not show school management in a teacher classrooms index' do

@@ -4,8 +4,6 @@ class SchoolsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_school, only: %i[show edit update]
 
-  layout -> { turbo_frame_request? ? false : "application" }
-
   def index
     schools_scope = policy_scope(School)
     if current_user.admin?
@@ -40,27 +38,12 @@ class SchoolsController < ApplicationController
     authorize @school, :update?
 
     if @school.update(school_params)
-      prepare_school_overview
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace(
-              "school_overview",
-              partial: "schools/overview",
-              locals: school_overview_locals
-            ),
-            turbo_stream.update("modal", "")
-          ]
-        end
-        format.html do
-          redirect_to school_path(@school),
-            notice: t("schools.settings.update.success"),
-            status: :see_other
-        end
-      end
+      redirect_to edit_school_path(@school),
+        notice: t("schools.settings.update.success"),
+        status: :see_other
     else
       prepare_school_settings
-      render_school_settings(status: :unprocessable_entity)
+      render :edit, formats: :html, status: :unprocessable_entity
     end
   end
 
@@ -72,29 +55,6 @@ class SchoolsController < ApplicationController
 
   def school_params
     params.require(:school).permit(:name, :color_key)
-  end
-
-  def school_overview_locals
-    {
-      school: @school,
-      classroom_count: @classroom_count,
-      teacher_count: @teacher_count,
-      managers: @managers
-    }
-  end
-
-  def render_school_settings(status:)
-    respond_to do |format|
-      format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          "modal",
-          partial: "schools/settings_modal"
-        ), status: status
-      end
-      format.html do
-        render :edit, status: status
-      end
-    end
   end
 
   def prepare_public_holiday_sync_years

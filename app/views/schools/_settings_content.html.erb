@@ -1,8 +1,6 @@
-<h1 class="text-xl font-bold text-slate-900"><%= t("schools.settings.title") %></h1>
-
-<section class="rounded-xl border border-slate-200 p-4">
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
   <h2 class="text-base font-bold text-slate-900"><%= t("schools.settings.name_title") %></h2>
-  <%= form_with model: @school, class: "mt-3 space-y-3", data: { turbo_frame: "_top" } do |form| %>
+  <%= form_with model: @school, class: "mt-3 space-y-3" do |form| %>
     <div>
       <%= form.label :name, t("schools.settings.name_label"), class: "block text-sm font-semibold text-slate-800" %>
       <%= form.text_field :name, class: "mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" %>
@@ -16,11 +14,11 @@
   <% end %>
 </section>
 
-<section class="rounded-xl border border-slate-200 p-4">
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
   <h2 class="text-base font-bold text-slate-900"><%= t("schools.settings.color_title") %></h2>
   <p class="mt-1 text-sm text-slate-500"><%= t("schools.settings.color_description") %></p>
 
-  <%= form_with model: @school, class: "mt-3 space-y-3", data: { turbo_frame: "_top" } do |form| %>
+  <%= form_with model: @school, class: "mt-3 space-y-3" do |form| %>
     <fieldset>
       <legend class="sr-only"><%= t("schools.settings.color_label") %></legend>
       <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -46,7 +44,7 @@
   <% end %>
 </section>
 
-<section class="rounded-xl border border-slate-200 p-4">
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
   <h2 class="text-base font-bold text-slate-900"><%= t("schools.settings.managers_title") %></h2>
   <div class="mt-3 space-y-2">
     <% if @managers.any? %>

@@ -58,22 +58,10 @@
             <h2 class="truncate text-xl font-bold text-slate-900"><%= school.name %></h2>
             <span class="rounded-full px-2 py-0.5 text-xs font-semibold <%= school.active? ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600" %>"><%= t(school.active? ? "school_status.active" : "school_status.inactive") %></span>
           </div>
-          <% if current_user.admin? %>
-            <%= link_to t("ui.edit"), edit_admin_school_path(school), data: { turbo_frame: "modal" }, class: "text-sm font-semibold text-slate-600 hover:text-slate-900" %>
-          <% end %>
         </div>
         <p class="mt-3 text-sm text-slate-600"><%= t("schools.index.summary", classrooms: @classroom_counts.fetch(school.id, 0), teachers: @teacher_counts.fetch(school.id, 0)) %></p>
         <p class="mt-1 text-sm text-slate-600"><%= t("schools.index.administrators", names: @managers_by_school_id.fetch(school.id, []).map { |membership| display_name(membership.user) }.presence&.join(", ") || t("schools.index.administrators_empty")) %></p>
         <%= link_to t("schools.index.open"), school_path(school), class: "mt-4 inline-flex rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100" %>
-        <% if school.active? %>
-          <%= button_to t("school_status.deactivate"), deactivate_admin_school_path(school, status: @school_status), method: :patch,
-                form: { class: "mt-2 inline-flex", data: { turbo_confirm: t("school_status.confirm_deactivate") } },
-                class: "rounded-lg border border-rose-300 px-3 py-2 text-sm font-semibold text-rose-700" %>
-        <% else %>
-          <%= button_to t("school_status.reactivate"), reactivate_admin_school_path(school, status: @school_status), method: :patch,
-                form: { class: "mt-2 inline-flex" },
-                class: "rounded-lg border border-emerald-300 px-3 py-2 text-sm font-semibold text-emerald-700" %>
-        <% end %>
       </article>
     <% end %>
   </div>

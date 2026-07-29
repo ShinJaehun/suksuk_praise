@@ -1,4 +1,6 @@
 class Admin::SchoolsController < Admin::BaseController
+  include SchoolWorkspacePrepareable
+
   before_action :set_school, only: %i[edit update deactivate reactivate]
   layout -> { turbo_frame_request? ? false : "application" }
 
@@ -58,13 +60,13 @@ class Admin::SchoolsController < Admin::BaseController
 
   def update_school_status(active)
     if @school.update(active: active)
-      redirect_to schools_path(status: params[:status]),
+      redirect_to edit_school_path(@school),
         notice: t(active ? "school_status.reactivated" : "school_status.deactivated"),
         status: :see_other
     else
-      redirect_to schools_path,
-        alert: t("school_status.failure"),
-        status: :see_other
+      @school.errors.add(:base, t("school_status.failure")) if @school.errors.empty?
+      prepare_school_settings
+      render "schools/edit", formats: :html, status: :unprocessable_entity
     end
   end
 

@@ -94,7 +94,7 @@
 | `Admin::SchoolsController#new`, `#create` | `SchoolPolicy#create?` | 가능 | 불가 | 불가 | `/schools` 학교 관리 화면에서 진입 |
 | `Admin::SchoolsController#edit`, `#update` | `SchoolPolicy#update?` | 가능 | 불가 | 불가 | 학교 이름만 수정 가능 |
 | `SchoolsController#show` | `SchoolPolicy#show?` + `SchoolPolicy::Scope` | 가능 | 자기 학교 | 불가 | member와 manager 모두 자기 학교 읽기 가능 |
-| `SchoolsController#edit`, `#update` | `SchoolPolicy#update?` + `SchoolPolicy::Scope` | 가능 | 불가 | 불가 | 학교 show의 설정 modal에서 학교 이름만 수정 |
+| `SchoolsController#edit`, `#update` | `SchoolPolicy#update?` + `SchoolPolicy::Scope` | 가능 | 불가 | 불가 | 독립된 학교 설정 페이지에서 학교 이름과 표시 색상 수정 |
 | `SchoolsController#index` | `SchoolPolicy#index?` + `SchoolPolicy::Scope` | 전체 학교 | 자기 학교 | 불가 | 단일 소속 teacher는 show로 이동 |
 | `SchoolClosuresController` CRUD | `SchoolPolicy#manage_operations?` + `SchoolPolicy::Scope` | 가능 | manager만 자기 학교 | 불가 | closure는 nested school을 통해 조회 |
 | `Admin::SchoolManagersController` | `SchoolPolicy#update?` | 가능 | 불가 | 불가 | 해당 학교 SchoolMembership의 teacher만 manager로 지정하고 해제 시 member로 변경 |
@@ -103,7 +103,7 @@
 
 `ClassroomPolicy::Scope`는 global admin에게 전체 학급을, 학교 manager에게 자기 학교의 모든 학급을, 일반 teacher에게 담당 teacher membership 학급만 반환한다. student의 기존 membership 기반 scope는 유지한다. `manage_structure?`는 global admin과 해당 학교 manager에게 이름·학년, admin에게 학교 변경을 허용한다. `manage_operations?`와 `manage_members?`는 global admin과 실제 담당 teacher에게만 허용한다. 따라서 manager는 담당 teacher가 아니라면 학생 관리나 칭찬왕·메시지 운영 설정 권한을 얻지 않는다.
 
-`/schools/:id`는 학교 기본 현황, global admin의 학교 이름·관리자 설정 modal, 학교 휴일을 제공한다. 교실 상세 관리는 `/classrooms`에서 수행한다. 담당 teacher 배정·해제는 global admin은 `/admin/teachers`, 해당 학교 manager는 `/schools/:school_id/teachers`에서 수행하며 classroom create/update는 `teacher_ids`를 처리하지 않는다.
+`/schools/:id`는 학교 기본 현황과 학교 휴일을 제공하고, global admin은 독립된 `/schools/:id/edit`에서 학교 이름·표시 색상·관리자·활성 상태를 관리한다. 교실 상세 관리는 `/classrooms`에서 수행한다. 담당 teacher 배정·해제는 global admin은 `/admin/teachers`, 해당 학교 manager는 `/schools/:school_id/teachers`에서 수행하며 classroom create/update는 `teacher_ids`를 처리하지 않는다.
 
 담당 teacher는 SchoolMembership을 반드시 가지며 모든 담당 Classroom은 그 SchoolMembership과 같은 학교여야 한다. global admin이 `/admin/teachers/:id`에서 학교와 담당 학급을 함께 변경하면 기존 teacher assignment 제거, SchoolMembership 변경·삭제, 최종 assignment 생성을 한 transaction으로 처리한다. 잘못된 학교·학급 조합은 변경 전 거부하고 전체 기존 상태를 보존한다.
 

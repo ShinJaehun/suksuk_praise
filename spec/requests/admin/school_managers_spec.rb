@@ -13,7 +13,7 @@ RSpec.describe "Admin school managers", type: :request do
 
     post admin_school_school_managers_path(school), params: { user_id: teacher.id }
 
-    expect(response).to redirect_to(school_path(school))
+    expect(response).to redirect_to(edit_school_path(school))
     expect(membership.reload).to be_manager
     expect(classroom_membership.reload).to be_present
     expect(teacher.reload.school_membership).to eq(membership)
@@ -26,12 +26,12 @@ RSpec.describe "Admin school managers", type: :request do
 
     delete admin_school_manager_path(school, teacher)
 
-    expect(response).to redirect_to(school_path(school))
+    expect(response).to redirect_to(edit_school_path(school))
     expect(membership.reload).to be_member
     expect(classroom_membership.reload).to be_present
   end
 
-  it "refreshes the overview and clears the modal for Turbo changes" do
+  it "returns to school settings after a Turbo manager change" do
     membership = create(:school_membership, school: school, user: teacher)
     sign_in admin
 
@@ -39,12 +39,8 @@ RSpec.describe "Admin school managers", type: :request do
       params: { user_id: teacher.id },
       headers: { "Accept" => Mime[:turbo_stream].to_s }
 
-    expect(response).to have_http_status(:ok)
-    expect(response.body).to include(
-      'turbo-stream action="replace" target="school_overview"',
-      'turbo-stream action="update" target="modal"',
-      teacher.name
-    )
+    expect(response).to have_http_status(:see_other)
+    expect(response).to redirect_to(edit_school_path(school))
     expect(membership.reload).to be_manager
   end
 
