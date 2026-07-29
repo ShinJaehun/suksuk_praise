@@ -401,7 +401,7 @@ ko:
       used: "사용"
     index:
       title: "쿠폰 이벤트 로그"
-      description: "쿠폰 발급과 사용 기록을 최신순으로 확인합니다."
+      description: "쿠폰 발급과 사용 기록을 확인합니다."
 
   compliments:
     custom_modal:
@@ -415,7 +415,7 @@ ko:
   compliment_events:
     index:
       title: "칭찬 로그"
-      description: "교실에서 생성된 일반 칭찬과 맞춤 칭찬을 최신순으로 확인합니다."
+      description: "칭찬 기록을 확인합니다."
       filters:
         all_students: "전체 학생"
         all_kinds: "전체"
@@ -429,14 +429,11 @@ ko:
     index:
       title: "자주 쓰는 칭찬 관리"
       nav_title: "자주 쓰는 칭찬"
-      description: "내가 자주 사용하는 칭찬을 최대 5개까지 등록할 수 있습니다."
-      form_title: "자주 사용하는 칭찬"
-      list_title: "등록된 자주 쓰는 칭찬"
+      description: "자주 사용하는 칭찬을 최대 5개까지 등록할 수 있습니다."
+      form_title: "칭찬 등록하기"
+      list_title: "등록된 칭찬"
       empty: "등록된 자주 쓰는 칭찬이 없습니다."
       back_to_classroom: "교실로 돌아가기"
-    edit:
-      title: "맞춤 칭찬 수정"
-      back: "목록으로 돌아가기"
     form:
       title: "칭찬 문구"
       placeholder: "예: 친구와 사이좋게 지냄"
@@ -603,7 +600,7 @@ ko:
       name_title: "학교 이름"
       name_label: "학교 이름"
       name_submit: "학교 이름 저장"
-      color_title: "학교 구분 색상"
+      color_title: "표시 색상"
       color_description: "교실과 선생님 목록에서 이 학교를 구분할 때 사용하는 색상입니다."
       color_label: "학교 구분 색상"
       color_submit: "색상 저장"
@@ -616,13 +613,15 @@ ko:
         teal: "청록색"
         indigo: "남색"
         orange: "주황색"
-      managers_title: "현재 학교 관리자"
+      managers_title: "학교 관리자 지정·해제"
       manager_candidate_label: "관리자로 지정할 선생님"
       manager_prompt: "선생님 선택"
       manager_assign: "관리자 지정"
       manager_remove: "관리자 해제"
       manager_remove_confirm: "이 교사의 학교 관리자 권한을 해제할까요?"
-      back_to_school: "학교 관리로 돌아가기"
+      status_title: "학교 상태"
+      status_description: "학교 운영을 중단하거나 다시 시작할 수 있습니다."
+      back_to_school: "학교 운영 정보로 돌아가기"
       update:
         success: "학교 이름을 수정했습니다."
     teachers:

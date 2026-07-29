@@ -1,0 +1,31 @@
+<%# locals: (preset:) %>
+<div class="bg-slate-50 px-5 py-4">
+  <%= form_with model: preset,
+        url: compliment_template_path(preset),
+        data: { turbo_frame: dom_id(preset) },
+        class: "space-y-3" do |f| %>
+    <% if preset.errors.any? %>
+      <div class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
+        <%= preset.errors.full_messages.to_sentence %>
+      </div>
+    <% end %>
+
+    <div>
+      <%= f.label :title, t("compliment_presets.form.title"), class: "mb-2 block text-sm font-medium text-slate-700" %>
+      <%= f.text_field :title,
+            maxlength: 50,
+            required: true,
+            autofocus: true,
+            class: "block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <%= f.submit t("compliment_presets.form.update"),
+            class: "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700" %>
+      <%= link_to t("ui.cancel"),
+            compliment_templates_path,
+            data: { turbo_frame: dom_id(preset) },
+            class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
+    </div>
+  <% end %>
+</div>

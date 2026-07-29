@@ -42,11 +42,11 @@ class ComplimentTemplatesController < ApplicationController
         notice: t("compliment_presets.flash.updated"),
         status: :see_other
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_entity
     end
   rescue ActiveRecord::RecordNotUnique
     @compliment_preset.errors.add(:title, :taken)
-    render :edit, status: :unprocessable_entity
+    render :edit, formats: :html, status: :unprocessable_entity
   end
 
   def destroy

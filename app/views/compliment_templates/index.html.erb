@@ -40,21 +40,7 @@
     <% if @compliment_presets.any? %>
       <div class="divide-y divide-slate-100">
         <% @compliment_presets.each do |preset| %>
-          <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="min-w-0">
-              <p class="break-words text-sm font-semibold text-slate-900"><%= preset.title %></p>
-            </div>
-            <div class="flex shrink-0 gap-2">
-              <%= link_to t("ui.edit"),
-                    edit_compliment_template_path(preset),
-                    class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
-              <%= button_to t("ui.delete"),
-                    compliment_template_path(preset),
-                    method: :delete,
-                    data: { turbo_confirm: t("compliment_presets.destroy.confirm") },
-                    class: "inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>
-            </div>
-          </div>
+          <%= render "compliment_preset", preset: preset %>
         <% end %>
       </div>
     <% else %>
