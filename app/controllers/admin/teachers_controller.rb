@@ -97,7 +97,7 @@ class Admin::TeachersController < Admin::BaseController
              school_color_key: school&.color_key,
              school_role: membership&.role,
              school_role_label: teacher_school_role_label(teacher),
-             classroom_names: classrooms.map { |classroom| teacher_classroom_label(classroom) }
+             classrooms: classrooms
            }
     end
   end
@@ -120,14 +120,6 @@ class Admin::TeachersController < Admin::BaseController
     return t('admin.teachers.index.unassigned_role') unless membership
 
     t(membership.manager? ? 'admin.teachers.index.manager' : 'admin.teachers.index.member')
-  end
-
-  def teacher_classroom_label(classroom)
-    grade_label = "#{classroom.grade}학년" if classroom.grade
-    name = classroom.name.to_s.strip
-    return name if grade_label.blank? || name.start_with?(grade_label)
-
-    "#{grade_label} #{name}"
   end
 
   def set_teacher
@@ -310,7 +302,7 @@ class Admin::TeachersController < Admin::BaseController
   def load_school_assignment_form
     current_school_id = @teacher.school_membership&.school_id
     @schools = School.active.or(School.where(id: current_school_id)).order(:name, :id).load
-    @classrooms_by_school = Classroom.where(school_id: @schools.map(&:id)).order(:name, :id).group_by(&:school_id)
+    @classrooms_by_school = Classroom.where(school_id: @schools.map(&:id)).order(:grade, :name, :id).group_by(&:school_id)
     load_selected_school
     @selected_classroom_ids =
       if teacher_assignment_params.key?(:classroom_ids)

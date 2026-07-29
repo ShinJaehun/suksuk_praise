@@ -170,7 +170,8 @@ RSpec.describe 'Admin teachers', type: :request do
 
   it 'renders school and classroom assignment fields on the new teacher page' do
     school = create(:school)
-    classroom = create(:classroom, school: school)
+    classroom = create(:classroom, school: school, grade: 4, name: '1반')
+    named_with_grade = create(:classroom, school: school, grade: 6, name: '6학년 기러기반')
     sign_in admin
 
     get new_admin_teacher_path
@@ -186,7 +187,12 @@ RSpec.describe 'Admin teachers', type: :request do
     expect(response.body).to include('name="user[avatar_key]"')
     expect(response.body).to include('data-controller="teacher-school-classrooms"')
     expect(response.body).to include('name="school_id"', 'name="classroom_ids[]"')
-    expect(response.body).to include(classroom.name)
+    expect(response.body).to include('4학년 1반', '6학년 기러기반')
+    expect(response.body).not_to include('6학년 6학년 기러기반')
+    document = Nokogiri::HTML(response.body)
+    classroom_input = document.at_css(%(input[name="classroom_ids[]"][value="#{classroom.id}"]))
+    expect(classroom_input["class"]).to include("peer", "sr-only")
+    expect(classroom_input.ancestors("label").first["class"]).to include("rounded-full", "has-[:checked]:bg-blue-50")
   end
 
   it 'saves a submitted male teacher avatar_key for male gender' do
@@ -424,8 +430,8 @@ RSpec.describe 'Admin teachers', type: :request do
   it 'shows school classroom assignment inputs without a school teacher management link' do
     school = create(:school)
     other_school = create(:school)
-    classroom = create(:classroom, school: school, name: '현재 학교 학급')
-    other_classroom = create(:classroom, school: other_school, name: '다른 학교 학급')
+    classroom = create(:classroom, school: school, grade: 4, name: '1반')
+    other_classroom = create(:classroom, school: other_school, grade: 6, name: '6학년 기러기반')
     create(:school_membership, school: school, user: teacher)
     sign_in admin
 
@@ -433,7 +439,8 @@ RSpec.describe 'Admin teachers', type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(%(name="classroom_ids[]"))
-    expect(response.body).to include(classroom.name, other_classroom.name)
+    expect(response.body).to include('4학년 1반', '6학년 기러기반')
+    expect(response.body).not_to include('6학년 6학년 기러기반')
     expect(response.body).to include(%(value="#{other_classroom.id}"))
     expect(response.body).not_to include(school_teachers_path(school))
     expect(response.body).not_to include('담당 학급은 해당 학교의 선생님 관리 화면에서 배정합니다.')

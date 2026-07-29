@@ -25,13 +25,14 @@
         <% classrooms = @classrooms_by_school.fetch(school.id, []) %>
         <% if classrooms.any? %>
           <% classrooms.each do |classroom| %>
-            <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+            <label class="flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
               <%= check_box_tag "classroom_ids[]",
                     classroom.id,
                     @selected_classroom_ids.include?(classroom.id),
                     disabled: @selected_school_id != school.id,
-                    class: "rounded border-slate-300 text-blue-600 focus:ring-blue-500" %>
-              <span><%= classroom.name %></span>
+                    class: "peer sr-only" %>
+              <span aria-hidden="true" class="hidden text-blue-600 peer-checked:inline">✓</span>
+              <span><%= teacher_classroom_label(classroom) %></span>
             </label>
           <% end %>
         <% else %>
