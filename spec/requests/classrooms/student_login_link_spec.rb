@@ -72,6 +72,12 @@ RSpec.describe "Classroom student login link", type: :request do
     expect(response.body).to include(public_student_login_url(student_login_token: classroom.student_login_token))
   end
 
+  it "requires authentication for the student login info modal" do
+    get student_login_info_classroom_path(classroom)
+
+    expect(response).to redirect_to(new_user_session_path)
+  end
+
   it "does not expose the token student login URL to a student" do
     create(:classroom_membership, user: student, classroom: classroom, role: "student")
     sign_in student
@@ -155,6 +161,10 @@ RSpec.describe "Classroom student login link", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.media_type).to eq("image/png")
+    expect(response.headers["Content-Disposition"]).to include(
+      "attachment",
+      "student-login-qr-#{classroom.id}.png"
+    )
     expect(response.body.bytes.first(4)).to eq([137, 80, 78, 71])
   end
 
