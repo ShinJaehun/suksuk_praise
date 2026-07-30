@@ -1,84 +1,87 @@
-require "rails_helper"
+require 'rails_helper'
 
-RSpec.describe "School overview", type: :request do
-  let(:school) { create(:school, name: "아라초등학교") }
-  let(:manager) { create(:school_membership, :manager, school: school, user: create(:user, :teacher, name: "학교 관리자")).user }
+RSpec.describe 'School overview', type: :request do
+  let(:school) { create(:school, name: '아라초등학교') }
+  let(:manager) do
+    create(:school_membership, :manager, school: school, user: create(:user, :teacher, name: '학교 관리자')).user
+  end
 
-  it "shows only school summary and settings entry to an admin" do
-    classroom = create(:classroom, school: school, name: "상세 학급 이름")
-    teacher = create(:school_membership, school: school, user: create(:user, :teacher, name: "상세 교사 이름")).user
+  it 'shows only school summary and settings entry to an admin' do
+    classroom = create(:classroom, school: school, name: '상세 학급 이름')
+    teacher = create(:school_membership, school: school, user: create(:user, :teacher, name: '상세 교사 이름')).user
     school_manager = manager
     sign_in create(:user, :admin)
 
     get school_path(school)
 
     document = Nokogiri::HTML(response.body)
-    overview = document.at_css("turbo-frame#school_overview")
+    overview = document.at_css('turbo-frame#school_overview')
     expect(response).to have_http_status(:ok)
-    expect(overview.text).to include(school.name, "소속 교실", "1개", "소속 교사", "2명", school_manager.name)
+    expect(overview.text).to include(school.name, '소속 교실', '1개', '소속 교사', '2명', school_manager.name)
     expect(overview.at_css(%(a[href="#{classrooms_path}"]))).to be_present
-    expect(overview.text).to include("교실 목록으로")
-    expect(overview.text).not_to include("교실 목록으로 돌아가기")
+    expect(overview.text).to include('교실 목록으로')
+    expect(overview.text).not_to include('교실 목록으로 돌아가기')
     settings_link = overview.at_css(%(a[href="#{edit_school_path(school)}"]))
     expect(settings_link).to be_present
-    expect(settings_link["data-turbo-frame"]).to be_nil
-    expect(response.body).to include("학교 휴일")
+    expect(settings_link['data-turbo-frame']).to be_nil
+    expect(response.body).to include('학교 휴일')
     expect(response.body).not_to include(classroom.name, teacher.name)
     expect(overview.at_css(%(a[href="#{new_classroom_path}"]))).to be_nil
     expect(overview.at_css(%(a[href="#{new_school_teacher_path(school)}"]))).to be_nil
   end
 
-  it "hides school settings from the school manager while showing the manager name" do
+  it 'hides school settings from the school manager while showing the manager name' do
     school_manager = manager
     sign_in school_manager
 
     get school_path(school)
 
-    overview = Nokogiri::HTML(response.body).at_css("turbo-frame#school_overview")
+    overview = Nokogiri::HTML(response.body).at_css('turbo-frame#school_overview')
     expect(response).to have_http_status(:ok)
-    expect(overview.text).to include(school.name, school_manager.name, "교실 목록으로")
+    expect(overview.text).to include(school.name, school_manager.name, '교실 목록으로')
     expect(overview.at_css(%(a[href="#{edit_school_path(school)}"]))).to be_nil
   end
 
-  it "hides school settings from a member teacher while showing manager names" do
+  it 'hides school settings from a member teacher while showing manager names' do
     school_manager = manager
     member = create(:school_membership, school: school, user: create(:user, :teacher)).user
     sign_in member
 
     get school_path(school)
 
-    overview = Nokogiri::HTML(response.body).at_css("turbo-frame#school_overview")
+    overview = Nokogiri::HTML(response.body).at_css('turbo-frame#school_overview')
     expect(response).to have_http_status(:ok)
     expect(overview.text).to include(school_manager.name)
     expect(overview.at_css(%(a[href="#{edit_school_path(school)}"]))).to be_nil
   end
 
-  it "excludes inactive teachers and managers from the overview" do
+  it 'excludes inactive teachers and managers from the overview' do
     active_manager = manager
     inactive_manager = create(
       :school_membership,
       :manager,
       school: school,
-      user: create(:user, :teacher, name: "비활성 관리자", active: false)
+      user: create(:user, :teacher, name: '비활성 관리자')
     ).user
+    inactive_manager.update!(active: false)
     create(:school_membership, school: school, user: create(:user, :teacher, active: false))
     sign_in create(:user, :admin)
 
     get school_path(school)
 
-    overview = Nokogiri::HTML(response.body).at_css("turbo-frame#school_overview")
-    expect(overview.text).to include("소속 교사", "1명", active_manager.name)
-    expect(overview.text).not_to include(inactive_manager.name, "3명")
+    overview = Nokogiri::HTML(response.body).at_css('turbo-frame#school_overview')
+    expect(overview.text).to include('소속 교사', '1명', active_manager.name)
+    expect(overview.text).not_to include(inactive_manager.name, '3명')
   end
 
-  it "keeps an inactive school readable to admins but blocks members until reactivation" do
+  it 'keeps an inactive school readable to admins but blocks members until reactivation' do
     school_manager = manager
     school.update!(active: false)
     sign_in create(:user, :admin)
 
     get school_path(school)
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include(school.name, "비활성")
+    expect(response.body).to include(school.name, '비활성')
     expect(response.body).not_to include('data-controller="school-closure-picker"')
     expect(response.body).not_to include(school_school_closures_path(school))
 

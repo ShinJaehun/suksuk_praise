@@ -37,36 +37,37 @@ RSpec.describe 'School workspaces', type: :request do
     school_card = document.at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
     other_school_card = document.at_xpath("//h2[normalize-space()='#{other_school.name}']/ancestor::article[1]")
 
-    expect(school_card["class"]).to include("border-sky-200", "bg-sky-50/70")
-    expect(school_card.at_css(".bg-sky-500")).to be_present
-    expect(other_school_card["class"]).to include("border-violet-200", "bg-violet-50/70")
-    expect(other_school_card.at_css(".bg-violet-500")).to be_present
+    expect(school_card['class']).to include('border-sky-200', 'bg-sky-50/70')
+    expect(school_card.at_css('.bg-sky-500')).to be_present
+    expect(other_school_card['class']).to include('border-violet-200', 'bg-violet-50/70')
+    expect(other_school_card.at_css('.bg-violet-500')).to be_present
   end
 
-  it "counts and names only active teachers on the school index" do
+  it 'counts and names only active teachers on the school index' do
     active_manager = manager
     inactive_manager = create(
       :school_membership,
       :manager,
       school: school,
-      user: create(:user, :teacher, name: "비활성 관리자", active: false)
+      user: create(:user, :teacher, name: '비활성 관리자')
     ).user
+    inactive_manager.update!(active: false)
     create(:school_membership, school: school, user: create(:user, :teacher, active: false))
     sign_in admin
 
     get schools_path
 
     card = Nokogiri::HTML(response.body)
-      .at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
-    expect(card.text).to include("소속 교사 2명", active_manager.name)
-    expect(card.text).not_to include(inactive_manager.name, "소속 교사 4명")
+                   .at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
+    expect(card.text).to include('소속 교사 2명', active_manager.name)
+    expect(card.text).not_to include(inactive_manager.name, '소속 교사 4명')
 
     inactive_manager.update!(active: true)
     get schools_path
 
     card = Nokogiri::HTML(response.body)
-      .at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
-    expect(card.text).to include("소속 교사 3명", inactive_manager.name)
+                   .at_xpath("//h2[normalize-space()='#{school.name}']/ancestor::article[1]")
+    expect(card.text).to include('소속 교사 3명', inactive_manager.name)
   end
 
   it 'redirects a member or manager index to their only school without exposing others' do
@@ -97,7 +98,7 @@ RSpec.describe 'School workspaces', type: :request do
     expect(response.body.scan(%(href="#{school_teachers_path(school)}")).size).to eq(2)
   end
 
-  it "does not show school navigation to a member of an inactive school" do
+  it 'does not show school navigation to a member of an inactive school' do
     school.update!(active: false)
     sign_in member
 
@@ -166,16 +167,16 @@ RSpec.describe 'School workspaces', type: :request do
     sunday = calendar_day(document, Date.new(2026, 8, 2))
     monday = calendar_day(document, Date.new(2026, 8, 3))
 
-    expect(saturday["class"]).to include("school-closure-calendar__day--saturday")
-    expect(saturday["class"]).to include("school-closure-calendar__day--school-closure")
-    expect(sunday["class"]).to include("school-closure-calendar__day--sunday")
-    expect(sunday["class"]).to include("school-closure-calendar__day--public-holiday")
-    expect(monday["class"]).not_to include("school-closure-calendar__day--saturday")
-    expect(monday["class"]).not_to include("school-closure-calendar__day--sunday")
+    expect(saturday['class']).to include('school-closure-calendar__day--saturday')
+    expect(saturday['class']).to include('school-closure-calendar__day--school-closure')
+    expect(sunday['class']).to include('school-closure-calendar__day--sunday')
+    expect(sunday['class']).to include('school-closure-calendar__day--public-holiday')
+    expect(monday['class']).not_to include('school-closure-calendar__day--saturday')
+    expect(monday['class']).not_to include('school-closure-calendar__day--sunday')
 
-    weekday_headers = document.css(".school-closure-calendar__weekday")
-    expect(weekday_headers.first["class"]).to include("school-closure-calendar__weekday--sunday")
-    expect(weekday_headers.last["class"]).to include("school-closure-calendar__weekday--saturday")
+    weekday_headers = document.css('.school-closure-calendar__weekday')
+    expect(weekday_headers.first['class']).to include('school-closure-calendar__weekday--sunday')
+    expect(weekday_headers.last['class']).to include('school-closure-calendar__weekday--saturday')
   end
 
   it 'falls back to the current month when the month query is missing or invalid' do

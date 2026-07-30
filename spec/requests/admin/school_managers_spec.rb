@@ -19,6 +19,27 @@ RSpec.describe "Admin school managers", type: :request do
     expect(teacher.reload.school_membership).to eq(membership)
   end
 
+  it "rejects promoting an inactive school member without changing managers" do
+    existing_manager = create(:school_membership, :manager, school: school)
+    inactive_membership = create(
+      :school_membership,
+      school: school,
+      user: create(:user, :teacher, active: false)
+    )
+    sign_in admin
+
+    expect do
+      post admin_school_school_managers_path(school),
+        params: { user_id: inactive_membership.user_id }
+    end.not_to change { school.school_memberships.manager.count }
+
+    expect(response).to have_http_status(:see_other)
+    expect(response).to redirect_to(edit_school_path(school))
+    expect(flash[:alert]).to include(I18n.t("school_memberships.errors.inactive_manager"))
+    expect(inactive_membership.reload).to be_member
+    expect(existing_manager.reload).to be_manager
+  end
+
   it "demotes a manager without deleting membership or assignments" do
     membership = create(:school_membership, :manager, school: school, user: teacher)
     classroom_membership = create(:classroom_membership, classroom: create(:classroom, school: school), user: teacher, role: :teacher)

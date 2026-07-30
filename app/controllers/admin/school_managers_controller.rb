@@ -7,8 +7,13 @@ module Admin
       membership = @school.school_memberships.includes(:user).find_by!(user_id: params.require(:user_id))
       raise ActiveRecord::RecordNotFound unless membership.user.teacher?
 
-      membership.update!(role: :manager)
-      render_manager_success("admin.school_managers.create.success")
+      if membership.update(role: :manager)
+        render_manager_success("admin.school_managers.create.success")
+      else
+        redirect_to edit_school_path(@school),
+          alert: membership.errors.full_messages.to_sentence,
+          status: :see_other
+      end
     end
 
     def destroy

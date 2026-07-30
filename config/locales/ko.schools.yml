@@ -15,6 +15,7 @@ ko:
   school_memberships:
     errors:
       user_must_be_teacher: "는 선생님 계정이어야 합니다."
+      inactive_manager: "비활성 교사는 학교 관리자로 지정할 수 없습니다."
 
   schools:
     calendar:
@@ -157,4 +158,3 @@ ko:
       success: "학교 휴일을 수정했습니다."
     destroy:
       success: "학교 휴일을 삭제했습니다."
-
