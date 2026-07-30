@@ -36,7 +36,7 @@ RSpec.describe 'Classroom members', type: :request do
     expect(inactive_filter.text.squish).to eq('비활성 0')
     expect(all_filter.text.squish).to eq('전체 1')
 
-    expect(response.body).to include('이름 일괄 수정')
+    expect(response.body).to include('학생 명단 일괄 편집')
     expect(response.body).to include(classroom_edit_member_student_names_path(classroom))
     expect(response.body).to include('id="student-creation-actions"')
     expect(response.body).to include('id="student-bulk-management-actions"')
@@ -164,11 +164,11 @@ RSpec.describe 'Classroom members', type: :request do
     ]
     [5, nil, 1, 2, nil].each_with_index do |number, index|
       create(:classroom_membership,
-        classroom: classroom,
-        user: active_students[index],
-        role: 'student',
-        status: 'active',
-        student_number: number)
+             classroom: classroom,
+             user: active_students[index],
+             role: 'student',
+             status: 'active',
+             student_number: number)
     end
     inactive_students = [
       create(:user, :student, name: '비활성 5 B'),
@@ -178,11 +178,11 @@ RSpec.describe 'Classroom members', type: :request do
     ]
     [5, 1, 5, nil].each_with_index do |number, index|
       create(:classroom_membership,
-        classroom: classroom,
-        user: inactive_students[index],
-        role: 'student',
-        status: 'inactive',
-        student_number: number)
+             classroom: classroom,
+             user: inactive_students[index],
+             role: 'student',
+             status: 'inactive',
+             student_number: number)
     end
     sign_in admin
 
@@ -282,13 +282,14 @@ RSpec.describe 'Classroom members', type: :request do
     expect(response.body).to include(student.name)
   end
 
-  it 'renders the bulk student name edit modal for all student memberships' do
+  it 'renders the filtered student roster edit modal with membership-scoped fields' do
     create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
     active_student = create(:user, :student, name: '활성 이름')
     inactive_student = create(:user, :student, name: '비활성 이름')
-    active_membership = create(:classroom_membership, classroom: classroom, user: active_student, role: 'student')
+    active_membership = create(:classroom_membership, classroom: classroom, user: active_student, role: 'student',
+                                                      student_number: 7)
     inactive_membership = create(:classroom_membership, classroom: classroom, user: inactive_student, role: 'student',
-                                                        status: 'inactive')
+                                                        status: 'inactive', student_number: nil)
     sign_in teacher
 
     get classroom_edit_member_student_names_path(classroom, status: 'inactive'), headers: { 'Turbo-Frame' => 'modal' }
@@ -299,13 +300,60 @@ RSpec.describe 'Classroom members', type: :request do
     inactive_row = document.at_css("#name_row_classroom_membership_#{inactive_membership.id}")
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('이름 일괄 수정')
+    expect(response.body).to include('학생 명단 일괄 편집')
     expect(form['action']).to eq(classroom_member_student_names_path(classroom, status: 'inactive'))
-    expect(active_row.text).not_to include(active_membership.id.to_s)
-    expect(inactive_row.text).not_to include(inactive_membership.id.to_s)
-    expect(response.body).to include(%(name="students[#{active_membership.id}][name]"))
+    expect(active_row).to be_nil
+    expect(inactive_row).not_to be_nil
+    expect(response.body).not_to include(%(name="students[#{active_membership.id}][name]"))
     expect(response.body).to include(%(name="students[#{inactive_membership.id}][name]"))
-    expect(response.body).to include('활성 이름', '비활성 이름')
+    expect(response.body).to include(%(name="students[#{inactive_membership.id}][student_number]"))
+    expect(response.body).to include(%(name="students[#{inactive_membership.id}][gender]"))
+    expect(response.body).to include(%(name="students[#{inactive_membership.id}][avatar_key]"))
+    expect(response.body).to include('비활성 이름')
+    expect(response.body).not_to include('name="student_pin"')
+    expect(response.body).to include('data-controller="student-roster-editor"')
+    number_input = document.at_css(%(input[name="students[#{inactive_membership.id}][student_number]"]))
+    expect(number_input['value'].to_s).to be_empty
+  end
+
+  it 'orders roster edit rows by filter status and roster order' do
+    active_two = create(:classroom_membership, classroom: classroom, user: create(:user, :student, name: '활성 2'),
+                                               role: 'student', status: 'active', student_number: 2)
+    active_one = create(:classroom_membership, classroom: classroom, user: create(:user, :student, name: '활성 1'),
+                                               role: 'student', status: 'active', student_number: 1)
+    inactive_one = create(:classroom_membership, classroom: classroom,
+                                                 user: create(:user, :student, name: '비활성 1'),
+                                                 role: 'student', status: 'inactive', student_number: 1)
+    inactive_nil = create(:classroom_membership, classroom: classroom,
+                                                 user: create(:user, :student, name: '비활성 미지정'),
+                                                 role: 'student', status: 'inactive', student_number: nil)
+    sign_in admin
+
+    get classroom_edit_member_student_names_path(classroom, status: 'all')
+
+    rows = Nokogiri::HTML(response.body).css('[data-student-roster-editor-target="row"]')
+    expect(rows.map { |row| row['id'] }).to eq(
+      [active_one, active_two, inactive_one, inactive_nil].map do |membership|
+        "name_row_classroom_membership_#{membership.id}"
+      end
+    )
+  end
+
+  it 'uses the current classroom membership number in the roster editor' do
+    student = create(:user, :student)
+    current_membership = create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                                       status: 'active', student_number: 7)
+    create(:classroom_membership, classroom: create(:classroom), user: student, role: 'student',
+                                  status: 'inactive', student_number: 12)
+    sign_in admin
+
+    get classroom_edit_member_student_names_path(classroom, status: 'active')
+
+    input = Nokogiri::HTML(response.body).at_css(
+      %(input[name="students[#{current_membership.id}][student_number]"])
+    )
+    expect(input['value']).to eq('7')
+    expect(response.body).not_to include('value="12"')
   end
 
   it 'keeps the selected filter after saving names from the modal' do
@@ -327,7 +375,6 @@ RSpec.describe 'Classroom members', type: :request do
     patch classroom_member_student_names_path(classroom, status: 'inactive'),
           params: {
             students: {
-              active_membership.id => { name: '활성 저장 후' },
               inactive_membership.id => { name: '비활성 저장 후' }
             }
           },
@@ -344,7 +391,7 @@ RSpec.describe 'Classroom members', type: :request do
 
     expect(inactive_row.text).to include('비활성 저장 후')
     expect(inactive_result.at_css("#member_row_classroom_membership_#{active_membership.id}")).to be_nil
-    expect(active_student.reload.name).to eq('활성 저장 후')
+    expect(active_student.reload.name).to eq('활성 저장 전')
 
     get classroom_members_path(classroom, status: 'all')
     all_document = Nokogiri::HTML(response.body)
@@ -376,6 +423,342 @@ RSpec.describe 'Classroom members', type: :request do
   end
 
   describe 'PATCH /classrooms/:classroom_id/members/students/name' do
+    it 'updates student numbers, names, genders, and avatar keys together' do
+      create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
+      first = create(:user, :student, name: '첫 학생', gender: 'boy', avatar_key: 'boy01')
+      second = create(:user, :student, name: '둘 학생', gender: 'girl', avatar_key: 'girl01')
+      first_membership = create(:classroom_membership, classroom: classroom, user: first, role: 'student',
+                                                       student_number: 1)
+      second_membership = create(:classroom_membership, classroom: classroom, user: second, role: 'student',
+                                                        student_number: 2)
+      sign_in teacher
+
+      patch classroom_member_student_names_path(classroom, status: 'active'), params: {
+        students: {
+          first_membership.id => {
+            student_number: '3', name: '첫 수정', gender: 'girl', avatar_key: 'girl02',
+            role: 'admin', status: 'inactive', student_pin: '9999'
+          },
+          second_membership.id => {
+            student_number: '4', name: '둘 수정', gender: 'boy', avatar_key: 'boy02'
+          }
+        }
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom, status: 'active'))
+      expect(first_membership.reload.student_number).to eq(3)
+      expect(second_membership.reload.student_number).to eq(4)
+      expect(first.reload.attributes.values_at('name', 'gender', 'avatar_key', 'role')).to eq(
+        ['첫 수정', 'girl', 'girl02', 'student']
+      )
+      expect(second.reload.attributes.values_at('name', 'gender', 'avatar_key')).to eq(
+        ['둘 수정', 'boy', 'boy02']
+      )
+      expect(first_membership).to be_active
+    end
+
+    it 'preserves a legacy mismatched avatar during an unrelated roster update' do
+      student = create(:user, :student, name: '기존 이름', gender: 'boy', avatar_key: 'boy01')
+      student.update_column(:avatar_key, 'girl01')
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                                 student_number: 7)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => {
+            student_number: '8', name: '수정 이름', gender: 'boy', avatar_key: 'girl01'
+          }
+        }
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(membership.reload.student_number).to eq(8)
+      expect(student.reload.attributes.values_at('name', 'gender', 'avatar_key')).to eq(
+        ['수정 이름', 'boy', 'girl01']
+      )
+    end
+
+    it 'rejects a manipulated mismatched avatar when gender is unchanged' do
+      student = create(:user, :student, name: '기존 이름', gender: 'boy', avatar_key: 'boy01')
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                                 student_number: 7)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => {
+            student_number: '8', name: '변경 금지', gender: 'boy', avatar_key: 'girl07'
+          }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('성별에 맞는 썸네일을 선택해 주세요.')
+      expect(membership.reload.student_number).to eq(7)
+      expect(student.reload.attributes.values_at('name', 'gender', 'avatar_key')).to eq(
+        ['기존 이름', 'boy', 'boy01']
+      )
+    end
+
+    it 'keeps a legacy avatar that becomes valid for the changed gender' do
+      student = create(:user, :student, gender: 'boy', avatar_key: 'boy01')
+      student.update_column(:avatar_key, 'girl01')
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                                 student_number: 7)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => {
+            student_number: '7', name: student.name, gender: 'girl', avatar_key: 'girl01'
+          }
+        }
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(student.reload.attributes.values_at('gender', 'avatar_key')).to eq(['girl', 'girl01'])
+    end
+
+    it 'swaps two active student numbers without violating the unique index' do
+      first = create(:user, :student, name: '1번')
+      second = create(:user, :student, name: '2번')
+      first_membership = create(:classroom_membership, classroom: classroom, user: first, role: 'student',
+                                                       student_number: 1)
+      second_membership = create(:classroom_membership, classroom: classroom, user: second, role: 'student',
+                                                        student_number: 2)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          first_membership.id => { student_number: '2', name: first.name },
+          second_membership.id => { student_number: '1', name: second.name }
+        }
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(first_membership.reload.student_number).to eq(2)
+      expect(second_membership.reload.student_number).to eq(1)
+    end
+
+    it 'supports a three-student number cycle' do
+      memberships = [1, 2, 3].map do |number|
+        student = create(:user, :student, name: "#{number}번")
+        create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                      student_number: number)
+      end
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          memberships[0].id => { student_number: '2', name: memberships[0].user.name },
+          memberships[1].id => { student_number: '3', name: memberships[1].user.name },
+          memberships[2].id => { student_number: '1', name: memberships[2].user.name }
+        }
+      }
+
+      expect(memberships.map { |membership| membership.reload.student_number }).to eq([2, 3, 1])
+    end
+
+    it 'allows clearing a number and editing a legacy student without assigning gender' do
+      numbered = create(:user, :student, name: '번호 학생', gender: 'boy', avatar_key: 'boy01')
+      legacy = create(:user, :student, name: '레거시 학생', gender: nil, avatar_key: nil)
+      numbered_membership = create(:classroom_membership, classroom: classroom, user: numbered, role: 'student',
+                                                          student_number: 7)
+      legacy_membership = create(:classroom_membership, classroom: classroom, user: legacy, role: 'student',
+                                                        student_number: nil)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          numbered_membership.id => { student_number: '', name: numbered.name },
+          legacy_membership.id => { student_number: '', name: '레거시 수정' }
+        }
+      }
+
+      expect(numbered_membership.reload.student_number).to be_nil
+      expect(legacy_membership.reload.student_number).to be_nil
+      expect(legacy.reload.name).to eq('레거시 수정')
+      expect(legacy.gender).to be_nil
+    end
+
+    it 'rejects invalid raw student numbers and preserves input while rolling back other rows' do
+      first = create(:user, :student, name: '원래 첫째')
+      second = create(:user, :student, name: '원래 둘째')
+      first_membership = create(:classroom_membership, classroom: classroom, user: first, role: 'student',
+                                                       student_number: 1)
+      second_membership = create(:classroom_membership, classroom: classroom, user: second, role: 'student',
+                                                        student_number: 2)
+      sign_in admin
+
+      %w[0 -1 1.5 abc].each do |invalid_number|
+        patch classroom_member_student_names_path(classroom), params: {
+          students: {
+            first_membership.id => { student_number: invalid_number, name: '저장 금지' },
+            second_membership.id => { student_number: '3', name: '함께 저장 금지' }
+          }
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('출석번호는 1 이상의 정수여야 합니다.')
+        expect(response.body).to include(%(value="#{invalid_number}"))
+        expect(first.reload.name).to eq('원래 첫째')
+        expect(second.reload.name).to eq('원래 둘째')
+        expect(first_membership.reload.student_number).to eq(1)
+        expect(second_membership.reload.student_number).to eq(2)
+      end
+    end
+
+    it 'rejects duplicate final active numbers for submitted and unsubmitted students' do
+      students = 3.times.map { |index| create(:user, :student, name: "학생 #{index}") }
+      memberships = students.each_with_index.map do |student, index|
+        create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                      student_number: index + 1)
+      end
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          memberships[0].id => { student_number: '2', name: students[0].name },
+          memberships[1].id => { student_number: '2', name: students[1].name }
+        }
+      }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body.scan('2번 출석번호가 중복되었습니다.').size).to be >= 2
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          memberships[0].id => { student_number: '3', name: '변경 금지' }
+        }
+      }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('3번 출석번호가 중복되었습니다.')
+      expect(students[0].reload.name).to eq('학생 0')
+      expect(memberships.map { |membership| membership.reload.student_number }).to eq([1, 2, 3])
+    end
+
+    it 'allows inactive students to share numbers with active and inactive students' do
+      active = create(:user, :student)
+      active_membership = create(:classroom_membership, classroom: classroom, user: active, role: 'student',
+                                                        status: 'active', student_number: 7)
+      inactive_students = 2.times.map { create(:user, :student) }
+      inactive_memberships = inactive_students.map do |student|
+        create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                      status: 'inactive', student_number: 8)
+      end
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom, status: 'inactive'), params: {
+        students: inactive_memberships.each_with_object({}) do |membership, rows|
+          rows[membership.id] = { student_number: '7', name: membership.user.name }
+        end
+      }
+
+      expect(response).to redirect_to(classroom_members_path(classroom, status: 'inactive'))
+      expect(inactive_memberships.map { |membership| membership.reload.student_number }).to eq([7, 7])
+      expect(active_membership.reload.student_number).to eq(7)
+    end
+
+    it 'rolls back every field when a user row is invalid' do
+      first = create(:user, :student, name: '첫 원본', gender: 'boy', avatar_key: 'boy01')
+      second = create(:user, :student, name: '둘 원본', gender: 'girl', avatar_key: 'girl01')
+      first_membership = create(:classroom_membership, classroom: classroom, user: first, role: 'student',
+                                                       student_number: 1)
+      second_membership = create(:classroom_membership, classroom: classroom, user: second, role: 'student',
+                                                        student_number: 2)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          first_membership.id => {
+            student_number: '3', name: '첫 변경', gender: 'girl', avatar_key: 'girl02'
+          },
+          second_membership.id => {
+            student_number: '4', name: '', gender: 'boy', avatar_key: 'girl02'
+          }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('성별에 맞는 썸네일을 선택해 주세요.')
+      expect(first.reload.attributes.values_at('name', 'gender', 'avatar_key')).to eq(
+        ['첫 원본', 'boy', 'boy01']
+      )
+      expect(first_membership.reload.student_number).to eq(1)
+      expect(second_membership.reload.student_number).to eq(2)
+    end
+
+    it 'rejects an invalid submitted gender' do
+      student = create(:user, :student, gender: 'boy', avatar_key: 'boy01')
+      membership = create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                                 student_number: 1)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          membership.id => {
+            student_number: '1', name: student.name, gender: 'other', avatar_key: 'boy01'
+          }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('성별을 확인해 주세요.')
+      expect(student.reload.gender).to eq('boy')
+    end
+
+    it 'rolls back temporary number clears when a later user save raises' do
+      students = 2.times.map { |index| create(:user, :student, name: "원본 #{index}") }
+      memberships = students.each_with_index.map do |student, index|
+        create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                      student_number: index + 1)
+      end
+      calls = 0
+      allow_any_instance_of(User).to receive(:save!).and_wrap_original do |method, *args|
+        calls += 1
+        if calls == 2
+          method.receiver.errors.add(:base, 'user failed')
+          raise ActiveRecord::RecordInvalid.new(method.receiver)
+        end
+
+        method.call(*args)
+      end
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          memberships[0].id => { student_number: '2', name: '변경 0' },
+          memberships[1].id => { student_number: '1', name: '변경 1' }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(students.map { |student| student.reload.name }).to eq(['원본 0', '원본 1'])
+      expect(memberships.map { |membership| membership.reload.student_number }).to eq([1, 2])
+    end
+
+    it 'handles a database number race without leaving temporary nil values' do
+      students = 2.times.map { |index| create(:user, :student, name: "학생 #{index}") }
+      memberships = students.each_with_index.map do |student, index|
+        create(:classroom_membership, classroom: classroom, user: student, role: 'student',
+                                      student_number: index + 1)
+      end
+      allow_any_instance_of(ClassroomMembership).to receive(:save!)
+        .and_raise(ActiveRecord::RecordNotUnique)
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom), params: {
+        students: {
+          memberships[0].id => { student_number: '2', name: students[0].name },
+          memberships[1].id => { student_number: '1', name: students[1].name }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('출석번호가 중복되었습니다.')
+      expect(memberships.map { |membership| membership.reload.student_number }).to eq([1, 2])
+    end
+
     it 'lets a classroom teacher update active student names' do
       create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
       student = create(:user, :student, name: '이전 이름')
@@ -400,13 +783,15 @@ RSpec.describe 'Classroom members', type: :request do
                                                  status: 'inactive')
       sign_in teacher
 
-      patch classroom_member_student_names_path(classroom), params: {
+      patch classroom_member_student_names_path(classroom, status: 'inactive'), params: {
         students: {
           membership.id => { name: '돌아올 학생' }
         }
       }
 
-      expect(response).to redirect_to(classroom_members_path(classroom))
+      expect(response).to redirect_to(
+        classroom_members_path(classroom, status: 'inactive')
+      )
       expect(student.reload.name).to eq('돌아올 학생')
     end
 
@@ -483,6 +868,9 @@ RSpec.describe 'Classroom members', type: :request do
       patch classroom_member_student_names_path(classroom), params: {
         students: {
           membership.id => { name: '변경 실패' },
+          teacher.classroom_memberships.find_by!(classroom: classroom).id => {
+            name: '교사 변경 금지', role: 'student'
+          },
           other_membership.id => { name: '변경되면 안 됨' }
         }
       }
@@ -493,6 +881,23 @@ RSpec.describe 'Classroom members', type: :request do
       expect(other_student.reload.name).to eq('다른 학생')
     end
 
+    it 'rejects a membership outside the selected status filter' do
+      inactive_student = create(:user, :student, name: '비활성 유지')
+      inactive_membership = create(:classroom_membership, classroom: classroom, user: inactive_student,
+                                                          role: 'student', status: 'inactive')
+      sign_in admin
+
+      patch classroom_member_student_names_path(classroom, status: 'active'), params: {
+        students: {
+          inactive_membership.id => { name: '변경 금지' }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include(I18n.t('students.members.update_names.invalid_membership'))
+      expect(inactive_student.reload.name).to eq('비활성 유지')
+    end
+
     it 'rolls back all changes and shows row errors when any name is invalid' do
       create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
       valid_student = create(:user, :student, name: '유효 학생')
@@ -501,7 +906,7 @@ RSpec.describe 'Classroom members', type: :request do
       invalid_membership = create(:classroom_membership, classroom: classroom, user: invalid_student, role: 'student')
       sign_in teacher
 
-      patch classroom_member_student_names_path(classroom, status: 'inactive'), params: {
+      patch classroom_member_student_names_path(classroom, status: 'active'), params: {
         students: {
           valid_membership.id => { name: '저장되면 안 됨' },
           invalid_membership.id => { name: '' }
@@ -513,8 +918,8 @@ RSpec.describe 'Classroom members', type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.body).to include('id="modal"')
-      expect(form['action']).to eq(classroom_member_student_names_path(classroom, status: 'inactive'))
-      expect(response.body).to include('이름을 확인해 주세요')
+      expect(form['action']).to eq(classroom_member_student_names_path(classroom, status: 'active'))
+      expect(response.body).to include('학생 명단을 수정하지 못했습니다')
       expect(response.body).to include('저장되면 안 됨')
       expect(valid_student.reload.name).to eq('유효 학생')
       expect(invalid_student.reload.name).to eq('무효 학생')

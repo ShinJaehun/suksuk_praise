@@ -1,0 +1,107 @@
+<% student = membership.user %>
+<% submitted_attrs ||= {} %>
+<% student_number_value = submitted_attrs.fetch("student_number", membership.student_number_before_type_cast.to_s) %>
+<% name_value = submitted_attrs.fetch("name", student.name) %>
+<% gender_value = submitted_attrs.key?("gender") ? submitted_attrs["gender"] : student.gender %>
+<% avatar_key_value = submitted_attrs.fetch("avatar_key", student.avatar_key.to_s) %>
+<% error_id = "student-roster-errors-#{membership.id}" %>
+<% uploaded_avatar = student.avatar.attached? %>
+<% valid_avatar_key = User.avatar_keys_for_role("student").include?(avatar_key_value) %>
+
+<div id="<%= dom_id(membership, :name_row) %>"
+     class="rounded-lg border border-slate-200 p-3 <%= "bg-slate-50" if membership.inactive? %>"
+     data-student-roster-editor-target="row"
+     data-roster-position="<%= position %>"
+     data-original-gender="<%= student.gender %>"
+     data-original-avatar-key="<%= student.avatar_key %>"
+     data-uploaded-avatar="<%= uploaded_avatar %>">
+  <div class="grid gap-3 md:grid-cols-[6rem_minmax(12rem,1fr)_9rem_5rem_5rem] md:items-start">
+    <div>
+      <%= label_tag "student_number_#{membership.id}",
+            t("students.members.update_names.student_number"),
+            class: "mb-1 block text-xs font-semibold text-slate-600 md:sr-only" %>
+      <%= number_field_tag "students[#{membership.id}][student_number]",
+            student_number_value,
+            id: "student_number_#{membership.id}",
+            min: 1,
+            step: 1,
+            inputmode: "numeric",
+            aria: { describedby: (error_id if row_errors.present?) },
+            class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm" %>
+    </div>
+
+    <div>
+      <%= label_tag "student_name_#{membership.id}",
+            t("students.members.update_names.name"),
+            class: "mb-1 block text-xs font-semibold text-slate-600 md:sr-only" %>
+      <%= text_field_tag "students[#{membership.id}][name]",
+            name_value,
+            id: "student_name_#{membership.id}",
+            required: true,
+            aria: { describedby: (error_id if row_errors.present?) },
+            class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm" %>
+    </div>
+
+    <fieldset>
+      <legend class="mb-1 text-xs font-semibold text-slate-600 md:sr-only">
+        <%= t("students.members.update_names.gender") %>
+      </legend>
+      <div class="grid grid-cols-2 gap-1">
+        <% [["boy", t("students.edit.self_pin.genders.boy")], ["girl", t("students.edit.self_pin.genders.girl")]].each do |gender, label| %>
+          <% radio_id = "student_gender_#{membership.id}_#{gender}" %>
+          <label for="<%= radio_id %>"
+                 class="cursor-pointer rounded-lg border border-slate-300 px-2 py-2 text-center text-sm font-semibold text-slate-700 has-[:checked]:border-sky-600 has-[:checked]:bg-sky-100 has-[:checked]:text-sky-800">
+            <%= radio_button_tag "students[#{membership.id}][gender]",
+                  gender,
+                  gender_value == gender,
+                  id: radio_id,
+                  class: "sr-only",
+                  aria: { describedby: (error_id if row_errors.present?) },
+                  data: { action: "student-roster-editor#selectGender" } %>
+            <span><%= label %></span>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+
+    <div>
+      <span class="mb-1 block text-xs font-semibold text-slate-600 md:sr-only">
+        <%= t("students.members.update_names.avatar") %>
+      </span>
+      <%= hidden_field_tag "students[#{membership.id}][avatar_key]",
+            avatar_key_value,
+            data: { student_roster_editor_target: "avatarKey" } %>
+      <% if uploaded_avatar %>
+        <%= user_avatar_image(
+              student,
+              size: 64,
+              class: "h-11 w-11 rounded-lg border border-slate-200 bg-slate-100 object-cover",
+              alt: t("students.members.update_names.avatar_alt"),
+              data: { student_roster_editor_target: "avatarPreview" }
+            ) %>
+      <% elsif valid_avatar_key %>
+        <%= image_tag "avatars/#{avatar_key_value}.png",
+              class: "h-11 w-11 rounded-lg border border-slate-200 bg-slate-100 object-cover",
+              alt: t("students.members.update_names.avatar_alt"),
+              data: { student_roster_editor_target: "avatarPreview" } %>
+      <% else %>
+        <%= image_tag "avatars/boy01.png",
+              class: "hidden h-11 w-11 rounded-lg border border-slate-200 bg-slate-100 object-cover",
+              alt: "",
+              data: { student_roster_editor_target: "avatarPreview" } %>
+      <% end %>
+    </div>
+
+    <span class="inline-flex w-fit rounded-full px-2 py-1 text-xs font-semibold <%= membership.active? ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-600" %>">
+      <%= t("students.members.status.#{membership.status}") %>
+    </span>
+  </div>
+
+  <% if row_errors.present? %>
+    <ul id="<%= error_id %>" class="mt-2 list-disc space-y-1 pl-5 text-sm font-medium text-rose-700">
+      <% Array(row_errors).each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

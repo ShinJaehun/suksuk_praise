@@ -20,28 +20,40 @@ class Classrooms::MembersController < ApplicationController
   def update_student_names
     authorize @classroom, :manage_members?
 
-    @submitted_student_names = student_name_params
-    memberships_by_id = @classroom.classroom_memberships
-      .student
-      .includes(:user)
-      .where(id: @submitted_student_names.keys)
-      .index_by { |membership| membership.id.to_s }
+    @member_status = member_status_filter
+    @submitted_student_roster = student_roster_params
+    saved = false
 
-    unless memberships_by_id.keys.sort == @submitted_student_names.keys.uniq.sort
-      @student_name_errors_by_membership_id = {}
+    @classroom.with_lock do
       load_student_name_memberships
-      return render_student_name_errors(:invalid_membership)
+      editable_memberships_by_id = @student_name_memberships.index_by { |membership| membership.id.to_s }
+
+      unless (@submitted_student_roster.keys - editable_memberships_by_id.keys).empty?
+        @student_roster_errors_by_membership_id = {}
+        @student_roster_error_key = :invalid_membership
+        next
+      end
+      memberships_by_id = editable_memberships_by_id.slice(*@submitted_student_roster.keys)
+
+      assign_and_validate_student_roster(memberships_by_id)
+      next if @student_roster_errors_by_membership_id.any?
+
+      changed_active_memberships = memberships_by_id.values.select do |membership|
+        membership.active? && membership.will_save_change_to_student_number?
+      end
+      ClassroomMembership.where(id: changed_active_memberships.map(&:id))
+        .update_all(student_number: nil) if changed_active_memberships.any?
+
+      memberships_by_id.each_value do |membership|
+        membership.user.save! if membership.user.has_changes_to_save?
+      end
+      memberships_by_id.each_value do |membership|
+        membership.save! if membership.has_changes_to_save?
+      end
+      saved = true
     end
 
-    @student_name_errors_by_membership_id = validate_student_names(memberships_by_id)
-    if @student_name_errors_by_membership_id.any?
-      load_student_name_memberships
-      return render_student_name_errors(:failure)
-    end
-
-    ApplicationRecord.transaction do
-      memberships_by_id.each_value { |membership| membership.user.save! }
-    end
+    return render_student_roster_errors(@student_roster_error_key || :failure) unless saved
 
     respond_to do |format|
       format.html do
@@ -55,6 +67,14 @@ class Classrooms::MembersController < ApplicationController
         render :update_student_names, layout: false
       end
     end
+  rescue ActiveRecord::RecordInvalid => e
+    attach_record_error(e.record)
+    load_student_name_memberships
+    render_student_roster_errors(:failure)
+  rescue ActiveRecord::RecordNotUnique
+    attach_record_not_unique_errors
+    load_student_name_memberships
+    render_student_roster_errors(:failure)
   end
 
   def edit_student_pin
@@ -148,10 +168,19 @@ class Classrooms::MembersController < ApplicationController
 
   def load_student_name_memberships
     @member_status ||= member_status_filter
-    @student_name_memberships = @classroom.classroom_memberships
-      .student
-      .includes(:user)
-      .order(:created_at, :id)
+    base_scope = @classroom.classroom_memberships.student
+    @student_name_memberships =
+      if @member_status == "all"
+        base_scope
+          .order(Arel.sql("CASE classroom_memberships.status WHEN 'active' THEN 0 ELSE 1 END"))
+          .in_roster_order
+          .preload(user: { avatar_attachment: :blob })
+      else
+        base_scope
+          .where(status: @member_status)
+          .in_roster_order
+          .preload(user: { avatar_attachment: :blob })
+      end
   end
 
   def student_pin_error_message(pin)
@@ -174,7 +203,7 @@ class Classrooms::MembersController < ApplicationController
     end
   end
 
-  def render_student_name_errors(error_key)
+  def render_student_roster_errors(error_key)
     respond_to do |format|
       format.html do
         flash.now[:alert] = t("students.members.update_names.#{error_key}")
@@ -193,27 +222,151 @@ class Classrooms::MembersController < ApplicationController
     classroom_members_path(@classroom)
   end
 
-  def student_name_params
+  def student_roster_params
     raw_students = params.fetch(:students, {})
     raw_students = raw_students.to_unsafe_h if raw_students.respond_to?(:to_unsafe_h)
 
     raw_students.each_with_object({}) do |(membership_id, attrs), result|
       attrs = attrs.to_unsafe_h if attrs.respond_to?(:to_unsafe_h)
       attrs = attrs.to_h if attrs.respond_to?(:to_h)
-      attrs = {} unless attrs.respond_to?(:fetch)
-      result[membership_id.to_s] = attrs.fetch("name", "").to_s
+      attrs = {} unless attrs.respond_to?(:key?)
+      result[membership_id.to_s] = %w[student_number name gender avatar_key].each_with_object({}) do |key, permitted|
+        permitted[key] = attrs[key].to_s if attrs.key?(key)
+      end
     end
   end
 
-  def validate_student_names(memberships_by_id)
-    memberships_by_id.each_with_object({}) do |(membership_id, membership), errors|
-      membership.user.name = @submitted_student_names.fetch(membership_id)
+  def assign_and_validate_student_roster(memberships_by_id)
+    @student_roster_errors_by_membership_id = Hash.new { |hash, key| hash[key] = [] }
+
+    memberships_by_id.each do |membership_id, membership|
+      attrs = @submitted_student_roster.fetch(membership_id)
+      assign_student_number(membership_id, membership, attrs)
+      assign_student_profile(membership_id, membership, attrs)
+    end
+
+    validate_final_active_student_numbers(memberships_by_id)
+
+    memberships_by_id.each do |membership_id, membership|
       next if membership.user.valid?
 
-      errors[membership_id] = t(
-        "students.members.update_names.row_error",
-        detail: membership.user.errors.full_messages.to_sentence
+      @student_roster_errors_by_membership_id[membership_id].concat(
+        membership.user.errors.full_messages
       )
+    end
+    @student_roster_errors_by_membership_id.delete_if { |_id, errors| errors.empty? }
+  end
+
+  def assign_student_number(membership_id, membership, attrs)
+    raw_number = attrs.fetch("student_number", membership.student_number_before_type_cast.to_s)
+    attrs["student_number"] = raw_number
+    if raw_number.present? && !raw_number.match?(/\A[1-9]\d*\z/)
+      @student_roster_errors_by_membership_id[membership_id] <<
+        t("students.members.update_names.invalid_student_number")
+      return
+    end
+
+    membership.student_number = raw_number.presence
+  end
+
+  def assign_student_profile(membership_id, membership, attrs)
+    user = membership.user
+    original_gender = user.gender
+    original_avatar_key = user.avatar_key
+    user.name = attrs.fetch("name", user.name)
+
+    if attrs.key?("gender")
+      gender = attrs["gender"]
+      unless %w[boy girl].include?(gender)
+        @student_roster_errors_by_membership_id[membership_id] <<
+          t("students.members.update_names.invalid_gender")
+        return
+      end
+      user.gender = gender
+    end
+
+    submitted_avatar_key = attrs.fetch("avatar_key", user.avatar_key.to_s)
+    attrs["avatar_key"] = normalized_roster_avatar_key(
+      membership,
+      submitted_avatar_key,
+      original_gender: original_gender,
+      original_avatar_key: original_avatar_key
+    )
+    if attrs["avatar_key"].present? &&
+        !User.avatar_keys_for(user.gender).include?(attrs["avatar_key"]) &&
+        attrs["avatar_key"] != user.avatar_key
+      @student_roster_errors_by_membership_id[membership_id] <<
+        t("students.members.update_names.invalid_avatar")
+      return
+    end
+    user.avatar_key = attrs["avatar_key"].presence
+  end
+
+  def normalized_roster_avatar_key(
+    membership,
+    submitted_avatar_key,
+    original_gender:,
+    original_avatar_key:
+  )
+    user = membership.user
+    pool = User.avatar_keys_for(user.gender)
+    gender_changed = user.gender != original_gender
+    return submitted_avatar_key if !gender_changed && submitted_avatar_key == original_avatar_key
+    return submitted_avatar_key if pool.include?(submitted_avatar_key)
+    return submitted_avatar_key if user.gender.blank?
+    return submitted_avatar_key unless submitted_avatar_key.blank? || submitted_avatar_key == original_avatar_key
+
+    row_index = @student_name_memberships.index(membership) || 0
+    pool[row_index % pool.length]
+  end
+
+  def validate_final_active_student_numbers(memberships_by_id)
+    submitted_numbers = memberships_by_id.transform_values(&:student_number)
+    final_numbers = @classroom.classroom_memberships.student.active.map do |membership|
+      [membership, submitted_numbers.fetch(membership.id.to_s, membership.student_number)]
+    end
+
+    final_numbers
+      .reject { |_membership, number| number.nil? }
+      .group_by { |_membership, number| number }
+      .each_value do |rows|
+        next unless rows.many?
+
+        rows.each do |membership, number|
+          membership_id = membership.id.to_s
+          next unless memberships_by_id.key?(membership_id)
+
+          @student_roster_errors_by_membership_id[membership_id] <<
+            t("students.members.update_names.duplicate_student_number", number: number)
+        end
+      end
+  end
+
+  def attach_record_error(record)
+    @student_roster_errors_by_membership_id ||= Hash.new { |hash, key| hash[key] = [] }
+    membership =
+      if record.is_a?(ClassroomMembership)
+        record
+      else
+        @student_name_memberships&.find { |candidate| candidate.user == record }
+      end
+    return unless membership
+
+    @student_roster_errors_by_membership_id[membership.id.to_s].concat(
+      record.errors.full_messages
+    )
+  end
+
+  def attach_record_not_unique_errors
+    @student_roster_errors_by_membership_id ||= Hash.new { |hash, key| hash[key] = [] }
+    @submitted_student_roster.each do |membership_id, attrs|
+      next if attrs["student_number"].blank?
+      membership = @student_name_memberships&.find { |candidate| candidate.id.to_s == membership_id }
+      next unless membership&.active?
+
+      @student_roster_errors_by_membership_id[membership_id] <<
+        t("students.members.update_names.duplicate_student_number",
+          number: attrs["student_number"])
     end
   end
 
