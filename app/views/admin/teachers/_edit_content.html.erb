@@ -34,7 +34,20 @@
       </div>
       <div>
         <dt class="text-xs font-semibold text-slate-500"><%= t("ui.user_labels.role") %></dt>
-        <dd class="mt-1 text-slate-800"><%= t("admin.teachers.info.teacher_role") %></dd>
+        <% school_membership = @teacher.school_membership %>
+        <% if school_membership&.manager? %>
+          <dd class="mt-1">
+            <span class="inline-flex rounded-full bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-700"><%= t("admin.teachers.index.manager") %></span>
+          </dd>
+        <% elsif school_membership&.member? %>
+          <dd class="mt-1">
+            <span class="inline-flex rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold text-sky-700"><%= t("admin.teachers.index.member") %></span>
+          </dd>
+        <% else %>
+          <dd class="mt-1">
+            <span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600"><%= t("admin.teachers.index.unassigned_role") %></span>
+          </dd>
+        <% end %>
       </div>
       <div>
         <dt class="text-xs font-semibold text-slate-500"><%= t("admin.teachers.info.created_at") %></dt>
