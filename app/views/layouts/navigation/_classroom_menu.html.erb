@@ -1,0 +1,36 @@
+<% if classroom_navigation[:mode] == :index %>
+  <%= link_to t("navigation.classrooms"),
+        classrooms_path,
+        class: variant == :desktop ? "text-sm text-gray-700 hover:text-blue-700" : "block px-3 py-1 hover:bg-gray-50" %>
+<% elsif classroom_navigation[:mode] == :single %>
+  <% classroom = classroom_navigation[:classrooms].first %>
+  <%= link_to classroom.name,
+        classroom_path(classroom),
+        class: variant == :desktop ? "max-w-40 truncate align-bottom text-sm text-gray-700 hover:text-blue-700" : "block px-3 py-1 hover:bg-gray-50" %>
+<% elsif variant == :desktop %>
+  <details class="relative">
+    <summary class="list-none cursor-pointer text-sm text-gray-700 hover:text-blue-700">
+      <%= t("navigation.classrooms") %>
+    </summary>
+    <div class="absolute left-0 mt-2 w-48 bg-white border rounded shadow-md py-2 text-sm z-50">
+      <% classroom_navigation[:classrooms].each do |classroom| %>
+        <%= link_to classroom.name,
+              classroom_path(classroom),
+              class: "block truncate px-3 py-1 hover:bg-gray-50" %>
+      <% end %>
+    </div>
+  </details>
+<% else %>
+  <details>
+    <summary class="list-none cursor-pointer px-3 py-1 hover:bg-gray-50">
+      <%= t("navigation.classrooms") %>
+    </summary>
+    <div class="ml-3 border-l border-gray-200 pl-2">
+      <% classroom_navigation[:classrooms].each do |classroom| %>
+        <%= link_to classroom.name,
+              classroom_path(classroom),
+              class: "block truncate px-6 py-1 hover:bg-gray-50" %>
+      <% end %>
+    </div>
+  </details>
+<% end %>

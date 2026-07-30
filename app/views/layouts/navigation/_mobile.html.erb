@@ -1,0 +1,99 @@
+<div class="flex items-center gap-3">
+  <% if account %>
+    <% user = account[:user] %>
+
+    <% if user.student? %>
+      <div class="hidden md:flex items-center gap-2">
+        <%= user_avatar_image(
+              user,
+              size: 128,
+              class: "h-10 w-10 rounded-xl object-cover border border-slate-200 bg-slate-100",
+              alt: t("navigation.avatar_alt", name: account[:display_name])
+            ) %>
+        <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
+          <span><%= account[:display_name] %></span>
+          <span class="text-[10px] text-gray-400"><%= user.role %></span>
+        </div>
+      </div>
+    <% else %>
+      <%= link_to account[:edit_path],
+            class: "hidden md:flex items-center gap-2 rounded-xl hover:bg-slate-50" do %>
+        <%= user_avatar_image(
+              user,
+              size: 128,
+              class: "h-10 w-10 rounded-xl object-cover border border-slate-200 bg-slate-100",
+              alt: t("navigation.avatar_alt", name: account[:display_name])
+            ) %>
+        <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
+          <span><%= account[:display_name] %></span>
+          <span class="text-[10px] text-gray-400"><%= user.role %></span>
+        </div>
+      <% end %>
+    <% end %>
+
+    <%= link_to account[:sign_out_label],
+          account[:sign_out_path],
+          data: { turbo_method: :delete },
+          class: "hidden md:inline-block text-sm text-gray-500 hover:text-red-600" %>
+
+    <details class="md:hidden relative" data-navigation-region="mobile">
+      <summary class="list-none flex items-center gap-2 cursor-pointer select-none">
+        <div class="hidden min-[380px]:flex items-center gap-2">
+          <%= user_avatar_image(
+                user,
+                size: 128,
+                class: "h-8 w-8 rounded-xl object-cover border border-slate-200 bg-slate-100",
+                alt: t("navigation.avatar_alt", name: account[:display_name])
+              ) %>
+          <div class="flex flex-col items-end text-xs text-gray-600 leading-tight">
+            <span><%= account[:display_name] %></span>
+            <span class="text-[10px] text-gray-400"><%= user.role %></span>
+          </div>
+        </div>
+        <div class="w-6 h-6 flex flex-col justify-between">
+          <span class="block h-[2px] bg-gray-700"></span>
+          <span class="block h-[2px] bg-gray-700"></span>
+          <span class="block h-[2px] bg-gray-700"></span>
+        </div>
+      </summary>
+
+      <div class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md py-2 text-sm z-50">
+        <% primary_items.each do |item| %>
+          <%= link_to item[:label],
+                item[:path],
+                class: "block px-3 py-1 hover:bg-gray-50" %>
+        <% end %>
+
+        <%= render "layouts/navigation/classroom_menu",
+              classroom_navigation: classroom_navigation,
+              variant: :mobile if classroom_navigation %>
+
+        <% management_groups.each do |group| %>
+          <div class="mt-2 border-t border-slate-200 pt-2">
+            <p class="px-3 py-1 text-[11px] font-semibold text-slate-400"><%= group[:label] %></p>
+            <% group[:items].each do |item| %>
+              <%= link_to item[:label],
+                    item[:path],
+                    class: "block px-3 py-1 hover:bg-gray-50" %>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if account[:edit_path] %>
+          <%= link_to t("navigation.account.edit"),
+                account[:edit_path],
+                class: "block px-3 py-1 hover:bg-gray-50" %>
+        <% end %>
+
+        <%= link_to account[:sign_out_label],
+              account[:sign_out_path],
+              data: { turbo_method: :delete },
+              class: "block px-3 py-1 text-red-600 hover:bg-red-50 mt-1 border-t" %>
+      </div>
+    </details>
+  <% else %>
+    <%= link_to t("navigation.account.sign_in"),
+          new_user_session_path,
+          class: "text-sm text-blue-600 hover:text-blue-800" %>
+  <% end %>
+</div>

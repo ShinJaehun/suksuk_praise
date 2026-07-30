@@ -1,0 +1,21 @@
+<div class="hidden md:flex items-center gap-4" data-navigation-region="desktop">
+  <% primary_items.each do |item| %>
+    <%= link_to item[:label],
+          item[:path],
+          class: "text-sm text-gray-700 hover:text-blue-700" %>
+  <% end %>
+
+  <%= render "layouts/navigation/classroom_menu",
+        classroom_navigation: classroom_navigation,
+        variant: :desktop if classroom_navigation %>
+
+  <% management_groups.each do |group| %>
+    <div class="flex items-center gap-3 border-l border-slate-200 pl-4">
+      <% group[:items].each do |item| %>
+        <%= link_to item[:label],
+              item[:path],
+              class: "text-sm text-gray-700 hover:text-blue-700" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

@@ -11,4 +11,11 @@ ko:
     compliment_log: "칭찬 로그"
     coupon_group: "쿠폰"
     compliment_group: "칭찬"
-
+    my_praise_book: "내 칭찬통장"
+    brand: "쑥쑥칭찬통장"
+    avatar_alt: "%{name} avatar"
+    account:
+      edit: "내 정보 수정"
+      finish: "사용 끝내기"
+      sign_in: "Sign in"
+      sign_out: "Sign out"

@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
   include Pundit::Authorization
   include Pagy::Method
 
-  helper_method :teacher_nav_classrooms
+  helper_method :navigation_context
   
   before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :expire_inactive_teacher_session
@@ -43,6 +43,25 @@ class ApplicationController < ActionController::Base
 
 
   private
+
+  def navigation_context
+    return {} unless request.format.html? && current_user
+    return @navigation_context if defined?(@navigation_context)
+
+    @navigation_context = { user: current_user }
+    return @navigation_context unless current_user.active_teacher?
+
+    school_membership = current_user.school_membership
+    school = school_membership&.school
+    active_school = school if school&.active?
+    manager_membership =
+      school_membership if active_school && school_membership.manager?
+
+    @navigation_context.merge!(
+      manager_membership: manager_membership,
+      classrooms: manager_membership ? [] : teacher_nav_classrooms
+    )
+  end
 
   def teacher_nav_classrooms
     return [] unless current_user&.active_teacher?
