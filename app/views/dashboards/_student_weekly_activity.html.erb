@@ -42,6 +42,26 @@
          class="h-auto min-w-[560px] w-full"
          role="img"
          aria-label="월요일부터 금요일까지 받은 칭찬과 쿠폰 활동 그래프">
+      <defs>
+        <symbol id="issued-coupon-icon" viewBox="0 0 16 16">
+          <path d="M2 7.25h12v7H2z" fill="#10b981" />
+          <path d="M7.25 7.25h1.5v7h-1.5zM1.5 4.5h13v3h-13z" fill="#047857" />
+          <path d="M8 4.5C5.25 4.5 4 3.8 4 2.75 4 1.85 4.7 1.25 5.6 1.25 7 1.25 8 3.1 8 4.5Zm0 0c2.75 0 4-.7 4-1.75 0-.9-.7-1.5-1.6-1.5C9 1.25 8 3.1 8 4.5Z"
+                fill="none"
+                stroke="#047857"
+                stroke-width="1.5"
+                stroke-linejoin="round" />
+        </symbol>
+        <symbol id="used-coupon-icon" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="6.5" fill="#7c3aed" />
+          <path d="m4.75 8.1 2.05 2.05 4.45-4.45"
+                fill="none"
+                stroke="#fff"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round" />
+        </symbol>
+      </defs>
       <% @y_axis_ticks.reverse_each do |tick| %>
         <line x1="35"
               y1="<%= tick[:y] %>"
@@ -97,27 +117,27 @@
           <% used_count = activity[:used_coupon_count] %>
           <% if issued_count.positive? %>
             <g data-coupon-marker-stack="issued"
-               data-marker-count="<%= issued_count %>">
+               data-marker-count="<%= issued_count %>"
+               aria-hidden="true">
               <% issued_count.times do |index| %>
-                <text x="<%= activity[:x] - 11 %>"
-                      y="<%= stack_bottom_y - (index * marker_step) %>"
-                      text-anchor="middle"
-                      class="text-[15px]"
-                      data-coupon-marker="issued"
-                      data-marker-index="<%= index %>">🎁</text>
+                <g transform="translate(<%= activity[:x] - 11 %> <%= stack_bottom_y - (index * marker_step) %>)"
+                   data-coupon-marker="issued"
+                   data-marker-index="<%= index %>">
+                  <use href="#issued-coupon-icon" x="-7.5" y="-12" width="15" height="15" />
+                </g>
               <% end %>
             </g>
           <% end %>
           <% if used_count.positive? %>
             <g data-coupon-marker-stack="used"
-               data-marker-count="<%= used_count %>">
+               data-marker-count="<%= used_count %>"
+               aria-hidden="true">
               <% used_count.times do |index| %>
-                <text x="<%= activity[:x] + 11 %>"
-                      y="<%= stack_bottom_y - (index * marker_step) %>"
-                      text-anchor="middle"
-                      class="text-[15px]"
-                      data-coupon-marker="used"
-                      data-marker-index="<%= index %>">✅</text>
+                <g transform="translate(<%= activity[:x] + 11 %> <%= stack_bottom_y - (index * marker_step) %>)"
+                   data-coupon-marker="used"
+                   data-marker-index="<%= index %>">
+                  <use href="#used-coupon-icon" x="-7.5" y="-12" width="15" height="15" />
+                </g>
               <% end %>
             </g>
           <% end %>

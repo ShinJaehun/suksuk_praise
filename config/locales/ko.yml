@@ -251,6 +251,9 @@ ko:
         monthly: "이번 달 칭찬왕"
 
   students:
+    edit:
+      title: "학생 정보 관리"
+      back_to_student: "학생 정보로 돌아가기"
     show:
       actions:
         navigation: "학생 페이지"
