@@ -68,32 +68,24 @@ class ClassroomsController < ApplicationController
     @can_manage_classroom = policy(@classroom).update?
     @can_manage_classroom_members = policy(@classroom).manage_members?
     @can_refresh_compliment_king = policy(@classroom).refresh_compliment_king?
-    @student_memberships = @classroom.classroom_memberships
-      .student
-      .active
-      .in_roster_order
-      .preload(:user)
-    @students = User.where(id: @student_memberships.map(&:user_id))
-    @homeroom_teachers = User.teacher.active
-      .joins(:classroom_memberships)
-      .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })
-      .with_attached_avatar
-      .order(:name, :id)
-    @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
-    @refreshable_compliment_king_periods = refreshable_compliment_king_periods(@enabled_compliment_king_periods)
+    can_create_compliment = policy(@classroom).create_compliment?
+    context = Classrooms::ShowContext.new(
+      classroom: @classroom,
+      current_user: current_user,
+      include_student_alerts: @can_manage_classroom,
+      include_compliment_presets: can_create_compliment
+    )
+    @student_memberships = context.student_memberships
+    @students = context.students
+    @homeroom_teachers = context.homeroom_teachers
+    @enabled_compliment_king_periods = context.enabled_compliment_king_periods
+    @refreshable_compliment_king_periods = context.refreshable_compliment_king_periods
     @compliment_king_sections = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods)
-    @compliment_king_period_cards = build_compliment_king_period_cards(enabled_periods: @enabled_compliment_king_periods)
-    @student_ids_with_pending_coupon_use_requests = student_ids_with_pending_coupon_use_requests
-    @student_ids_with_unread_student_messages = student_ids_with_unread_student_messages
-    @active_compliment_presets = current_user.compliment_presets.active.ordered if policy(@classroom).create_compliment?
-    @today_compliment_counts_by_student_id = Compliment
-      .where(
-        classroom_id: @classroom.id,
-        receiver_id: @students.select(:id),
-        given_at: Time.zone.today.all_day
-      )
-      .group(:receiver_id)
-      .count
+    @compliment_king_period_cards = context.compliment_king_period_cards
+    @student_ids_with_pending_coupon_use_requests = context.pending_coupon_use_request_student_ids
+    @student_ids_with_unread_student_messages = context.unread_student_message_student_ids
+    @active_compliment_presets = context.active_compliment_presets
+    @today_compliment_counts_by_student_id = context.today_compliment_counts_by_student_id
 
     load_recent_issued_coupons!
   end
@@ -321,48 +313,12 @@ class ClassroomsController < ApplicationController
       .load
   end
 
-  def student_ids_with_pending_coupon_use_requests
-    return Set.new unless @can_manage_classroom
-
-    Set.new(CouponUseRequest
-      .pending
-      .where(classroom_id: @classroom.id, student_id: @students.select(:id))
-      .distinct
-      .pluck(:student_id))
-  end
-
-  def student_ids_with_unread_student_messages
-    return Set.new unless @can_manage_classroom
-    return Set.new unless @classroom.student_messages_enabled?
-
-    Set.new(UserMessage
-      .unread_student_messages
-      .where(classroom_id: @classroom.id, sender_id: @students.select(:id))
-      .distinct
-      .pluck(:sender_id))
-  end
-
   def build_compliment_king_sections(enabled_periods:)
     Classroom::COMPLIMENT_KING_PERIODS.filter_map do |period|
       next unless enabled_periods.include?(period)
 
       [period, ComplimentKings::Pick.call(classroom: @classroom, period: period)]
     end.to_h
-  end
-
-  def build_compliment_king_period_cards(enabled_periods:)
-    enabled_periods.map do |period|
-      {
-        period: period,
-        frame_id: view_context.dom_id(@classroom, :"compliment_king_#{period}")
-      }
-    end
-  end
-
-  def refreshable_compliment_king_periods(enabled_periods)
-    enabled_periods.select do |period|
-      @classroom.compliment_king_refresh_available_for?(period)
-    end
   end
 
 end
