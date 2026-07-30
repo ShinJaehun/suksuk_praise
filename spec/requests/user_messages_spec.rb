@@ -70,6 +70,23 @@ RSpec.describe "User messages", type: :request do
       expect(assignment_uri.fragment).to eq(dom_id(student, :coupon_assignment))
       expect(response.body).not_to include("쿠폰 뽑기")
       expect(response.body).not_to include("선택한 쿠폰 지급")
+      self_pin_links = document.css(
+        %(a[href="#{edit_classroom_student_path(classroom, student)}"])
+      ).select { |link| link.text.strip == I18n.t("students.show.actions.edit_pin") }
+      expect(self_pin_links).to be_empty
+    end
+
+    it "shows one self PIN edit link on the student's message page" do
+      sign_in student
+
+      get classroom_student_messages_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      self_pin_links = document.css(
+        %(a[href="#{edit_classroom_student_path(classroom, student)}"])
+      ).select { |link| link.text.strip == I18n.t("students.show.actions.edit_pin") }
+      expect(self_pin_links.one?).to eq(true)
     end
 
     it "rejects a teacher outside the classroom from the student message page" do

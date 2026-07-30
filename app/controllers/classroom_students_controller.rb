@@ -9,7 +9,7 @@ class ClassroomStudentsController < ApplicationController
   before_action :set_classroom
   before_action :authorize_manage!, only: [:new, :create, :bulk_new, :bulk_preview, :bulk_create]
   before_action :set_student, only: [:show, :dashboard, :activity, :coupon_assignment, :edit, :update, :destroy, :deactivate, :reactivate]
-  before_action :ensure_active_self_student!, only: [:show, :dashboard, :activity]
+  before_action :ensure_active_self_student!, only: [:show, :dashboard, :activity, :edit, :update]
   before_action :authorize_student_data!, only: [:show, :dashboard, :activity]
 
   def new
@@ -202,11 +202,22 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def edit
-    authorize @classroom, :manage_members?
-    load_student_edit_form!
+    if current_user.student?
+      authorize @student, :manage_own_student_pin?
+      load_student_self_pin_form!
+    else
+      authorize @classroom, :manage_members?
+      load_student_edit_form!
+    end
   end
 
   def update
+    if current_user.student?
+      authorize @student, :manage_own_student_pin?
+      update_own_student_pin
+      return
+    end
+
     authorize @classroom, :manage_members?
     load_student_edit_form!
     attrs = managed_student_params
@@ -316,6 +327,11 @@ class ClassroomStudentsController < ApplicationController
     @student_avatar_keys = student_avatar_keys
   end
 
+  def load_student_self_pin_form!
+    @user = @student
+    @student_self_pin_edit = true
+  end
+
   def ensure_active_self_student!
     return unless current_user&.student? && current_user.id == @student.id
     return if active_student_in_classroom?
@@ -326,6 +342,33 @@ class ClassroomStudentsController < ApplicationController
   def managed_student_params
     params.require(:user).permit(:name, :student_pin, :gender, :avatar_key).tap do |permitted|
       permitted.delete(:student_pin) if permitted[:student_pin].blank?
+    end
+  end
+
+  def student_self_pin_params
+    params.require(:user).permit(:student_pin, :student_pin_confirmation)
+  end
+
+  def update_own_student_pin
+    load_student_self_pin_form!
+    attrs = student_self_pin_params
+    pin = attrs[:student_pin].to_s
+    confirmation = attrs[:student_pin_confirmation].to_s
+
+    if pin.blank?
+      @student.errors.add(:base, t("students.edit.self_pin.errors.blank"))
+    elsif !pin.match?(/\A\d{4}\z/)
+      @student.errors.add(:base, t("students.edit.self_pin.errors.invalid"))
+    elsif pin != confirmation
+      @student.errors.add(:base, t("students.edit.self_pin.errors.confirmation"))
+    end
+
+    if @student.errors.empty? && @student.update(attrs)
+      redirect_to classroom_student_path(@classroom, @student),
+        notice: t("students.edit.self_pin.success"),
+        status: :see_other
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -568,6 +611,8 @@ class ClassroomStudentsController < ApplicationController
   def load_student_profile_permissions!
     @can_manage_student = policy(@classroom).manage_members?
     @student_active_in_classroom = active_student_in_classroom?
+    @can_manage_own_student_pin =
+      policy(@student).manage_own_student_pin? && @student_active_in_classroom
     @can_create_compliment = policy(@classroom).create_compliment? && @student_active_in_classroom
     @can_draw_coupon = policy(@classroom).draw_coupon?
     @can_issue_coupon = @can_draw_coupon && @student_active_in_classroom

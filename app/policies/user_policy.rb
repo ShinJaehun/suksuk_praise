@@ -44,6 +44,10 @@ class UserPolicy < ApplicationPolicy
     user&.admin? && record.teacher?
   end
 
+  def manage_own_student_pin?
+    user&.student? && record.student? && user.id == record.id
+  end
+
   def destroy_student?
     return false unless record.student?
     return true if user&.admin?

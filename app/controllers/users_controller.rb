@@ -59,7 +59,7 @@ class UsersController < ApplicationController
     session_classroom = session_classroom_for(user)
     return session_classroom if session_classroom
 
-    active_student_classrooms_for(user).order(created_at: :asc).first
+    active_student_membership_classroom_for(user)
   end
 
   def session_classroom_for(user)
@@ -74,6 +74,15 @@ class UsersController < ApplicationController
       .joins(:classroom_memberships)
       .where(classroom_memberships: { user_id: user.id, role: "student", status: "active" })
       .distinct
+  end
+
+  def active_student_membership_classroom_for(user)
+    ClassroomMembership
+      .student
+      .active
+      .includes(:classroom)
+      .find_by(user_id: user.id)
+      &.classroom
   end
 
   def teacher_managed_classroom_for(user)

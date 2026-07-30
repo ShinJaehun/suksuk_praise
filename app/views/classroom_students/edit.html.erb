@@ -1,3 +1,6 @@
+<% if @student_self_pin_edit %>
+  <%= render "classroom_students/self_pin_edit" %>
+<% else %>
 <section class="mx-auto w-full max-w-3xl space-y-6 pt-4">
   <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div class="min-w-0">
@@ -158,3 +161,4 @@
     <% end %>
   </div>
 </section>
+<% end %>

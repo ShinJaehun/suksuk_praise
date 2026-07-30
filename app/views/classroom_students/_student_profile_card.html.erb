@@ -1,4 +1,4 @@
-<%# locals: (classroom:, user:, kpi_counts:, current_section:, student_messages_enabled:, can_manage_student:, can_create_compliment:, can_issue_coupon:, student_active: true) %>
+<%# locals: (classroom:, user:, kpi_counts:, current_section:, student_messages_enabled:, can_manage_student:, can_create_compliment:, can_issue_coupon:, student_active: true, can_manage_own_student_pin: false) %>
 <%
   navigation_button_class = lambda do |section|
     base = "inline-flex items-center rounded-lg border px-3 py-2 text-sm font-semibold shadow-sm transition"
@@ -66,8 +66,13 @@
       <% end %>
     </nav>
 
-    <% if can_manage_student || can_create_compliment || can_issue_coupon %>
+    <% if can_manage_student || can_create_compliment || can_issue_coupon || can_manage_own_student_pin %>
       <div class="flex flex-wrap gap-2 lg:justify-end">
+        <% if can_manage_own_student_pin %>
+          <%= link_to t("students.show.actions.edit_pin"),
+                edit_classroom_student_path(classroom, user),
+                class: "inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-400 hover:bg-blue-50" %>
+        <% end %>
         <% if can_manage_student %>
           <%= link_to t("students.show.actions.edit_profile_and_pin"),
                 edit_classroom_student_path(classroom, user),

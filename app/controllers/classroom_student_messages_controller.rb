@@ -27,6 +27,8 @@ class ClassroomStudentMessagesController < ApplicationController
     @message_section_dom_id = dom_id(@student, :message_section)
     @can_manage_student = policy(@classroom).manage_members?
     @student_active_in_classroom = active_student_in_classroom?
+    @can_manage_own_student_pin =
+      policy(@student).manage_own_student_pin? && @student_active_in_classroom
     @can_create_compliment = policy(@classroom).create_compliment? && @student_active_in_classroom
     @can_issue_coupon = policy(@classroom).draw_coupon? && @student_active_in_classroom
     @student_messages_enabled = true

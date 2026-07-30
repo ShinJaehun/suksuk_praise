@@ -254,11 +254,35 @@ ko:
     edit:
       title: "학생 정보 관리"
       back_to_student: "학생 정보로 돌아가기"
+      self_pin:
+        title: "PIN 수정"
+        info_title: "기본 정보"
+        gender: "성별"
+        created_at: "생성일"
+        school: "소속 학교"
+        grade: "학년"
+        classroom: "학급"
+        unassigned_school: "학교 미지정"
+        unassigned_grade: "학년 미지정"
+        form_title: "PIN 설정"
+        new_pin: "새 PIN"
+        confirmation: "새 PIN 확인"
+        submit: "PIN 저장"
+        success: "PIN을 수정했습니다."
+        genders:
+          boy: "남학생"
+          girl: "여학생"
+          unspecified: "미지정"
+        errors:
+          blank: "새 PIN을 입력해 주세요."
+          invalid: "새 PIN은 4자리 숫자여야 합니다."
+          confirmation: "새 PIN 확인이 일치하지 않습니다."
     show:
       actions:
         navigation: "학생 페이지"
         coupon_management: "쿠폰 관리"
         dashboard: "한눈에 보기"
+        edit_pin: "PIN 수정"
         edit_profile_and_pin: "학생 정보·PIN 수정"
         check_messages: "학생 메시지"
         check_activity: "활동 기록"

@@ -751,6 +751,10 @@ RSpec.describe 'Classroom students', type: :request do
       expect(response.body).not_to include('user_message[body]')
       expect(response.body).not_to include('최근 발급 쿠폰')
       expect(response.body).not_to include('칭찬 타임라인')
+      self_pin_links = document.css(
+        %(a[href="#{edit_classroom_student_path(classroom, student)}"])
+      ).select { |link| link.text.strip == I18n.t("students.show.actions.edit_pin") }
+      expect(self_pin_links).to be_empty
     end
 
     it 'shows inactive status and hides operating actions for an inactive student' do
@@ -848,7 +852,12 @@ RSpec.describe 'Classroom students', type: :request do
       get classroom_student_path(classroom, student)
 
       expect(response).to have_http_status(:ok)
+      document = Nokogiri::HTML(response.body)
+      self_pin_links = document.css(
+        %(a[href="#{edit_classroom_student_path(classroom, student)}"])
+      ).select { |link| link.text.strip == I18n.t("students.show.actions.edit_pin") }
       expect(response.body).not_to include('학생 정보·PIN 수정')
+      expect(self_pin_links.one?).to eq(true)
       expect(response.body).not_to include('칭찬하기')
       expect(response.body).not_to include('쿠폰 지급')
       expect(response.body).not_to include('선택한 쿠폰 지급')
@@ -856,6 +865,25 @@ RSpec.describe 'Classroom students', type: :request do
       expect(response.body).to include('한눈에 보기')
       expect(response.body).to include(classroom_student_messages_path(classroom, student))
       expect(response.body).to include(activity_classroom_student_path(classroom, student))
+    end
+
+    it 'shows one self PIN edit link on the student dashboard and activity pages' do
+      sign_out teacher
+      sign_in student
+
+      [
+        dashboard_classroom_student_path(classroom, student),
+        activity_classroom_student_path(classroom, student)
+      ].each do |path|
+        get path
+
+        expect(response).to have_http_status(:ok)
+        document = Nokogiri::HTML(response.body)
+        self_pin_links = document.css(
+          %(a[href="#{edit_classroom_student_path(classroom, student)}"])
+        ).select { |link| link.text.strip == I18n.t("students.show.actions.edit_pin") }
+        expect(self_pin_links.one?).to eq(true)
+      end
     end
 
     it 'renders the coupon assignment card in its turbo frame' do
@@ -1041,9 +1069,125 @@ RSpec.describe 'Classroom students', type: :request do
       expect(response.body).not_to include('name="user[password]"')
       expect(response.body).not_to include('name="user[password_confirmation]"')
     end
+
+    it 'shows only read-only profile information and PIN fields to the active student' do
+      student = create(:user, :student, student_pin: '1234', gender: 'boy', avatar_key: 'boy01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student', status: 'active')
+      sign_out teacher
+      sign_in student
+
+      get edit_classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('PIN 수정', student.name, classroom.school.name, classroom.name)
+      expect(response.body).to include('name="user[student_pin]"')
+      expect(response.body).to include('name="user[student_pin_confirmation]"')
+      expect(response.body).not_to include('name="user[name]"')
+      expect(response.body).not_to include('name="user[gender]"')
+      expect(response.body).not_to include('name="user[avatar_key]"')
+      expect(response.body).not_to include('학생 정보 관리')
+      expect(response.body).not_to include('운영 상태')
+    end
+
+    it 'rejects a student editing another student' do
+      student = create(:user, :student, student_pin: '1234')
+      other_student = create(:user, :student, student_pin: '5678')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student', status: 'active')
+      create(:classroom_membership, user: other_student, classroom: classroom, role: 'student', status: 'active')
+      sign_out teacher
+      sign_in student
+
+      get edit_classroom_student_path(classroom, other_student)
+
+      expect(response).to redirect_to(root_path)
+    end
   end
 
   describe 'PATCH /classrooms/:classroom_id/students/:id' do
+    it 'lets an active student change only their own PIN' do
+      student = create(:user, :student, student_pin: '1234', name: '기존 이름', gender: 'boy', avatar_key: 'boy01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student', status: 'active')
+      sign_out teacher
+      sign_in student
+
+      patch classroom_student_path(classroom, student), params: {
+        user: {
+          student_pin: '4321',
+          student_pin_confirmation: '4321',
+          name: '변조 이름',
+          gender: 'girl',
+          avatar_key: 'girl01',
+          active: false,
+          inactive_reason: '조작',
+          role: 'admin'
+        }
+      }
+
+      expect(response).to redirect_to(classroom_student_path(classroom, student))
+      student.reload
+      expect(student.authenticate_student_pin('1234')).to be_falsey
+      expect(student.authenticate_student_pin('4321')).to be_truthy
+      expect(student.name).to eq('기존 이름')
+      expect(student.gender).to eq('boy')
+      expect(student.avatar_key).to eq('boy01')
+      expect(student).to be_active
+      expect(student).to be_student
+    end
+
+    it 'rejects a student updating another student' do
+      student = create(:user, :student, student_pin: '1234')
+      other_student = create(:user, :student, student_pin: '5678')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student', status: 'active')
+      create(:classroom_membership, user: other_student, classroom: classroom, role: 'student', status: 'active')
+      sign_out teacher
+      sign_in student
+
+      patch classroom_student_path(classroom, other_student), params: {
+        user: { student_pin: '4321', student_pin_confirmation: '4321' }
+      }
+
+      expect(response).to redirect_to(root_path)
+      expect(other_student.reload.authenticate_student_pin('5678')).to be_truthy
+    end
+
+    it 'renders the student PIN screen for invalid or mismatched PIN values' do
+      student = create(:user, :student, student_pin: '1234')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student', status: 'active')
+      sign_out teacher
+      sign_in student
+
+      [
+        ['', '', '새 PIN을 입력해 주세요.'],
+        ['123', '123', '새 PIN은 4자리 숫자여야 합니다.'],
+        ['12ab', '12ab', '새 PIN은 4자리 숫자여야 합니다.'],
+        ['4321', '1111', '새 PIN 확인이 일치하지 않습니다.']
+      ].each do |pin, confirmation, message|
+        patch classroom_student_path(classroom, student), params: {
+          user: { student_pin: pin, student_pin_confirmation: confirmation }
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('PIN 수정', message)
+        expect(response.body).not_to include('name="user[name]"')
+        expect(response.body).not_to include('운영 상태')
+        expect(student.reload.authenticate_student_pin('1234')).to be_truthy
+      end
+    end
+
+    it 'keeps the existing admin student update flow and redirect' do
+      student = create(:user, :student, name: '기존 이름', gender: 'boy', avatar_key: 'boy01')
+      create(:classroom_membership, user: student, classroom: classroom, role: 'student')
+      sign_out teacher
+      sign_in create(:user, :admin)
+
+      patch classroom_student_path(classroom, student), params: {
+        user: { name: '관리자 수정', gender: 'boy', avatar_key: 'boy01' }
+      }
+
+      expect(response).to redirect_to(edit_classroom_student_path(classroom, student))
+      expect(student.reload.name).to eq('관리자 수정')
+    end
+
     it 'reassigns avatar_key when gender changes and no custom avatar is attached' do
       student = create(:user, :student, gender: 'boy', avatar_key: 'boy01')
       create(:classroom_membership, user: student, classroom: classroom, role: 'student')
