@@ -551,6 +551,23 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.parent_message).to eq(incoming)
     end
 
+    it "rejects a student reply to a thread whose teacher became inactive" do
+      incoming = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "기존 질문")
+      teacher.update!(active: false)
+      sign_in student
+
+      expect {
+        post user_messages_path(student), params: {
+          reply_to_message_id: incoming.id,
+          user_message: { body: "비활성 교사에게 보내는 답글" }
+        }
+      }.not_to change(UserMessage, :count)
+
+      expect(response).to redirect_to(user_path(student))
+      expect(flash[:alert]).to include(I18n.t("user_messages.errors.inactive_teacher_participant"))
+      expect(incoming.reload).to have_attributes(sender: teacher, recipient: student, body: "기존 질문")
+    end
+
     it "rejects an inactive student reply" do
       incoming = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "질문 있어?")
       classroom.classroom_memberships.find_by!(user: student).inactive!
@@ -735,6 +752,28 @@ RSpec.describe "User messages", type: :request do
       expect(UserMessage.last.sender).to eq(teacher)
       expect(UserMessage.last.recipient).to eq(student)
       expect(UserMessage.last.parent_message).to eq(teacher_root)
+    end
+
+    it "allows another active teacher to reply in a thread whose original teacher became inactive" do
+      teacher_root = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "기존 안내")
+      teacher.update!(active: false)
+      sign_in other_teacher
+
+      expect {
+        post classroom_student_messages_path(classroom, student),
+          params: {
+            reply_to_message_id: teacher_root.id,
+            user_message: { body: "활성 교사의 후속 답장" }
+          }
+      }.to change(UserMessage, :count).by(1)
+
+      expect(response).to redirect_to(classroom_student_path(classroom, student))
+      expect(UserMessage.order(:id).last).to have_attributes(
+        sender: other_teacher,
+        recipient: student,
+        parent_message: teacher_root
+      )
+      expect(teacher_root.reload).to have_attributes(sender: teacher, recipient: student, body: "기존 안내")
     end
 
     it "allows an admin to reply under a student root message" do

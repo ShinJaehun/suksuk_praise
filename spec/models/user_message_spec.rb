@@ -61,6 +61,45 @@ RSpec.describe UserMessage, type: :model do
     expect(message.errors[:base]).to include("비활성 학생에게는 새 메시지를 보낼 수 없습니다.")
   end
 
+  it "rejects a new message sent by an inactive teacher" do
+    teacher.update!(active: false)
+
+    message = described_class.new(
+      classroom: classroom,
+      sender: teacher,
+      recipient: student,
+      body: "비활성 교사 발신"
+    )
+
+    expect(message).not_to be_valid
+    expect(message.errors[:base]).to include(I18n.t("user_messages.errors.inactive_teacher_participant"))
+    expect(message).not_to be_persisted
+  end
+
+  it "rejects a new message addressed to an inactive teacher" do
+    classroom.update!(message_policy: "student_initiated")
+    teacher.update!(active: false)
+
+    message = described_class.new(
+      classroom: classroom,
+      sender: student,
+      recipient: teacher,
+      body: "비활성 교사 수신"
+    )
+
+    expect(message).not_to be_valid
+    expect(message.errors[:base]).to include(I18n.t("user_messages.errors.inactive_teacher_participant"))
+    expect(message).not_to be_persisted
+  end
+
+  it "allows an existing message to be updated after its teacher becomes inactive" do
+    message = create(:user_message, classroom: classroom, sender: teacher, recipient: student, body: "기존 메시지")
+    teacher.update!(active: false)
+
+    expect(message.update(body: "보존된 기존 메시지")).to eq(true)
+    expect(message.reload).to have_attributes(sender: teacher, recipient: student, body: "보존된 기존 메시지")
+  end
+
   it 'rejects blank body' do
     message = described_class.new(
       classroom: classroom,

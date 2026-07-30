@@ -1,4 +1,8 @@
 ko:
+  user_messages:
+    errors:
+      inactive_teacher_participant: "비활성 교사가 포함된 메시지는 보낼 수 없습니다."
+
   students:
     roster:
       student_number_value: "%{number}번"
@@ -166,4 +170,3 @@ ko:
       success: "학생을 복구했습니다."
       active_membership_conflict: "이 학생은 다른 학급에서 활동 중이어서 복구할 수 없습니다."
       too_many: "한 교실에는 최대 %{count}명까지 등록할 수 있습니다."
-

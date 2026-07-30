@@ -26,6 +26,7 @@ class UserMessage < ApplicationRecord
   validate :non_student_participant_must_be_teacher_or_admin
   validate :participants_must_match_classroom_context
   validate :student_participant_must_have_active_membership, on: :create
+  validate :teacher_participants_must_be_active, on: :create
   validate :student_root_message_must_target_classroom_teacher
   validate :reply_must_target_root_message
 
@@ -92,6 +93,12 @@ class UserMessage < ApplicationRecord
     return if classroom.classroom_memberships.exists?(user_id: student.id, role: "student", status: "active")
 
     errors.add(:base, "비활성 학생에게는 새 메시지를 보낼 수 없습니다.")
+  end
+
+  def teacher_participants_must_be_active
+    return unless [sender, recipient].compact.any? { |participant| participant.teacher? && participant.inactive? }
+
+    errors.add(:base, I18n.t("user_messages.errors.inactive_teacher_participant"))
   end
 
   def student_root_message_must_target_classroom_teacher
