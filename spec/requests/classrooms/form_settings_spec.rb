@@ -129,6 +129,14 @@ RSpec.describe "Classroom form settings", type: :request do
   end
 
   describe "GET /classrooms/:id/edit" do
+    it "redirects a guest to sign in" do
+      classroom = create(:classroom, school: school)
+
+      get edit_classroom_path(classroom)
+
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
     it "shows only structure fields to an unassigned manager" do
       create(:school_membership, :manager, school: school, user: manager)
       classroom = create(:classroom, school: school)
@@ -193,6 +201,28 @@ RSpec.describe "Classroom form settings", type: :request do
         'name="classroom[daily_compliment_king_enabled]"',
         'name="classroom[message_policy]"'
       )
+    end
+  end
+
+  describe "PUT /classrooms/:id" do
+    it "updates classroom settings through the existing REST path" do
+      classroom = create(:classroom, school: school, name: "기존 교실")
+      sign_in admin
+
+      put classroom_path(classroom), params: {
+        classroom: {
+          name: "변경 교실",
+          school_id: school.id,
+          grade: classroom.grade,
+          daily_compliment_king_enabled: classroom.daily_compliment_king_enabled ? "1" : "0",
+          weekly_compliment_king_enabled: classroom.weekly_compliment_king_enabled ? "1" : "0",
+          monthly_compliment_king_enabled: classroom.monthly_compliment_king_enabled ? "1" : "0",
+          message_policy: classroom.message_policy
+        }
+      }
+
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(classroom.reload.name).to eq("변경 교실")
     end
   end
 end

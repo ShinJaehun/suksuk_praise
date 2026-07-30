@@ -29,7 +29,7 @@ Rails.application.routes.draw do
     resources :messages, only: [:create], controller: "user_messages"
   end
 
-  resources :classrooms do
+  resources :classrooms, except: [:edit, :update] do
     resource :members, only: :show, module: :classrooms
     get "members/students/names/edit",
       to: "classrooms/members#edit_student_names",
@@ -81,6 +81,14 @@ Rails.application.routes.draw do
     # RESTful 하게 칭찬은 교실 리소스 하위에 생성
     resources :compliments, only: [:new, :create]
   end
+
+  get "/classrooms/:id/edit",
+    to: "classrooms/settings#edit",
+    as: :edit_classroom
+  patch "/classrooms/:id",
+    to: "classrooms/settings#update"
+  put "/classrooms/:id",
+    to: "classrooms/settings#update"
 
   get "/compliments", to: redirect { |_params, request|
     query_string = request.query_string.presence

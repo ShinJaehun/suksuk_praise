@@ -5,7 +5,7 @@ class ClassroomsController < ApplicationController
   before_action :authenticate_user!
   before_action :redirect_students_to_mypage!, only: [:index, :show]
   before_action :set_classroom, only: [
-    :show, :edit, :update, :destroy
+    :show, :destroy
   ]
 
   def index
@@ -100,25 +100,6 @@ class ClassroomsController < ApplicationController
     end
   end
 
-  def edit
-    authorize @classroom
-    prepare_classroom_form
-  end
-
-  def update
-    authorize @classroom
-
-    if inactive_target_school? || manager_school_change_attempt? || teacher_school_assignment_conflict?
-      prepare_classroom_form
-      render :edit, status: :unprocessable_entity
-    elsif @classroom.update(classroom_params)
-      redirect_to @classroom, notice: t("classrooms.update.success")
-    else
-      prepare_classroom_form
-      render :edit, status: :unprocessable_entity
-    end
-  end
-
   def destroy
     authorize @classroom
 
@@ -181,25 +162,6 @@ class ClassroomsController < ApplicationController
     @school_options = policy_scope(School).active.order(:name, :id)
   end
 
-  def teacher_school_assignment_conflict?
-    return false unless current_user.admin?
-
-    target_school_id = params.dig(:classroom, :school_id).presence
-    return false if target_school_id.blank? || target_school_id.to_s == @classroom.school_id.to_s
-
-    teacher_ids = @classroom.classroom_memberships
-      .teacher
-      .joins(:user)
-      .where(users: { role: "teacher" })
-      .pluck(:user_id)
-
-    conflict = SchoolMembership.where(user_id: teacher_ids, school_id: target_school_id).count != teacher_ids.size
-    if conflict
-      @classroom.errors.add(:base, t("classrooms.errors.teacher_school_required"))
-    end
-    conflict
-  end
-
   def prepare_classroom_form
     load_school_options if current_user.admin?
   end
@@ -226,26 +188,6 @@ class ClassroomsController < ApplicationController
     return unless current_user_school_manager?
 
     @classroom.school = current_user.school_membership.school
-  end
-
-  def manager_school_change_attempt?
-    return false unless current_user_school_manager?
-    return false unless params.require(:classroom).key?(:school_id)
-    return false if params.dig(:classroom, :school_id).to_s == @classroom.school_id.to_s
-
-    @classroom.errors.add(:base, t("classrooms.errors.manager_school_change"))
-    true
-  end
-
-  def inactive_target_school?
-    return false unless current_user.admin?
-
-    target_school_id = params.dig(:classroom, :school_id).presence
-    return false if target_school_id.blank?
-    return false if School.active.exists?(id: target_school_id)
-
-    @classroom.errors.add(:school, t("school_status.inactive_school"))
-    true
   end
 
   def redirect_students_to_mypage!

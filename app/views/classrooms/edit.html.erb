@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <%= render "form", classroom: @classroom, submit_label: t("classrooms.edit.submit") %>
+  <%= render "classrooms/form", classroom: @classroom, submit_label: t("classrooms.edit.submit") %>
 
   <% if policy(@classroom).destroy? %>
     <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
