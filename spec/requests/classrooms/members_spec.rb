@@ -154,6 +154,69 @@ RSpec.describe 'Classroom members', type: :request do
     expect(response.body).not_to include(inactive_student.name)
   end
 
+  it 'orders active, inactive, and all filters by roster number within status groups' do
+    active_students = [
+      create(:user, :student, name: '활성 5'),
+      create(:user, :student, name: '활성 번호 없음 B'),
+      create(:user, :student, name: '활성 1'),
+      create(:user, :student, name: '활성 2'),
+      create(:user, :student, name: '활성 번호 없음 A')
+    ]
+    [5, nil, 1, 2, nil].each_with_index do |number, index|
+      create(:classroom_membership,
+        classroom: classroom,
+        user: active_students[index],
+        role: 'student',
+        status: 'active',
+        student_number: number)
+    end
+    inactive_students = [
+      create(:user, :student, name: '비활성 5 B'),
+      create(:user, :student, name: '비활성 1'),
+      create(:user, :student, name: '비활성 5 A'),
+      create(:user, :student, name: '비활성 번호 없음')
+    ]
+    [5, 1, 5, nil].each_with_index do |number, index|
+      create(:classroom_membership,
+        classroom: classroom,
+        user: inactive_students[index],
+        role: 'student',
+        status: 'inactive',
+        student_number: number)
+    end
+    sign_in admin
+
+    get classroom_members_path(classroom, status: 'active')
+    active_rows = Nokogiri::HTML(response.body).css('[data-student-membership-row]')
+    expect(active_rows.map { |row| row['data-student-id'].to_i }).to eq(
+      [active_students[2], active_students[3], active_students[0], active_students[4], active_students[1]].map(&:id)
+    )
+    expect(active_rows.map { |row| row.at_css('[data-student-number]').text.squish }).to eq(
+      ['1번', '2번', '5번', '번호 미지정', '번호 미지정']
+    )
+
+    get classroom_members_path(classroom, status: 'inactive')
+    inactive_rows = Nokogiri::HTML(response.body).css('[data-student-membership-row]')
+    expect(inactive_rows.map { |row| row['data-student-id'].to_i }).to eq(
+      [inactive_students[1], inactive_students[2], inactive_students[0], inactive_students[3]].map(&:id)
+    )
+    expect(response.body).to include(
+      reactivate_classroom_student_path(classroom, inactive_students[1])
+    )
+
+    get classroom_members_path(classroom, status: 'all')
+    all_rows = Nokogiri::HTML(response.body).css('[data-student-membership-row]')
+    expect(all_rows.map { |row| row['data-student-id'].to_i }).to eq(
+      [
+        active_students[2], active_students[3], active_students[0], active_students[4], active_students[1],
+        inactive_students[1], inactive_students[2], inactive_students[0], inactive_students[3]
+      ].map(&:id)
+    )
+    expect(response.body).to include(
+      classroom_edit_member_student_names_path(classroom, status: 'all')
+    )
+  end
+
   it 'renders an empty inactive filter state' do
     active_student = create(:user, :student, name: '김활동')
     create(:classroom_membership, classroom: classroom, user: active_student, role: 'student')

@@ -1,26 +1,94 @@
-<div id="bulk_student_draft_<%= draft[:index] %>" class="bulk-student-draft-row rounded-lg border border-slate-200 p-3" data-bulk-student-draft-target="row">
-  <div class="flex flex-wrap items-center gap-3">
-    <%= image_tag "avatars/#{draft[:avatar_key]}.png",
-          class: "h-12 w-12 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover",
-          alt: "" %>
+<% row_key = draft[:index] %>
+<% error_id = "student-draft-errors-#{row_key}" %>
+<div id="bulk_student_draft_<%= row_key %>"
+     class="bulk-student-draft-row rounded-lg border border-slate-200 p-3"
+     data-bulk-student-draft-target="row">
+  <div class="grid gap-3 md:grid-cols-[5.5rem_minmax(12rem,1fr)_9rem_5rem_5rem] md:items-start">
+    <div>
+      <%= label_tag "students_#{row_key}_student_number",
+            t("students.bulk_create.preview.student_number"),
+            class: "mb-1 block text-xs font-semibold text-slate-600 md:sr-only" %>
+      <%= number_field_tag "students[#{row_key}][student_number]",
+            draft[:student_number],
+            id: "students_#{row_key}_student_number",
+            min: 1,
+            step: 1,
+            inputmode: "numeric",
+            required: true,
+            aria: { describedby: (error_id if draft_error.present?) },
+            data: { bulk_student_draft_target: "studentNumber" },
+            class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+    </div>
 
-    <div class="min-w-0 flex-1">
-      <%= text_field_tag "students[#{draft[:index]}][name]",
+    <div>
+      <%= label_tag "students_#{row_key}_name",
+            t("students.bulk_create.preview.name"),
+            class: "mb-1 block text-xs font-semibold text-slate-600 md:sr-only" %>
+      <%= text_field_tag "students[#{row_key}][name]",
             draft[:name],
+            id: "students_#{row_key}_name",
             placeholder: t("students.bulk_create.preview.name_placeholder"),
+            required: true,
+            aria: { describedby: (error_id if draft_error.present?) },
             class: "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
-      <%= hidden_field_tag "students[#{draft[:index]}][gender]", draft[:gender] %>
-      <%= hidden_field_tag "students[#{draft[:index]}][avatar_key]", draft[:avatar_key] %>
+    </div>
 
-      <% if draft_error.present? %>
-        <p class="mt-1 text-sm font-medium text-rose-700"><%= draft_error %></p>
-      <% end %>
+    <fieldset>
+      <legend class="mb-1 text-xs font-semibold text-slate-600 md:sr-only">
+        <%= t("students.bulk_create.preview.gender") %>
+      </legend>
+      <div class="grid grid-cols-2 gap-1">
+        <% [["boy", t("students.edit.self_pin.genders.boy")], ["girl", t("students.edit.self_pin.genders.girl")]].each do |gender, label| %>
+          <% radio_id = "students_#{row_key}_gender_#{gender}" %>
+          <label for="<%= radio_id %>"
+                 class="cursor-pointer rounded-lg border border-slate-300 px-2 py-2 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50 has-[:checked]:border-sky-600 has-[:checked]:bg-sky-100 has-[:checked]:text-sky-800">
+            <%= radio_button_tag "students[#{row_key}][gender]",
+                  gender,
+                  draft[:gender] == gender,
+                  id: radio_id,
+                  required: true,
+                  class: "sr-only",
+                  aria: { describedby: (error_id if draft_error.present?) },
+                  data: { action: "bulk-student-draft#selectGender" } %>
+            <span><%= label %></span>
+          </label>
+        <% end %>
+      </div>
+    </fieldset>
+
+    <div class="flex flex-col items-start">
+      <span class="mb-1 text-xs font-semibold text-slate-600 md:sr-only">
+        <%= t("students.bulk_create.preview.avatar") %>
+      </span>
+      <%= hidden_field_tag "students[#{row_key}][avatar_key]",
+            draft[:avatar_key],
+            data: { bulk_student_draft_target: "avatarKey" } %>
+      <% avatar_present = draft[:avatar_key].present? %>
+      <%= image_tag(
+            avatar_present ? "avatars/#{draft[:avatar_key]}.png" : "avatars/boy01.png",
+            class: class_names("h-11 w-11 rounded-lg border border-slate-200 bg-slate-100 object-cover", hidden: !avatar_present),
+            alt: avatar_present ? t("students.bulk_create.preview.avatar_alt") : "",
+            data: { bulk_student_draft_target: "avatarPreview" }
+          ) %>
+      <span class="<%= "hidden" if avatar_present %> text-xs text-slate-500"
+            data-bulk-student-draft-target="avatarPlaceholder">
+        <%= t("students.bulk_create.preview.avatar_unselected") %>
+      </span>
     </div>
 
     <button type="button"
-      class="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
-      data-action="bulk-student-draft#remove">
+            class="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+            data-action="bulk-student-draft#remove"
+            aria-label="<%= t("students.bulk_create.actions.remove_row") %>">
       <%= t("ui.delete") %>
     </button>
   </div>
+
+  <% if draft_error.present? %>
+    <ul id="<%= error_id %>" class="mt-2 list-disc space-y-1 pl-5 text-sm font-medium text-rose-700">
+      <% Array(draft_error).each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
 </div>

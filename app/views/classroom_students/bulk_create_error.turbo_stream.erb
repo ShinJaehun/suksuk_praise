@@ -5,8 +5,7 @@
           return_to: return_to_context,
           student_pin: params[:student_pin],
           student_drafts: @student_drafts,
-          boy_count: params[:boy_count],
-          girl_count: params[:girl_count],
+          remaining_capacity: @bulk_remaining_capacity,
           error_message: flash.now[:alert],
           draft_errors: @draft_errors || {}
         } %>

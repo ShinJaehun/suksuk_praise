@@ -11,10 +11,10 @@
           class: "inline-flex items-center justify-center self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
   </header>
 
-  <% if @user.errors.any? %>
+  <% if @user.errors.any? || @student_membership.errors.any? %>
     <div role="alert"
          class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-medium text-rose-700 shadow-sm">
-      <%= @user.errors.full_messages.to_sentence %>
+      <%= (@user.errors.full_messages + @student_membership.errors.full_messages).to_sentence %>
     </div>
   <% end %>
 
@@ -41,6 +41,28 @@
         </div>
 
         <div class="grid gap-5 md:grid-cols-2">
+          <div>
+            <%= label_tag "classroom_membership_student_number",
+                  t("students.form.student_number"),
+                  class: "mb-2 block text-sm font-medium text-slate-700" %>
+            <%= number_field_tag "classroom_membership[student_number]",
+                  @student_membership.student_number_before_type_cast,
+                  id: "classroom_membership_student_number",
+                  min: 1,
+                  step: 1,
+                  inputmode: "numeric",
+                  aria: { describedby: "student-number-hint student-number-errors" },
+                  class: "block w-32 rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100" %>
+            <p id="student-number-hint" class="mt-1 text-sm text-slate-500">
+              <%= t("students.form.student_number_hint") %>
+            </p>
+            <% if @student_membership.errors[:student_number].any? %>
+              <p id="student-number-errors" class="mt-1 text-sm font-medium text-rose-600">
+                <%= @student_membership.errors[:student_number].to_sentence %>
+              </p>
+            <% end %>
+          </div>
+
           <%= f.input :name,
                 required: true,
                 input_html: {

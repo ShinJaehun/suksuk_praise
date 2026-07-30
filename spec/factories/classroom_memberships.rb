@@ -3,5 +3,6 @@ FactoryBot.define do
     association :user
     association :classroom
     role { "student" }
+    student_number { nil }
   end
 end

@@ -116,10 +116,18 @@ class Classrooms::MembersController < ApplicationController
     }
     @student_member_counts["all"] = @student_member_counts.values.sum
 
-    @student_memberships = base_scope
-      .includes(:user)
-      .order(:status, :created_at, :id)
-    @student_memberships = @student_memberships.where(status: @member_status) unless @member_status == "all"
+    @student_memberships =
+      if @member_status == "all"
+        base_scope
+          .order(Arel.sql("CASE classroom_memberships.status WHEN 'active' THEN 0 ELSE 1 END"))
+          .in_roster_order
+          .preload(:user)
+      else
+        base_scope
+          .where(status: @member_status)
+          .in_roster_order
+          .preload(:user)
+      end
   end
 
   def load_members_page!

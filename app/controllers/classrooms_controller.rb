@@ -72,7 +72,12 @@ class ClassroomsController < ApplicationController
     @can_manage_classroom = policy(@classroom).update?
     @can_manage_classroom_members = policy(@classroom).manage_members?
     @can_refresh_compliment_king = policy(@classroom).refresh_compliment_king?
-    @students = @classroom.students.order(created_at: :asc)
+    @student_memberships = @classroom.classroom_memberships
+      .student
+      .active
+      .in_roster_order
+      .preload(:user)
+    @students = User.where(id: @student_memberships.map(&:user_id))
     @homeroom_teachers = User.teacher.active
       .joins(:classroom_memberships)
       .where(classroom_memberships: { classroom_id: @classroom.id, role: "teacher" })

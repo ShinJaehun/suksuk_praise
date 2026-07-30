@@ -10,6 +10,7 @@
   <%= render partial: "users/user",
     locals: {
       user: @receiver,
+      student_membership: @student_membership,
       classroom: @classroom,
       today_compliment_count: @today_compliment_count_for_receiver,
       active_compliment_presets: @active_compliment_presets

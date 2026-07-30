@@ -1,6 +1,16 @@
-<%= turbo_stream.append "students_grid_#{@classroom.id}" do %>
-  <%= render partial: "users/user",
-             locals: { user: @user, classroom: @classroom } %>
+<%= turbo_stream.replace "students_list_#{@classroom.id}" do %>
+  <%= turbo_frame_tag "students_list_#{@classroom.id}" do %>
+    <div id="students_grid_<%= @classroom.id %>" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <% @student_memberships.each do |student_membership| %>
+        <%= render partial: "users/user",
+              locals: {
+                user: student_membership.user,
+                student_membership: student_membership,
+                classroom: @classroom
+              } %>
+      <% end %>
+    </div>
+  <% end %>
 <% end %>
 
 <%#= turbo_stream.update "flash" do %>

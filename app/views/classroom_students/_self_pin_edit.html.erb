@@ -55,6 +55,16 @@
           <dt class="text-xs font-semibold text-slate-500"><%= t("students.edit.self_pin.classroom") %></dt>
           <dd class="mt-1 text-slate-800"><%= @classroom.name %></dd>
         </div>
+        <div data-testid="student-number">
+          <dt class="text-xs font-semibold text-slate-500"><%= t("students.edit.self_pin.student_number") %></dt>
+          <dd class="mt-1 text-slate-800">
+            <% if @student_membership.student_number.present? %>
+              <%= t("students.edit.self_pin.student_number_value", number: @student_membership.student_number) %>
+            <% else %>
+              <%= t("students.edit.self_pin.unassigned_student_number") %>
+            <% end %>
+          </dd>
+        </div>
       </dl>
     </div>
   </section>

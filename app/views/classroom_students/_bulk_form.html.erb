@@ -1,54 +1,65 @@
 <%= turbo_frame_tag :modal do %>
-  <!-- 오버레이 -->
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" 
-    data-controller="modal"
-    role="dialog" aria-modal="true">
-   
-    <!-- 모달 컨테이너 -->
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-8 relative">
-      <h2 class="text-xl font-bold mb-4"><%= t("ui.buttons.bulk_create_students") %></h2>
-      <% boy_count_value = local_assigns.fetch(:boy_count, 15) %>
-      <% girl_count_value = local_assigns.fetch(:girl_count, 15) %>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+       data-controller="modal"
+       role="dialog"
+       aria-modal="true">
+    <div class="relative w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
+      <h2 class="mb-4 text-xl font-bold"><%= t("ui.buttons.bulk_create_students") %></h2>
+      <% student_count_value = local_assigns.fetch(:student_count, remaining_capacity) %>
       <% student_pin_value = local_assigns.fetch(:student_pin, nil) %>
+
       <%= form_with url: bulk_preview_classroom_students_path(classroom),
-          method: :post,
-          html: { id: "bulk-student-setup-form" },
-          data: { turbo_frame: :modal, 
-            turbo_submits_with: "처리중..." } do |f| %>
+            method: :post,
+            html: { id: "bulk-student-setup-form" },
+            data: { turbo_frame: :modal, turbo_submits_with: t("ui.processing") } do |f| %>
         <%= hidden_field_tag :return_to, return_to if local_assigns[:return_to].present? %>
+
         <% if local_assigns[:error_message].present? %>
           <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">
             <%= error_message %>
           </div>
         <% end %>
-        <div class="mb-4 grid grid-cols-2 gap-3">
-          <div>
-            <%= f.label :boy_count, t("students.bulk_create.setup.boy_count") %>
-            <%= f.number_field :boy_count, value: boy_count_value, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
-          </div>
-          <div>
-            <%= f.label :girl_count, t("students.bulk_create.setup.girl_count") %>
-            <%= f.number_field :girl_count, value: girl_count_value, min: 0, max: 30, class: "border px-2 py-1 rounded w-full" %>
-          </div>
+
+        <p class="mb-4 text-sm text-slate-600">
+          <%= t("students.bulk_create.setup.remaining_capacity", count: remaining_capacity) %>
+        </p>
+
+        <div class="mb-4">
+          <%= f.label :student_count, t("students.bulk_create.setup.student_count") %>
+          <%= f.number_field :student_count,
+                value: student_count_value,
+                min: 1,
+                max: remaining_capacity,
+                step: 1,
+                inputmode: "numeric",
+                required: true,
+                class: "mt-1 w-full rounded border px-2 py-1" %>
         </div>
+
         <div class="mb-4">
           <%= f.label :student_pin, t("students.bulk_create.setup.student_pin") %>
           <%= f.password_field :student_pin,
-            value: student_pin_value,
-            maxlength: 4,
-            inputmode: "numeric",
-            pattern: "\\d{4}",
-            required: true,
-            class: "border px-2 py-1 rounded w-full" %>
+                value: student_pin_value,
+                maxlength: 4,
+                inputmode: "numeric",
+                pattern: "\\d{4}",
+                required: true,
+                class: "mt-1 w-full rounded border px-2 py-1" %>
         </div>
+
         <div class="flex gap-2">
-          <button type="button" data-action="modal#close" class="bg-gray-300 px-4 py-2 rounded"><%= t("ui.cancel") %></button>
+          <button type="button" data-action="modal#close" class="rounded bg-gray-300 px-4 py-2">
+            <%= t("ui.cancel") %>
+          </button>
           <%= f.submit t("students.bulk_create.actions.preview"),
-            class: "bg-blue-500 text-white px-4 py-2 rounded" %>
+                class: "rounded bg-blue-500 px-4 py-2 text-white" %>
         </div>
       <% end %>
-      <!-- 닫기(X) 아이콘 -->
-      <button type="button" data-action="modal#close" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+
+      <button type="button"
+              data-action="modal#close"
+              class="absolute right-2 top-2 text-2xl text-gray-400 hover:text-gray-600"
+              aria-label="<%= t("ui.cancel") %>">&times;</button>
     </div>
   </div>
 <% end %>

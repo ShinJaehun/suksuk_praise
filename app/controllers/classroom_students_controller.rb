@@ -14,6 +14,7 @@ class ClassroomStudentsController < ApplicationController
 
   def new
     @user = User.new
+    @student_membership = @classroom.classroom_memberships.build(role: "student", status: "active")
     respond_to do |f|
       f.html { render partial: "classroom_students/form", locals: { classroom: @classroom, user: @user, return_to: return_to_context } }
       f.turbo_stream { render partial: "classroom_students/form",
@@ -29,10 +30,17 @@ class ClassroomStudentsController < ApplicationController
     )
     attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys)
     @user = User.new(attrs)
+    @student_membership = @classroom.classroom_memberships.build(
+      user: @user,
+      role: "student",
+      status: "active",
+      student_number: submitted_student_number
+    )
     validate_new_student_pin!
     validate_student_avatar_params!(@user, attrs)
+    validate_new_student_number!
 
-    if @user.errors.empty? && save_student_with_membership
+    if @user.errors.empty? && @student_membership.errors.empty? && save_student_with_membership
       respond_to do |f|
         f.html { redirect_to create_success_path, notice: t("students.create.success"), status: :see_other }
         f.turbo_stream do
@@ -41,16 +49,22 @@ class ClassroomStudentsController < ApplicationController
             load_members_student_management!
             render :create_for_members, layout: "application"
           else
+            load_classroom_student_grid!
             render :create, layout: "application"
           end
         end
       end
     else
-      message = @user.errors.full_messages.to_sentence.presence ||
+      message = (@user.errors.full_messages + @student_membership.errors.full_messages).to_sentence.presence ||
         t("students.create.failure_fallback")
 
       respond_to do |f|
-        f.html { redirect_to create_success_path, alert: message, status: :see_other }
+        f.html do
+          flash.now[:alert] = message
+          render partial: "classroom_students/form",
+            locals: { classroom: @classroom, user: @user, return_to: return_to_context },
+            status: :unprocessable_entity
+        end
         f.turbo_stream do
           flash.now[:alert] = message
           render "classroom_students/create_error", layout: "application",
@@ -61,9 +75,14 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def bulk_new
+    locals = {
+      classroom: @classroom,
+      return_to: return_to_context,
+      remaining_capacity: bulk_remaining_capacity
+    }
     respond_to do |f|
-      f.html { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom, return_to: return_to_context } }
-      f.turbo_stream { render partial: "classroom_students/bulk_form", locals: { classroom: @classroom, return_to: return_to_context } }
+      f.html { render partial: "classroom_students/bulk_form", locals: locals }
+      f.turbo_stream { render partial: "classroom_students/bulk_form", locals: locals }
     end
   end
 
@@ -83,8 +102,7 @@ class ClassroomStudentsController < ApplicationController
         return_to: return_to_context,
         student_pin: bulk_student_pin,
         student_drafts: @student_drafts,
-        boy_count: bulk_boy_count,
-        girl_count: bulk_girl_count,
+        remaining_capacity: bulk_remaining_capacity,
         error_message: nil,
         draft_errors: {}
       },
@@ -107,6 +125,7 @@ class ClassroomStudentsController < ApplicationController
       end
 
       @student_drafts.each do |draft|
+        @current_bulk_draft = draft
         attrs = {
           name: draft[:name],
           role: "student",
@@ -116,13 +135,16 @@ class ClassroomStudentsController < ApplicationController
         }
         attrs[:student_pin] = student_pin
         user = User.create!(attrs)
-        @classroom.classroom_memberships.create!(user: user, role: "student")
+        @classroom.classroom_memberships.create!(
+          user: user,
+          role: "student",
+          status: "active",
+          student_number: draft[:student_number]
+        )
         created << user
       end
     end
     return render_bulk_preview_error(limit_error, {}) if limit_error.present?
-
-    @students = @classroom.students.reload
 
     message = t("students.bulk_create.success", count: created.size)
     respond_to do |f|
@@ -133,14 +155,28 @@ class ClassroomStudentsController < ApplicationController
           load_members_student_management!
           render :bulk_create_for_members, layout: "application"
         else
+          load_classroom_student_grid!
           render :bulk_create, layout: "application"
         end
       end
     end
 
   rescue ActiveRecord::RecordInvalid => e
-    message = t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence)
-    render_bulk_preview_error(message, {})
+    message =
+      if e.record.is_a?(ClassroomMembership) && e.record.errors[:student_number].any?
+        t("students.bulk_create.errors.student_number_taken", number: @current_bulk_draft[:student_number])
+      else
+        t("students.bulk_create.failure", detail: e.record.errors.full_messages.to_sentence)
+      end
+    draft_errors = {}
+    draft_errors[@current_bulk_draft[:index]] = [message] if @current_bulk_draft
+    render_bulk_preview_error(message, draft_errors)
+  rescue ActiveRecord::RecordNotUnique
+    number = @current_bulk_draft&.dig(:student_number)
+    message = t("students.bulk_create.errors.student_number_taken", number: number)
+    draft_errors = {}
+    draft_errors[@current_bulk_draft[:index]] = [message] if @current_bulk_draft
+    render_bulk_preview_error(message, draft_errors)
   end
 
   def show
@@ -225,9 +261,8 @@ class ClassroomStudentsController < ApplicationController
     if reassign_avatar_key?(attrs)
       attrs[:avatar_key] = pick_avatar_key(attrs[:gender], used_avatar_keys_in_classroom(excluding: @student))
     end
-    validate_managed_student_avatar_params!(attrs)
 
-    if @student.errors.empty? && @student.update(attrs)
+    if update_managed_student(attrs)
       redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 계정 정보를 수정했습니다."
     else
       render :edit, status: :unprocessable_entity
@@ -329,6 +364,7 @@ class ClassroomStudentsController < ApplicationController
 
   def load_student_self_pin_form!
     @user = @student
+    @student_membership = student_membership
     @student_self_pin_edit = true
   end
 
@@ -347,6 +383,19 @@ class ClassroomStudentsController < ApplicationController
 
   def student_self_pin_params
     params.require(:user).permit(:student_pin, :student_pin_confirmation)
+  end
+
+  def classroom_membership_params
+    params.fetch(:classroom_membership, ActionController::Parameters.new)
+      .permit(:student_number)
+  end
+
+  def submitted_student_number
+    classroom_membership_params[:student_number]
+  end
+
+  def managed_student_number_submitted?
+    params.key?(:classroom_membership)
   end
 
   def update_own_student_pin
@@ -401,9 +450,17 @@ class ClassroomStudentsController < ApplicationController
     @student_member_counts["all"] = @student_member_counts.values.sum
 
     @student_memberships = base_scope
-      .includes(:user)
       .where(status: @member_status)
-      .order(:status, :created_at, :id)
+      .in_roster_order
+      .preload(:user)
+  end
+
+  def load_classroom_student_grid!
+    @student_memberships = @classroom.classroom_memberships
+      .student
+      .active
+      .in_roster_order
+      .preload(:user)
   end
 
   def used_avatar_keys_in_classroom(excluding: nil)
@@ -426,12 +483,8 @@ class ClassroomStudentsController < ApplicationController
     User.avatar_keys_for_role("student")
   end
 
-  def bulk_boy_count
-    params[:boy_count].to_i
-  end
-
-  def bulk_girl_count
-    params[:girl_count].to_i
+  def bulk_student_count
+    params[:student_count].to_s
   end
 
   def bulk_student_pin
@@ -439,20 +492,15 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def bulk_setup_error_message
-    return t("students.bulk_create.errors.invalid_count") unless bulk_count_param_valid?(:boy_count) && bulk_count_param_valid?(:girl_count)
-    return t("students.bulk_create.errors.empty") if bulk_setup_count.zero?
-    return active_student_limit_error if active_student_limit_exceeded?(bulk_setup_count)
+    return t("students.bulk_create.errors.invalid_count") unless bulk_student_count.match?(/\A[1-9]\d*\z/)
+    return active_student_limit_error if active_student_limit_exceeded?(bulk_student_count.to_i)
     return t("students.bulk_create.errors.invalid_pin") unless bulk_student_pin.match?(/\A\d{4}\z/)
 
     nil
   end
 
-  def bulk_setup_count
-    bulk_boy_count + bulk_girl_count
-  end
-
-  def bulk_count_param_valid?(key)
-    params[key].to_s.match?(/\A\d+\z/)
+  def bulk_remaining_capacity
+    [Classroom::MAX_ACTIVE_STUDENTS - @classroom.active_student_memberships_count, 0].max
   end
 
   def active_student_limit_exceeded?(new_count)
@@ -464,12 +512,14 @@ class ClassroomStudentsController < ApplicationController
   end
 
   def build_student_drafts
-    used_avatar_keys = used_avatar_keys_in_classroom
-
-    (Array.new(bulk_boy_count, "boy") + Array.new(bulk_girl_count, "girl")).each_with_index.map do |gender, index|
-      avatar_key = pick_avatar_key(gender, used_avatar_keys)
-      used_avatar_keys << avatar_key if avatar_key.present?
-      { index: index.to_s, name: "", gender: gender, avatar_key: avatar_key }
+    Array.new(bulk_student_count.to_i) do |index|
+      {
+        index: index.to_s,
+        student_number: (index + 1).to_s,
+        name: "",
+        gender: "",
+        avatar_key: ""
+      }
     end
   end
 
@@ -483,6 +533,7 @@ class ClassroomStudentsController < ApplicationController
       attrs = {} unless attrs.respond_to?(:fetch)
       {
         index: index.presence || fallback_index.to_s,
+        student_number: attrs.fetch("student_number", "").to_s,
         name: attrs.fetch("name", "").to_s,
         gender: attrs.fetch("gender", "").to_s,
         avatar_key: attrs.fetch("avatar_key", "").to_s
@@ -496,14 +547,40 @@ class ClassroomStudentsController < ApplicationController
     errors[:base] = active_student_limit_error if active_student_limit_exceeded?(drafts.size)
     errors[:base] = t("students.bulk_create.errors.invalid_pin") unless bulk_student_pin.match?(/\A\d{4}\z/)
 
+    numbered_drafts = drafts.select { |draft| draft[:student_number].match?(/\A[1-9]\d*\z/) }
+    duplicate_numbers = numbered_drafts
+      .group_by { |draft| draft[:student_number].to_i }
+      .select { |_number, rows| rows.many? }
+      .keys
+    existing_numbers = @classroom.classroom_memberships.student.active
+      .where(student_number: numbered_drafts.map { |draft| draft[:student_number].to_i })
+      .pluck(:student_number)
+
     drafts.each do |draft|
       row_errors = []
+      number = draft[:student_number]
+      if number.blank?
+        row_errors << t("students.create.errors.student_number_required")
+      elsif !number.match?(/\A[1-9]\d*\z/)
+        row_errors << t("students.create.errors.student_number_invalid")
+      elsif duplicate_numbers.include?(number.to_i)
+        row_errors << t("students.bulk_create.errors.student_number_duplicate_in_draft", number: number)
+      elsif existing_numbers.include?(number.to_i)
+        row_errors << t("students.bulk_create.errors.student_number_taken", number: number)
+      end
       row_errors << t("students.bulk_create.errors.name_required") if draft[:name].blank?
-      row_errors << t("students.bulk_create.errors.invalid_avatar") unless student_avatar_matches_gender?(draft[:gender], draft[:avatar_key])
-      errors[draft[:index]] = row_errors.join(", ") if row_errors.any?
+      unless %w[boy girl].include?(draft[:gender])
+        row_errors << t("students.bulk_create.errors.gender_required")
+      end
+      if draft[:avatar_key].blank?
+        row_errors << t("students.bulk_create.errors.avatar_required")
+      elsif !student_avatar_matches_gender?(draft[:gender], draft[:avatar_key])
+        row_errors << t("students.bulk_create.errors.invalid_avatar")
+      end
+      errors[draft[:index]] = row_errors if row_errors.any?
     end
 
-    [errors[:base] || errors.values.first, errors.except(:base)]
+    [errors[:base] || errors.values.flatten.first, errors.except(:base)]
   end
 
   def student_avatar_matches_gender?(gender, avatar_key)
@@ -515,6 +592,15 @@ class ClassroomStudentsController < ApplicationController
     return if @user.student_pin.to_s.match?(/\A\d{4}\z/)
 
     @user.errors.add(:student_pin, t("students.create.errors.invalid_pin"))
+  end
+
+  def validate_new_student_number!
+    return if submitted_student_number.present?
+
+    @student_membership.errors.add(
+      :student_number,
+      t("students.create.errors.student_number_required")
+    )
   end
 
   def validate_student_avatar_params!(user, attrs)
@@ -553,14 +639,69 @@ class ClassroomStudentsController < ApplicationController
       end
 
       @user.save!
-      @classroom.classroom_memberships.create!(user: @user, role: "student")
+      @student_membership.user = @user
+      @student_membership.save!
       saved = true
     end
 
     saved
   rescue ActiveRecord::RecordInvalid => e
-    @user.errors.add(:base, e.record.errors.full_messages.to_sentence) unless e.record == @user
+    if e.record == @student_membership
+      normalize_student_number_errors!
+    elsif e.record != @user
+      @user.errors.add(:base, e.record.errors.full_messages.to_sentence)
+    end
     false
+  rescue ActiveRecord::RecordNotUnique
+    add_student_number_taken_error!
+    false
+  end
+
+  def update_managed_student(attrs)
+    @student.assign_attributes(attrs)
+    if managed_student_number_submitted?
+      @student_membership.student_number = submitted_student_number.presence
+    end
+
+    student_valid = @student.valid?
+    membership_valid = !managed_student_number_submitted? || @student_membership.valid?
+    validate_managed_student_avatar_params!(attrs)
+    normalize_student_number_errors! unless membership_valid
+    return false unless student_valid && membership_valid && @student.errors.empty?
+
+    ClassroomMembership.transaction do
+      @student_membership.save! if managed_student_number_submitted?
+      @student.save!
+    end
+    true
+  rescue ActiveRecord::RecordInvalid
+    normalize_student_number_errors! if @student_membership.errors.any?
+    false
+  rescue ActiveRecord::RecordNotUnique
+    add_student_number_taken_error!
+    false
+  end
+
+  def normalize_student_number_errors!
+    return if @student_membership.errors[:student_number].empty?
+
+    value = @student_membership.student_number_before_type_cast
+    message =
+      if value.to_s.match?(/\A[1-9]\d*\z/)
+        t("students.create.errors.student_number_taken", number: value)
+      else
+        t("students.create.errors.student_number_invalid")
+      end
+    @student_membership.errors.delete(:student_number)
+    @student_membership.errors.add(:student_number, message)
+  end
+
+  def add_student_number_taken_error!
+    value = @student_membership.student_number_before_type_cast
+    @student_membership.errors.add(
+      :student_number,
+      t("students.create.errors.student_number_taken", number: value)
+    )
   end
 
   def render_bulk_setup(error_message: nil, status: :ok)
@@ -569,16 +710,29 @@ class ClassroomStudentsController < ApplicationController
         classroom: @classroom,
         return_to: return_to_context,
         error_message: error_message,
-        boy_count: params[:boy_count],
-        girl_count: params[:girl_count],
+        student_count: params[:student_count],
+        remaining_capacity: bulk_remaining_capacity,
         student_pin: bulk_student_pin
       },
       status: status
   end
 
   def render_bulk_preview_error(error_message, draft_errors)
+    @bulk_remaining_capacity = bulk_remaining_capacity
     respond_to do |f|
-      f.html { redirect_to create_success_path, alert: error_message, status: :see_other }
+      f.html do
+        render partial: "classroom_students/bulk_preview",
+          locals: {
+            classroom: @classroom,
+            return_to: return_to_context,
+            student_pin: bulk_student_pin,
+            student_drafts: @student_drafts,
+            remaining_capacity: @bulk_remaining_capacity,
+            error_message: error_message,
+            draft_errors: draft_errors
+          },
+          status: :unprocessable_entity
+      end
       f.turbo_stream do
         flash.now[:alert] = error_message
         @draft_errors = draft_errors

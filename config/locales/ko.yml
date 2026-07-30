@@ -8,6 +8,8 @@ ko:
       classroom:
         school: "학교"
         grade: "학년"
+      classroom_membership:
+        student_number: "출석번호"
       school_closure:
         name: "이름"
         starts_on: "시작일"
@@ -251,6 +253,12 @@ ko:
         monthly: "이번 달 칭찬왕"
 
   students:
+    roster:
+      student_number_value: "%{number}번"
+      unassigned_student_number: "번호 미지정"
+    form:
+      student_number: "출석번호"
+      student_number_hint: "학급에서 사용하는 번호를 입력하세요."
     edit:
       title: "학생 정보 관리"
       back_to_student: "학생 정보로 돌아가기"
@@ -262,6 +270,9 @@ ko:
         school: "소속 학교"
         grade: "학년"
         classroom: "학급"
+        student_number: "출석번호"
+        student_number_value: "%{number}번"
+        unassigned_student_number: "미지정"
         unassigned_school: "학교 미지정"
         unassigned_grade: "학년 미지정"
         form_title: "PIN 설정"
@@ -313,26 +324,42 @@ ko:
       errors:
         invalid_pin: "PIN은 4자리 숫자여야 합니다."
         invalid_avatar: "성별에 맞는 아바타를 선택해 주세요."
+        student_number_required: "출석번호를 입력해 주세요."
+        student_number_invalid: "출석번호는 1 이상의 정수여야 합니다."
+        student_number_taken: "%{number}번 출석번호는 이미 사용 중입니다."
     bulk_create:
       success: "%{count}명의 학생이 자동 생성되었습니다."
       failure: "생성 실패: %{detail}"
       setup:
-        boy_count: "남학생 수"
-        girl_count: "여학생 수"
+        student_count: "등록할 학생 수"
         student_pin: "초기 PIN"
+        remaining_capacity: "현재 최대 %{count}명까지 추가할 수 있습니다."
       preview:
-        title: "학생 이름 입력"
+        title: "학생 명단 입력"
+        student_number: "출석번호"
+        name: "이름"
+        gender: "성별"
+        avatar: "썸네일"
+        actions: "삭제"
         name_placeholder: "이름"
+        avatar_alt: "학생 기본 썸네일"
+        avatar_unselected: "미선택"
         total: "총 %{count}명"
       actions:
-        preview: "이름 입력"
+        preview: "명단 만들기"
         back: "이전"
+        add_row: "학생 행 추가"
+        remove_row: "학생 행 삭제"
       errors:
         empty: "생성할 학생이 없습니다."
-        invalid_count: "학생 수를 확인해 주세요."
+        invalid_count: "등록할 학생 수는 1 이상의 정수여야 합니다."
         invalid_pin: "초기 PIN은 4자리 숫자여야 합니다."
         name_required: "이름을 입력해 주세요."
+        gender_required: "성별을 선택해 주세요."
+        avatar_required: "썸네일을 선택해 주세요."
         invalid_avatar: "썸네일을 확인해 주세요."
+        student_number_duplicate_in_draft: "%{number}번 출석번호가 명단 안에서 중복되었습니다."
+        student_number_taken: "%{number}번 출석번호는 이미 사용 중입니다."
         too_many: "한 교실에는 최대 %{count}명까지 등록할 수 있습니다."
     actions:
       deactivate: "비활성화"
