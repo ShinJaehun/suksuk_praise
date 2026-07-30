@@ -77,24 +77,27 @@
 - 특정 교실 PIN session의 membership이 inactive가 되면 로그아웃하며, active membership 부재만으로 일반 학생 요청을 전역 로그아웃시키지는 않는다.
 - 상세 정책과 권한 불변식은 [`student_membership_lifecycle.md`](../specs/student_membership_lifecycle.md)를 기준으로 한다.
 - 학생 self-edit은 차단되어 있으며, 학생이 직접 변경 가능한 값은 PIN 중심이다.
-- teacher/admin은 학생의 name, gender, avatar_key, PIN 등을 관리한다. 학생 `User`에는 email과 Devise password를 저장하지 않는다.
+- 출석번호는 `User`가 아니라 교실별 `ClassroomMembership.student_number`에 저장한다. 값이 있는 학생은 번호순, 번호가 없는 학생은 그 뒤에서 이름·user id·membership id 순으로 표시한다.
+- teacher/admin은 학생의 출석번호, name, gender, avatar_key, PIN 등을 관리한다. 학생 `User`에는 email과 Devise password를 저장하지 않는다.
 - teacher/admin은 구성원 관리 화면에서 현재 교실의 active 학생 PIN을 한 번에 재설정할 수 있다. inactive 학생 PIN은 일괄 재설정 대상에서 제외하며 기존 PIN 값은 화면에 표시하지 않는다.
 - `/classrooms` 교실 카드의 학생 수와 학생 avatar preview는 active student membership 기준이다.
-- 여러 학생 자동 생성은 교실의 기존 active 학생과 새 draft를 합산해 최대 30명까지 허용한다.
-- 여러 학생 자동 생성 제한을 초과하면 Turbo modal content-missing 없이 alert를 표시하고 modal을 닫는다.
-- 여러 학생 자동 생성 submit 중에는 modal 입력과 버튼 조작을 잠그고, 응답 실패 시 잠금을 복구한다.
+- 여러 학생 등록은 학생 수와 공통 PIN으로 명단 draft를 만들고 각 행에서 출석번호, 이름, 성별, 기본 썸네일을 입력한다. 기존 active 학생과 새 draft를 합산해 최대 30명까지 허용한다.
+- 여러 학생 등록 제한을 초과하면 Turbo modal content-missing 없이 alert를 표시하고 modal을 닫는다.
+- 여러 학생 등록 submit 중에는 modal 입력과 버튼 조작을 잠그고, 응답 실패 시 잠금을 복구한다.
 - teacher/admin은 교실 화면에서 학생 로그인 modal을 열어 학생 로그인 URL을 확인할 수 있다.
 - 학생 로그인 modal에서는 학생 로그인 URL 복사, QR 코드 보기, QR 코드 다운로드, 학생 로그인 주소 재발급이 가능하다.
 - 구성원 관리 화면은 학생 관리 전용으로 사용하며 학생 로그인 URL/QR/재발급 UI와 담당 선생님 배정 form을 표시하지 않는다.
-- teacher/admin은 구성원 관리 화면에서 여러 학생 이름을 한 번에 수정할 수 있다.
-- 학생 이름 일괄 수정은 현재 교실의 student membership id 기준으로 대상을 제한하며, 하나라도 유효하지 않으면 전체 저장을 rollback한다.
+- teacher/admin은 구성원 관리 화면에서 출석번호, 이름, 성별, 기본 썸네일을 학생 명단 일괄 편집으로 수정할 수 있다.
+- 학생 명단 일괄 편집은 현재 교실과 현재 필터의 student membership id로 대상을 제한한다. 저장 전 active 번호의 최종 상태를 검증하고, transaction 안에서 번호 교환·순환 변경을 처리하며, 한 행이라도 실패하거나 DB 경쟁 조건이 발생하면 전체 저장을 rollback한다.
 - 학생 로그인 QR은 현재 token URL 기준으로 요청 시 생성하며 서버 파일로 저장하지 않는다.
 - 학생 로그인 주소는 재발급할 수 있으며, 재발급 후 기존 URL과 기존 QR은 더 이상 사용할 수 없다.
 - 학생 avatar는 `avatar_key` 기반 기본 이미지를 사용한다.
 - 학생 PIN 로그인 화면에서 학생을 선택하면 해당 학생의 avatar와 이름을 preview로 표시한다.
 - 교실 내 학생 생성/수정 시 gender 기준 avatar_key 선택과 교실 내 중복 회피 흐름이 있다. 학생 gender가 `boy`이면 boy avatar만, `girl`이면 girl avatar만 허용한다.
+- 명단 편집에서 성별을 바꾸지 않은 legacy gender/avatar 불일치는 관련 없는 수정으로 정리하지 않는다. 성별 변경 시 새 성별에 유효한 기존 avatar는 유지하고, 그렇지 않으면 결정적인 기본 avatar를 선택하며 업로드 attachment는 제거하지 않는다.
 - avatar 선택 목록은 역할별로 제한한다: student는 boy/girl, teacher는 teacherM/teacherF, admin은 admin과 teacherM/teacherF 계열을 사용한다.
 - `avatar_key`가 현재 역할에서 허용되지 않거나 asset 파일이 없으면 역할별 기본 avatar로 fallback한다: student는 `boy01`, teacher는 `teacherM01`, admin은 `admin`.
+- 출석번호와 학생 명단의 상세 불변식은 [`student_roster.md`](../specs/student_roster.md)를 기준으로 한다.
 
 ## 칭찬
 

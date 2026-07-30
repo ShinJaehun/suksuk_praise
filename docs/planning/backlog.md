@@ -55,7 +55,6 @@
   - 과거 기록 조회 유지
   - archive 교실 복구 가능 여부 결정
 - 학생 상세 통계
-- 복사/붙여넣기 학생 등록
 - 학생 dashboard 그래프 point의 hover tooltip
 - 학생 dashboard 월간/누적 활동 추이
 - 쿠폰 이벤트 로그의 학생별 세부 필터
@@ -103,14 +102,14 @@ spec 승격 후보:
 
 ## Completed / Archived
 
-### 구성원 관리 학생 이름 일괄 수정
+### 구성원 관리 학생 명단 일괄 편집
 
 상태: Implemented
-현재 동작 문서: `docs/architecture/current_system.md`, `docs/architecture/roles_and_permissions.md`
+현재 동작 문서: `docs/specs/student_roster.md`, `docs/architecture/current_system.md`, `docs/architecture/roles_and_permissions.md`
 
-- teacher/admin은 구성원 관리 화면에서 학생 이름을 한 번에 저장할 수 있다.
-- 수정 대상은 현재 교실의 student membership id 기준으로 제한한다.
-- 하나라도 유효하지 않은 이름이 있거나 현재 교실 학생 membership이 아닌 id가 제출되면 전체 저장을 rollback한다.
+- teacher/admin은 구성원 관리 화면에서 출석번호, 이름, 성별, 기본 썸네일을 한 번에 저장할 수 있다.
+- 수정 대상은 현재 교실과 현재 필터의 student membership id 기준으로 제한한다.
+- 번호 교환·순환 변경을 지원하며 한 행이라도 유효하지 않으면 전체 저장을 rollback한다.
 
 ### 구성원 관리 전체 학생 목록과 active PIN 일괄 재설정
 

@@ -66,13 +66,13 @@
 | `ClassroomStudentMessagesController#index`, `#create` | `ClassroomPolicy#view_student_data?` + `UserPolicy#show?` + `UserMessagePolicy` | 가능 | URL 교실 teacher membership일 때만 가능 | 본인이며 URL 교실에서 active일 때만 가능 | create는 active 학생과 기존 메시지 정책·model validation을 추가 적용 |
 | `ClassroomStudentsController#coupon_assignment` | `UserPolicy#show?` + `ClassroomPolicy#draw_coupon?` | 가능 | 해당 교실의 active 학생만 가능 | 불가 | Turbo Frame용 지급 카드이며 `policy_scope(CouponTemplate).active` template만 표시 |
 | `ClassroomStudentsController#new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
-| `ClassroomStudentsController#create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 새 user는 항상 `role: student` |
+| `ClassroomStudentsController#create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 새 user는 항상 `role: student`이며 출석번호를 함께 저장 |
 | `ClassroomStudentsController#bulk_new` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 |  |
 | `ClassroomStudentsController#bulk_create` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 벌크 생성도 동일한 membership 기준 |
 | `ClassroomStudentsController#deactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | `User`를 삭제하지 않고 현재 교실 student membership을 inactive 처리 |
-| `ClassroomStudentsController#reactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 다른 학급에 active student membership이 있으면 어느 membership도 변경하지 않고 복구 거부 |
+| `ClassroomStudentsController#reactivate` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 다른 학급의 active membership, 정원 또는 현재 교실 active 출석번호 충돌 시 기존 상태를 유지하고 복구 거부 |
 | `ClassroomStudentsController#destroy` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 직접 DELETE 요청도 hard delete 대신 현재 교실 student membership을 inactive 처리 |
-| `Classrooms::MembersController#update_student_names` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 student membership id 기준으로 학생 이름을 일괄 수정하며 실패 시 전체 rollback |
+| `Classrooms::MembersController#update_student_names` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실·현재 필터의 student membership id 기준으로 출석번호, 이름, 성별, 기본 썸네일을 일괄 편집하며 실패 시 전체 rollback |
 | `Classrooms::MembersController#edit_student_pin`, `#update_student_pin` | `ClassroomPolicy#manage_members?` | 가능 | 해당 교실 teacher membership일 때만 가능 | 불가 | 현재 교실 active student membership만 대상으로 PIN을 일괄 재설정하며 inactive 학생은 제외 |
 
 ### User
@@ -86,6 +86,8 @@
 | `Schools::TeachersController#index` | `SchoolPolicy#manage_teachers?` + `SchoolPolicy::Scope` | 불가 | 해당 학교 manager만 가능 | 불가 | URL school 소속 teacher와 담당 학급을 조회 |
 | `Schools::TeachersController#new`, `#create` | `SchoolPolicy#manage_teachers?` + `SchoolPolicy::Scope` | 불가 | 해당 학교 manager만 가능 | 불가 | 선생님 관리 목록에서 여는 modal. 새 teacher는 URL school의 일반 구성원으로 생성하고 body의 school_id는 사용하지 않음 |
 | `Schools::TeachersController#edit`, `#update` | `SchoolPolicy#manage_teachers?` + `SchoolPolicy::Scope` | 불가 | 해당 학교 manager만 가능 | 불가 | 대상 teacher는 URL school 소속으로 제한하고 해당 학교 교실 담당만 변경. 학교 소속·manager 역할·다른 학교 교실 담당은 변경하지 않음 |
+
+학생 본인은 출석번호를 읽을 수 있지만 수정할 수 없다. 학생 PIN 수정 요청은 PIN 관련 값만 허용하므로 출석번호를 포함한 조작 parameter는 반영하지 않는다. 명단 일괄 편집도 현재 교실과 선택한 상태 필터에 포함된 student membership만 허용하며, 다른 교실·teacher membership·필터 밖 membership id는 수정하지 않는다. 상세 정책은 [`student_roster.md`](../specs/student_roster.md)를 참고한다.
 
 ### School
 

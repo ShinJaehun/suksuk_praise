@@ -49,6 +49,11 @@ Codex가 이후 테스트 코드를 작성하거나 테스트 공백을 제안�
 
 - 교실 생성/수정.
 - 학생 생성/수정/삭제.
+- roster 출석번호 validation, active/inactive 유일성 정책과 정렬.
+- 개별 학생 등록·교사 수정·학생 본인 수정 차단.
+- 여러 학생 등록의 행별 validation, 30명 제한과 전체 rollback.
+- 학생 명단 일괄 편집의 번호 교환·순환, membership 조작 차단과 legacy avatar 보존.
+- inactive 학생 복구의 번호 충돌과 `RecordNotUnique` 경쟁 조건 처리.
 - 학생 gender/avatar_key 관리.
 - 교실 내 avatar_key 중복 회피 규칙.
 - 학생 self-edit 차단.
@@ -224,6 +229,8 @@ Codex가 이후 테스트 코드를 작성하거나 테스트 공백을 제안�
 - 전체 테스트는 사용자가 실행할 수 있게 명령만 제시한다.
 - 자동 commit하지 않는다.
 
+현재 GitHub Actions 기반 자동 CI는 없으며 별도 `ci/rspec` 작업에서 추가할 예정이다.
+
 ---
 
 ## 수동 Smoke Checklist
@@ -247,6 +254,10 @@ Codex가 이후 테스트 코드를 작성하거나 테스트 공백을 제안�
 - teacher/admin이 학생 상세에 진입하거나 답변하면 새 메시지 badge가 사라져야 한다.
 - 쿠폰 요청 badge와 새 메시지 badge는 각각 학생 상세의 쿠폰 영역, 메시지 영역으로 이동해야 한다.
 - 없는 avatar asset을 가리키는 `avatar_key`가 fallback avatar로 표시되는지 확인한다.
+- 여러 학생 등록 오류 시 모든 draft 행이 유지되고 일부 학생만 저장되지 않는지 확인한다.
+- 명단 일괄 편집에서 번호 교환·순환 저장 후 구성원 목록이 새 번호순으로 표시되는지 확인한다.
+- 성별 변경 시 기본 썸네일이 갱신되고 업로드 이미지와 legacy avatar가 보존되는지 확인한다.
+- 학생 생성·명단 수정·칭찬 Turbo 갱신 뒤에도 학생 카드의 현재 교실 출석번호와 roster 순서가 유지되는지 확인한다.
 - 쿠폰 템플릿의 `default_image_key`가 유효하면 이미지가 보이고, blank/invalid이면 placeholder가 보이는지 확인한다.
 
 전체 RSpec 대신 변경 범위에 맞는 targeted spec을 우선 실행한다.
