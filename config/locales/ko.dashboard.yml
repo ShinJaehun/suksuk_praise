@@ -1,0 +1,83 @@
+ko:
+  dashboard:
+    title: "한눈에 보기"
+    heading: "%{classroom} · %{period}"
+    period_range: "%{start_date} ~ %{end_date}"
+    filters:
+      school: "학교"
+      classroom: "학급"
+      period: "기간"
+      choose_school: "학교를 선택해 주세요"
+      choose_classroom: "학급을 선택해 주세요"
+      select_school: "선택"
+      apply: "조회"
+      week: "이번 주"
+      month: "이번 달"
+    prompts:
+      choose_school_and_classroom: "분석할 학교와 학급을 선택해 주세요."
+      choose_classroom: "분석할 학급을 선택해 주세요."
+      no_classrooms: "분석할 수 있는 학급이 없습니다."
+      no_students: "분석할 학생이 없습니다."
+    summary:
+      compliments: "받은 칭찬"
+      issued: "쿠폰 발급"
+      used: "쿠폰 사용"
+    comparison:
+      metric_navigation: "비교 지표 선택"
+      compliments: "받은 칭찬"
+      issued: "쿠폰 발급"
+      used: "쿠폰 사용"
+    counts:
+      compliments: "%{count}회"
+      issued: "%{count}장"
+      used: "%{count}장"
+
+  reports:
+    title: "리포트"
+    defaults:
+      all_classrooms: "전체 교실"
+      all_templates: "전체 쿠폰"
+      all_actions: "전체 액션"
+    summary:
+      total: "총"
+    filters:
+      classroom: "교실"
+      template: "쿠폰 템플릿"
+      student: "학생"
+      user: "사용자"
+      status: "상태"
+      basis: "발급 기준"
+      date_range: "기간"
+      start_date: "시작일"
+      end_date: "종료일"
+      apply: "필터 적용"
+      reset: "필터 초기화"
+    periods:
+      all_time: "전체 기간"
+      last_30_days: "최근 30일"
+      last_7_days: "최근 7일"
+      this_month: "이번 달"
+      this_week: "이번 주"
+      today: "오늘"
+      custom: "직접 지정"
+    sort:
+      issued_at_desc: "발급시각 ↓ 최신순"
+      issued_at_asc: "발급시각 ↑ 오래된순"
+      used_at_desc: "사용시각 ↓ 최신순"
+      used_at_asc: "사용시각 ↑ 오래된순"
+      created_at_desc: "생성시각 ↓ 최신순"
+      created_at_asc: "생성시각 ↑ 오래된순"
+      given_at_desc: "칭찬 시각 ↓ 최신순"
+      given_at_asc: "칭찬 시각 ↑ 오래된순"
+    columns:
+      classroom: "교실"
+      student: "학생"
+      template: "쿠폰 템플릿"
+      basis: "발급 기준"
+      issued_at: "발급 시각"
+      used_at: "사용 시각"
+      status: "상태"
+    placeholders:
+      select_classroom: "교실을 선택하세요"
+      select_template: "템플릿을 선택하세요"
+      select_student: "학생을 선택하세요"

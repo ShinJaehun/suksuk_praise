@@ -1,0 +1,42 @@
+ko:
+  activerecord:
+    attributes:
+      classroom:
+        school: "학교"
+        grade: "학년"
+      classroom_membership:
+        student_number: "출석번호"
+      school_closure:
+        name: "이름"
+        starts_on: "시작일"
+        ends_on: "종료일"
+      coupon_template:
+        image: "이미지"
+      compliment_preset:
+        title: "칭찬 문구"
+    errors:
+      models:
+        classroom:
+          attributes:
+            base:
+              students_or_history_present: "학생 또는 활동 기록이 있는 교실은 삭제할 수 없습니다."
+        classroom_membership:
+          attributes:
+            base:
+              active_student_membership_taken: "이 학생은 다른 학급에서 이미 활동 중입니다."
+            status:
+              teacher_must_be_active: "교사 소속은 비활성화할 수 없습니다."
+        coupon_template:
+          attributes:
+            image:
+              invalid_content_type: "JPEG, PNG, WebP 형식만 사용할 수 있습니다."
+              too_large: "5MB 이하만 사용할 수 있습니다."
+            title:
+              already_in_bucket: "은(는) 이미 해당 버킷에 있습니다."
+        compliment_preset:
+          attributes:
+            base:
+              too_many_active_presets: "자주 쓰는 칭찬은 최대 5개까지 등록할 수 있습니다."
+            title:
+              taken: "는 이미 등록되어 있습니다."
+

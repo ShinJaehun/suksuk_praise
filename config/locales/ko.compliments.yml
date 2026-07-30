@@ -1,0 +1,44 @@
+ko:
+  compliments:
+    custom_modal:
+      title: "맞춤 칭찬"
+      student: "%{name} 학생에게 줄 칭찬을 선택하세요."
+    create:
+      success: "칭찬했습니다!"
+      failure: "칭찬에 실패했습니다: %{detail}"
+      duplicate: "중복 요청입니다. 잠시 후 다시 시도해주세요."
+
+  compliment_events:
+    index:
+      title: "칭찬 로그"
+      description: "칭찬 기록을 확인합니다."
+      filters:
+        all_students: "전체 학생"
+        all_kinds: "전체"
+        general: "일반 칭찬"
+        custom: "맞춤 칭찬"
+      unknown_classroom: "알 수 없는 교실"
+      unknown_user: "알 수 없음"
+      received_from: "%{name} 선생님에게 칭찬을 받았습니다."
+
+  compliment_presets:
+    index:
+      title: "자주 쓰는 칭찬 관리"
+      nav_title: "자주 쓰는 칭찬"
+      description: "자주 사용하는 칭찬을 최대 5개까지 등록할 수 있습니다."
+      form_title: "칭찬 등록하기"
+      list_title: "등록된 칭찬"
+      empty: "등록된 자주 쓰는 칭찬이 없습니다."
+      back_to_classroom: "교실로 돌아가기"
+    form:
+      title: "칭찬 문구"
+      placeholder: "예: 친구와 사이좋게 지냄"
+      create: "등록"
+      update: "저장"
+    destroy:
+      confirm: "이 맞춤 칭찬을 삭제할까요? 과거 칭찬 기록은 유지됩니다."
+    flash:
+      created: "맞춤 칭찬을 등록했습니다."
+      updated: "맞춤 칭찬을 수정했습니다."
+      destroyed: "맞춤 칭찬을 삭제했습니다."
+

@@ -1,0 +1,13 @@
+ko:
+  teacher_status:
+    filter_label: "계정 상태"
+    active: "활성"
+    inactive: "비활성"
+    all: "전체"
+    deactivate: "비활성화"
+    reactivate: "재활성화"
+    deactivated: "선생님 계정을 비활성화했습니다."
+    reactivated: "선생님 계정을 재활성화했습니다."
+    failure: "선생님 계정 상태를 변경하지 못했습니다."
+    confirm_deactivate: "이 선생님 계정을 비활성화하면 로그인과 현재 운영 권한이 중단됩니다. 과거 기록과 담당 정보는 유지됩니다."
+

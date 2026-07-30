@@ -1,0 +1,96 @@
+ko:
+  admin:
+    public_holidays:
+      card:
+        title: "공휴일 동기화"
+        description: "공휴일 데이터를 동기화합니다."
+      sync:
+        button: "%{year}년 동기화"
+        syncing: "동기화 중..."
+        synced_aria_label: "%{year}년 공식 공휴일 동기화, 동기화된 데이터 있음"
+        unsynced_aria_label: "%{year}년 공식 공휴일 동기화, 동기화된 데이터 없음"
+        success: "%{year}년 공식 공휴일을 동기화했습니다."
+        failure: "공식 공휴일 동기화에 실패했습니다. 기존 데이터는 유지되었습니다."
+        invalid_year: "동기화할 연도를 확인해 주세요."
+    school_managers:
+      create:
+        success: "학교 관리자를 지정했습니다."
+      destroy:
+        success: "학교 관리자 권한을 해제했습니다."
+    schools:
+      new_title: "새 학교 등록"
+      edit_title: "학교 이름 수정"
+      form:
+        name_label: "학교 이름"
+        create_submit: "학교 등록"
+        update_submit: "변경 저장"
+        creating: "등록 중..."
+        updating: "저장 중..."
+      actions:
+        back_to_schools: "학교 관리로 돌아가기"
+      errors:
+        name_blank: "학교 이름을 입력해 주세요."
+      create:
+        success: "학교를 등록했습니다."
+      update:
+        success: "학교 이름을 수정했습니다."
+    teachers:
+      new_title: "선생님 추가"
+      edit_title: "운영 설정"
+      info_title: "기본 정보"
+      school_membership_title: "학교 소속 및 운영 권한"
+      back_to_index: "선생님 목록으로 돌아가기"
+      edit:
+        target: "%{name} 선생님"
+      index:
+        title: "선생님 관리"
+        list_title: "선생님 목록"
+        add_teacher: "선생님 추가"
+        manage: "설정"
+        empty: "등록된 선생님이 없습니다."
+        school: "소속 학교"
+        school_role: "역할"
+        classrooms: "담당 교실"
+        manager: "대표 선생님"
+        member: "선생님"
+        unassigned_school: "학교 미지정"
+        unassigned_role: "해당 없음"
+        unassigned_classroom: "담당 교실 없음"
+      form:
+        password_label: "초기 비밀번호"
+        gender_label: "성별"
+        gender_male: "남자"
+        gender_female: "여자"
+        gender_prompt: "선택해 주세요"
+        school_label: "학교"
+        school_unspecified: "학교 미지정"
+        classrooms_label: "담당 학급"
+        classrooms_help: "학교를 선택하면 담당 학급을 지정할 수 있습니다."
+        classrooms_empty: "담당 학급 없음"
+        avatar_select: "썸네일 선택"
+        submitting: "저장 중..."
+      info:
+        teacher_role: "선생님"
+        created_at: "생성일:"
+        classroom_count: "담당 교실 수:"
+        classroom_count_value: "%{count}개"
+        classrooms: "담당 교실:"
+        unassigned: "미배정"
+      errors:
+        school_not_found: "선택한 학교를 찾을 수 없습니다."
+        classroom_not_found: "선택한 학급을 찾을 수 없습니다."
+        classroom_school_mismatch: "선택한 학교에 속하지 않은 학급이 포함되어 있습니다."
+        school_required_for_classrooms: "학교 소속이 없으면 담당 학급을 지정할 수 없습니다."
+        assignment_save_failed: "학교와 담당 학급을 저장하지 못했습니다."
+        assignment_selection_required: "학교와 담당 학급의 최종 상태를 함께 선택해 주세요."
+        teacher_required: "선생님 계정만 학교와 담당 학급을 변경할 수 있습니다."
+      create:
+        success: "선생님 계정이 생성되었습니다."
+        failure: "선생님 계정 생성에 실패했습니다."
+      update:
+        success: "학교와 담당 학급을 저장했습니다."
+      account_status:
+        title: "계정 상태"
+        deactivate: "비활성화"
+        reactivate: "재활성화"
+

@@ -1,0 +1,63 @@
+ko:
+  classrooms:
+    errors:
+      teacher_school_required: "해당 학교에 소속된 선생님만 담당 교사로 지정할 수 있습니다."
+      manager_school_change: "학교 관리자는 학급을 다른 학교로 이동할 수 없습니다."
+    actions:
+      settings: "교실 설정"
+    index:
+      admin_title: "교실"
+      manager_title: "학교 전체 학급"
+      teacher_title: "내 교실"
+      unspecified: "미지정"
+      school_unspecified: "학교 미지정"
+      grade: "%{grade}학년"
+      grades: "%{grades}학년"
+      grade_unspecified: "학년 미지정"
+      additional_teachers: "외 %{count}명"
+      teacher_empty: "담당 선생님 없음"
+      student_count: "학생 %{count}명"
+      student_empty: "학생 없음"
+      open: "열기"
+      empty: "아직 교실이 없습니다."
+      assigned_count: "담당 %{count}개"
+      additional_classrooms: "외 %{count}개"
+      add_school: "학교 추가"
+    new:
+      title: "새 학급"
+    edit:
+      title: "교실 정보 설정"
+      manage_members: "구성원 관리"
+      back_to_classroom: "교실로 돌아가기"
+      submit: "교실 설정 저장"
+      delete_title: "교실 삭제"
+      delete_description: "학생 또는 활동 기록이 있는 교실은 삭제할 수 없습니다. 비어 있는 교실만 삭제할 수 있습니다."
+    show:
+      student_login: "학생 로그인"
+      manage_members: "구성원 관리"
+      manage_compliment_presets: "자주 쓰는 칭찬"
+      teacher_empty: "담당 교사 없음"
+    form:
+      basic_info: "교실 기본 정보"
+      name_label: "교실 이름"
+      name_placeholder: "예: 4학년 1반"
+      name_hint: "교실 이름은 50자 이내로 입력해 주세요."
+      school_label: "학교"
+      school_prompt: "학교 선택"
+      grade_label: "학년"
+      grade_prompt: "학년 선택"
+    create:
+      success: "교실이 생성되었습니다."
+    update:
+      success: "교실 설정을 저장했습니다."
+    destroy:
+      success: "교실이 삭제되었습니다."
+      failure: "교실을 삭제하지 못했습니다."
+    refresh:
+      title: "칭찬왕"
+      count: "%{count}회 칭찬 받음"
+      period_titles:
+        daily: "오늘의 칭찬왕"
+        weekly: "이번 주 칭찬왕"
+        monthly: "이번 달 칭찬왕"
+

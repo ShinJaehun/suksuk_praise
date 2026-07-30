@@ -1,0 +1,169 @@
+ko:
+  students:
+    roster:
+      student_number_value: "%{number}번"
+      unassigned_student_number: "번호 미지정"
+    form:
+      student_number: "출석번호"
+      student_number_hint: "학급에서 사용하는 번호를 입력하세요."
+    edit:
+      title: "학생 정보 관리"
+      back_to_student: "학생 정보로 돌아가기"
+      self_pin:
+        title: "PIN 수정"
+        info_title: "기본 정보"
+        gender: "성별"
+        created_at: "생성일"
+        school: "소속 학교"
+        grade: "학년"
+        classroom: "학급"
+        student_number: "출석번호"
+        student_number_value: "%{number}번"
+        unassigned_student_number: "미지정"
+        unassigned_school: "학교 미지정"
+        unassigned_grade: "학년 미지정"
+        form_title: "PIN 설정"
+        new_pin: "새 PIN"
+        confirmation: "새 PIN 확인"
+        submit: "PIN 저장"
+        success: "PIN을 수정했습니다."
+        genders:
+          boy: "남학생"
+          girl: "여학생"
+          unspecified: "미지정"
+        errors:
+          blank: "새 PIN을 입력해 주세요."
+          invalid: "새 PIN은 4자리 숫자여야 합니다."
+          confirmation: "새 PIN 확인이 일치하지 않습니다."
+    show:
+      actions:
+        navigation: "학생 페이지"
+        coupon_management: "쿠폰 관리"
+        dashboard: "한눈에 보기"
+        edit_pin: "PIN 수정"
+        edit_profile_and_pin: "학생 정보·PIN 수정"
+        check_messages: "학생 메시지"
+        check_activity: "활동 기록"
+        back_to_classroom: "교실로 돌아가기"
+      pending:
+        title: "처리할 일"
+        coupon_use_requests: "쿠폰 사용 요청 %{count}건"
+      coupons:
+        title: "쿠폰 관리"
+        status_hint: "현재 보유 쿠폰"
+      coupon_assignment:
+        title: "쿠폰 지급"
+        random_title: "쿠폰 뽑기"
+        random_description: "활성 쿠폰 중 하나를 가중치에 따라 랜덤으로 지급합니다."
+        selected_title: "선택한 쿠폰 지급"
+        template_label: "쿠폰 선택"
+        empty: "지급 가능한 활성 쿠폰 템플릿이 없습니다."
+      messages:
+        title: "학생 메시지"
+        description: "새 메시지를 보내거나 지난 대화를 확인할 수 있습니다."
+      activity:
+        title: "최근 기록"
+        recent_coupons: "최근 발급 쿠폰"
+        compliments: "칭찬 타임라인"
+    create:
+      success: "학생이 추가되었습니다."
+      failure_fallback: "학생 정보를 확인해 주세요."
+      errors:
+        invalid_pin: "PIN은 4자리 숫자여야 합니다."
+        invalid_avatar: "성별에 맞는 아바타를 선택해 주세요."
+        student_number_required: "출석번호를 입력해 주세요."
+        student_number_invalid: "출석번호는 1 이상의 정수여야 합니다."
+        student_number_taken: "%{number}번 출석번호는 이미 사용 중입니다."
+    bulk_create:
+      success: "%{count}명의 학생이 자동 생성되었습니다."
+      failure: "생성 실패: %{detail}"
+      setup:
+        student_count: "등록할 학생 수"
+        student_pin: "초기 PIN"
+        remaining_capacity: "현재 최대 %{count}명까지 추가할 수 있습니다."
+      preview:
+        title: "학생 명단 입력"
+        student_number: "출석번호"
+        name: "이름"
+        gender: "성별"
+        avatar: "썸네일"
+        actions: "삭제"
+        name_placeholder: "이름"
+        avatar_alt: "학생 기본 썸네일"
+        avatar_unselected: "미선택"
+        total: "총 %{count}명"
+      actions:
+        preview: "명단 만들기"
+        back: "이전"
+        add_row: "학생 행 추가"
+        remove_row: "학생 행 삭제"
+      errors:
+        empty: "생성할 학생이 없습니다."
+        invalid_count: "등록할 학생 수는 1 이상의 정수여야 합니다."
+        invalid_pin: "초기 PIN은 4자리 숫자여야 합니다."
+        name_required: "이름을 입력해 주세요."
+        gender_required: "성별을 선택해 주세요."
+        avatar_required: "썸네일을 선택해 주세요."
+        invalid_avatar: "썸네일을 확인해 주세요."
+        student_number_duplicate_in_draft: "%{number}번 출석번호가 명단 안에서 중복되었습니다."
+        student_number_taken: "%{number}번 출석번호는 이미 사용 중입니다."
+        too_many: "한 교실에는 최대 %{count}명까지 등록할 수 있습니다."
+    actions:
+      deactivate: "비활성화"
+      reactivate: "복구"
+    membership:
+      title: "운영 상태"
+    members:
+      empty: "표시할 학생이 없습니다."
+      name_label: "학생 이름"
+      title: "학생 관리"
+      filters:
+        active: "활성"
+        inactive: "비활성"
+        all: "전체"
+      status:
+        active: "활성"
+        inactive: "비활성"
+      actions:
+        account: "계정 관리"
+        edit_names: "학생 명단 일괄 편집"
+      empty_states:
+        active: "활성 학생이 없습니다."
+        inactive: "비활성 학생이 없습니다."
+        all: "등록된 학생이 없습니다."
+      update_names:
+        description: "출석번호, 이름, 성별과 기본 썸네일을 한 번에 수정할 수 있습니다."
+        student_number: "출석번호"
+        name: "이름"
+        gender: "성별"
+        avatar: "썸네일"
+        status: "상태"
+        avatar_alt: "학생 썸네일"
+        submit: "학생 명단 저장"
+        success: "학생 명단을 수정했습니다."
+        failure: "학생 명단을 수정하지 못했습니다. 입력값을 확인해 주세요."
+        invalid_membership: "현재 필터에 표시된 교실 학생만 수정할 수 있습니다."
+        invalid_student_number: "출석번호는 1 이상의 정수여야 합니다."
+        duplicate_student_number: "%{number}번 출석번호가 중복되었습니다."
+        invalid_gender: "성별을 확인해 주세요."
+        invalid_avatar: "성별에 맞는 썸네일을 선택해 주세요."
+      pin_reset:
+        button: "활성 학생 PIN 재설정"
+        title: "활성 학생 PIN 재설정"
+        description: "현재 교실의 활성 학생 PIN을 모두 새 PIN으로 변경합니다. 비활성 학생은 변경하지 않습니다."
+        label: "새 PIN"
+        submit: "PIN 재설정 적용"
+        confirm: "현재 교실의 활성 학생 PIN을 모두 새 PIN으로 변경합니다. 계속할까요?"
+        success: "활성 학생 %{count}명의 PIN을 재설정했습니다."
+        blank: "새 PIN을 입력해 주세요."
+        invalid: "새 PIN은 4자리 숫자여야 합니다."
+        no_active_students: "PIN을 재설정할 활성 학생이 없습니다."
+        failure: "PIN을 재설정하지 못했습니다: %{detail}"
+    deactivate:
+      success: "학생을 비활성화했습니다."
+      confirm: "이 학생을 운영 대상에서 제외할까요? 과거 기록은 보존됩니다."
+    reactivate:
+      success: "학생을 복구했습니다."
+      active_membership_conflict: "이 학생은 다른 학급에서 활동 중이어서 복구할 수 없습니다."
+      too_many: "한 교실에는 최대 %{count}명까지 등록할 수 있습니다."
+
