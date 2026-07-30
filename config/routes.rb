@@ -56,9 +56,12 @@ Rails.application.routes.draw do
       resources :messages, only: [:index, :create], controller: "classroom_student_messages"
       resources :coupons, only: :create, controller: "user_coupons"
       collection do
-        get :bulk_new
-        post :bulk_preview
-        post :bulk_create
+        get :bulk_new,
+          to: "classroom_students/bulk_registrations#new"
+        post :bulk_preview,
+          to: "classroom_students/bulk_registrations#preview"
+        post :bulk_create,
+          to: "classroom_students/bulk_registrations#create"
       end
       member do
         get :activity
