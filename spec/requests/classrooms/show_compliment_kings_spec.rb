@@ -27,6 +27,7 @@ RSpec.describe "Classrooms compliment kings", type: :request do
 
     it "shows only enabled period buttons on initial load" do
       create(:compliment, classroom: classroom, giver: teacher, receiver: student, given_at: Time.zone.local(2026, 4, 7, 10, 0, 0))
+      expect(ComplimentKings::Pick).not_to receive(:call)
 
       get classroom_path(classroom)
 

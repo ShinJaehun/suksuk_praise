@@ -80,14 +80,11 @@ class ClassroomsController < ApplicationController
     @homeroom_teachers = context.homeroom_teachers
     @enabled_compliment_king_periods = context.enabled_compliment_king_periods
     @refreshable_compliment_king_periods = context.refreshable_compliment_king_periods
-    @compliment_king_sections = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods)
     @compliment_king_period_cards = context.compliment_king_period_cards
     @student_ids_with_pending_coupon_use_requests = context.pending_coupon_use_request_student_ids
     @student_ids_with_unread_student_messages = context.unread_student_message_student_ids
     @active_compliment_presets = context.active_compliment_presets
     @today_compliment_counts_by_student_id = context.today_compliment_counts_by_student_id
-
-    load_recent_issued_coupons!
   end
 
   def new
@@ -303,22 +300,6 @@ class ClassroomsController < ApplicationController
     return "classrooms.index.manager_title" if current_user_school_manager?
 
     "classrooms.index.teacher_title"
-  end
-
-  def load_recent_issued_coupons!
-    @issued_coupons = policy_scope(UserCoupon).where(classroom_id: @classroom.id)
-      .includes(:user, :coupon_template)
-      .order(created_at: :desc)
-      .limit(5)
-      .load
-  end
-
-  def build_compliment_king_sections(enabled_periods:)
-    Classroom::COMPLIMENT_KING_PERIODS.filter_map do |period|
-      next unless enabled_periods.include?(period)
-
-      [period, ComplimentKings::Pick.call(classroom: @classroom, period: period)]
-    end.to_h
   end
 
 end
