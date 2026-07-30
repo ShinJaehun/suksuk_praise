@@ -10,8 +10,6 @@ Rails.application.routes.draw do
 
   get "/student_login", to: "student_sessions#new", as: :new_student_session
   delete "/student_logout", to: "student_sessions#destroy", as: :destroy_student_session
-  get "/student_pin/edit", to: "student_pins#edit", as: :edit_student_pin
-  patch "/student_pin", to: "student_pins#update", as: :student_pin
   get "/c/:student_login_token/login", to: "student_sessions#new", as: :public_student_login
   post "/c/:student_login_token/login", to: "student_sessions#create"
   get "/dashboard", to: "dashboards#show", as: :dashboard

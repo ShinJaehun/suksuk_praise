@@ -56,7 +56,6 @@ RSpec.describe 'Student portal flow', type: :request do
       )
 
       expect(pin_link&.text&.strip).to eq(I18n.t("students.show.actions.edit_pin"))
-      expect(document.at_css(%(a[href="#{edit_student_pin_path}"]))).to be_nil
       expect(response.body).not_to include(I18n.t("students.show.actions.edit_profile_and_pin"))
     end
 
