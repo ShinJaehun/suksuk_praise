@@ -192,6 +192,81 @@ RSpec.describe 'Student portal flow', type: :request do
       create(:classroom_membership, user: teacher, classroom: classroom, role: 'teacher')
     end
 
+    it 'links from member management with the current filter context' do
+      sign_in teacher
+
+      get classroom_members_path(classroom, status: 'active')
+
+      document = Nokogiri::HTML(response.body)
+      row = document.at_css(%([data-student-membership-row][data-student-id="#{student.id}"]))
+      account_link = row.css("a").find { |link| link.text.strip == I18n.t("students.members.actions.account") }
+      uri = URI.parse(account_link["href"])
+
+      expect(uri.path).to eq(edit_classroom_student_path(classroom, student))
+      expect(Rack::Utils.parse_nested_query(uri.query)).to eq(
+        "return_to" => "members",
+        "status" => "active"
+      )
+    end
+
+    it 'returns to member management with the requested filter context' do
+      classroom.classroom_memberships.find_by!(user: student).inactive!
+      sign_in teacher
+
+      get edit_classroom_student_path(
+        classroom,
+        student,
+        return_to: "members",
+        status: "inactive"
+      )
+
+      document = Nokogiri::HTML(response.body)
+      back_link = document.at_css(
+        %(a[href="#{classroom_members_path(classroom, status: "inactive")}"])
+      )
+
+      expect(response).to have_http_status(:ok)
+      expect(back_link&.text&.strip).to eq(I18n.t("students.edit.back_to_members"))
+      expect(response.body).not_to include(I18n.t("students.edit.back_to_student"))
+    end
+
+    it 'keeps the student detail return link on direct entry' do
+      sign_in teacher
+
+      get edit_classroom_student_path(classroom, student)
+
+      document = Nokogiri::HTML(response.body)
+      back_link = document.at_css(%(a[href="#{classroom_student_path(classroom, student)}"]))
+
+      expect(back_link&.text&.strip).to eq(I18n.t("students.edit.back_to_student"))
+      expect(response.body).not_to include(I18n.t("students.edit.back_to_members"))
+    end
+
+    it 'preserves member management context after saving' do
+      sign_in teacher
+
+      patch classroom_student_path(
+        classroom,
+        student,
+        return_to: "members",
+        status: "all"
+      ), params: {
+        user: {
+          name: "변경된 이름"
+        }
+      }
+
+      expect(student.reload.name).to eq("변경된 이름")
+      expect(response).to redirect_to(
+        edit_classroom_student_path(
+          classroom,
+          student,
+          return_to: "members",
+          status: "all"
+        )
+      )
+    end
+
     it 'allows a classroom teacher to open the managed account page' do
       sign_in teacher
 

@@ -13,6 +13,7 @@ ko:
     edit:
       title: "학생 정보 관리"
       back_to_student: "학생 정보로 돌아가기"
+      back_to_members: "구성원 관리로 돌아가기"
       self_pin:
         title: "PIN 수정"
         info_title: "기본 정보"

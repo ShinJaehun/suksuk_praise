@@ -3,7 +3,11 @@ class ClassroomStudentsController < ApplicationController
   include StudentWeeklyDashboardLoader
   include ActionView::RecordIdentifier
 
-  helper_method :return_to_context
+  helper_method :return_to_context,
+    :member_status_context,
+    :members_return_to?,
+    :managed_student_navigation_params,
+    :managed_student_back_path
 
   before_action :authenticate_user!
   before_action :set_classroom
@@ -158,7 +162,11 @@ class ClassroomStudentsController < ApplicationController
     end
 
     if update_managed_student(attrs)
-      redirect_to edit_classroom_student_path(@classroom, @student), notice: "학생 계정 정보를 수정했습니다."
+      redirect_to edit_classroom_student_path(
+        @classroom,
+        @student,
+        managed_student_navigation_params
+      ), notice: "학생 계정 정보를 수정했습니다."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -324,8 +332,27 @@ class ClassroomStudentsController < ApplicationController
     params[:return_to].presence_in(%w[members])
   end
 
+  def member_status_context
+    params[:status].to_s.presence_in(%w[active inactive all]) || "active"
+  end
+
   def members_return_to?
     return_to_context == "members"
+  end
+
+  def managed_student_navigation_params
+    return {} unless members_return_to?
+
+    {
+      return_to: "members",
+      status: member_status_context
+    }
+  end
+
+  def managed_student_back_path
+    return classroom_members_path(@classroom, status: member_status_context) if members_return_to?
+
+    classroom_student_path(@classroom, @student)
   end
 
   def create_success_path

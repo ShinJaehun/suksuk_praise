@@ -89,7 +89,12 @@
 
             <div class="flex flex-wrap items-center gap-2 md:justify-end">
               <%= link_to t("students.members.actions.account"),
-                    edit_classroom_student_path(@classroom, student),
+                    edit_classroom_student_path(
+                      @classroom,
+                      student,
+                      return_to: "members",
+                      status: member_status
+                    ),
                     class: "inline-flex min-h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2" %>
 
               <% if membership.active? %>

@@ -6,8 +6,8 @@
     <div class="min-w-0">
       <h1 class="text-3xl font-extrabold tracking-tight text-slate-900"><%= t("students.edit.title") %></h1>
     </div>
-    <%= link_to t("students.edit.back_to_student"),
-          classroom_student_path(@classroom, @user),
+    <%= link_to t(members_return_to? ? "students.edit.back_to_members" : "students.edit.back_to_student"),
+          managed_student_back_path,
           class: "inline-flex items-center justify-center self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
   </header>
 
@@ -21,7 +21,9 @@
   <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <h2 class="text-base font-semibold text-slate-900">기본 정보</h2>
 
-    <%= simple_form_for @user, url: classroom_student_path(@classroom, @user), method: :patch do |f| %>
+    <%= simple_form_for @user,
+          url: classroom_student_path(@classroom, @user, managed_student_navigation_params),
+          method: :patch do |f| %>
       <div class="mt-4 space-y-5">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
           <button type="button"
@@ -123,7 +125,9 @@
   <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <h2 class="text-base font-semibold text-slate-900">PIN 설정</h2>
 
-    <%= simple_form_for @user, url: classroom_student_path(@classroom, @user), method: :patch do |f| %>
+    <%= simple_form_for @user,
+          url: classroom_student_path(@classroom, @user, managed_student_navigation_params),
+          method: :patch do |f| %>
       <div class="mt-4 space-y-5">
         <div>
           <%= f.label :student_pin, "새 PIN (4자리)", class: "mb-2 block text-sm font-medium text-slate-700" %>
