@@ -16,6 +16,14 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
       sign_in teacher
     end
 
+    it "requires authentication" do
+      sign_out teacher
+
+      post refresh_compliment_king_classroom_path(classroom), params: { period: "daily" }
+
+      expect(response).to redirect_to(new_user_session_path)
+    end
+
     it "renders the daily king card for daily period" do
       travel_to Time.zone.local(2026, 4, 7, 12, 0, 0) do
         create(:school_closure, school: classroom.school, starts_on: Date.new(2026, 4, 7), ends_on: Date.new(2026, 4, 7))
@@ -87,6 +95,12 @@ RSpec.describe "Classrooms#refresh_compliment_king", type: :request do
 
     it "rejects refresh for a disabled period" do
       post refresh_compliment_king_classroom_path(classroom), params: { period: "weekly" }, as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "rejects an unsupported period" do
+      post refresh_compliment_king_classroom_path(classroom), params: { period: "yearly" }, as: :json
 
       expect(response).to have_http_status(:not_found)
     end

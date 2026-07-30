@@ -5,7 +5,7 @@ class ClassroomsController < ApplicationController
   before_action :authenticate_user!
   before_action :redirect_students_to_mypage!, only: [:index, :show]
   before_action :set_classroom, only: [
-    :show, :edit, :update, :destroy, :refresh_compliment_king, :draw_coupon
+    :show, :edit, :update, :destroy, :draw_coupon
   ]
   
   # 더블클릭/중복요청 소프트 가드(2초)
@@ -161,30 +161,6 @@ class ClassroomsController < ApplicationController
     redirect_to edit_classroom_path(@classroom),
       alert: t("classrooms.destroy.failure"),
       status: :see_other
-  end
-
-  # Turbo로 일간 칭찬왕 영역만 새로고침
-  def refresh_compliment_king
-    authorize @classroom, :refresh_compliment_king?
-    @enabled_compliment_king_periods = @classroom.enabled_compliment_king_periods
-    @selected_period = params[:period].presence || "daily"
-    raise ActiveRecord::RecordNotFound unless @enabled_compliment_king_periods.include?(@selected_period)
-    unless @classroom.compliment_king_refresh_available_for?(@selected_period)
-      respond_to do |f|
-        f.html { redirect_to classroom_path(@classroom) }
-        f.turbo_stream { redirect_to classroom_path(@classroom) }
-        f.json { head :forbidden }
-      end
-      return
-    end
-
-    @selected_section = build_compliment_king_sections(enabled_periods: @enabled_compliment_king_periods).fetch(@selected_period)
-    @issued_winner_ids = build_issued_compliment_king_winner_ids(period: @selected_period, section: @selected_section)
-
-    respond_to do |f|
-      f.html { redirect_to classroom_path(@classroom) }
-      f.turbo_stream { render :refresh_compliment_king, layout: false } # flash 응답 없음
-    end
   end
 
   def draw_coupon

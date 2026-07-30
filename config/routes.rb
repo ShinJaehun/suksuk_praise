@@ -45,7 +45,8 @@ Rails.application.routes.draw do
       as: :member_student_pin
 
     member do
-      post :refresh_compliment_king
+      post :refresh_compliment_king,
+        to: "classrooms/compliment_kings#refresh_compliment_king"
       get :student_login_info,
         to: "classrooms/student_logins#student_login_info"
       get :student_login_qr,
