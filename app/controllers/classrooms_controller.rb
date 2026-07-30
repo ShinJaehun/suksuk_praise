@@ -13,29 +13,14 @@ class ClassroomsController < ApplicationController
     prepare_school_filter if current_user.admin?
     classrooms_scope = policy_scope(Classroom).joins(:school).merge(School.active)
     classrooms_scope = classrooms_scope.where(school_id: @selected_school.id) if current_user.admin? && @selected_school
-    @classrooms = classrooms_scope.includes(:school).order(created_at: :desc)
+    context = Classrooms::IndexContext.new(classrooms_scope: classrooms_scope)
+    @classrooms = context.classrooms
     @classrooms_index_title = t(classrooms_index_title_key)
     classroom_ids = @classrooms.map(&:id)
-    teacher_memberships = ClassroomMembership
-      .joins(:user)
-      .where(classroom_id: classroom_ids, role: "teacher", users: { role: "teacher", active: true })
-    @classroom_teacher_counts = teacher_memberships.group(:classroom_id).count
-    @classroom_teacher_previews = classroom_membership_previews(
-      classroom_ids,
-      role: "teacher",
-      user_role: "teacher",
-      limit_per_classroom: 3
-    )
-    @classroom_student_counts = ClassroomMembership
-      .where(classroom_id: classroom_ids, role: "student", status: "active")
-      .group(:classroom_id)
-      .count
-    @classroom_student_previews = classroom_membership_previews(
-      classroom_ids,
-      role: "student",
-      status: "active",
-      limit_per_classroom: 5
-    )
+    @classroom_teacher_counts = context.teacher_counts
+    @classroom_teacher_previews = context.teacher_previews
+    @classroom_student_counts = context.student_counts
+    @classroom_student_previews = context.student_previews
     @manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
@@ -264,35 +249,6 @@ class ClassroomsController < ApplicationController
     return unless current_user&.student?
 
     redirect_to user_path(current_user)
-  end
-
-  def classroom_membership_previews(classroom_ids, role:, limit_per_classroom:, user_role: nil, status: nil)
-    return {} if classroom_ids.empty?
-
-    membership_scope = ClassroomMembership.where(classroom_id: classroom_ids, role: role)
-    membership_scope = membership_scope.where(status: status) if status
-    membership_scope = membership_scope.joins(:user).where(users: { role: user_role }) if user_role
-    membership_scope = membership_scope.where(users: { active: true }) if user_role == "teacher"
-
-    ranked_membership_ids = ClassroomMembership
-      .from(
-        membership_scope
-          .select(
-            "classroom_memberships.id, classroom_memberships.classroom_id, " \
-            "ROW_NUMBER() OVER (PARTITION BY classroom_memberships.classroom_id " \
-            "ORDER BY classroom_memberships.created_at ASC, classroom_memberships.id ASC) AS preview_position"
-          ),
-        :classroom_memberships
-      )
-      .where("preview_position <= ?", limit_per_classroom)
-      .pluck(:id)
-
-    ClassroomMembership
-      .where(id: ranked_membership_ids)
-      .includes(user: { avatar_attachment: :blob })
-      .order(:classroom_id, :created_at, :id)
-      .group_by(&:classroom_id)
-      .transform_values { |memberships| memberships.map(&:user) }
   end
 
   def classrooms_index_title_key
