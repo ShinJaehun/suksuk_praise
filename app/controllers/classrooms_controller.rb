@@ -21,12 +21,8 @@ class ClassroomsController < ApplicationController
     @classroom_teacher_previews = context.teacher_previews
     @classroom_student_counts = context.student_counts
     @classroom_student_previews = context.student_previews
-    @manageable_classroom_ids =
-      if current_user.admin?
-        classroom_ids.to_set
-      elsif current_user_school_manager?
-        classroom_ids.to_set
-      elsif current_user.active_teacher?
+    assigned_classroom_ids =
+      if current_user.active_teacher?
         current_user.classroom_memberships
           .where(role: "teacher", classroom_id: classroom_ids)
           .pluck(:classroom_id)
@@ -34,14 +30,21 @@ class ClassroomsController < ApplicationController
       else
         Set.new
       end
+    @manageable_classroom_ids =
+      if current_user.admin?
+        classroom_ids.to_set
+      elsif current_user_school_manager?
+        classroom_ids.to_set
+      elsif current_user.active_teacher?
+        assigned_classroom_ids
+      else
+        Set.new
+      end
     @member_manageable_classroom_ids =
       if current_user.admin?
         classroom_ids.to_set
       elsif current_user.active_teacher?
-        current_user.classroom_memberships
-          .where(role: "teacher", classroom_id: classroom_ids)
-          .pluck(:classroom_id)
-          .to_set
+        assigned_classroom_ids
       else
         Set.new
       end

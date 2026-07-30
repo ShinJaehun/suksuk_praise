@@ -64,6 +64,10 @@ RSpec.describe 'Classroom organization settings', type: :request do
     get classrooms_path
 
     expect(response.body).to include(assigned.name)
+    expect(response.body).to include(
+      edit_classroom_path(assigned),
+      classroom_members_path(assigned)
+    )
     expect(response.body).not_to include(unassigned.name)
     expect(response.body).not_to include(new_classroom_path)
     expect(response.body).not_to include('id="classroom-school-filter"')
