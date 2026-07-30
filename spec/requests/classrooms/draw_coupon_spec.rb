@@ -56,6 +56,34 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       expect(UserCoupon.last.coupon_template).to eq(template)
     end
 
+    it "redirects an HTML draw to the classroom after issuing the coupon" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      sign_in teacher
+
+      expect {
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "manual", mode: "default", user_id: student.id }
+      }.to change(UserCoupon, :count).by(1)
+
+      expect(response).to redirect_to(classroom_path(classroom))
+      expect(response).to have_http_status(:see_other)
+    end
+
+    it "converts a unique constraint race into the existing conflict response" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      allow(CouponDraw::Issue).to receive(:call).and_raise(ActiveRecord::RecordNotUnique)
+      sign_in teacher
+
+      expect {
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "daily", mode: "default", user_id: student.id },
+          as: :json
+      }.not_to change { [UserCoupon.count, CouponEvent.count] }
+
+      expect(response).to have_http_status(:conflict)
+      expect(json_body).to eq("ok" => false, "error" => "already_issued_today")
+    end
+
     it "returns a turbo stream with the draw animation and deferred coupon area updates" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       sign_in teacher
