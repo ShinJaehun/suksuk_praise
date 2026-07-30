@@ -13,7 +13,7 @@ class Classrooms::ShowContext
       .student
       .active
       .in_roster_order
-      .preload(:user)
+      .preload(user: { avatar_attachment: :blob })
   end
 
   def students

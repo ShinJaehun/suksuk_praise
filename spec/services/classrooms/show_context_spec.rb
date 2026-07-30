@@ -38,6 +38,50 @@ RSpec.describe Classrooms::ShowContext do
     expect(context.students.pluck(:id)).to contain_exactly(first.id, second.id, unnumbered.id)
   end
 
+  it 'preloads avatar attachments and blobs for active students' do
+    uploaded_user = create(:user, :student)
+    uploaded_user.avatar.attach(
+      io: StringIO.new('avatar'),
+      filename: 'avatar.png',
+      content_type: 'image/png'
+    )
+    default_user = create(:user, :student, avatar_key: 'boy01')
+    inactive_user = create(:user, :student)
+    uploaded_membership = create(
+      :classroom_membership,
+      classroom: classroom,
+      user: uploaded_user,
+      student_number: 1
+    )
+    default_membership = create(
+      :classroom_membership,
+      classroom: classroom,
+      user: default_user,
+      student_number: 2
+    )
+    create(
+      :classroom_membership,
+      classroom: classroom,
+      user: inactive_user,
+      status: 'inactive',
+      student_number: 3
+    )
+
+    memberships = build_context.student_memberships.load
+    loaded_uploaded_membership = memberships.find { |membership| membership.id == uploaded_membership.id }
+    loaded_default_membership = memberships.find { |membership| membership.id == default_membership.id }
+    loaded_uploaded_user = loaded_uploaded_membership.user
+    loaded_default_user = loaded_default_membership.user
+
+    expect(memberships.map(&:id)).to eq([uploaded_membership.id, default_membership.id])
+    expect(loaded_uploaded_membership.association(:user)).to be_loaded
+    expect(loaded_default_membership.association(:user)).to be_loaded
+    expect(loaded_uploaded_user.association(:avatar_attachment)).to be_loaded
+    expect(loaded_uploaded_user.avatar_attachment.association(:blob)).to be_loaded
+    expect(loaded_default_user.association(:avatar_attachment)).to be_loaded
+    expect(loaded_default_user.avatar_attachment).to be_nil
+  end
+
   it 'returns active homeroom teachers in the existing order' do
     later = create(:user, :teacher, name: '나교사')
     earlier = create(:user, :teacher, name: '가교사')
