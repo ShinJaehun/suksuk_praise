@@ -39,6 +39,9 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     command: ["bundle", "exec", "puma", "-C", "config/puma.rb"]
+    volumes:
+      - active_storage:/rails/storage
 
 volumes:
   postgres_data:
+  active_storage:
