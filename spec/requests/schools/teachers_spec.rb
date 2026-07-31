@@ -10,13 +10,24 @@ RSpec.describe 'School teachers', type: :request do
   let(:member) { create(:school_membership, school: school, user: create(:user, :teacher, name: '일반 선생님')).user }
   let(:other_manager) { create(:school_membership, :manager, school: other_school, user: create(:user, :teacher)).user }
 
+  def insert_legacy_teacher_membership!(user:, classroom:)
+    ClassroomMembership.insert!({
+                                  user_id: user.id,
+                                  classroom_id: classroom.id,
+                                  role: 'teacher',
+                                  status: 'active',
+                                  student_number: nil,
+                                  created_at: Time.current,
+                                  updated_at: Time.current
+                                })
+  end
+
   describe 'GET /schools/:school_id/teachers' do
     it "shows only the school's teachers, roles, classrooms, avatars, and modal actions to its manager" do
       classroom = create(:classroom, school: school, grade: 4, name: '4학년 1반')
       other_classroom = create(:classroom, school: other_school, name: '다른 학교 학급')
       unassigned_teacher = create(:user, :teacher, name: '미소속 선생님')
       create(:classroom_membership, classroom: classroom, user: manager, role: :teacher)
-      create(:classroom_membership, classroom: other_classroom, user: manager, role: :teacher)
       other_teacher = create(:school_membership, school: other_school,
                                                  user: create(:user, :teacher, name: '다른 학교 선생님')).user
       student = create(:user, :student, name: '학생')
@@ -275,7 +286,7 @@ RSpec.describe 'School teachers', type: :request do
       second_classroom = create(:classroom, school: school, name: '2반')
       other_classroom = create(:classroom, school: other_school, name: '다른 학교')
       create(:classroom_membership, classroom: first_classroom, user: member, role: :teacher)
-      create(:classroom_membership, classroom: other_classroom, user: member, role: :teacher)
+      insert_legacy_teacher_membership!(user: member, classroom: other_classroom)
       membership = member.school_membership
       sign_in manager
 

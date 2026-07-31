@@ -2,8 +2,9 @@ require "rails_helper"
 
 RSpec.describe UserCouponPolicy::Scope do
   describe "#resolve" do
-    let(:first_classroom) { create(:classroom) }
-    let(:second_classroom) { create(:classroom) }
+    let(:school) { create(:school) }
+    let(:first_classroom) { create(:classroom, school: school) }
+    let(:second_classroom) { create(:classroom, school: school) }
     let(:first_student) { create(:user, :student) }
     let(:second_student) { create(:user, :student) }
     let!(:first_membership) do

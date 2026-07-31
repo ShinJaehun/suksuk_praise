@@ -30,7 +30,7 @@ RSpec.describe 'Home', type: :request do
   end
 
   it 'redirects a signed-in teacher with multiple assigned classrooms to classrooms index' do
-    other_classroom = create(:classroom)
+    other_classroom = create(:classroom, school: classroom.school)
     create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
     create(:classroom_membership, classroom: other_classroom, user: teacher, role: 'teacher')
     sign_in teacher

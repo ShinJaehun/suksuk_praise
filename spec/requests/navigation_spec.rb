@@ -62,8 +62,9 @@ RSpec.describe 'Navigation', type: :request do
   end
 
   it 'shows every assigned classroom to a teacher with multiple classrooms' do
+    school = create(:school)
     teacher = create(:user, :teacher)
-    classrooms = create_list(:classroom, 2)
+    classrooms = create_list(:classroom, 2, school: school)
     classrooms.each do |classroom|
       create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
     end

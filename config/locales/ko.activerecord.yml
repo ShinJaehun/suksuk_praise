@@ -24,6 +24,11 @@ ko:
           attributes:
             base:
               active_student_membership_taken: "이 학생은 다른 학급에서 이미 활동 중입니다."
+              role_mismatch: "구성원 역할과 사용자 역할이 일치하지 않습니다."
+              teacher_school_required: "학교 소속이 없는 교사는 교실에 배정할 수 없습니다."
+              teacher_school_mismatch: "교사는 소속 학교의 교실에만 배정할 수 있습니다."
+            student_number:
+              teacher_student_number_forbidden: "교사 배정에는 출석번호를 지정할 수 없습니다."
             status:
               teacher_must_be_active: "교사 소속은 비활성화할 수 없습니다."
         coupon_template:
@@ -39,4 +44,3 @@ ko:
               too_many_active_presets: "자주 쓰는 칭찬은 최대 5개까지 등록할 수 있습니다."
             title:
               taken: "는 이미 등록되어 있습니다."
-

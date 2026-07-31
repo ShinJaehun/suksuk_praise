@@ -6,6 +6,18 @@ RSpec.describe 'Classroom members', type: :request do
   let(:teacher) { create(:user, :teacher, name: '담당 교사') }
   let(:other_teacher) { create(:user, :teacher, name: '추가 교사') }
 
+  def insert_legacy_teacher_membership!(user:, classroom:)
+    ClassroomMembership.insert!({
+                                  user_id: user.id,
+                                  classroom_id: classroom.id,
+                                  role: 'teacher',
+                                  status: 'active',
+                                  student_number: nil,
+                                  created_at: Time.current,
+                                  updated_at: Time.current
+                                })
+  end
+
   it 'shows member management sections to a classroom teacher' do
     create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
     student = create(:user, :student, name: '활성 학생', gender: 'boy', avatar_key: 'boy01')
@@ -230,7 +242,7 @@ RSpec.describe 'Classroom members', type: :request do
   end
 
   it 'does not count a legacy admin teacher membership as an assigned teacher' do
-    create(:classroom_membership, classroom: classroom, user: admin, role: 'teacher')
+    insert_legacy_teacher_membership!(user: admin, classroom: classroom)
     sign_in admin
 
     get classroom_members_path(classroom)
@@ -242,7 +254,7 @@ RSpec.describe 'Classroom members', type: :request do
   end
 
   it 'does not show a legacy admin teacher membership in the classrooms index preview' do
-    create(:classroom_membership, classroom: classroom, user: admin, role: 'teacher')
+    insert_legacy_teacher_membership!(user: admin, classroom: classroom)
     sign_in admin
 
     get classrooms_path

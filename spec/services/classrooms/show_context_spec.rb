@@ -111,7 +111,11 @@ RSpec.describe Classrooms::ShowContext do
     student = create(:user, :student)
     other_student = create(:user, :student)
     create(:classroom_membership, classroom: classroom, user: student)
-    other_classroom = create(:classroom, message_policy: 'student_initiated')
+    other_classroom = create(
+      :classroom,
+      school: classroom.school,
+      message_policy: 'student_initiated'
+    )
     create(:classroom_membership, classroom: other_classroom, user: other_student)
 
     create(

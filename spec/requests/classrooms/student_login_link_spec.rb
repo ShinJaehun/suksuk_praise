@@ -6,6 +6,18 @@ RSpec.describe "Classroom student login link", type: :request do
   let(:admin) { create(:user, :admin) }
   let(:student) { create(:user, :student) }
 
+  def insert_legacy_teacher_membership!(user:, classroom:)
+    ClassroomMembership.insert!({
+                                  user_id: user.id,
+                                  classroom_id: classroom.id,
+                                  role: "teacher",
+                                  status: "active",
+                                  student_number: nil,
+                                  created_at: Time.current,
+                                  updated_at: Time.current
+                                })
+  end
+
   it "shows the student login modal link without exposing the token URL on the classroom show page" do
     create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
     sign_in teacher
@@ -37,7 +49,7 @@ RSpec.describe "Classroom student login link", type: :request do
 
   it "does not show a legacy admin teacher membership as a homeroom teacher" do
     admin.update!(name: "레거시 관리자")
-    create(:classroom_membership, user: admin, classroom: classroom, role: "teacher")
+    insert_legacy_teacher_membership!(user: admin, classroom: classroom)
     sign_in admin
 
     get classroom_path(classroom)

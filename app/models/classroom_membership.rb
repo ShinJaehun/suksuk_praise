@@ -24,6 +24,9 @@ class ClassroomMembership < ApplicationRecord
     },
     if: :numbered_active_student_membership?
   validate :one_active_classroom_per_student, if: :active_student_membership?
+  validate :membership_role_must_match_user_role
+  validate :teacher_must_belong_to_classroom_school, if: :teacher?
+  validate :teacher_must_not_have_student_number, if: :teacher?
   validate :teacher_membership_must_be_active
 
   private
@@ -44,6 +47,31 @@ class ClassroomMembership < ApplicationRecord
     return unless existing_memberships.exists?
 
     errors.add(:base, :active_student_membership_taken)
+  end
+
+  def membership_role_must_match_user_role
+    return if user.blank?
+    return if teacher? && user.teacher?
+    return if student? && user.student?
+
+    errors.add(:base, :role_mismatch)
+  end
+
+  def teacher_must_belong_to_classroom_school
+    return if user.blank? || classroom.blank?
+
+    school_membership = user.school_membership
+    if school_membership.blank?
+      errors.add(:base, :teacher_school_required)
+    elsif school_membership.school_id != classroom.school_id
+      errors.add(:base, :teacher_school_mismatch)
+    end
+  end
+
+  def teacher_must_not_have_student_number
+    return if student_number.blank?
+
+    errors.add(:student_number, :teacher_student_number_forbidden)
   end
 
   def teacher_membership_must_be_active

@@ -85,19 +85,25 @@ RSpec.describe ClassroomMembership, type: :model do
       expect(membership).to be_valid
     end
 
-    it "does not apply active student number uniqueness to teacher memberships" do
+    it "rejects a student number on teacher memberships" do
       create(:classroom_membership, classroom: first_classroom, user: student,
                                     student_number: 7, status: "active")
+      teacher = create(:user, :teacher)
+      create(:school_membership, user: teacher, school: first_classroom.school)
       teacher_membership = build(
         :classroom_membership,
         classroom: first_classroom,
-        user: create(:user, :teacher),
+        user: teacher,
         role: "teacher",
         student_number: 7,
         status: "active"
       )
 
-      expect(teacher_membership).to be_valid
+      expect(teacher_membership).not_to be_valid
+      expect(teacher_membership.errors.added?(
+        :student_number,
+        :teacher_student_number_forbidden
+      )).to eq(true)
     end
 
     it "rejects activating an inactive student when its number is already active" do
@@ -124,10 +130,10 @@ RSpec.describe ClassroomMembership, type: :model do
         classroom: first_classroom,
         user: create(:user, :teacher),
         role: "teacher",
-        student_number: 7
+        student_number: nil
       )
 
-      expect(membership.update(role: "student")).to eq(false)
+      expect(membership.update(role: "student", student_number: 7)).to eq(false)
       expect(membership.errors[:student_number]).to be_present
       expect(membership.reload).to be_teacher
     end
@@ -179,29 +185,32 @@ RSpec.describe ClassroomMembership, type: :model do
       ])
     end
 
-    it "keeps allowed duplicate numbers stable for inactive students and teachers" do
-      inactive = create(
+    it "keeps allowed duplicate numbers stable for inactive students" do
+      first_inactive = create(
         :classroom_membership,
         classroom: first_classroom,
         user: create(:user, :student, name: "같은 이름"),
         student_number: 7,
         status: "inactive"
       )
-      teacher = create(
+      second_inactive = create(
         :classroom_membership,
         classroom: first_classroom,
-        user: create(:user, :teacher, name: "같은 이름"),
-        role: "teacher",
-        student_number: 7
+        user: create(:user, :student, name: "같은 이름"),
+        role: "student",
+        student_number: 7,
+        status: "inactive"
       )
 
       ordered_ids = described_class
-        .where(id: [inactive.id, teacher.id])
+        .where(id: [first_inactive.id, second_inactive.id])
         .in_roster_order
         .pluck(:id)
 
       expect(ordered_ids).to eq(
-        [inactive, teacher].sort_by { |membership| [membership.user_id, membership.id] }.map(&:id)
+        [first_inactive, second_inactive]
+          .sort_by { |membership| [membership.user_id, membership.id] }
+          .map(&:id)
       )
     end
 
@@ -277,18 +286,83 @@ RSpec.describe ClassroomMembership, type: :model do
     expect(membership.reload).to be_inactive
   end
 
-  it "allows a teacher to have active memberships in multiple classrooms" do
+  it "allows a teacher to have active memberships in multiple classrooms in the same school" do
+    school = create(:school)
     teacher = create(:user, :teacher)
+    create(:school_membership, user: teacher, school: school)
+    classrooms = create_list(:classroom, 2, school: school)
 
-    memberships = [first_classroom, second_classroom].map do |classroom|
+    memberships = classrooms.map do |classroom|
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher", status: "active")
     end
 
     expect(memberships).to all(be_persisted)
   end
 
+  it "allows a teacher assignment in the teacher's school" do
+    school = create(:school)
+    teacher = create(:user, :teacher)
+    create(:school_membership, user: teacher, school: school)
+
+    membership = build(
+      :classroom_membership,
+      user: teacher,
+      classroom: create(:classroom, school: school),
+      role: "teacher"
+    )
+
+    expect(membership).to be_valid
+  end
+
+  it "rejects a teacher assignment without a school membership" do
+    membership = described_class.new(
+      user: create(:user, :teacher),
+      classroom: first_classroom,
+      role: "teacher"
+    )
+
+    expect(membership).not_to be_valid
+    expect(membership.errors.added?(:base, :teacher_school_required)).to eq(true)
+  end
+
+  it "rejects a teacher assignment in another school" do
+    teacher = create(:user, :teacher)
+    create(:school_membership, user: teacher, school: create(:school))
+    membership = described_class.new(
+      user: teacher,
+      classroom: first_classroom,
+      role: "teacher"
+    )
+
+    expect(membership).not_to be_valid
+    expect(membership.errors.added?(:base, :teacher_school_mismatch)).to eq(true)
+  end
+
+  it "rejects a teacher membership for a student user" do
+    membership = described_class.new(
+      user: student,
+      classroom: first_classroom,
+      role: "teacher"
+    )
+
+    expect(membership).not_to be_valid
+    expect(membership.errors.added?(:base, :role_mismatch)).to eq(true)
+  end
+
+  it "rejects a student membership for a teacher user" do
+    membership = described_class.new(
+      user: create(:user, :teacher),
+      classroom: first_classroom,
+      role: "student"
+    )
+
+    expect(membership).not_to be_valid
+    expect(membership.errors.added?(:base, :role_mismatch)).to eq(true)
+  end
+
   it "rejects an inactive teacher membership" do
     teacher = create(:user, :teacher)
+    create(:school_membership, user: teacher, school: first_classroom.school)
     membership = build(
       :classroom_membership,
       user: teacher,

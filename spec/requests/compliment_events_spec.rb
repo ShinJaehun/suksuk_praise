@@ -5,7 +5,7 @@ RSpec.describe 'Compliment events', type: :request do
   include ActiveSupport::Testing::TimeHelpers
 
   let(:classroom) { create(:classroom, name: '햇살반') }
-  let(:other_classroom) { create(:classroom, name: '달빛반') }
+  let(:other_classroom) { create(:classroom, school: classroom.school, name: '달빛반') }
   let(:teacher) { create(:user, :teacher, name: '신재훈') }
   let(:student) { create(:user, :student, name: '김학생') }
   let(:other_student) { create(:user, :student, name: '박학생') }

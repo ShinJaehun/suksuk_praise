@@ -3,6 +3,18 @@ require 'rails_helper'
 RSpec.describe Classrooms::IndexContext do
   let(:school) { create(:school) }
 
+  def insert_legacy_teacher_membership!(user:, classroom:)
+    ClassroomMembership.insert!({
+                                  user_id: user.id,
+                                  classroom_id: classroom.id,
+                                  role: 'teacher',
+                                  status: 'active',
+                                  student_number: nil,
+                                  created_at: Time.current,
+                                  updated_at: Time.current
+                                })
+  end
+
   it 'returns only the supplied classrooms in reverse creation order with schools loaded' do
     older = create(:classroom, school: school, created_at: 2.days.ago)
     newer = create(:classroom, school: school, created_at: 1.day.ago)
@@ -31,7 +43,7 @@ RSpec.describe Classrooms::IndexContext do
     inactive_teacher = create(:user, :teacher, active: false)
     legacy_admin = create(:user, :admin)
     create(:classroom_membership, classroom: classroom, user: inactive_teacher, role: 'teacher')
-    create(:classroom_membership, classroom: classroom, user: legacy_admin, role: 'teacher')
+    insert_legacy_teacher_membership!(user: legacy_admin, classroom: classroom)
     outside_classroom = create(:classroom)
     outside_teacher = create(:user, :teacher)
     create(:classroom_membership, classroom: outside_classroom, user: outside_teacher, role: 'teacher')

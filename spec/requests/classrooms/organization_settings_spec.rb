@@ -404,7 +404,15 @@ RSpec.describe 'Classroom organization settings', type: :request do
   it 'allows an admin to change an existing classroom school and grade' do
     classroom = create(:classroom, school: create(:school), grade: 2)
     create(:school_membership, school: school, user: teacher)
-    create(:classroom_membership, classroom: classroom, user: teacher, role: 'teacher')
+    ClassroomMembership.insert!({
+                                  user_id: teacher.id,
+                                  classroom_id: classroom.id,
+                                  role: 'teacher',
+                                  status: 'active',
+                                  student_number: nil,
+                                  created_at: Time.current,
+                                  updated_at: Time.current
+                                })
     sign_in admin
 
     patch classroom_path(classroom), params: {

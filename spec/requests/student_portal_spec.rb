@@ -96,7 +96,7 @@ RSpec.describe 'Student portal flow', type: :request do
     end
 
     it 'redirects a teacher from their own user show to classrooms index when they have multiple assigned classrooms' do
-      other_classroom = create(:classroom)
+      other_classroom = create(:classroom, school: classroom.school)
       create(:classroom_membership, user: teacher, classroom: other_classroom, role: 'teacher')
       sign_in teacher
 

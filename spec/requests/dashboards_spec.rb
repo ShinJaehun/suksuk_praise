@@ -108,8 +108,9 @@ RSpec.describe 'Dashboards', type: :request do
     end
 
     it 'asks a teacher with multiple assigned classrooms to choose one' do
-      first = create(:classroom, name: '첫 학급')
-      second = create(:classroom, name: '둘째 학급')
+      school = create(:school)
+      first = create(:classroom, school: school, name: '첫 학급')
+      second = create(:classroom, school: school, name: '둘째 학급')
       create(:classroom_membership, classroom: first, user: teacher, role: 'teacher')
       create(:classroom_membership, classroom: second, user: teacher, role: 'teacher')
       sign_in teacher

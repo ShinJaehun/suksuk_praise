@@ -43,7 +43,9 @@ RSpec.describe SchoolStructure::IntegrityAudit do
 
   it 'finds a teacher assignment without a school membership' do
     teacher = create(:user, :teacher)
-    membership = create(:classroom_membership, user: teacher, role: 'teacher')
+    classroom = create(:classroom)
+    insert_classroom_membership!(user: teacher, classroom: classroom, role: 'teacher')
+    membership = ClassroomMembership.find_by!(user: teacher, classroom: classroom)
 
     result = described_class.call
 
@@ -57,12 +59,13 @@ RSpec.describe SchoolStructure::IntegrityAudit do
     teacher_school = create(:school)
     teacher = create(:user, :teacher)
     school_membership = create(:school_membership, user: teacher, school: teacher_school)
-    membership = create(
-      :classroom_membership,
+    classroom = create(:classroom)
+    insert_classroom_membership!(
       user: teacher,
-      classroom: create(:classroom),
+      classroom: classroom,
       role: 'teacher'
     )
+    membership = ClassroomMembership.find_by!(user: teacher, classroom: classroom)
 
     result = described_class.call
 
@@ -80,13 +83,14 @@ RSpec.describe SchoolStructure::IntegrityAudit do
     school = create(:school)
     teacher = create(:user, :teacher)
     create(:school_membership, user: teacher, school: school)
-    membership = create(
-      :classroom_membership,
+    classroom = create(:classroom, school: school)
+    insert_classroom_membership!(
       user: teacher,
-      classroom: create(:classroom, school: school),
+      classroom: classroom,
       role: 'teacher',
       student_number: 7
     )
+    membership = ClassroomMembership.find_by!(user: teacher, classroom: classroom)
 
     result = described_class.call
 
@@ -123,8 +127,7 @@ RSpec.describe SchoolStructure::IntegrityAudit do
     teacher = create(:user, :teacher)
     create(:school_membership, user: teacher, school: first_school)
     [first_school, second_school].each do |school|
-      create(
-        :classroom_membership,
+      insert_classroom_membership!(
         user: teacher,
         classroom: create(:classroom, school: school),
         role: 'teacher'
@@ -155,7 +158,11 @@ RSpec.describe SchoolStructure::IntegrityAudit do
 
   it 'limits samples without changing the total issue count' do
     2.times do
-      create(:classroom_membership, user: create(:user, :teacher), role: 'teacher')
+      insert_classroom_membership!(
+        user: create(:user, :teacher),
+        classroom: create(:classroom),
+        role: 'teacher'
+      )
     end
 
     result = described_class.call(sample_limit: 1)

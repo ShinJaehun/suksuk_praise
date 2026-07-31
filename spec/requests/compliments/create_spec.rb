@@ -303,7 +303,7 @@ RSpec.describe 'Compliments#create', type: :request do
     end
 
     it 'shows the same teacher presets in multiple assigned classrooms' do
-      other_classroom = create(:classroom)
+      other_classroom = create(:classroom, school: classroom.school)
       other_student = create(:user, :student)
       create(:classroom_membership, classroom: other_classroom, user: teacher, role: 'teacher')
       create(:classroom_membership, classroom: other_classroom, user: other_student, role: 'student')
