@@ -26,7 +26,7 @@
         </div>
 
         <div class="mt-5 grid gap-4 sm:max-w-3xl sm:grid-cols-2">
-          <% if current_user.admin? %>
+          <% if current_user.admin? && classroom.new_record? %>
             <div class="space-y-2">
               <% school_has_errors = classroom.errors[:school].any? || classroom.errors[:school_id].any? %>
               <%= f.label :school_id, t("classrooms.form.school_label"), class: "block text-sm font-semibold text-slate-800" %>
@@ -40,10 +40,13 @@
                 <p class="text-sm text-rose-600"><%= (classroom.errors.full_messages_for(:school) + classroom.errors.full_messages_for(:school_id)).uniq.to_sentence %></p>
               <% end %>
             </div>
-          <% elsif current_user.school_membership&.manager? %>
+          <% elsif classroom.persisted? || current_user.school_membership&.manager? %>
             <div class="space-y-2">
               <span class="block text-sm font-semibold text-slate-800"><%= t("classrooms.form.school_label") %></span>
-              <p class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"><%= current_user.school_membership.school.name %></p>
+              <p class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"><%= classroom.school.name %></p>
+              <% if classroom.errors[:school].any? %>
+                <p class="text-sm text-rose-600"><%= classroom.errors.full_messages_for(:school).to_sentence %></p>
+              <% end %>
             </div>
           <% end %>
 

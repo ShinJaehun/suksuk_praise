@@ -18,6 +18,8 @@ ko:
       models:
         classroom:
           attributes:
+            school:
+              immutable: "생성된 교실의 소속 학교는 변경할 수 없습니다."
             base:
               students_or_history_present: "학생 또는 활동 기록이 있는 교실은 삭제할 수 없습니다."
         classroom_membership:

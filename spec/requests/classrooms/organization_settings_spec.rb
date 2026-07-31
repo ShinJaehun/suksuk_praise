@@ -401,42 +401,22 @@ RSpec.describe 'Classroom organization settings', type: :request do
     expect(response).to redirect_to(root_path)
   end
 
-  it 'allows an admin to change an existing classroom school and grade' do
-    classroom = create(:classroom, school: create(:school), grade: 2)
-    create(:school_membership, school: school, user: teacher)
-    ClassroomMembership.insert!({
-                                  user_id: teacher.id,
-                                  classroom_id: classroom.id,
-                                  role: 'teacher',
-                                  status: 'active',
-                                  student_number: nil,
-                                  created_at: Time.current,
-                                  updated_at: Time.current
-                                })
+  it 'allows an admin to change an existing classroom grade' do
+    classroom = create(:classroom, school: school, grade: 2)
     sign_in admin
 
     patch classroom_path(classroom), params: {
-      classroom: classroom_update_params(classroom).merge(school_id: school.id, grade: 6)
+      classroom: classroom_update_params(classroom).merge(grade: 6)
     }
 
     expect(response).to redirect_to(classroom_path(classroom))
-    persisted_classroom = Classroom.find(classroom.id)
-    expect(persisted_classroom.school_id).to eq(school.id)
-    expect(persisted_classroom.grade).to eq(6)
-    expect(classroom.reload.school_id).to eq(school.id)
-    expect(classroom.grade).to eq(6)
-    expect(classroom.classroom_memberships.teacher.exists?(user: teacher)).to eq(true)
-
-    follow_redirect!
-    expect(response.body).to include('교실 설정을 저장했습니다.')
+    expect(classroom.reload).to have_attributes(school: school, grade: 6)
   end
 
-  it 'rejects an admin school change that would leave a teacher assigned across schools' do
+  it 'rejects an admin school change and keeps the full update unchanged' do
     original_school = create(:school)
     target_school = create(:school)
     classroom = create(:classroom, school: original_school, name: '기존 학급', grade: 2)
-    create(:school_membership, school: original_school, user: teacher)
-    create(:classroom_membership, classroom: classroom, user: teacher, role: :teacher)
     sign_in admin
 
     patch classroom_path(classroom), params: {
@@ -448,7 +428,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include('해당 학교에 소속된 선생님만 담당 교사로 지정할 수 있습니다.')
+    expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
     expect(classroom.reload).to have_attributes(name: '기존 학급', school: original_school, grade: 2)
   end
 
@@ -550,7 +530,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
     }
 
     expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include('학교 관리자는 학급을 다른 학교로 이동할 수 없습니다.')
+    expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
     expect(classroom.reload).to have_attributes(name: '기존 학급', grade: 1, school: school)
   end
 
@@ -702,7 +682,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(classroom.reload.school).to eq(school)
-    expect(response.body).to include('학교')
+    expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
   end
 
   it 'rejects removing the school from an existing classroom' do
@@ -715,7 +695,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
 
     expect(response).to have_http_status(:unprocessable_entity)
     expect(classroom.reload.school).to eq(school)
-    expect(response.body).to include('학교')
+    expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
   end
 
   def classroom_update_params(classroom)

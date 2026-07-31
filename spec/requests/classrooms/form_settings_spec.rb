@@ -18,6 +18,7 @@ RSpec.describe "Classroom form settings", type: :request do
       expect(response.body).to include("메시지 관리")
       expect(response.body).to include("message_policy")
       expect(response.body).to include("교실 이름은 50자 이내로 입력해 주세요.")
+      expect(response.body).to include('name="classroom[school_id]"')
     end
 
     it "shows structure settings without teacher assignment or operation settings to a manager" do
@@ -196,11 +197,12 @@ RSpec.describe "Classroom form settings", type: :request do
 
       expect(response.body).to include(
         'name="classroom[name]"',
-        'name="classroom[school_id]"',
         'name="classroom[grade]"',
         'name="classroom[daily_compliment_king_enabled]"',
         'name="classroom[message_policy]"'
       )
+      expect(response.body).not_to include('name="classroom[school_id]"')
+      expect(response.body).to include(school.name)
     end
   end
 

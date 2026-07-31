@@ -58,6 +58,32 @@ RSpec.describe Classroom, type: :model do
     expect(classroom.errors[:school]).to be_present
   end
 
+  it "rejects changing the school of an empty persisted classroom" do
+    original_school = create(:school)
+    classroom = create(:classroom, school: original_school)
+
+    expect(classroom.update(school: create(:school))).to eq(false)
+    expect(classroom.errors.added?(:school, :immutable)).to eq(true)
+    expect(classroom.reload.school).to eq(original_school)
+  end
+
+  it "allows updating non-school settings" do
+    classroom = create(:classroom)
+
+    expect(classroom.update(
+      name: "변경 교실",
+      grade: 6,
+      daily_compliment_king_enabled: false,
+      message_policy: "student_initiated"
+    )).to eq(true)
+    expect(classroom.reload).to have_attributes(
+      name: "변경 교실",
+      grade: 6,
+      daily_compliment_king_enabled: false,
+      message_policy: "student_initiated"
+    )
+  end
+
   it "allows grades 1 and 6" do
     [1, 6].each do |grade|
       classroom = build(:classroom, grade: grade)

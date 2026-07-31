@@ -72,6 +72,7 @@ class Classroom < ApplicationRecord
       less_than_or_equal_to: 6
     }
     validates :message_policy, inclusion: { in: MESSAGE_POLICIES }
+    validate :school_must_not_change, on: :update
 
     def messages_disabled?
       message_policy == "disabled"
@@ -102,6 +103,12 @@ class Classroom < ApplicationRecord
     end
 
     private
+
+    def school_must_not_change
+      return unless will_save_change_to_school_id?
+
+      errors.add(:school, :immutable)
+    end
 
     def prevent_destroy_with_students_or_history
       return if destroyable_without_history?
