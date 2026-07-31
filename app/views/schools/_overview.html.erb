@@ -6,7 +6,7 @@
       <span class="mt-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold <%= school.active? ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600" %>"><%= t(school.active? ? "school_status.active" : "school_status.inactive") %></span>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-      <%= link_to t("schools.show.back_to_classrooms"), classrooms_path,
+      <%= link_to t("schools.show.back_to_classrooms"), classrooms_path(school_id: school.id),
             class: "inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" %>
       <% if policy(school).update? %>
         <%= link_to t("schools.settings.title"),

@@ -18,7 +18,11 @@ RSpec.describe 'School overview', type: :request do
     overview = document.at_css('turbo-frame#school_overview')
     expect(response).to have_http_status(:ok)
     expect(overview.text).to include(school.name, '소속 교실', '1개', '소속 교사', '2명', school_manager.name)
-    expect(overview.at_css(%(a[href="#{classrooms_path}"]))).to be_present
+    classrooms_link = overview.at_xpath(
+      ".//a[normalize-space()='#{I18n.t('schools.show.back_to_classrooms')}']"
+    )
+    expect(classrooms_link).to be_present
+    expect(classrooms_link['href']).to eq(classrooms_path(school_id: school.id))
     expect(overview.text).to include('교실 목록으로')
     expect(overview.text).not_to include('교실 목록으로 돌아가기')
     settings_link = overview.at_css(%(a[href="#{edit_school_path(school)}"]))
