@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'School teachers', type: :request do
-  let(:school) { create(:school, name: '아라초등학교') }
+  let(:school) { create(:school, name: '아라초등학교', color_key: 'orange') }
   let(:other_school) { create(:school, name: '다른초등학교') }
   let(:admin) { create(:user, :admin) }
   let(:manager) do
@@ -23,11 +23,13 @@ RSpec.describe 'School teachers', type: :request do
   end
 
   describe 'GET /schools/:school_id/teachers' do
-    it "shows only the school's teachers, roles, classrooms, avatars, and modal actions to its manager" do
-      classroom = create(:classroom, school: school, grade: 4, name: '4학년 1반')
+    it "shows only the school's teachers, roles, classrooms, avatars, and page actions to its manager" do
+      classroom = create(:classroom, school: school, grade: 4, name: '1반')
+      later_classroom = create(:classroom, school: school, grade: 6, name: '기러기반')
       other_classroom = create(:classroom, school: other_school, name: '다른 학교 학급')
       unassigned_teacher = create(:user, :teacher, name: '미소속 선생님')
       create(:classroom_membership, classroom: classroom, user: manager, role: :teacher)
+      create(:classroom_membership, classroom: later_classroom, user: manager, role: :teacher)
       other_teacher = create(:school_membership, school: other_school,
                                                  user: create(:user, :teacher, name: '다른 학교 선생님')).user
       student = create(:user, :student, name: '학생')
@@ -38,12 +40,26 @@ RSpec.describe 'School teachers', type: :request do
 
       document = Nokogiri::HTML(response.body)
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include(school.name, manager.name, manager.email, school_member.name, '학교 관리자',
-                                       classroom.name)
+      expect(response.body).to include(school.name, manager.name, manager.email, school_member.name,
+                                       '대표 선생님', '선생님', '4학년 1반', '6학년 기러기반', '담당 교실 없음')
       expect(document.at_css(%(img[alt="#{manager.name} avatar"]))).to be_present
-      expect(document.at_css(%(a[href="#{new_school_teacher_path(school)}"][data-turbo-frame="modal"]))).to be_present
-      expect(document.at_css(%(a[href="#{edit_school_teacher_path(school,
-                                                                  manager)}"][data-turbo-frame="modal"]))).to be_present
+      manager_row = document.at_xpath("//p[normalize-space()='#{manager.name}']/ancestor::article[1]")
+      member_row = document.at_xpath("//p[normalize-space()='#{school_member.name}']/ancestor::article[1]")
+      expect(manager_row['class']).to include('border-l-orange-400', 'bg-orange-50/60')
+      expect(manager_row.at_css('.bg-emerald-100')&.text).to include('활성')
+      expect(manager_row.at_css('.bg-violet-100')&.text&.strip).to eq('대표 선생님')
+      expect(member_row.at_css('.bg-sky-100')&.text&.strip).to eq('선생님')
+      expect(member_row.css('.bg-slate-100').map(&:text)).to include('담당 교실 없음')
+      expect(manager_row.text).not_to include('담당 교실 2개')
+      expect(manager_row.text.index('4학년 1반')).to be < manager_row.text.index('6학년 기러기반')
+      new_link = document.at_css(%(a[href="#{new_school_teacher_path(school)}"]))
+      edit_link = document.at_css(%(a[href="#{edit_school_teacher_path(school, manager)}"]))
+      expect(new_link).to be_present
+      expect(edit_link).to be_present
+      expect(new_link['data-turbo-frame']).to be_nil
+      expect(edit_link['data-turbo-frame']).to be_nil
+      expect(document.at_css(%(form[action="#{school_teachers_path(school)}"][method="post"]))).to be_nil
+      expect(document.at_css(%(form[action="#{school_teacher_path(school, manager)}"]))).to be_nil
       expect(response.body).not_to include(other_teacher.name, unassigned_teacher.name, student.name,
                                            other_classroom.name)
     end
@@ -178,32 +194,67 @@ RSpec.describe 'School teachers', type: :request do
     end
   end
 
-  describe 'GET modal forms' do
-    it 'renders new and edit forms in the modal for the school manager' do
+  describe 'GET page forms' do
+    it 'renders the new teacher form as a full page for the school manager' do
+      classroom = create(:classroom, school: school, name: '우리 학교 1반')
+      other_classroom = create(:classroom, school: other_school, name: '다른 학교 1반')
+      sign_in manager
+
+      get new_school_teacher_path(school)
+
+      document = Nokogiri::HTML(response.body)
+      form = document.at_css(%(form[action="#{school_teachers_path(school)}"]))
+      avatar_key_input = form.at_css('input[name="user[avatar_key]"]')
+      avatar_section = form.at_css('[data-teacher-avatar-preview-target="avatarSection"]')
+      avatar_picker = form.at_css('[data-teacher-avatar-preview-target="picker"]')
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('새 선생님 추가', school.name)
+      expect(form).to be_present
+      expect(form.text).to include('소속 학교', school.name, classroom.name)
+      expect(form.text).not_to include(other_classroom.name)
+      expect(form.at_css('select[name="school_id"], select[name="user[school_id]"]')).to be_nil
+      expect(form.at_css('input[name="school_id"], input[name="user[school_id]"]')).to be_nil
+      expect(form.at_css(%(input[name="classroom_ids[]"][value="#{classroom.id}"]))).to be_present
+      expect(avatar_key_input['value']).to be_blank
+      selected_gender = form.at_css('select[name="user[gender]"] option[selected]')&.[]('value')
+      expect(selected_gender.to_s).to be_blank
+      expect(avatar_section['hidden']).not_to be_nil
+      expect(avatar_picker['hidden']).not_to be_nil
+      expect(form['data-controller'].to_s.split).to include('teacher-avatar-preview')
+      expect(form['data-teacher-avatar-preview-male-keys-value']).to be_present
+      expect(form['data-teacher-avatar-preview-female-keys-value']).to be_present
+      expect(form.at_css('select[name="user[gender]"][data-teacher-avatar-preview-target="gender"]')).to be_present
+      expect(form.at_css('img[data-teacher-avatar-preview-target="image"]')).to be_present
+      expect(form.at_css('[data-action="teacher-avatar-preview#togglePicker"]')).to be_present
+      expect(form.at_css('[data-action="teacher-avatar-preview#select"]')).to be_present
+      classroom_input = form.at_css(%(input[name="classroom_ids[]"][value="#{classroom.id}"]))
+      expect(classroom_input['class']).to include('peer', 'sr-only')
+      expect(classroom_input.ancestors('label').first['class']).to include('rounded-full', 'has-[:checked]:bg-blue-50')
+    end
+
+    it 'renders the edit teacher form as a full page with school classrooms' do
       classroom = create(:classroom, school: school, name: '1반')
 
       sign_in manager
 
-      get new_school_teacher_path(school), headers: { 'Turbo-Frame' => 'modal' }
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('<turbo-frame id="modal"')
-
-      get edit_school_teacher_path(school, member), headers: { 'Turbo-Frame' => 'modal' }
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('<turbo-frame id="modal"', classroom.name)
-      expect(response.body).to include('저장')
-      expect(response.body).not_to include('학교 관리로 돌아가기')
-      expect(response.body).not_to include('선생님 관리로 돌아가기')
-    end
-
-    it 'keeps the teacher index link in the HTML edit fallback' do
-      sign_in manager
-
       get edit_school_teacher_path(school, member)
 
+      document = Nokogiri::HTML(response.body)
+      teacher_form = document.at_css(%(form[action="#{school_teacher_path(school, member)}"]))
+      info_card = document.at_xpath("//h2[normalize-space()='기본 정보']/ancestor::section[1]")
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('선생님 관리로 돌아가기')
-      expect(response.body).to include(school_teachers_path(school))
+      expect(response.body).to include('선생님 정보 변경', member.name, school.name, classroom.name,
+                                       '기본 정보', '계정 상태', '선생님')
+      expect(info_card).to be_present
+      expect(info_card.text).to include(member.name, member.email, school.name, '활성', '선생님')
+      expect(info_card.at_css(%(img[alt="#{member.name} avatar"]))).to be_present
+      expect(teacher_form).to be_present
+      expect(teacher_form.at_css(%(input[name="classroom_ids[]"][value="#{classroom.id}"]))).to be_present
+      expect(teacher_form.at_css('input[name="user[gender]"], input[name="user[avatar_key]"]')).to be_nil
+      expect(document.at_css(%(form[action="#{deactivate_school_teacher_path(school, member)}"]))).to be_present
+      expect(document.at_css('select[name="school_id"]')).to be_nil
+      expect(document.at_css('select[name="user[school_id]"]')).to be_nil
+      expect(document.at_css(%(a[href="#{school_teachers_path(school)}"]))).to be_present
     end
 
     it 'blocks members and managers from another school' do
@@ -216,7 +267,7 @@ RSpec.describe 'School teachers', type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it 'blocks an admin from every school teacher modal action' do
+    it 'blocks an admin from every school teacher page action' do
       sign_in admin
 
       get new_school_teacher_path(school)
@@ -228,12 +279,13 @@ RSpec.describe 'School teachers', type: :request do
   end
 
   describe 'POST /schools/:school_id/teachers' do
-    it 'creates a member teacher for the URL school as its manager' do
+    it 'creates a member teacher without classroom assignments for the URL school' do
       create(:coupon_template, created_by: admin, bucket: 'library', active: true, title: '기본 쿠폰')
 
       sign_in manager
       post school_teachers_path(school), params: {
         user: valid_teacher_params(email: 'school-teacher@example.com'),
+        classroom_ids: [''],
         school_id: other_school.id
       }
 
@@ -242,24 +294,89 @@ RSpec.describe 'School teachers', type: :request do
       expect(response).to redirect_to(school_teachers_path(school))
       expect(created_teacher.role).to eq('teacher')
       expect(created_teacher.school_membership).to have_attributes(school: school, role: 'member')
+      expect(created_teacher.classroom_memberships.teacher).to be_empty
       expect(CouponTemplate.personal_for(created_teacher)).to be_empty
     end
 
-    it 'rolls back user, coupons, and membership on validation failure' do
+    it 'creates assignments for multiple selected classrooms in the URL school' do
+      selected_classrooms = create_list(:classroom, 2, school: school)
+      unselected_classroom = create(:classroom, school: school)
+      sign_in manager
+
+      post school_teachers_path(school), params: {
+        user: valid_teacher_params(email: 'assigned-school-teacher@example.com'),
+        classroom_ids: selected_classrooms.map(&:id)
+      }
+
+      created_teacher = User.teacher.find_by!(email: 'assigned-school-teacher@example.com')
+      expect(response).to redirect_to(school_teachers_path(school))
+      expect(flash[:notice]).to eq(I18n.t('schools.teachers.create.success'))
+      expect(created_teacher.school_membership).to have_attributes(school: school, role: 'member')
+      expect(created_teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(
+        *selected_classrooms.map(&:id)
+      )
+      expect(created_teacher.classroom_memberships.teacher.exists?(classroom: unselected_classroom)).to eq(false)
+    end
+
+    it 'rolls back and renders the new page with submitted values on validation failure' do
+      classroom = create(:classroom, school: school)
       sign_in manager
 
       expect do
         post school_teachers_path(school),
-             params: { user: valid_teacher_params(name: '', email: 'invalid-school-teacher@example.com') },
+             params: {
+               user: valid_teacher_params(name: '', email: 'invalid-school-teacher@example.com'),
+               classroom_ids: [classroom.id]
+             },
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
       end.not_to(change { [User.count, SchoolMembership.count, CouponTemplate.count] })
 
+      document = Nokogiri::HTML(response.body)
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include('turbo-stream action="replace" target="modal"')
-      expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
-      expect(response.body).to include(%(value="invalid-school-teacher@example.com"))
+      expect(response.media_type).to eq('text/html')
+      expect(response.body).to include('새 선생님 추가', school.name)
+      expect(document.at_css('input[name="user[email]"]')['value']).to eq('invalid-school-teacher@example.com')
       expect(response.body).to include('<option selected="selected" value="female">여자</option>')
-      expect(response.body).not_to include('name="school_id"')
+      expect(document.at_css('input[name="user[avatar_key]"]')['value']).to eq('teacherF01')
+      expect(document.at_css('img[data-teacher-avatar-preview-target="image"]')['src']).to include('teacherF01')
+      expect(document.at_css(%(input[name="classroom_ids[]"][value="#{classroom.id}"][checked]))).to be_present
+      expect(document.at_css('select[name="school_id"], select[name="user[school_id]"]')).to be_nil
+    end
+
+    it 'rejects classrooms outside the URL school without partial creation' do
+      valid_classroom = create(:classroom, school: school)
+      other_classroom = create(:classroom, school: other_school)
+      sign_in manager
+
+      expect do
+        post school_teachers_path(school), params: {
+          user: valid_teacher_params(email: 'invalid-assignment@example.com'),
+          classroom_ids: [valid_classroom.id, other_classroom.id]
+        }
+      end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count] })
+
+      document = Nokogiri::HTML(response.body)
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('새 선생님 추가', '선택한 교실을 찾을 수 없습니다.')
+      expect(document.at_css(%(input[name="classroom_ids[]"][value="#{valid_classroom.id}"][checked]))).to be_present
+    end
+
+    it 'rejects a missing classroom without partial creation' do
+      valid_classroom = create(:classroom, school: school)
+      missing_classroom_id = Classroom.maximum(:id).to_i + 10_000
+      sign_in manager
+
+      expect do
+        post school_teachers_path(school), params: {
+          user: valid_teacher_params(email: 'missing-assignment@example.com'),
+          classroom_ids: [valid_classroom.id, missing_classroom_id]
+        }
+      end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count] })
+
+      document = Nokogiri::HTML(response.body)
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('선택한 교실을 찾을 수 없습니다.')
+      expect(document.at_css(%(input[name="classroom_ids[]"][value="#{valid_classroom.id}"][checked]))).to be_present
     end
 
     it 'blocks direct posts outside the allowed school scope' do
@@ -329,8 +446,10 @@ RSpec.describe 'School teachers', type: :request do
             headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include('turbo-stream action="replace" target="modal"')
-      expect(response.body).to include('선택한 교실을 찾을 수 없습니다.')
+      document = Nokogiri::HTML(response.body)
+      expect(response.media_type).to eq('text/html')
+      expect(response.body).to include('선생님 정보 변경', '선택한 교실을 찾을 수 없습니다.')
+      expect(document.at_css(%(input[name="classroom_ids[]"][value="#{valid_classroom.id}"][checked]))).to be_present
       expect(member.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(existing_classroom.id)
 
       patch school_teacher_path(school, member), params: { classroom_ids: ['abc'] }

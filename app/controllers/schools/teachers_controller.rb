@@ -4,16 +4,14 @@ class Schools::TeachersController < ApplicationController
   before_action :authorize_school_teacher_management
   before_action :set_teacher, only: %i[edit update deactivate reactivate]
 
-  layout -> { turbo_frame_request? ? false : "application" }
-
   def index
     @teacher_status = params[:status].presence_in(%w[active inactive all]) || "active"
     @teacher_rows = teacher_rows
   end
 
   def new
-    @teacher = User.new
-    @teacher.avatar_key = teacher_avatar_keys.sample
+    @teacher = User.new(role: :teacher)
+    load_new_form
   end
 
   def create
@@ -23,20 +21,27 @@ class Schools::TeachersController < ApplicationController
     pool = avatar_keys_for_gender(@teacher.gender)
     @teacher.avatar_key = pool.sample unless pool.include?(@teacher.avatar_key)
 
-    result = Teachers::SaveWithAssignments.call(
-      teacher: @teacher,
-      attributes: {},
-      school: @school,
-      classroom_ids: []
-    )
+    assignment_ids = selected_classroom_ids
+    assignments_invalid = classroom_assignments_invalid?
+    result =
+      unless assignments_invalid
+        Teachers::SaveWithAssignments.call(
+          teacher: @teacher,
+          attributes: {},
+          school: @school,
+          classroom_ids: assignment_ids,
+          assignment_scope: :school
+        )
+      end
 
-    if result.success?
+    if !assignments_invalid && result.success?
       redirect_to school_teachers_path(@school),
         notice: t("schools.teachers.create.success"),
         status: :see_other
     else
+      load_new_form
       flash.now[:alert] = t("schools.teachers.create.failure")
-      render_teacher_form(:new)
+      render :new, formats: :html, status: :unprocessable_entity
     end
   end
 
@@ -60,14 +65,14 @@ class Schools::TeachersController < ApplicationController
 
     if classroom_assignments_invalid?
       load_edit_form
-      render_teacher_form(:edit)
+      render :edit, formats: :html, status: :unprocessable_entity
     elsif result.success?
       redirect_to school_teachers_path(@school),
         notice: t("schools.teachers.update.success"),
         status: :see_other
     else
       load_edit_form
-      render_teacher_form(:edit)
+      render :edit, formats: :html, status: :unprocessable_entity
     end
   end
 
@@ -93,6 +98,7 @@ class Schools::TeachersController < ApplicationController
 
   def set_teacher
     membership = @school.school_memberships.includes(:user).find_by!(user_id: params[:id])
+    @school_membership = membership
     @teacher = membership.user
     raise ActiveRecord::RecordNotFound unless @teacher.teacher?
   end
@@ -106,15 +112,13 @@ class Schools::TeachersController < ApplicationController
       .map do |membership|
         teacher = membership.user
         classrooms = school_teacher_classrooms(teacher)
-        classroom_names = classrooms.map(&:name)
-        grades = classrooms.filter_map(&:grade).uniq.sort
 
         {
           teacher: teacher,
+          school_color_key: @school.color_key,
+          school_role: membership.role,
           school_role_label: teacher_school_role_label(membership),
-          classroom_names: classroom_names,
-          classroom_count: classroom_names.size,
-          grade_label: grades.any? ? t("classrooms.index.grades", grades: grades.join(", ")) : t("classrooms.index.grade_unspecified")
+          classrooms: classrooms
         }
       end
   end
@@ -124,10 +128,12 @@ class Schools::TeachersController < ApplicationController
       .select(&:teacher?)
       .filter_map(&:classroom)
       .select { |classroom| classroom.school_id == @school.id }
+      .uniq(&:id)
+      .sort_by { |classroom| [classroom.grade || Float::INFINITY, classroom.name.to_s, classroom.id] }
   end
 
   def teacher_school_role_label(membership)
-    t(membership.manager? ? "schools.teachers.index.manager" : "schools.teachers.index.member")
+    t(membership.manager? ? "admin.teachers.index.manager" : "admin.teachers.index.member")
   end
 
   def teacher_params
@@ -155,6 +161,11 @@ class Schools::TeachersController < ApplicationController
     User.avatar_keys_for_role("teacher")
   end
 
+  def load_new_form
+    @classrooms = @school.classrooms.order(:grade, :name, :id).load
+    @selected_classroom_ids = [] unless defined?(@selected_classroom_ids)
+  end
+
   def selected_classroom_ids
     return @selected_classroom_ids if defined?(@selected_classroom_ids)
 
@@ -177,7 +188,7 @@ class Schools::TeachersController < ApplicationController
   end
 
   def load_edit_form
-    @classrooms = @school.classrooms.order(:created_at).load
+    @classrooms = @school.classrooms.order(:grade, :name, :id).load
     @teacher_classroom_ids =
       if params.key?(:classroom_ids)
         selected_classroom_ids
@@ -187,21 +198,6 @@ class Schools::TeachersController < ApplicationController
           .where(classrooms: { school_id: @school.id })
           .pluck(:classroom_id)
       end
-    @teacher_classroom_names = @classrooms.select { |classroom| @teacher_classroom_ids.include?(classroom.id) }.map(&:name)
-    @teacher_classroom_count = @teacher_classroom_names.size
   end
 
-  def render_teacher_form(template)
-    respond_to do |format|
-      format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          "modal",
-          partial: "schools/teachers/#{template}_modal"
-        ), status: :unprocessable_entity
-      end
-      format.html do
-        render template, formats: :html, status: :unprocessable_entity
-      end
-    end
-  end
 end

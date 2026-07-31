@@ -1,0 +1,20 @@
+<h2 class="mb-3 text-base font-semibold"><%= t("schools.teachers.classroom_assignment_title") %></h2>
+<%= hidden_field_tag "classroom_ids[]", "" %>
+<p class="mb-3 text-sm text-slate-500"><%= t("schools.teachers.classrooms_help") %></p>
+
+<% if classrooms.none? %>
+  <p class="mb-4 text-xs text-gray-500"><%= t("schools.teachers.classrooms_empty") %></p>
+<% else %>
+  <div class="mb-4 grid gap-2 sm:grid-cols-2">
+    <% classrooms.each do |classroom| %>
+      <label class="flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700">
+        <%= check_box_tag "classroom_ids[]",
+              classroom.id,
+              selected_classroom_ids.include?(classroom.id),
+              class: "peer sr-only" %>
+        <span aria-hidden="true" class="hidden text-blue-600 peer-checked:inline">✓</span>
+        <span><%= classroom_display_name(classroom) %></span>
+      </label>
+    <% end %>
+  </div>
+<% end %>
