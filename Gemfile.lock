@@ -406,6 +406,7 @@ DEPENDENCIES
   rails (~> 7.1.5, >= 7.1.5.1)
   rails-i18n (~> 7.0)
   rails_db
+  rexml (~> 3.4)
   rqrcode
   rspec-rails
   rubocop

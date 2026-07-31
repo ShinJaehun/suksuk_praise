@@ -86,3 +86,5 @@ gem "rqrcode"
 
 # simleform : deploy
 gem "simple_form"
+
+gem "rexml", "~> 3.4"
