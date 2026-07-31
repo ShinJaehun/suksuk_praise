@@ -19,7 +19,7 @@ RSpec.describe 'Admin teachers', type: :request do
     get admin_teachers_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('선생님 관리')
+    expect(response.body).to include(I18n.t('admin.teachers.index.title'))
     expect(response.body).to include('선생님 추가')
     expect(response.body).to include('id="teacher-school-filter"')
     expect(response.body).to include('name="school_id"')
@@ -191,8 +191,8 @@ RSpec.describe 'Admin teachers', type: :request do
     expect(response.body).not_to include('6학년 6학년 기러기반')
     document = Nokogiri::HTML(response.body)
     classroom_input = document.at_css(%(input[name="classroom_ids[]"][value="#{classroom.id}"]))
-    expect(classroom_input["class"]).to include("peer", "sr-only")
-    expect(classroom_input.ancestors("label").first["class"]).to include("rounded-full", "has-[:checked]:bg-blue-50")
+    expect(classroom_input['class']).to include('peer', 'sr-only')
+    expect(classroom_input.ancestors('label').first['class']).to include('rounded-full', 'has-[:checked]:bg-blue-50')
   end
 
   it 'saves a submitted male teacher avatar_key for male gender' do

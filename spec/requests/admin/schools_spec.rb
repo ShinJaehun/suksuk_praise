@@ -11,7 +11,7 @@ RSpec.describe 'Admin schools', type: :request do
     get new_admin_school_path
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include('새 학교 등록')
+    expect(response.body).to include(I18n.t('admin.schools.new_title'))
     expect(response.body).to include('학교 관리로 돌아가기')
     expect(response.body).to include('name="school[name]"')
   end
@@ -36,29 +36,29 @@ RSpec.describe 'Admin schools', type: :request do
     )
   end
 
-  it "filters schools by lifecycle status" do
+  it 'filters schools by lifecycle status' do
     active_school = school
-    inactive_school = create(:school, name: "비활성 학교", active: false)
+    inactive_school = create(:school, name: '비활성 학교', active: false)
     sign_in admin
 
     get schools_path
     expect(response.body).to include(active_school.name)
     expect(response.body).not_to include(inactive_school.name)
-    expect(Nokogiri::HTML(response.body).at_css('select[name="status"] option[selected]')["value"]).to eq("active")
+    expect(Nokogiri::HTML(response.body).at_css('select[name="status"] option[selected]')['value']).to eq('active')
 
-    get schools_path(status: "inactive")
-    expect(response.body).to include(inactive_school.name, "비활성")
+    get schools_path(status: 'inactive')
+    expect(response.body).to include(inactive_school.name, '비활성')
     expect(response.body).not_to include(active_school.name)
 
-    get schools_path(status: "all")
+    get schools_path(status: 'all')
     expect(response.body).to include(active_school.name, inactive_school.name)
 
-    get schools_path(status: "unknown")
+    get schools_path(status: 'unknown')
     expect(response.body).to include(active_school.name)
     expect(response.body).not_to include(inactive_school.name)
   end
 
-  it "deactivates and reactivates a school without removing related data" do
+  it 'deactivates and reactivates a school without removing related data' do
     classroom = create(:classroom, school: school)
     membership = create(:school_membership, school: school)
     closure = create(:school_closure, school: school)
@@ -71,7 +71,7 @@ RSpec.describe 'Admin schools', type: :request do
     expect(membership.reload.school).to eq(school)
     expect(closure.reload.school).to eq(school)
 
-    patch reactivate_admin_school_path(school, status: "inactive")
+    patch reactivate_admin_school_path(school, status: 'inactive')
     expect(school.reload).to be_active
     expect(response).to redirect_to(edit_school_path(school))
   end
@@ -155,7 +155,7 @@ RSpec.describe 'Admin schools', type: :request do
     expect(response.body).to include('name="school[name]"')
     expect(response.body).to include('value=" "')
     expect(response.body).to include('학교 이름을 입력해 주세요.')
-    expect(response.body).to include('새 학교 등록')
+    expect(response.body).to include(I18n.t('admin.schools.new_title'))
     expect(response.body).not_to include('<!DOCTYPE html>')
   end
 

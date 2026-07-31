@@ -50,7 +50,7 @@ ko:
       single_day: "하루 휴일"
       date_range: "기간 휴일"
     index:
-      title: "관리 학교"
+      title: "학교"
       summary: "학급 %{classrooms}개 · 소속 교사 %{teachers}명"
       administrators: "학교 관리자: %{names}"
       administrators_empty: "없음"
@@ -98,14 +98,14 @@ ko:
       update:
         success: "학교 이름을 수정했습니다."
     teachers:
-      new_title: "새 선생님 추가"
+      new_title: "선생님 추가"
       edit_title: "선생님 정보 변경"
       classroom_assignment_title: "담당 교실 선택"
       classrooms_help: "이 학교에서 담당할 교실을 선택할 수 있습니다."
       classrooms_empty: "아직 생성된 교실이 없습니다. 먼저 교실을 만든 뒤, 담당 교실을 지정할 수 있습니다."
       back_to_index: "선생님 관리로 돌아가기"
       index:
-        title: "선생님 관리"
+        title: "선생님"
         description: "소속 선생님과 담당 교실을 관리합니다."
         list_title: "선생님 목록"
         add_teacher: "선생님 추가"

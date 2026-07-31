@@ -18,7 +18,7 @@ ko:
       destroy:
         success: "학교 관리자 권한을 해제했습니다."
     schools:
-      new_title: "새 학교 등록"
+      new_title: "학교 등록"
       edit_title: "학교 이름 수정"
       form:
         name_label: "학교 이름"
@@ -43,7 +43,7 @@ ko:
       edit:
         target: "%{name} 선생님"
       index:
-        title: "선생님 관리"
+        title: "선생님"
         list_title: "선생님 목록"
         add_teacher: "선생님 추가"
         manage: "설정"

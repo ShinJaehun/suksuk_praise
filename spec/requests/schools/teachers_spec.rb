@@ -208,7 +208,10 @@ RSpec.describe 'School teachers', type: :request do
       avatar_section = form.at_css('[data-teacher-avatar-preview-target="avatarSection"]')
       avatar_picker = form.at_css('[data-teacher-avatar-preview-target="picker"]')
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('새 선생님 추가', school.name)
+      expect(response.body).to include(
+        I18n.t('schools.teachers.new_title'),
+        school.name
+      )
       expect(form).to be_present
       expect(form.text).to include('소속 학교', school.name, classroom.name)
       expect(form.text).not_to include(other_classroom.name)
@@ -334,7 +337,10 @@ RSpec.describe 'School teachers', type: :request do
       document = Nokogiri::HTML(response.body)
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.media_type).to eq('text/html')
-      expect(response.body).to include('새 선생님 추가', school.name)
+      expect(response.body).to include(
+        I18n.t('schools.teachers.new_title'),
+        school.name
+      )
       expect(document.at_css('input[name="user[email]"]')['value']).to eq('invalid-school-teacher@example.com')
       expect(response.body).to include('<option selected="selected" value="female">여자</option>')
       expect(document.at_css('input[name="user[avatar_key]"]')['value']).to eq('teacherF01')
@@ -357,7 +363,10 @@ RSpec.describe 'School teachers', type: :request do
 
       document = Nokogiri::HTML(response.body)
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include('새 선생님 추가', '선택한 교실을 찾을 수 없습니다.')
+      expect(response.body).to include(
+        I18n.t('schools.teachers.new_title'),
+        I18n.t('schools.teachers.errors.classroom_not_found')
+      )
       expect(document.at_css(%(input[name="classroom_ids[]"][value="#{valid_classroom.id}"][checked]))).to be_present
     end
 
