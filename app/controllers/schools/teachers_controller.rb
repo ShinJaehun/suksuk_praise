@@ -23,7 +23,14 @@ class Schools::TeachersController < ApplicationController
     pool = avatar_keys_for_gender(@teacher.gender)
     @teacher.avatar_key = pool.sample unless pool.include?(@teacher.avatar_key)
 
-    if create_teacher_for_school
+    result = Teachers::SaveWithAssignments.call(
+      teacher: @teacher,
+      attributes: {},
+      school: @school,
+      classroom_ids: []
+    )
+
+    if result.success?
       redirect_to school_teachers_path(@school),
         notice: t("schools.teachers.create.success"),
         status: :see_other
@@ -40,10 +47,21 @@ class Schools::TeachersController < ApplicationController
   def update
     selected_classroom_ids
 
+    result =
+      unless classroom_assignments_invalid?
+        Teachers::SaveWithAssignments.call(
+          teacher: @teacher,
+          attributes: {},
+          school: @school,
+          classroom_ids: selected_classroom_ids,
+          assignment_scope: :school
+        )
+      end
+
     if classroom_assignments_invalid?
       load_edit_form
       render_teacher_form(:edit)
-    elsif update_school_classroom_assignments
+    elsif result.success?
       redirect_to school_teachers_path(@school),
         notice: t("schools.teachers.update.success"),
         status: :see_other
@@ -137,43 +155,6 @@ class Schools::TeachersController < ApplicationController
     User.avatar_keys_for_role("teacher")
   end
 
-  def create_teacher_for_school
-    User.transaction do
-      @teacher.save!
-      SchoolMembership.create!(user: @teacher, school: @school)
-    end
-    true
-  rescue ActiveRecord::RecordInvalid => error
-    handle_teacher_creation_error(error)
-  end
-
-  def update_school_classroom_assignments
-    ClassroomMembership.transaction do
-      current_memberships = @teacher.classroom_memberships
-        .teacher
-        .joins(:classroom)
-        .where(classrooms: { school_id: @school.id })
-      ids = selected_classroom_ids
-
-      current_ids = current_memberships.pluck(:classroom_id)
-
-      (ids - current_ids).each do |classroom_id|
-        ClassroomMembership.create!(
-          user_id: @teacher.id,
-          classroom_id: classroom_id,
-          role: "teacher",
-          status: "active"
-        )
-      end
-
-      current_memberships.where(classroom_id: current_ids - ids).destroy_all
-    end
-    true
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
-    @teacher.errors.add(:base, error.record.errors.full_messages.to_sentence) if error.respond_to?(:record)
-    false
-  end
-
   def selected_classroom_ids
     return @selected_classroom_ids if defined?(@selected_classroom_ids)
 
@@ -208,19 +189,6 @@ class Schools::TeachersController < ApplicationController
       end
     @teacher_classroom_names = @classrooms.select { |classroom| @teacher_classroom_ids.include?(classroom.id) }.map(&:name)
     @teacher_classroom_count = @teacher_classroom_names.size
-  end
-
-  def handle_teacher_creation_error(error)
-    record = error.record
-
-    if record.equal?(@teacher)
-      false
-    elsif record.is_a?(SchoolMembership)
-      record.errors.full_messages.each { |message| @teacher.errors.add(:base, message) }
-      false
-    else
-      raise error
-    end
   end
 
   def render_teacher_form(template)
