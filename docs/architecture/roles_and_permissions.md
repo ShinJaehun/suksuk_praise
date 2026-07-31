@@ -103,11 +103,11 @@
 
 `SchoolPolicy::Scope`는 global admin에게 전체 학교를, 소속 teacher에게 자신의 학교만 반환한다. 일반 member와 manager는 자신의 학교를 `show?`할 수 있다. `manage_operations?`는 global admin과 해당 학교 manager에게 허용하고, `manage_teachers?`는 해당 학교 manager에게만 허용한다. global admin의 선생님 관리는 `/admin/teachers`와 `UserPolicy`를 사용한다.
 
-`ClassroomPolicy::Scope`는 global admin에게 전체 학급을, 학교 manager에게 자기 학교의 모든 학급을, 일반 teacher에게 담당 teacher membership 학급만 반환한다. student의 기존 membership 기반 scope는 유지한다. `manage_structure?`는 global admin과 해당 학교 manager에게 이름·학년, admin에게 학교 변경을 허용한다. `manage_operations?`와 `manage_members?`는 global admin과 실제 담당 teacher에게만 허용한다. 따라서 manager는 담당 teacher가 아니라면 학생 관리나 칭찬왕·메시지 운영 설정 권한을 얻지 않는다.
+`ClassroomPolicy::Scope`는 global admin에게 전체 학급을, 학교 manager에게 자기 학교의 모든 학급을, 일반 teacher에게 담당 teacher membership 학급만 반환한다. student의 기존 membership 기반 scope는 유지한다. `manage_structure?`는 global admin과 해당 학교 manager에게 이름·학년 관리를 허용하지만, 생성된 교실의 학교는 누구도 변경할 수 없다. `manage_operations?`와 `manage_members?`는 global admin과 실제 담당 teacher에게만 허용한다. 따라서 manager는 담당 teacher가 아니라면 학생 관리나 칭찬왕·메시지 운영 설정 권한을 얻지 않는다.
 
 `/schools/:id`는 학교 기본 현황과 학교 휴일을 제공하고, global admin은 독립된 `/schools/:id/edit`에서 학교 이름·표시 색상·관리자·활성 상태를 관리한다. 교실 상세 관리는 `/classrooms`에서 수행한다. 담당 teacher 배정·해제는 global admin은 `/admin/teachers`, 해당 학교 manager는 `/schools/:school_id/teachers`에서 수행하며 classroom create/update는 `teacher_ids`를 처리하지 않는다.
 
-담당 teacher는 SchoolMembership을 반드시 가지며 모든 담당 Classroom은 그 SchoolMembership과 같은 학교여야 한다. global admin이 `/admin/teachers/:id`에서 학교와 담당 학급을 함께 변경하면 기존 teacher assignment 제거, SchoolMembership 변경·삭제, 최종 assignment 생성을 한 transaction으로 처리한다. 잘못된 학교·학급 조합은 변경 전 거부하고 전체 기존 상태를 보존한다.
+담당 teacher는 SchoolMembership을 반드시 가지며 모든 담당 Classroom은 그 SchoolMembership과 같은 학교여야 한다. global admin이 `/admin/teachers/:id`에서 학교와 담당 학급을 함께 변경하면 `Teachers::SaveWithAssignments`가 기존 teacher assignment 제거, SchoolMembership 변경·삭제, 최종 assignment 생성을 한 transaction으로 처리한다. 잘못된 학교·학급 조합은 변경 전 거부하고 전체 기존 상태를 보존한다.
 
 학교 삭제 endpoint는 아직 구현하지 않았다. 학교 생성·이름 수정·삭제 policy와 manager 지정·해제는 global admin 전용으로 유지한다. 학교 manager는 `/schools/:school_id/teachers`에서 자기 학교 teacher를 일반 구성원으로 생성하고 자기 학교 담당 교실만 배정·해제할 수 있으며, 학교 이동·소속 해제·manager 지정/해제·다른 학교 교실 배정은 할 수 없다.
 

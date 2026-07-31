@@ -84,6 +84,16 @@ RSpec.describe Classroom, type: :model do
     )
   end
 
+  it "uses its school calendar to determine weekly compliment king refresh availability" do
+    school = create(:school)
+    classroom = create(:classroom, school: school)
+    date = Date.new(2026, 7, 31)
+    calendar = instance_double(SchoolCalendar, last_school_day_of_week: date)
+    allow(SchoolCalendar).to receive(:new).with(school).and_return(calendar)
+
+    expect(classroom.compliment_king_refresh_available_for?(:weekly, date: date)).to eq(true)
+  end
+
   it "allows grades 1 and 6" do
     [1, 6].each do |grade|
       classroom = build(:classroom, grade: grade)

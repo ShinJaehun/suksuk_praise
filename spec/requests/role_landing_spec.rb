@@ -1,6 +1,12 @@
 require "rails_helper"
 
 RSpec.describe "Role landing pages", type: :request do
+  it "redirects the admin namespace root to schools" do
+    get admin_root_path
+
+    expect(response).to redirect_to("/schools")
+  end
+
   it "routes an admin to schools" do
     sign_in create(:user, :admin)
     get root_path

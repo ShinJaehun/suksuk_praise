@@ -66,7 +66,7 @@
 
 학급 담당 교사는 학급과 같은 학교의 SchoolMembership을 가진 teacher만 가능하다. 학교 manager의 학교별 화면은 해당 학교 안의 ClassroomMembership만 추가·삭제하고 학교 소속과 manager 역할, 다른 학교 담당 교실은 변경하지 않는다.
 
-global admin은 `/admin/teachers/:id`에서 최종 학교와 최종 담당 학급을 명시적으로 함께 선택한다. controller는 모든 학급이 선택 학교 소속인지 검증하고 기존 담당 해제, SchoolMembership 생성·변경·삭제, 새 담당 생성을 한 transaction에서 처리한다. 같은 학교에서는 manager 역할을 유지하고, 학교 변경 시 새 학교의 member가 되며, 소속 제거 시 teacher ClassroomMembership도 모두 제거한다. classroom 자체의 학교는 변경하지 않는다.
+global admin은 `/admin/teachers/:id`에서 최종 학교와 최종 담당 학급을 명시적으로 함께 선택한다. `Teachers::SaveWithAssignments`는 모든 학급이 선택 학교 소속인지 검증하고 기존 담당 해제, SchoolMembership 생성·변경·삭제, 새 담당 생성을 한 transaction에서 처리한다. 같은 학교에서는 manager 역할을 유지하고, 학교 변경 시 새 학교의 member가 되며, 소속 제거 시 teacher ClassroomMembership도 모두 제거한다. classroom 자체의 학교는 생성 후 변경할 수 없다.
 
 기존 teacher assignment의 누락 SchoolMembership은 `bin/rails school_memberships:backfill`로 멱등하게 보완한다. backfill은 다른 학교 충돌을 자동 변경하지 않고 `conflicts`로 집계한다.
 

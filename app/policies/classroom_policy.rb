@@ -95,6 +95,7 @@ class ClassroomPolicy < ApplicationPolicy
   private
 
   def active_school?
+    # The shared new-classroom form checks structure permission before an admin selects a school.
     return true if admin? && record.respond_to?(:new_record?) && record.new_record?
 
     record.respond_to?(:school) && record.school&.active?

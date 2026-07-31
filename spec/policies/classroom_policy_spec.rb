@@ -143,6 +143,12 @@ RSpec.describe ClassroomPolicy do
     let(:school) { create(:school) }
     let(:classroom) { create(:classroom, school: school) }
 
+    it "allows an admin to render structure fields before a new classroom has a school" do
+      policy = described_class.new(create(:user, :admin), Classroom.new)
+
+      expect(policy.manage_structure?).to eq(true)
+    end
+
     it "allows an admin to manage structure, operations, and members" do
       policy = described_class.new(create(:user, :admin), classroom)
 

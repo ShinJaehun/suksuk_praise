@@ -52,7 +52,6 @@ class Classroom < ApplicationRecord
       date = date.to_date
       return false unless COMPLIMENT_KING_PERIODS.include?(period)
       return true if period == "daily"
-      return true if school.blank?
 
       calendar = SchoolCalendar.new(school)
       case period

@@ -156,7 +156,7 @@ Rails.application.routes.draw do
   resources :coupon_events, only: [:index]
 
   namespace :admin do
-    root to: redirect("/classrooms")
+    root to: redirect("/schools")
 
     resources :teachers, only: [:index, :new, :create, :edit, :update] do
       patch :deactivate, on: :member
