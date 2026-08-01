@@ -109,25 +109,6 @@
 #  end
 #end
 #
-#admin = User.find_by(role: 'admin') # 이미 위에서 생성됨
-#
-#templates = [
-#  { title: '쫀득 마이쭈', weight: 30, active: true, default_image_key: 'coupon_templates/mychew.png' },
-#  { title: '달콤 초콜릿', weight: 30, active: true, default_image_key: 'coupon_templates/chocolate.png' },
-#  { title: '좋아하는 자리에서 식사하기', weight: 30, active: true, default_image_key: 'coupon_templates/lunch_seat.png' },
-#  { title: '일주일간 자리 바꾸기', weight: 10, active: true, default_image_key: 'coupon_templates/swap.png' }
-#]
-#
-#templates.each do |attrs|
-#  t = CouponTemplate.find_or_initialize_by(
-#    title: attrs[:title],
-#    created_by_id: admin.id,
-#    bucket: 'library'
-#  )
-#  t.assign_attributes(attrs.merge(bucket: 'library'))
-#  t.save!
-#end
-
 # frozen_string_literal: true
 
 # 개발 및 테스트 환경용 기본 데이터
@@ -286,6 +267,10 @@ admin = seed_account!(
   avatar_key: "admin"
 )
 
+puts "== 관리자 쿠폰 라이브러리 생성 =="
+
+CouponTemplates::DefaultLibrarySeeder.call!(admin: admin)
+
 puts "== 교사 계정 생성 =="
 
 school_manager = seed_account!(
@@ -406,52 +391,6 @@ students = seed_students!(
   name_prefix: "4-1",
   student_pin: demo_student_pin
 )
-
-puts "== 관리자 쿠폰 라이브러리 생성 =="
-
-library_coupon_attributes = [
-  {
-    title: "쫀득 마이쭈",
-    weight: 30,
-    active: true,
-    default_image_key: "coupon_templates/mychew.png"
-  },
-  {
-    title: "달콤 초콜릿",
-    weight: 30,
-    active: true,
-    default_image_key: "coupon_templates/chocolate.png"
-  },
-  {
-    title: "좋아하는 자리에서 식사하기",
-    weight: 30,
-    active: true,
-    default_image_key: "coupon_templates/lunch_seat.png"
-  },
-  {
-    title: "일주일간 자리 바꾸기",
-    weight: 10,
-    active: true,
-    default_image_key: "coupon_templates/swap.png"
-  }
-]
-
-library_coupon_attributes.each do |attributes|
-  coupon_template = CouponTemplate.find_or_initialize_by(
-    created_by: admin,
-    bucket: "library",
-    title: attributes.fetch(:title)
-  )
-
-  coupon_template.assign_attributes(
-    attributes.merge(
-      created_by: admin,
-      bucket: "library"
-    )
-  )
-
-  coupon_template.save!
-end
 
 puts "== 교사 개인 쿠폰 생성 =="
 

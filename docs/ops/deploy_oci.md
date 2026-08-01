@@ -155,3 +155,49 @@ OCI로 넘어가기 전에 아래는 다시 확인한다.
 - 로컬 Docker 검증 단계에서는 `force_ssl`을 env로 제어하는 편이 좋음
 
 이 문서는 OCI 실제 배포 작업의 출발점으로 사용한다.
+
+---
+
+## Production 데이터베이스 준비
+
+### 최초 새 DB 설정
+
+새 production DB를 처음 준비할 때만 DB, schema, 최초 관리자와 기본 쿠폰
+라이브러리를 다음 순서로 생성한다. `app:bootstrap`은 대화형 입력이 필요하므로
+Docker Compose 명령에 `-T`를 사용하지 않는다.
+
+```bash
+docker compose \
+  -p suksuk_praise \
+  --env-file .env \
+  -f compose.prod.yml \
+  up -d db
+
+docker compose \
+  -p suksuk_praise \
+  --env-file .env \
+  -f compose.prod.yml \
+  run --rm web bin/rails db:prepare
+
+docker compose \
+  -p suksuk_praise \
+  --env-file .env \
+  -f compose.prod.yml \
+  run --rm web bin/rails app:bootstrap
+
+docker compose \
+  -p suksuk_praise \
+  --env-file .env \
+  -f compose.prod.yml \
+  up -d web
+```
+
+`app:bootstrap`은 새 production DB의 최초 관리자 설정에만 사용한다.
+관리자 계정과 그 관리자가 소유하는 기본 쿠폰 라이브러리 4개를 함께 생성한다.
+이미 관리자가 있으면 task는 아무 데이터도 변경하지 않고 정상 종료한다.
+production에서는 데모 데이터를 위한 `db:seed`를 실행할 필요가 없다.
+
+### 일반 재배포
+
+일반적인 코드 재배포에서는 `app:bootstrap`을 실행하지 않는다. 새 이미지를
+pull하고 필요한 migration을 `db:prepare`로 반영한 뒤 web 서비스를 재기동한다.
