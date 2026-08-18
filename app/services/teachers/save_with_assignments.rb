@@ -25,16 +25,20 @@ module Teachers
     end
 
     def call
-      teacher.assign_attributes(attributes)
-      validate_inputs
-      return result if teacher.errors.any?
+      return save_new_teacher if teacher.new_record?
 
       User.transaction do
-        teacher.save! if teacher.new_record?
-        remove_teacher_assignments!
-        sync_school_membership!
-        add_teacher_assignments!
-        teacher.save! if teacher.persisted? && teacher.changed?
+        teacher.with_lock do
+          teacher.assign_attributes(attributes)
+          validate_inputs
+
+          if teacher.errors.none?
+            remove_teacher_assignments!
+            sync_school_membership!
+            add_teacher_assignments!
+            teacher.save! if teacher.changed?
+          end
+        end
       end
 
       result
@@ -46,6 +50,21 @@ module Teachers
     private
 
     attr_reader :teacher, :attributes, :school, :raw_classroom_ids, :assignment_scope
+
+    def save_new_teacher
+      teacher.assign_attributes(attributes)
+      validate_inputs
+      return result if teacher.errors.any?
+
+      User.transaction do
+        teacher.save!
+        remove_teacher_assignments!
+        sync_school_membership!
+        add_teacher_assignments!
+      end
+
+      result
+    end
 
     def validate_inputs
       validate_teacher

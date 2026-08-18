@@ -62,6 +62,34 @@ RSpec.describe Teachers::SaveWithAssignments do
     expect(teacher.classroom_memberships.teacher.find_by(classroom: kept)).to eq(kept_membership)
   end
 
+  it "uses assignment state loaded after locking a persisted teacher" do
+    school = create(:school)
+    initial = create(:classroom, school: school)
+    concurrently_added = create(:classroom, school: school)
+    requested = create(:classroom, school: school)
+    teacher = create(:school_membership, school: school).user
+    create(:classroom_membership, user: teacher, classroom: initial, role: :teacher)
+
+    allow(teacher).to receive(:with_lock).and_wrap_original do |with_lock, *args, &block|
+      create(
+        :classroom_membership,
+        user: teacher,
+        classroom: concurrently_added,
+        role: :teacher
+      )
+      with_lock.call(*args, &block)
+    end
+
+    result = call_service(
+      teacher: teacher,
+      school: school,
+      classroom_ids: [requested.id]
+    )
+
+    expect(result).to be_success
+    expect(teacher.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(requested.id)
+  end
+
   it "allows multiple classrooms in the same school" do
     school = create(:school)
     classrooms = create_list(:classroom, 3, school: school)
