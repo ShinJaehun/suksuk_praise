@@ -376,6 +376,23 @@ RSpec.describe 'Compliments#create', type: :request do
       end
     end
 
+    it 'redirects an HTML duplicate request to the classroom student page' do
+      sign_in teacher
+
+      travel_to Time.zone.local(2026, 4, 7, 10, 0, 0) do
+        post classroom_compliments_path(classroom),
+             params: { compliment: { receiver_id: student.id } }
+
+        expect do
+          post classroom_compliments_path(classroom),
+               params: { compliment: { receiver_id: student.id } }
+        end.not_to change(Compliment, :count)
+      end
+
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(classroom_student_path(classroom, student))
+    end
+
     it 'returns a turbo stream conflict for a duplicate request inside the duplicate window' do
       sign_in teacher
 

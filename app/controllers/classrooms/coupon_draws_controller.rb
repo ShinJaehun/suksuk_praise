@@ -22,7 +22,7 @@ class Classrooms::CouponDrawsController < ApplicationController
         winner_coupons = nil
         load_recent_issued_coupons!
         respond_to do |format|
-          format.html { redirect_to classroom_path(@classroom), alert: message, status: :unprocessable_entity }
+          format.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
           format.turbo_stream do
             flash.now[:alert] = message
             render "classrooms/draw_coupon", layout: "application", status: :unprocessable_entity,
@@ -55,7 +55,7 @@ class Classrooms::CouponDrawsController < ApplicationController
         load_recent_issued_coupons!
         respond_to do |format|
           format.html do
-            redirect_to classroom_path(@classroom), alert: message, status: :conflict
+            redirect_to classroom_path(@classroom), alert: message, status: :see_other
           end
           format.turbo_stream do
             flash.now[:alert] = message
@@ -128,7 +128,7 @@ class Classrooms::CouponDrawsController < ApplicationController
     message = t("coupons.draw.already_issued_today")
     load_recent_issued_coupons!
     respond_to do |format|
-      format.html { redirect_to classroom_path(@classroom), alert: message, status: :conflict }
+      format.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
       format.turbo_stream do
         flash.now[:alert] = message
         render "classrooms/draw_coupon", layout: "application", status: :conflict,
@@ -140,7 +140,7 @@ class Classrooms::CouponDrawsController < ApplicationController
     message = t("coupons.draw.not_found")
     load_recent_issued_coupons!
     respond_to do |format|
-      format.html { redirect_to classroom_path(@classroom), alert: message, status: :not_found }
+      format.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
       format.turbo_stream do
         flash.now[:alert] = message
         render "classrooms/draw_coupon", layout: "application", status: :not_found,
@@ -152,7 +152,7 @@ class Classrooms::CouponDrawsController < ApplicationController
     message = t(e.i18n_key)
     load_recent_issued_coupons!
     respond_to do |format|
-      format.html { redirect_to classroom_path(@classroom), alert: message, status: e.http_status }
+      format.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
       format.turbo_stream do
         flash.now[:alert] = message
         render "classrooms/draw_coupon", layout: "application", status: e.http_status,
@@ -164,7 +164,7 @@ class Classrooms::CouponDrawsController < ApplicationController
     message = t("coupons.draw.invalid", reason: e.message)
     load_recent_issued_coupons!
     respond_to do |format|
-      format.html { redirect_to classroom_path(@classroom), alert: message, status: :unprocessable_entity }
+      format.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
       format.turbo_stream do
         flash.now[:alert] = message
         render "classrooms/draw_coupon", layout: "application", status: :unprocessable_entity,

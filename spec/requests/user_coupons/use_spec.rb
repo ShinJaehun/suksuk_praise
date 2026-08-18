@@ -209,6 +209,18 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(json_body["ok"]).to eq(false)
     end
 
+    it "redirects an HTML already-used coupon request to the coupon owner page" do
+      sign_in teacher
+      coupon.update!(status: :used, used_at: Time.zone.local(2026, 4, 7, 11, 0, 0))
+
+      expect {
+        post use_user_coupon_path(student, coupon)
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(user_path(student))
+    end
+
     it "creates a used event on success" do
       sign_in teacher
 

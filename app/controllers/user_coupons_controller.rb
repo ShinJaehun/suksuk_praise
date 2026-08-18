@@ -105,7 +105,7 @@ class UserCouponsController < ApplicationController
   def render_use_conflict(message:, error:)
     load_use_stream_data!(user: @user, classroom_id: @coupon.classroom_id)
     respond_to do |f|
-      f.html { redirect_to user_path(@user), alert: message, status: :conflict }
+      f.html { redirect_to user_path(@user), alert: message, status: :see_other }
       f.turbo_stream  do
         flash.now[:alert] = message
         render :use, layout: "application", status: :conflict

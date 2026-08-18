@@ -53,7 +53,7 @@ class ComplimentsController < ApplicationController
         message = t("compliments.create.duplicate")
         return respond_to do |f|
           f.html { redirect_back fallback_location: classroom_student_path(@classroom, @receiver),
-            alert: message, status: :conflict }
+            alert: message, status: :see_other }
           f.turbo_stream do
             flash.now[:alert] = message
             render :create, layout: "application", status: :conflict
@@ -100,7 +100,7 @@ class ComplimentsController < ApplicationController
     message = t("compliments.create.failure", detail: e.message)
     respond_to do |f|
       f.html { redirect_back fallback_location: classroom_student_path(@classroom, @receiver),
-        alert: message, status: :unprocessable_entity }
+        alert: message, status: :see_other }
       f.turbo_stream do
         flash.now[:alert] = message
         render layout: "application", status: :unprocessable_entity

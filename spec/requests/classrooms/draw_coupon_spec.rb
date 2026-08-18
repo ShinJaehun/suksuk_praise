@@ -240,6 +240,20 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       expect(json_body).to eq("ok" => false, "error" => "user_not_in_classroom")
     end
 
+    it "redirects an HTML draw for an inactive student target to the classroom" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      membership.inactive!
+      sign_in teacher
+
+      expect {
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "manual", mode: "default", user_id: student.id }
+      }.not_to change(UserCoupon, :count)
+
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(classroom_path(classroom))
+    end
+
     it "creates a coupon and issued event on success" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       sign_in teacher
