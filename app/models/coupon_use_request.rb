@@ -5,7 +5,7 @@ class CouponUseRequest < ApplicationRecord
   belongs_to :requested_by, class_name: "User"
   belongs_to :resolved_by, class_name: "User", optional: true
 
-  enum status: { pending: 0, approved: 1 }
+  enum :status, { pending: 0, approved: 1 }
 
   validates :requested_at, presence: true
   validates :user_coupon_id,

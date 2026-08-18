@@ -5,10 +5,10 @@ class UserCoupon < ApplicationRecord
   belongs_to :issued_by, class_name: "User", optional: true
   has_many :coupon_use_requests, dependent: :destroy
 
-  enum status: { issued: 0, used: 1 }
+  enum :status, { issued: 0, used: 1 }
 
   # 발급 컨텍스트 (문자열 enum)
-  enum issuance_basis: {
+  enum :issuance_basis, {
     daily:  "daily",
     weekly: "weekly",
     monthly: "monthly",

@@ -33,7 +33,7 @@ class User < ApplicationRecord
   validate :avatar_key_allowed_for_role, if: :will_save_change_to_avatar_key?
   validates :student_pin, format: { with: /\A\d{4}\z/, message: "must be 4 digits" }, allow_blank: true
 
-  enum role: { student: "student", teacher: "teacher", admin: "admin" }
+  enum :role, { student: "student", teacher: "teacher", admin: "admin" }
   scope :active, -> { where(active: true) }
   scope :inactive, -> { where(active: false) }
   has_one_attached :avatar
