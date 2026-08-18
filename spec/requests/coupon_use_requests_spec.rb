@@ -34,6 +34,18 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(coupon.reload).to be_issued
   end
 
+  it "keeps a successful request when the student card broadcast fails" do
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to).and_raise(StandardError)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+    sign_in student
+
+    expect {
+      post request_user_coupon_use_path(student, coupon)
+    }.to change(CouponUseRequest.pending, :count).by(1)
+
+    expect(response).to have_http_status(:see_other)
+  end
+
   it "broadcasts a student card badge update after a student requests coupon use" do
     allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
     allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
@@ -132,6 +144,36 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(coupon.reload).to be_used
     expect(request.reload).to be_approved
     expect(request.resolved_by).to eq(teacher)
+  end
+
+  it "keeps a successful approval when the student card broadcast fails" do
+    request = create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to).and_raise(StandardError)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+    sign_in teacher
+
+    patch approve_coupon_use_request_path(request)
+
+    expect(response).to have_http_status(:see_other)
+    expect(coupon.reload).to be_used
+    expect(request.reload).to be_approved
+  end
+
+  it "attempts the managed coupon broadcast when the student coupon broadcast fails" do
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_update_to) do |_student, stream, **_options|
+      raise StandardError if stream == :student_coupons
+    end
+    sign_in student
+
+    post request_user_coupon_use_path(student, coupon)
+
+    expect(response).to have_http_status(:see_other)
+    expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+      student,
+      :managed_coupons,
+      hash_including(partial: "user_coupons/list")
+    )
   end
 
   it "broadcasts a student card badge removal after the last pending request is approved" do

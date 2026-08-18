@@ -142,30 +142,34 @@ class UserCouponsController < ApplicationController
   end
 
   def broadcast_student_coupon_lists
-    coupon_list_locals = {
-      coupons: @coupons,
-      user: @user,
-      pending_coupon_use_requests_by_coupon_id: CouponUseRequest
-        .pending
-        .where(user_coupon_id: @coupons.select(:id))
-        .index_by(&:user_coupon_id)
-    }
+    broadcast_student_coupon_list(stream: :student_coupons, viewer: @user)
+    broadcast_student_coupon_list(stream: :managed_coupons, viewer: nil)
+  end
 
-    Turbo::StreamsChannel.broadcast_update_to(
-      @user,
-      :student_coupons,
-      target: view_context.dom_id(@user, :coupons),
-      partial: "user_coupons/list",
-      locals: coupon_list_locals.merge(viewer: @user)
-    )
-
-    Turbo::StreamsChannel.broadcast_update_to(
-      @user,
-      :managed_coupons,
-      target: view_context.dom_id(@user, :coupons),
-      partial: "user_coupons/list",
-      locals: coupon_list_locals.merge(viewer: nil)
-    )
+  def broadcast_student_coupon_list(stream:, viewer:)
+    safely_broadcast_realtime(
+      tag: stream,
+      actor_id: current_user.id,
+      classroom_id: @coupon.classroom_id,
+      student_id: @user.id,
+      coupon_id: @coupon.id
+    ) do
+      Turbo::StreamsChannel.broadcast_update_to(
+        @user,
+        stream,
+        target: view_context.dom_id(@user, :coupons),
+        partial: "user_coupons/list",
+        locals: {
+          coupons: @coupons,
+          user: @user,
+          viewer: viewer,
+          pending_coupon_use_requests_by_coupon_id: CouponUseRequest
+            .pending
+            .where(user_coupon_id: @coupons.select(:id))
+            .index_by(&:user_coupon_id)
+        }
+      )
+    end
   end
 
   def issued_coupons_for(user:, classroom_id:)
@@ -176,21 +180,29 @@ class UserCouponsController < ApplicationController
   end
 
   def broadcast_student_coupon_list_for(student, coupons)
-    Turbo::StreamsChannel.broadcast_update_to(
-      student,
-      :student_coupons,
-      target: view_context.dom_id(student, :coupons),
-      partial: "user_coupons/list",
-      locals: {
-        coupons: coupons,
-        user: student,
-        viewer: student,
-        pending_coupon_use_requests_by_coupon_id: CouponUseRequest
-          .pending
-          .where(user_coupon_id: coupons.select(:id))
-          .index_by(&:user_coupon_id)
-      }
-    )
+    safely_broadcast_realtime(
+      tag: :student_coupons,
+      actor_id: current_user.id,
+      classroom_id: @coupon.classroom_id,
+      student_id: student.id,
+      coupon_id: @coupon.id
+    ) do
+      Turbo::StreamsChannel.broadcast_update_to(
+        student,
+        :student_coupons,
+        target: view_context.dom_id(student, :coupons),
+        partial: "user_coupons/list",
+        locals: {
+          coupons: coupons,
+          user: student,
+          viewer: student,
+          pending_coupon_use_requests_by_coupon_id: CouponUseRequest
+            .pending
+            .where(user_coupon_id: coupons.select(:id))
+            .index_by(&:user_coupon_id)
+        }
+      )
+    end
   end
 
 end

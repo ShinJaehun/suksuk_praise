@@ -56,24 +56,29 @@ class CouponUseRequestsController < ApplicationController
   end
 
   def broadcast_student_coupon_lists(coupon_use_request)
+    broadcast_student_coupon_list(coupon_use_request, stream: :student_coupons, viewer: coupon_use_request.student)
+    broadcast_student_coupon_list(coupon_use_request, stream: :managed_coupons, viewer: nil)
+  end
+
+  def broadcast_student_coupon_list(coupon_use_request, stream:, viewer:)
     student = coupon_use_request.student
-    coupon_list_locals = student_coupon_list_locals(coupon_use_request)
 
-    Turbo::StreamsChannel.broadcast_update_to(
-      student,
-      :student_coupons,
-      target: view_context.dom_id(student, :coupons),
-      partial: "user_coupons/list",
-      locals: coupon_list_locals.merge(viewer: student)
-    )
-
-    Turbo::StreamsChannel.broadcast_update_to(
-      student,
-      :managed_coupons,
-      target: view_context.dom_id(student, :coupons),
-      partial: "user_coupons/list",
-      locals: coupon_list_locals.merge(viewer: nil)
-    )
+    safely_broadcast_realtime(
+      tag: stream,
+      actor_id: current_user.id,
+      classroom_id: coupon_use_request.classroom_id,
+      student_id: student.id,
+      coupon_id: coupon_use_request.user_coupon_id,
+      coupon_use_request_id: coupon_use_request.id
+    ) do
+      Turbo::StreamsChannel.broadcast_update_to(
+        student,
+        stream,
+        target: view_context.dom_id(student, :coupons),
+        partial: "user_coupons/list",
+        locals: student_coupon_list_locals(coupon_use_request).merge(viewer: viewer)
+      )
+    end
   end
 
   def student_coupon_list_locals(coupon_use_request)

@@ -221,6 +221,23 @@ RSpec.describe "UserCoupons#use", type: :request do
       )
     end
 
+    it "keeps a successful use and attempts the managed broadcast when the student broadcast fails" do
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to) do |_student, stream, **_options|
+        raise StandardError if stream == :student_coupons
+      end
+      sign_in teacher
+
+      post use_user_coupon_path(student, coupon), as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(coupon.reload).to be_used
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :managed_coupons,
+        hash_including(partial: "user_coupons/list")
+      )
+    end
+
     it "broadcasts the issued coupon list to the student stream after issue reveal" do
       allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
       sign_in teacher

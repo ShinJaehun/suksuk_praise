@@ -82,17 +82,42 @@ class ApplicationController < ActionController::Base
   end
 
   def broadcast_student_card_alerts_for(classroom, student)
-    Turbo::StreamsChannel.broadcast_replace_to(
-      classroom,
-      :student_card_alerts,
-      target: view_context.dom_id(student, :student_card_alerts),
-      partial: "users/student_card_alerts",
-      locals: {
-        user: student,
-        pending_coupon_request: pending_coupon_request_for?(classroom, student),
-        unread_student_message: unread_student_message_for?(classroom, student),
-        coupon_alert_path: student_card_coupon_alert_path(classroom, student),
-        message_alert_path: student_card_message_alert_path(classroom, student)
+    safely_broadcast_realtime(
+      tag: :student_card_alerts,
+      actor_id: current_user&.id,
+      classroom_id: classroom.id,
+      student_id: student.id
+    ) do
+      Turbo::StreamsChannel.broadcast_replace_to(
+        classroom,
+        :student_card_alerts,
+        target: view_context.dom_id(student, :student_card_alerts),
+        partial: "users/student_card_alerts",
+        locals: {
+          user: student,
+          pending_coupon_request: pending_coupon_request_for?(classroom, student),
+          unread_student_message: unread_student_message_for?(classroom, student),
+          coupon_alert_path: student_card_coupon_alert_path(classroom, student),
+          message_alert_path: student_card_message_alert_path(classroom, student)
+        }
+      )
+    end
+  end
+
+  def safely_broadcast_realtime(tag:, **context)
+    yield
+  rescue StandardError => error
+    app_location = error.backtrace_locations&.find do |location|
+      location.absolute_path&.start_with?(Rails.root.to_s)
+    end
+
+    Rails.logger.warn(
+      {
+        event: "realtime_broadcast_failed",
+        broadcast: tag,
+        **context.compact,
+        exception_class: error.class.name,
+        app_backtrace: app_location&.to_s
       }
     )
   end
