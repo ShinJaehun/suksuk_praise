@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  post "/rails/active_storage/direct_uploads",
+    to: ->(_env) { [404, { "Content-Type" => "text/plain" }, ["Not Found"]] }
+
   devise_for :users, controllers: {
     registrations: "users/registrations",
     sessions: "users/sessions"
