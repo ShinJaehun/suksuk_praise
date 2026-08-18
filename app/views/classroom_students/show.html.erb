@@ -2,7 +2,7 @@
   <% if current_user.student? && current_user == @user %>
     <%= turbo_stream_from @user, :student_coupons %>
   <% else %>
-    <%= turbo_stream_from @user, :managed_coupons %>
+    <%= turbo_stream_from @user, :managed_coupons, @classroom, current_user %>
   <% end %>
 
   <%= render "classroom_students/student_profile_card",

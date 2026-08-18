@@ -136,6 +136,20 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("사용요청")
       expect(response.body).not_to include("action=\"#{use_user_coupon_path(student, coupon)}\"")
+      expect(response.body).to include(
+        Turbo::StreamsChannel.signed_stream_name([student, :student_coupons])
+      )
+    end
+
+    it "subscribes a classroom teacher to the recipient-specific managed coupon stream" do
+      sign_in teacher
+
+      get classroom_student_path(classroom, student)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(
+        Turbo::StreamsChannel.signed_stream_name([student, :managed_coupons, classroom, teacher])
+      )
     end
 
     it "shows a pending use request state to the owner student" do
@@ -253,6 +267,8 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
         student,
         :managed_coupons,
+        classroom,
+        teacher,
         hash_including(
           target: dom_id(student, :coupons),
           partial: "user_coupons/list",
@@ -279,6 +295,8 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
         student,
         :managed_coupons,
+        classroom,
+        teacher,
         hash_including(partial: "user_coupons/list")
       )
     end

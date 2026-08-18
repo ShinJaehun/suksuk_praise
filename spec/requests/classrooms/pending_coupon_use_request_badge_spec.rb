@@ -25,6 +25,9 @@ RSpec.describe "Classroom pending coupon use request badge", type: :request do
     expect(response.body).to include(classroom_student_path(classroom, student, anchor: dom_id(student, :coupons)))
     expect(response.body).to include('data-controller="student-card-alert-reconciliation"')
     expect(response.body).to include(classroom_student_card_alert_state_path(classroom))
+    expect(response.body).to include(
+      Turbo::StreamsChannel.signed_stream_name([classroom, :student_card_alerts, teacher])
+    )
   end
 
   it "does not show the badge when there is no pending request" do

@@ -1,5 +1,5 @@
 <section class="mx-auto w-full max-w-6xl space-y-5 pt-4" data-controller="compliment-king-toggle">
-  <%= turbo_stream_from @classroom, :student_card_alerts %>
+  <%= turbo_stream_from @classroom, :student_card_alerts, current_user %>
   <% if @can_manage_classroom %>
     <div data-controller="student-card-alert-reconciliation"
          data-student-card-alert-reconciliation-url-value="<%= classroom_student_card_alert_state_path(@classroom) %>"></div>

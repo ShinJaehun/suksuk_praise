@@ -19,7 +19,7 @@ class ApplicationController < ActionController::Base
   rescue_from Pundit::NotAuthorizedError do
     respond_to do |format|
       format.html do
-        redirect_to(request.referrer.presence || root_path, alert: t("errors.not_authorized"))
+        redirect_to(root_path, alert: t("errors.not_authorized"))
       end
       format.json do
         render json: { ok: false, error: "not_authorized" }, status: :forbidden
@@ -83,25 +83,100 @@ class ApplicationController < ActionController::Base
 
   def broadcast_student_card_alerts_for(classroom, student)
     safely_broadcast_realtime(
-      tag: :student_card_alerts,
+      tag: :student_card_alert_recipients,
       actor_id: current_user&.id,
       classroom_id: classroom.id,
       student_id: student.id
     ) do
-      Turbo::StreamsChannel.broadcast_replace_to(
-        classroom,
-        :student_card_alerts,
-        target: view_context.dom_id(student, :student_card_alerts),
-        partial: "users/student_card_alerts",
-        locals: {
-          user: student,
-          pending_coupon_request: pending_coupon_request_for?(classroom, student),
-          unread_student_message: unread_student_message_for?(classroom, student),
-          coupon_alert_path: student_card_coupon_alert_path(classroom, student),
-          message_alert_path: student_card_message_alert_path(classroom, student)
+      locals = {
+        user: student,
+        pending_coupon_request: pending_coupon_request_for?(classroom, student),
+        unread_student_message: unread_student_message_for?(classroom, student),
+        coupon_alert_path: student_card_coupon_alert_path(classroom, student),
+        message_alert_path: student_card_message_alert_path(classroom, student)
+      }
+
+      student_card_alert_recipients_for(classroom).find_each do |recipient|
+        safely_broadcast_realtime(
+          tag: :student_card_alerts,
+          actor_id: current_user&.id,
+          classroom_id: classroom.id,
+          student_id: student.id,
+          recipient_id: recipient.id
+        ) do
+          Turbo::StreamsChannel.broadcast_replace_to(
+            classroom,
+            :student_card_alerts,
+            recipient,
+            target: view_context.dom_id(student, :student_card_alerts),
+            partial: "users/student_card_alerts",
+            locals: locals
+          )
+        end
+      end
+    end
+  end
+
+  def broadcast_managed_coupon_list_for(student:, classroom:, **context)
+    safely_broadcast_realtime(tag: :managed_coupon_recipients, **context) do
+      locals = yield
+
+      managed_coupon_recipients_for(classroom).find_each do |recipient|
+        safely_broadcast_realtime(
+          tag: :managed_coupons,
+          **context,
+          recipient_id: recipient.id
+        ) do
+          Turbo::StreamsChannel.broadcast_update_to(
+            student,
+            :managed_coupons,
+            classroom,
+            recipient,
+            target: view_context.dom_id(student, :coupons),
+            partial: "user_coupons/list",
+            locals: locals
+          )
+        end
+      end
+    end
+  end
+
+  def student_card_alert_recipients_for(classroom)
+    admin_ids = User.admin.select(:id)
+    return User.where(id: admin_ids) unless classroom.school.active?
+
+    assigned_teacher_ids = active_classroom_teacher_ids_for(classroom)
+    manager_ids = User.active.teacher
+      .joins(:school_membership)
+      .where(school_memberships: { school_id: classroom.school_id, role: SchoolMembership.roles[:manager] })
+      .select(:id)
+
+    User.where(id: admin_ids)
+      .or(User.where(id: assigned_teacher_ids))
+      .or(User.where(id: manager_ids))
+      .distinct
+  end
+
+  def managed_coupon_recipients_for(classroom)
+    admins = User.where(id: User.admin.select(:id))
+    return admins unless classroom.school.active?
+
+    admins
+      .or(User.where(id: active_classroom_teacher_ids_for(classroom)))
+      .distinct
+  end
+
+  def active_classroom_teacher_ids_for(classroom)
+    User.active.teacher
+      .joins(:classroom_memberships)
+      .where(
+        classroom_memberships: {
+          classroom_id: classroom.id,
+          role: "teacher",
+          status: "active"
         }
       )
-    end
+      .select(:id)
   end
 
   def safely_broadcast_realtime(tag:, **context)

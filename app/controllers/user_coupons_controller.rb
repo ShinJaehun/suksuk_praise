@@ -156,7 +156,14 @@ class UserCouponsController < ApplicationController
 
   def broadcast_student_coupon_lists
     broadcast_student_coupon_list(stream: :student_coupons, viewer: @user)
-    broadcast_student_coupon_list(stream: :managed_coupons, viewer: nil)
+    broadcast_managed_coupon_list_for(
+      student: @user,
+      classroom: @coupon.classroom,
+      actor_id: current_user.id,
+      classroom_id: @coupon.classroom_id,
+      student_id: @user.id,
+      coupon_id: @coupon.id
+    ) { coupon_list_locals(viewer: nil) }
   end
 
   def broadcast_student_coupon_list(stream:, viewer:)
@@ -172,17 +179,21 @@ class UserCouponsController < ApplicationController
         stream,
         target: view_context.dom_id(@user, :coupons),
         partial: "user_coupons/list",
-        locals: {
-          coupons: @coupons,
-          user: @user,
-          viewer: viewer,
-          pending_coupon_use_requests_by_coupon_id: CouponUseRequest
-            .pending
-            .where(user_coupon_id: @coupons.select(:id))
-            .index_by(&:user_coupon_id)
-        }
+        locals: coupon_list_locals(viewer: viewer)
       )
     end
+  end
+
+  def coupon_list_locals(viewer:)
+    {
+      coupons: @coupons,
+      user: @user,
+      viewer: viewer,
+      pending_coupon_use_requests_by_coupon_id: CouponUseRequest
+        .pending
+        .where(user_coupon_id: @coupons.select(:id))
+        .index_by(&:user_coupon_id)
+    }
   end
 
   def issued_coupons_for(user:, classroom_id:)

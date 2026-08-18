@@ -35,7 +35,11 @@ RSpec.describe "Coupon use requests", type: :request do
   end
 
   it "keeps a successful request when the student card broadcast fails" do
-    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to).and_raise(StandardError)
+    other_teacher = create(:user, :teacher)
+    create(:classroom_membership, user: other_teacher, classroom: classroom, role: "teacher")
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to) do |*streamables, **_options|
+      raise StandardError if streamables.last == teacher
+    end
     allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
     sign_in student
 
@@ -44,6 +48,12 @@ RSpec.describe "Coupon use requests", type: :request do
     }.to change(CouponUseRequest.pending, :count).by(1)
 
     expect(response).to have_http_status(:see_other)
+    expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
+      classroom,
+      :student_card_alerts,
+      other_teacher,
+      hash_including(partial: "users/student_card_alerts")
+    )
   end
 
   it "broadcasts a student card badge update after a student requests coupon use" do
@@ -56,12 +66,66 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
       classroom,
       :student_card_alerts,
+      teacher,
       hash_including(
         target: dom_id(student, :student_card_alerts),
         partial: "users/student_card_alerts",
         locals: hash_including(user: student, pending_coupon_request: true)
       )
     )
+  end
+
+  it "broadcasts management streams only to their current recipients" do
+    manager = create(:user, :teacher)
+    create(:school_membership, :manager, school: classroom.school, user: manager)
+    admin = create(:user, :admin)
+    removed_teacher = create(:user, :teacher)
+    create(:classroom_membership, user: removed_teacher, classroom: classroom, role: "teacher").destroy!
+    inactive_teacher = create(:user, :teacher)
+    create(:classroom_membership, user: inactive_teacher, classroom: classroom, role: "teacher")
+    inactive_teacher.update!(active: false)
+    former_manager = create(:user, :teacher)
+    create(:school_membership, school: classroom.school, user: former_manager)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+    allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
+    sign_in student
+
+    post request_user_coupon_use_path(student, coupon)
+
+    [teacher, manager, admin].each do |recipient|
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
+        classroom,
+        :student_card_alerts,
+        recipient,
+        hash_including(partial: "users/student_card_alerts")
+      )
+    end
+    [removed_teacher, inactive_teacher, former_manager].each do |recipient|
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_replace_to).with(
+        classroom,
+        :student_card_alerts,
+        recipient,
+        any_args
+      )
+    end
+    [teacher, admin].each do |recipient|
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :managed_coupons,
+        classroom,
+        recipient,
+        hash_including(partial: "user_coupons/list")
+      )
+    end
+    [manager, removed_teacher, inactive_teacher, former_manager].each do |recipient|
+      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to).with(
+        student,
+        :managed_coupons,
+        classroom,
+        recipient,
+        any_args
+      )
+    end
   end
 
   it "broadcasts student coupon list updates after a student requests coupon use" do
@@ -88,6 +152,8 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
       student,
       :managed_coupons,
+      classroom,
+      teacher,
       hash_including(
         target: dom_id(student, :coupons),
         partial: "user_coupons/list",
@@ -186,6 +252,8 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
       student,
       :managed_coupons,
+      classroom,
+      teacher,
       hash_including(partial: "user_coupons/list")
     )
   end
@@ -201,6 +269,7 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
       classroom,
       :student_card_alerts,
+      teacher,
       hash_including(
         target: dom_id(student, :student_card_alerts),
         partial: "users/student_card_alerts",
@@ -234,6 +303,8 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
       student,
       :managed_coupons,
+      classroom,
+      teacher,
       hash_including(
         target: dom_id(student, :coupons),
         partial: "user_coupons/list",
@@ -269,6 +340,7 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
       classroom,
       :student_card_alerts,
+      teacher,
       hash_including(
         target: dom_id(student, :student_card_alerts),
         partial: "users/student_card_alerts",

@@ -66,7 +66,15 @@ class CouponUseRequestsController < ApplicationController
 
   def broadcast_student_coupon_lists(coupon_use_request)
     broadcast_student_coupon_list(coupon_use_request, stream: :student_coupons, viewer: coupon_use_request.student)
-    broadcast_student_coupon_list(coupon_use_request, stream: :managed_coupons, viewer: nil)
+    broadcast_managed_coupon_list_for(
+      student: coupon_use_request.student,
+      classroom: coupon_use_request.classroom,
+      actor_id: current_user.id,
+      classroom_id: coupon_use_request.classroom_id,
+      student_id: coupon_use_request.student_id,
+      coupon_id: coupon_use_request.user_coupon_id,
+      coupon_use_request_id: coupon_use_request.id
+    ) { student_coupon_list_locals(coupon_use_request).merge(viewer: nil) }
   end
 
   def broadcast_student_coupon_list(coupon_use_request, stream:, viewer:)

@@ -46,6 +46,7 @@ RSpec.describe "Classroom student message badge", type: :request do
     expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
       classroom,
       :student_card_alerts,
+      teacher,
       hash_including(
         target: dom_id(student, :student_card_alerts),
         partial: "users/student_card_alerts",
