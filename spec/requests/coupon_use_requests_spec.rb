@@ -146,6 +146,20 @@ RSpec.describe "Coupon use requests", type: :request do
     expect(request.resolved_by).to eq(teacher)
   end
 
+  it "rejects approval after the student becomes inactive" do
+    request = create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
+    student_membership.inactive!
+    sign_in teacher
+
+    expect {
+      patch approve_coupon_use_request_path(request), as: :json
+    }.not_to change(CouponEvent, :count)
+
+    expect(response).to have_http_status(:forbidden)
+    expect(coupon.reload).to be_issued
+    expect(request.reload).to be_pending
+  end
+
   it "keeps a successful approval when the student card broadcast fails" do
     request = create(:coupon_use_request, user_coupon: coupon, classroom: classroom, student: student, requested_by: student)
     allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to).and_raise(StandardError)

@@ -57,6 +57,51 @@ RSpec.describe "UserCoupons#use", type: :request do
       expect(coupon.reload).to be_used
     end
 
+    it "rejects a classroom teacher using an inactive student's coupon" do
+      student_membership.inactive!
+      sign_in teacher
+
+      expect {
+        post use_user_coupon_path(student, coupon), as: :json
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(coupon.reload).to be_issued
+    end
+
+    it "rejects an admin using an inactive student's coupon" do
+      admin = create(:user, :admin)
+      student_membership.inactive!
+      sign_in admin
+
+      expect {
+        post use_user_coupon_path(student, coupon), as: :json
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(coupon.reload).to be_issued
+    end
+
+    it "returns conflict when the coupon has a pending use request" do
+      request = create(
+        :coupon_use_request,
+        user_coupon: coupon,
+        classroom: classroom,
+        student: student,
+        requested_by: student
+      )
+      sign_in teacher
+
+      expect {
+        post use_user_coupon_path(student, coupon), as: :json
+      }.not_to change(CouponEvent, :count)
+
+      expect(response).to have_http_status(:conflict)
+      expect(json_body).to eq("ok" => false, "error" => "pending_request")
+      expect(coupon.reload).to be_issued
+      expect(request.reload).to be_pending
+    end
+
     it "rejects the owner student from directly using their coupon" do
       sign_in student
 

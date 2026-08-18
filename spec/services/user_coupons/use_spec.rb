@@ -50,5 +50,19 @@ RSpec.describe UserCoupons::Use, type: :service do
       }.to raise_error(ActiveRecord::RecordInvalid)
       expect(CouponEvent.count).to eq(0)
     end
+
+    it "does not use a coupon when the student membership is inactive" do
+      teacher = create(:user, :teacher)
+      coupon = create(:user_coupon, :with_classroom_membership)
+      coupon.user.classroom_memberships.find_by!(classroom: coupon.classroom).inactive!
+      event_count = CouponEvent.count
+
+      expect {
+        described_class.call!(coupon: coupon, actor: teacher)
+      }.to raise_error(UserCoupons::Use::InactiveStudentError)
+
+      expect(coupon.reload).to be_issued
+      expect(CouponEvent.count).to eq(event_count)
+    end
   end
 end

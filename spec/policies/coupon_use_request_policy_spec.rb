@@ -49,5 +49,11 @@ RSpec.describe CouponUseRequestPolicy do
       expect(described_class.new(teacher, request).approve?).to eq(true)
     end
 
+    it "rejects an admin when the student membership is inactive" do
+      student_membership.inactive!
+
+      expect(described_class.new(create(:user, :admin), request).approve?).to eq(false)
+    end
+
   end
 end

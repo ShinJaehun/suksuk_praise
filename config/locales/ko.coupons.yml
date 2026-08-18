@@ -27,6 +27,8 @@ ko:
     use:
       success: "쿠폰을 사용했습니다."
       already_used: "이미 사용된 쿠폰입니다."
+      pending_request: "사용 요청 중인 쿠폰은 승인으로 처리해 주세요."
+      inactive_student: "비활성 학생의 쿠폰은 사용할 수 없습니다."
 
   coupon_events:
     action:
@@ -35,4 +37,3 @@ ko:
     index:
       title: "쿠폰 이벤트 로그"
       description: "쿠폰 발급과 사용 기록을 확인합니다."
-

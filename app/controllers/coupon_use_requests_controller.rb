@@ -4,15 +4,24 @@ class CouponUseRequestsController < ApplicationController
   before_action :set_coupon_use_request, only: :approve
 
   def create
-    @coupon_use_request = CouponUseRequest.new(
-      user_coupon: @coupon,
-      classroom: @coupon.classroom,
-      student: @coupon.user,
-      requested_by: current_user
-    )
-    authorize @coupon_use_request
+    saved = @coupon.with_lock do
+      ClassroomMembership.lock.find_by(
+        user_id: @coupon.user_id,
+        classroom_id: @coupon.classroom_id,
+        role: "student"
+      )
 
-    if @coupon_use_request.save
+      @coupon_use_request = CouponUseRequest.new(
+        user_coupon: @coupon,
+        classroom: @coupon.classroom,
+        student: @coupon.user,
+        requested_by: current_user
+      )
+      authorize @coupon_use_request
+      @coupon_use_request.save
+    end
+
+    if saved
       broadcast_student_card_alerts(@coupon_use_request)
       broadcast_student_coupon_lists(@coupon_use_request)
       redirect_back fallback_location: user_path(@user), notice: "쿠폰 사용을 요청했습니다.", status: :see_other
@@ -34,7 +43,7 @@ class CouponUseRequestsController < ApplicationController
     redirect_back fallback_location: classroom_student_path(@coupon_use_request.classroom, @coupon_use_request.student),
       notice: "쿠폰 사용 요청을 승인했습니다.",
       status: :see_other
-  rescue ActiveRecord::RecordInvalid
+  rescue ActiveRecord::RecordInvalid, UserCoupons::Use::InactiveStudentError
     redirect_back fallback_location: classroom_student_path(@coupon_use_request.classroom, @coupon_use_request.student),
       alert: "쿠폰 사용 요청을 승인할 수 없습니다.",
       status: :see_other

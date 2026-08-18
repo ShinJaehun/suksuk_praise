@@ -84,6 +84,15 @@ class UserCoupon < ApplicationRecord
     update!(status: :used, used_at: used_at)
   end
 
+  def active_student_membership?
+    ClassroomMembership.exists?(
+      user_id: user_id,
+      classroom_id: classroom_id,
+      role: "student",
+      status: "active"
+    )
+  end
+
   private
 
   def user_belongs_to_classroom

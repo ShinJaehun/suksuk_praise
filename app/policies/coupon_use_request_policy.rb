@@ -18,6 +18,7 @@ class CouponUseRequestPolicy < ApplicationPolicy
   def approve?
     return false unless user
     return false unless record.classroom&.school&.active?
+    return false unless record.user_coupon&.active_student_membership?
     return true if user.admin?
 
     user.active_teacher? && ClassroomMembership.exists?(

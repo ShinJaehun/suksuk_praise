@@ -37,6 +37,7 @@ class UserCouponPolicy < ApplicationPolicy
   def use?
     return false unless user
     return false unless record.classroom&.school&.active?
+    return false unless record.active_student_membership?
 
     user.admin? || teacher_of?(record.classroom)
   end

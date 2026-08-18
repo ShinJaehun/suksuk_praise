@@ -1,7 +1,16 @@
 module UserCoupons
   class Use
+    class InactiveStudentError < StandardError; end
+
     def self.call!(coupon:, actor:, used_at: Time.zone.now)
       ApplicationRecord.transaction do
+        membership = ClassroomMembership.lock.find_by(
+          user_id: coupon.user_id,
+          classroom_id: coupon.classroom_id,
+          role: "student"
+        )
+        raise InactiveStudentError unless membership&.active?
+
         coupon.use!(used_at: used_at)
 
         CouponEvent.create!(

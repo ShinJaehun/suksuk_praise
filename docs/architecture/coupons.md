@@ -136,7 +136,10 @@ end
 
 - 학생은 자기 `issued` 쿠폰에 대해서만 사용 요청을 만들 수 있다.
 - 같은 쿠폰에 pending 요청은 하나만 유지한다.
-- teacher/admin은 교실 학생 상세에서 pending 요청을 승인할 수 있다.
+- inactive 학생의 기존 쿠폰과 사용 요청 기록은 보존한다.
+- 현재 active student membership이 있는 학생의 쿠폰만 직접 사용하거나 pending 요청을 승인할 수 있다.
+- pending 사용 요청이 있는 쿠폰은 직접 사용하지 않고 기존 승인 흐름으로 처리한다.
+- direct use는 pending 사용 요청이 없는 active 학생 쿠폰에만 허용한다.
 - 승인 시 기존 `UserCoupon#use!` 흐름을 재사용해 쿠폰을 `used`로 전이하고 `CouponEvent`를 기록한다.
 - teacher/admin은 요청 승인과 별개로 학생 쿠폰을 직접 사용 처리할 수 있다.
 - 사용 요청 생성/승인/직접 사용 처리 후 학생 화면과 관리 화면의 쿠폰 목록은 Turbo Streams로 갱신한다.

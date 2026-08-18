@@ -57,7 +57,22 @@ class UserCouponsController < ApplicationController
     authorize @coupon, :use?
     @play_coupon_animation = false
 
-    UserCoupons::Use.call!(coupon: @coupon, actor: current_user)
+    pending_request = @coupon.with_lock do
+      if @coupon.coupon_use_requests.pending.exists?
+        true
+      else
+        UserCoupons::Use.call!(coupon: @coupon, actor: current_user)
+        false
+      end
+    end
+
+    if pending_request
+      return render_use_conflict(
+        message: t("coupons.use.pending_request"),
+        error: "pending_request"
+      )
+    end
+
     @play_coupon_animation = true
 
     load_use_stream_data!(user: @user, classroom_id: @coupon.classroom_id)
@@ -73,22 +88,31 @@ class UserCouponsController < ApplicationController
       f.json { render json: { ok: true, used_at: @coupon.used_at }, status: :ok }
     end
 
+  rescue UserCoupons::Use::InactiveStudentError
+    @play_coupon_animation = false
+    render_use_conflict(
+      message: t("coupons.use.inactive_student"),
+      error: "inactive_student"
+    )
   rescue ActiveRecord::RecordInvalid
     @play_coupon_animation = false
-    load_use_stream_data!(user: @user, classroom_id: @coupon.classroom_id)
     message = t("coupons.use.already_used")
+    render_use_conflict(message: message, error: message)
+  end
+
+  private
+
+  def render_use_conflict(message:, error:)
+    load_use_stream_data!(user: @user, classroom_id: @coupon.classroom_id)
     respond_to do |f|
       f.html { redirect_to user_path(@user), alert: message, status: :conflict }
       f.turbo_stream  do
         flash.now[:alert] = message
         render :use, layout: "application", status: :conflict
       end
-      f.json { render json: { ok: false, error: message }, status: :conflict }
+      f.json { render json: { ok: false, error: error }, status: :conflict }
     end
-
   end
-
-  private
 
   def set_user
     @user = User.find(params[:user_id])
