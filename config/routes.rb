@@ -31,6 +31,7 @@ Rails.application.routes.draw do
 
   resources :classrooms, except: [:edit, :update] do
     resource :members, only: :show, module: :classrooms
+    resource :student_card_alert_state, only: :show, module: :classrooms
     get "members/students/names/edit",
       to: "classrooms/members#edit_student_names",
       as: :edit_member_student_names

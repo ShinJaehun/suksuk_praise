@@ -17,7 +17,8 @@ RSpec.describe "Classroom student message badge", type: :request do
     get classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("새 메시지")
+    document = Nokogiri::HTML(response.body)
+    expect(document.at_css('[data-alert-kind="message"]')["class"].to_s.split).not_to include("hidden")
     expect(response.body).to include(classroom_student_messages_path(classroom, student))
   end
 
@@ -28,7 +29,8 @@ RSpec.describe "Classroom student message badge", type: :request do
     get classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).not_to include("새 메시지")
+    document = Nokogiri::HTML(response.body)
+    expect(document.at_css('[data-alert-kind="message"]')["class"].split).to include("hidden")
   end
 
   it "marks unread student messages read when a teacher opens the managed student page" do
@@ -99,6 +101,7 @@ RSpec.describe "Classroom student message badge", type: :request do
     get classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).not_to include("새 메시지")
+    document = Nokogiri::HTML(response.body)
+    expect(document.at_css('[data-alert-kind="message"]')["class"].split).to include("hidden")
   end
 end

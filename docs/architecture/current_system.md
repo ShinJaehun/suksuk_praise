@@ -183,6 +183,7 @@
 - 학생 본인이 자기 화면을 여는 것은 학생 발신 unread 메시지를 read 처리하지 않는다.
 - 쿠폰 요청 badge와 메시지 badge는 `users/_student_card_alerts.html.erb` alert 영역을 공유한다.
 - 실시간 갱신은 Turbo Streams broadcast로 해당 학생의 alert 영역만 replace한다.
+- 교실 관리 화면은 연결 직후, 화면 복귀, online 전환, visible 상태의 60초 간격에 alert ID만 다시 조회해 놓친 broadcast를 보완한다.
 - 새 메시지 badge는 해당 학생의 메시지 전용 페이지로 이동한다.
 - 현재 학생 카드 알림은 pending 쿠폰 사용 요청과 학생 발신 unread 메시지만 다룬다.
 - 별도 Notification 모델, 알림 목록, teacher별 개인 inbox, navbar 알림은 구현되어 있지 않다.

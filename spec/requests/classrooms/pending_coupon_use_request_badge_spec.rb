@@ -20,8 +20,11 @@ RSpec.describe "Classroom pending coupon use request badge", type: :request do
     get classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).to include("쿠폰 요청")
+    document = Nokogiri::HTML(response.body)
+    expect(document.at_css('[data-alert-kind="coupon"]')["class"].to_s.split).not_to include("hidden")
     expect(response.body).to include(classroom_student_path(classroom, student, anchor: dom_id(student, :coupons)))
+    expect(response.body).to include('data-controller="student-card-alert-reconciliation"')
+    expect(response.body).to include(classroom_student_card_alert_state_path(classroom))
   end
 
   it "does not show the badge when there is no pending request" do
@@ -30,7 +33,8 @@ RSpec.describe "Classroom pending coupon use request badge", type: :request do
     get classroom_path(classroom)
 
     expect(response).to have_http_status(:ok)
-    expect(response.body).not_to include("쿠폰 요청")
+    document = Nokogiri::HTML(response.body)
+    expect(document.at_css('[data-alert-kind="coupon"]')["class"].split).to include("hidden")
   end
 
   it "shows a coupon request badge to an admin" do
