@@ -265,7 +265,7 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
           as: :json
       }.not_to change(UserCoupon, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json_body).to eq("ok" => false, "error" => "user_not_in_classroom")
     end
 
@@ -349,7 +349,7 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
         end.not_to change { [UserCoupon.count, CouponEvent.count] }
       end
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("이 교실에서는 해당 칭찬왕 기능을 사용하지 않습니다.")
       expect(existing_coupon.reload).to be_issued
       expect(classroom.reload.weekly_compliment_king_enabled?).to eq(false)
@@ -365,7 +365,7 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
           as: :json
       end.not_to change { [UserCoupon.count, CouponEvent.count] }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json_body).to eq(
         "ok" => false,
         "error" => "invalid",
@@ -384,7 +384,7 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
           as: :json
       end.not_to change { [UserCoupon.count, CouponEvent.count] }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json_body["detail"]).to eq("coupons.draw.compliment_king_disabled")
     end
 

@@ -124,7 +124,7 @@ RSpec.describe "Student activity notes", type: :request do
         headers: turbo_headers
     }.not_to change(StudentActivityNote, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     frame = Nokogiri::HTML(response.body).at_css(
       %(turbo-frame[id="#{dom_id(compliment, :activity_notes)}"])
     )
@@ -136,12 +136,12 @@ RSpec.describe "Student activity notes", type: :request do
       post student_activity_notes_path(source_type: "Compliment", source_id: compliment.id),
         params: { student_activity_note: { body: "a" * 1_001 } }
     }.not_to change(StudentActivityNote, :count)
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
 
     create(:student_activity_note, source: compliment, author: teacher)
     post student_activity_notes_path(source_type: "Compliment", source_id: compliment.id),
       params: { student_activity_note: { body: "중복" } }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   it "rerenders an invalid Turbo update without changing the note" do
@@ -152,7 +152,7 @@ RSpec.describe "Student activity notes", type: :request do
       params: { student_activity_note: { body: "a" * 1_001 } },
       headers: turbo_headers
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(note.reload.body).to eq("기존 메모")
     frame = Nokogiri::HTML(response.body).at_css(
       %(turbo-frame[id="#{dom_id(compliment, :activity_notes)}"])

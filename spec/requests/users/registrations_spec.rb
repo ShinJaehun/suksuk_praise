@@ -270,7 +270,7 @@ RSpec.describe "Users::Registrations", type: :request do
             },
             headers: turbo_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(teacher.reload.valid_password?("password123")).to eq(true)
     end
 

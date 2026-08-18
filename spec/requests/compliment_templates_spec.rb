@@ -113,7 +113,7 @@ RSpec.describe 'Compliment templates', type: :request do
            params: { compliment_preset: { title: '' } }
     end.not_to change(ComplimentPreset, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('칭찬 문구')
   end
 
@@ -126,7 +126,7 @@ RSpec.describe 'Compliment templates', type: :request do
            params: { compliment_preset: { title: '친구를 도움' } }
     end.not_to change(ComplimentPreset, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('이미 등록')
   end
 
@@ -149,7 +149,7 @@ RSpec.describe 'Compliment templates', type: :request do
            params: { compliment_preset: { title: '여섯 번째 칭찬' } }
     end.not_to change(ComplimentPreset, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('최대 5개')
   end
 

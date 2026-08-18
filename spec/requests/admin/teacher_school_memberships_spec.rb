@@ -98,7 +98,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
            headers: { 'Accept' => Mime[:turbo_stream].to_s }
     end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count, CouponTemplate.count] })
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('선택한 학교에 속하지 않은 학급이 포함되어 있습니다.')
   end
 
@@ -117,7 +117,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
       end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count, CouponTemplate.count] })
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(invalid_params[:message])
     end
   end
@@ -140,7 +140,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
            headers: { 'Accept' => Mime[:turbo_stream].to_s }
     end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count, CouponTemplate.count] })
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('담당 학급을 저장하지 못했습니다.')
   end
 
@@ -212,7 +212,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
             params: invalid_params.except(:message),
             headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(invalid_params[:message])
       expect(teacher.reload.school_membership).to eq(membership)
       expect(teacher.classroom_memberships.teacher.pluck(:id)).to contain_exactly(assignment.id)
@@ -229,7 +229,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
           params: { school_id: other_school.id },
           headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학교와 담당 학급의 최종 상태를 함께 선택해 주세요.')
     expect(teacher.reload.school_membership).to eq(membership)
     expect(teacher.classroom_memberships.teacher.pluck(:id)).to contain_exactly(assignment.id)
@@ -250,7 +250,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
           params: { school_id: other_school.id, classroom_ids: [new_classroom.id] },
           headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(membership.reload).to have_attributes(school: school, role: 'manager')
     expect(teacher.classroom_memberships.teacher.pluck(:id)).to contain_exactly(assignment.id)
   end
@@ -283,7 +283,7 @@ RSpec.describe 'Admin teacher school and classroom assignments', type: :request 
           params: { school_id: school.id, classroom_ids: [create(:classroom, school: school).id] },
           headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('선생님 계정만 학교와 담당 학급을 변경할 수 있습니다.')
     expect(student.reload.attributes).to eq(original_attributes)
     expect(student.school_membership).to be_nil

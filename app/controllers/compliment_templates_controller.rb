@@ -26,11 +26,11 @@ class ComplimentTemplatesController < ApplicationController
     end
 
     @compliment_presets = policy_scope(ComplimentPreset).active.ordered
-    render :index, status: :unprocessable_entity
+    render :index, status: :unprocessable_content
   rescue ActiveRecord::RecordNotUnique
     @compliment_preset.errors.add(:title, :taken)
     @compliment_presets = policy_scope(ComplimentPreset).active.ordered
-    render :index, status: :unprocessable_entity
+    render :index, status: :unprocessable_content
   end
 
   def edit
@@ -42,11 +42,11 @@ class ComplimentTemplatesController < ApplicationController
         notice: t("compliment_presets.flash.updated"),
         status: :see_other
     else
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
     end
   rescue ActiveRecord::RecordNotUnique
     @compliment_preset.errors.add(:title, :taken)
-    render :edit, formats: :html, status: :unprocessable_entity
+    render :edit, formats: :html, status: :unprocessable_content
   end
 
   def destroy

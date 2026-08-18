@@ -19,7 +19,7 @@ RSpec.describe 'Student portal flow', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(controller.current_user).to be_nil
     end
 
@@ -352,7 +352,7 @@ RSpec.describe 'Student portal flow', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(student.reload.avatar_key).to eq(original_avatar_key)
     end
 
@@ -367,7 +367,7 @@ RSpec.describe 'Student portal flow', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(student.reload.avatar_key).to eq(original_avatar_key)
     end
   end

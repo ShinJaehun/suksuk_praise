@@ -25,10 +25,10 @@ class Classrooms::CouponDrawsController < ApplicationController
           format.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
           format.turbo_stream do
             flash.now[:alert] = message
-            render "classrooms/draw_coupon", layout: "application", status: :unprocessable_entity,
+            render "classrooms/draw_coupon", layout: "application", status: :unprocessable_content,
               locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
           end
-          format.json { render json: { ok: false, error: "user_not_in_classroom" }, status: :unprocessable_entity }
+          format.json { render json: { ok: false, error: "user_not_in_classroom" }, status: :unprocessable_content }
         end
         return
       end
@@ -167,10 +167,10 @@ class Classrooms::CouponDrawsController < ApplicationController
       format.html { redirect_to classroom_path(@classroom), alert: message, status: :see_other }
       format.turbo_stream do
         flash.now[:alert] = message
-        render "classrooms/draw_coupon", layout: "application", status: :unprocessable_entity,
+        render "classrooms/draw_coupon", layout: "application", status: :unprocessable_content,
           locals: { winner: winner, winner_coupons: winner_coupons, issued_coupons: @issued_coupons }
       end
-      format.json { render json: { ok: false, error: "invalid", detail: e.message }, status: :unprocessable_entity }
+      format.json { render json: { ok: false, error: "invalid", detail: e.message }, status: :unprocessable_content }
     end
   end
 

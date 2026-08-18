@@ -66,7 +66,7 @@ class Admin::SchoolsController < Admin::BaseController
     else
       @school.errors.add(:base, t("school_status.failure")) if @school.errors.empty?
       prepare_school_settings
-      render "schools/edit", formats: :html, status: :unprocessable_entity
+      render "schools/edit", formats: :html, status: :unprocessable_content
     end
   end
 
@@ -77,10 +77,10 @@ class Admin::SchoolsController < Admin::BaseController
           "modal",
           partial: "admin/schools/modal",
           locals: modal_locals(template)
-        ), status: :unprocessable_entity
+        ), status: :unprocessable_content
       end
       format.html do
-        render template, formats: :html, status: :unprocessable_entity
+        render template, formats: :html, status: :unprocessable_content
       end
     end
   end

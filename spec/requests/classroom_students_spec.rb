@@ -208,7 +208,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
       expect(response.body).to include('target="modal"')
       expect(response.body).to include('이름')
@@ -229,7 +229,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
       expect(response.body).to include('target="modal"')
       expect(response.body).to include('name="return_to"')
@@ -307,7 +307,7 @@ RSpec.describe 'Classroom students', type: :request do
         }
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('최대 30명')
       expect(User.find_by(name: '초과 학생')).to be_nil
     end
@@ -345,7 +345,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
       expect(response.body).to include('target="modal"')
       expect(response.body).to include('PIN은 4자리 숫자여야 합니다.')
@@ -365,7 +365,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('PIN은 4자리 숫자여야 합니다.')
     end
 
@@ -386,7 +386,7 @@ RSpec.describe 'Classroom students', type: :request do
                headers: turbo_headers
         end.not_to change(User.student, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include(message)
         expect(response.body).to include(%(value="#{student_number}")) if student_number.present?
       end
@@ -411,7 +411,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('7번 출석번호는 이미 사용 중입니다.')
       expect(User.find_by(name: '중복 번호 학생')).to be_nil
       expect(ClassroomMembership.count).to eq(membership_count)
@@ -450,7 +450,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('7번 출석번호는 이미 사용 중입니다.')
       expect(User.find_by(name: '경쟁 충돌 학생')).to be_nil
     end
@@ -475,7 +475,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('target="modal"')
       expect(User.find_by(name: '롤백 학생')).to be_nil
     end
@@ -550,7 +550,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_frame_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('id="bulk-student-setup-form"')
       expect(response.body).to include('value="0"')
       expect(response.body).to include('value="12ab"')
@@ -568,7 +568,7 @@ RSpec.describe 'Classroom students', type: :request do
              },
              headers: turbo_frame_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('등록할 학생 수는 1 이상의 정수여야 합니다.')
       end
     end
@@ -578,7 +578,7 @@ RSpec.describe 'Classroom students', type: :request do
            params: { student_count: 1, student_pin: '12ab' },
            headers: turbo_frame_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('초기 PIN은 4자리 숫자여야 합니다.')
     end
 
@@ -587,7 +587,7 @@ RSpec.describe 'Classroom students', type: :request do
            params: { student_count: 1, student_pin: '' },
            headers: turbo_frame_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('초기 PIN은 4자리 숫자여야 합니다.')
     end
 
@@ -601,7 +601,7 @@ RSpec.describe 'Classroom students', type: :request do
            params: { student_count: 2, student_pin: '2468' },
            headers: turbo_frame_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('최대 30명')
     end
 
@@ -642,7 +642,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('최대 30명')
     end
 
@@ -732,7 +732,7 @@ RSpec.describe 'Classroom students', type: :request do
                headers: turbo_headers
         end.not_to change(User.student, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include(message, 'bulk_student_draft_kept-row')
         expect(response.body).to include(%(value="#{row[:student_number]}"))
         expect(ClassroomMembership.count).to eq(membership_count)
@@ -752,7 +752,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body.scan('7번 출석번호가 명단 안에서 중복되었습니다.').size).to be >= 2
     end
 
@@ -780,7 +780,7 @@ RSpec.describe 'Classroom students', type: :request do
              }
            },
            headers: turbo_headers
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('7번 출석번호는 이미 사용 중입니다.')
 
       post bulk_create_classroom_students_path(classroom),
@@ -809,7 +809,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(ClassroomMembership.count).to eq(membership_count)
     end
 
@@ -833,7 +833,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(ClassroomMembership.count).to eq(membership_count)
     end
 
@@ -848,7 +848,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('1번 출석번호는 이미 사용 중입니다.')
       expect(response.body).to include('김학생', '이학생')
       expect(ClassroomMembership.count).to eq(membership_count)
@@ -885,7 +885,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('id="bulk-student-preview-form"')
       expect(response.body).to include('유지 학생')
       expect(response.body).to include('bulk_student_draft_0')
@@ -902,7 +902,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('생성할 학생이 없습니다.')
     end
 
@@ -920,7 +920,7 @@ RSpec.describe 'Classroom students', type: :request do
              }
            }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('id="bulk-student-preview-form"')
       expect(response.body).to include('HTML 유지 학생', 'value="abc"')
     end
@@ -935,7 +935,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('초기 PIN은 4자리 숫자여야 합니다.')
     end
 
@@ -951,7 +951,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('최대 30명')
     end
 
@@ -985,7 +985,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('썸네일을 확인해 주세요')
     end
 
@@ -1001,7 +1001,7 @@ RSpec.describe 'Classroom students', type: :request do
              headers: turbo_headers
       end.not_to change(User.student, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('썸네일을 확인해 주세요')
     end
 
@@ -1580,7 +1580,7 @@ RSpec.describe 'Classroom students', type: :request do
           user: { student_pin: pin, student_pin_confirmation: confirmation }
         }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('PIN 수정', message)
         expect(response.body).not_to include('name="user[name]"')
         expect(response.body).not_to include('운영 상태')
@@ -1656,7 +1656,7 @@ RSpec.describe 'Classroom students', type: :request do
         user: { name: '저장되면 안 되는 이름' }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('8번 출석번호는 이미 사용 중입니다.')
       expect(student.reload.name).to eq('기존 이름')
       expect(membership.reload.student_number).to eq(7)
@@ -1702,7 +1702,7 @@ RSpec.describe 'Classroom students', type: :request do
         user: { name: '경쟁 후 이름' }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('8번 출석번호는 이미 사용 중입니다.')
       expect(student.reload.name).to eq('경쟁 전 이름')
       expect(membership.reload.student_number).to eq(7)
@@ -1776,7 +1776,7 @@ RSpec.describe 'Classroom students', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(student.reload.gender).to eq('boy')
       expect(student.avatar_key).to eq('boy01')
       expect(response.body).to include('성별에 맞는 아바타를 선택해 주세요.')
@@ -1793,7 +1793,7 @@ RSpec.describe 'Classroom students', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(student.reload.avatar_key).to eq('girl01')
     end
 

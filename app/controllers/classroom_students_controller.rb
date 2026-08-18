@@ -67,12 +67,12 @@ class ClassroomStudentsController < ApplicationController
           flash.now[:alert] = message
           render partial: "classroom_students/form",
             locals: { classroom: @classroom, user: @user, return_to: return_to_context },
-            status: :unprocessable_entity
+            status: :unprocessable_content
         end
         f.turbo_stream do
           flash.now[:alert] = message
           render "classroom_students/create_error", layout: "application",
-            status: :unprocessable_entity
+            status: :unprocessable_content
         end
       end
     end
@@ -168,7 +168,7 @@ class ClassroomStudentsController < ApplicationController
         managed_student_navigation_params
       ), notice: "학생 계정 정보를 수정했습니다."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 
@@ -320,7 +320,7 @@ class ClassroomStudentsController < ApplicationController
         notice: t("students.edit.self_pin.success"),
         status: :see_other
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

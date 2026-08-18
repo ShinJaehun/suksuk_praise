@@ -25,7 +25,7 @@ class ClassroomStudents::BulkRegistrationsController < ApplicationController
       student_pin: bulk_student_pin,
       student_count: params[:student_count]
     )
-    return render_bulk_setup(error_message: result.error, status: :unprocessable_entity) unless result.success?
+    return render_bulk_setup(error_message: result.error, status: :unprocessable_content) unless result.success?
 
     @student_drafts = result.rows
     render partial: "classroom_students/bulk_preview",
@@ -149,14 +149,14 @@ class ClassroomStudents::BulkRegistrationsController < ApplicationController
             error_message: error_message,
             draft_errors: draft_errors
           },
-          status: :unprocessable_entity
+          status: :unprocessable_content
       end
       format.turbo_stream do
         flash.now[:alert] = error_message
         @draft_errors = draft_errors
         render "classroom_students/bulk_create_error",
           layout: "application",
-          status: :unprocessable_entity
+          status: :unprocessable_content
       end
     end
   end

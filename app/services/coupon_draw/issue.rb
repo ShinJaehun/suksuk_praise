@@ -3,7 +3,7 @@ module CouponDraw
     class Error < StandardError
       attr_reader :i18n_key
       attr_reader :http_status
-      def initialize(i18n_key, http_status: :unprocessable_entity)
+      def initialize(i18n_key, http_status: :unprocessable_content)
         @i18n_key = i18n_key
         @http_status = http_status
         super(i18n_key.to_s)

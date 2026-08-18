@@ -335,7 +335,7 @@ RSpec.describe 'School teachers', type: :request do
       end.not_to(change { [User.count, SchoolMembership.count, CouponTemplate.count] })
 
       document = Nokogiri::HTML(response.body)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.media_type).to eq('text/html')
       expect(response.body).to include(
         I18n.t('schools.teachers.new_title'),
@@ -362,7 +362,7 @@ RSpec.describe 'School teachers', type: :request do
       end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count] })
 
       document = Nokogiri::HTML(response.body)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(
         I18n.t('schools.teachers.new_title'),
         I18n.t('schools.teachers.errors.classroom_not_found')
@@ -383,7 +383,7 @@ RSpec.describe 'School teachers', type: :request do
       end.not_to(change { [User.count, SchoolMembership.count, ClassroomMembership.count] })
 
       document = Nokogiri::HTML(response.body)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('선택한 교실을 찾을 수 없습니다.')
       expect(document.at_css(%(input[name="classroom_ids[]"][value="#{valid_classroom.id}"][checked]))).to be_present
     end
@@ -454,7 +454,7 @@ RSpec.describe 'School teachers', type: :request do
             params: { classroom_ids: [valid_classroom.id, other_classroom.id] },
             headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       document = Nokogiri::HTML(response.body)
       expect(response.media_type).to eq('text/html')
       expect(response.body).to include('선생님 정보 변경', '선택한 교실을 찾을 수 없습니다.')
@@ -463,7 +463,7 @@ RSpec.describe 'School teachers', type: :request do
 
       patch school_teacher_path(school, member), params: { classroom_ids: ['abc'] }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('<!DOCTYPE html>')
       expect(member.classroom_memberships.teacher.pluck(:classroom_id)).to contain_exactly(existing_classroom.id)
     end

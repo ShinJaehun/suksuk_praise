@@ -41,7 +41,7 @@ class Schools::TeachersController < ApplicationController
     else
       load_new_form
       flash.now[:alert] = t("schools.teachers.create.failure")
-      render :new, formats: :html, status: :unprocessable_entity
+      render :new, formats: :html, status: :unprocessable_content
     end
   end
 
@@ -65,14 +65,14 @@ class Schools::TeachersController < ApplicationController
 
     if classroom_assignments_invalid?
       load_edit_form
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
     elsif result.success?
       redirect_to school_teachers_path(@school),
         notice: t("schools.teachers.update.success"),
         status: :see_other
     else
       load_edit_form
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
     end
   end
 

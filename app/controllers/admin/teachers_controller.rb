@@ -40,7 +40,7 @@ class Admin::TeachersController < Admin::BaseController
     else
       flash.now[:alert] = t('admin.teachers.create.failure')
       load_school_assignment_form
-      render :new, formats: :html, status: :unprocessable_entity
+      render :new, formats: :html, status: :unprocessable_content
     end
   end
 
@@ -55,14 +55,14 @@ class Admin::TeachersController < Admin::BaseController
     unless @teacher.teacher?
       @teacher.errors.add(:base, t('admin.teachers.errors.teacher_required'))
       load_edit_form
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
       return
     end
 
     unless school_selection_submitted? && classroom_selection_submitted?
       @teacher.errors.add(:base, t('admin.teachers.errors.assignment_selection_required'))
       load_edit_form
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
       return
     end
 
@@ -84,7 +84,7 @@ class Admin::TeachersController < Admin::BaseController
                   status: :see_other
     else
       load_edit_form
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
     end
   end
 
@@ -169,7 +169,7 @@ class Admin::TeachersController < Admin::BaseController
     else
       @teacher.errors.add(:base, t('teacher_status.failure')) if @teacher.errors.empty?
       load_edit_form
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
     end
   end
 

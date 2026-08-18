@@ -505,7 +505,7 @@ RSpec.describe 'Classroom members', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('성별에 맞는 썸네일을 선택해 주세요.')
       expect(membership.reload.student_number).to eq(7)
       expect(student.reload.attributes.values_at('name', 'gender', 'avatar_key')).to eq(
@@ -611,7 +611,7 @@ RSpec.describe 'Classroom members', type: :request do
           }
         }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('출석번호는 1 이상의 정수여야 합니다.')
         expect(response.body).to include(%(value="#{invalid_number}"))
         expect(first.reload.name).to eq('원래 첫째')
@@ -635,7 +635,7 @@ RSpec.describe 'Classroom members', type: :request do
           memberships[1].id => { student_number: '2', name: students[1].name }
         }
       }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body.scan('2번 출석번호가 중복되었습니다.').size).to be >= 2
 
       patch classroom_member_student_names_path(classroom), params: {
@@ -643,7 +643,7 @@ RSpec.describe 'Classroom members', type: :request do
           memberships[0].id => { student_number: '3', name: '변경 금지' }
         }
       }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('3번 출석번호가 중복되었습니다.')
       expect(students[0].reload.name).to eq('학생 0')
       expect(memberships.map { |membership| membership.reload.student_number }).to eq([1, 2, 3])
@@ -691,7 +691,7 @@ RSpec.describe 'Classroom members', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('성별에 맞는 썸네일을 선택해 주세요.')
       expect(first.reload.attributes.values_at('name', 'gender', 'avatar_key')).to eq(
         ['첫 원본', 'boy', 'boy01']
@@ -714,7 +714,7 @@ RSpec.describe 'Classroom members', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('성별을 확인해 주세요.')
       expect(student.reload.gender).to eq('boy')
     end
@@ -744,7 +744,7 @@ RSpec.describe 'Classroom members', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(students.map { |student| student.reload.name }).to eq(['원본 0', '원본 1'])
       expect(memberships.map { |membership| membership.reload.student_number }).to eq([1, 2])
     end
@@ -766,7 +766,7 @@ RSpec.describe 'Classroom members', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('출석번호가 중복되었습니다.')
       expect(memberships.map { |membership| membership.reload.student_number }).to eq([1, 2])
     end
@@ -887,7 +887,7 @@ RSpec.describe 'Classroom members', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(I18n.t('students.members.update_names.invalid_membership'))
       expect(student.reload.name).to eq('내 학생')
       expect(other_student.reload.name).to eq('다른 학생')
@@ -905,7 +905,7 @@ RSpec.describe 'Classroom members', type: :request do
         }
       }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(I18n.t('students.members.update_names.invalid_membership'))
       expect(inactive_student.reload.name).to eq('비활성 유지')
     end
@@ -928,7 +928,7 @@ RSpec.describe 'Classroom members', type: :request do
       document = Nokogiri::HTML(response.body)
       form = document.at_css('form#student_names_form')
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('id="modal"')
       expect(form['action']).to eq(classroom_member_student_names_path(classroom, status: 'active'))
       expect(response.body).to include('학생 명단을 수정하지 못했습니다')
@@ -1030,7 +1030,7 @@ RSpec.describe 'Classroom members', type: :request do
             params: { student_pin: '' },
             headers: turbo_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(I18n.t('students.members.pin_reset.blank'))
       expect(response.body).to include('id="modal"')
       expect(active_student.reload.authenticate_student_pin('1234')).to be_truthy
@@ -1046,7 +1046,7 @@ RSpec.describe 'Classroom members', type: :request do
             params: { student_pin: '12ab' },
             headers: turbo_headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(I18n.t('students.members.pin_reset.invalid'))
       expect(active_student.reload.authenticate_student_pin('1234')).to be_truthy
     end

@@ -149,7 +149,7 @@ RSpec.describe 'Admin schools', type: :request do
            headers: { 'Accept' => Mime[:turbo_stream].to_s }
     end.not_to change(School, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('turbo-stream action="replace" target="modal"')
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include('name="school[name]"')
@@ -164,7 +164,7 @@ RSpec.describe 'Admin schools', type: :request do
 
     post admin_schools_path, params: { school: { name: '' } }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('<!DOCTYPE html>')
     expect(response.body).to include('학교 이름을 입력해 주세요.')
     expect(response.body).to include('학교 관리로 돌아가기')
@@ -190,7 +190,7 @@ RSpec.describe 'Admin schools', type: :request do
           params: { school: { name: '' } },
           headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('turbo-stream action="replace" target="modal"')
     expect(response.body.scan('<turbo-frame id="modal"').size).to eq(1)
     expect(response.body).to include('name="school[name]"')
@@ -204,7 +204,7 @@ RSpec.describe 'Admin schools', type: :request do
 
     patch admin_school_path(school), params: { school: { name: '' } }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('<!DOCTYPE html>')
     expect(response.body).to include('학교 이름을 입력해 주세요.')
     expect(response.body).to include('학교 관리로 돌아가기')

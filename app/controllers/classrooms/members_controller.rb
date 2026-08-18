@@ -166,11 +166,11 @@ class Classrooms::MembersController < ApplicationController
     respond_to do |format|
       format.html do
         flash.now[:alert] = @student_pin_error
-        render :edit_student_pin, status: :unprocessable_entity
+        render :edit_student_pin, status: :unprocessable_content
       end
       format.turbo_stream do
         flash.now[:alert] = @student_pin_error
-        render :edit_student_pin, formats: :html, layout: false, status: :unprocessable_entity
+        render :edit_student_pin, formats: :html, layout: false, status: :unprocessable_content
       end
     end
   end
@@ -179,11 +179,11 @@ class Classrooms::MembersController < ApplicationController
     respond_to do |format|
       format.html do
         flash.now[:alert] = t("students.members.update_names.#{error_key}")
-        render :edit_student_names, status: :unprocessable_entity, layout: false
+        render :edit_student_names, status: :unprocessable_content, layout: false
       end
       format.turbo_stream do
         flash.now[:alert] = t("students.members.update_names.#{error_key}")
-        render :edit_student_names, formats: :html, status: :unprocessable_entity, layout: false
+        render :edit_student_names, formats: :html, status: :unprocessable_content, layout: false
       end
     end
   end

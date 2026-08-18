@@ -28,7 +28,7 @@ class UserMessagesController < ApplicationController
             reply_message: replied_message ? @message : UserMessage.new,
             active_reply_thread_id: replied_message&.id
           )
-          render :create, status: :unprocessable_entity
+          render :create, status: :unprocessable_content
         end
       end
     end
@@ -126,7 +126,7 @@ class UserMessagesController < ApplicationController
           reply_message: invalid_reply_message,
           active_reply_thread_id: params[:reply_to_message_id].presence&.to_i
         )
-        render :create, status: :unprocessable_entity
+        render :create, status: :unprocessable_content
       end
     end
   end

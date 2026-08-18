@@ -284,7 +284,7 @@ RSpec.describe "Coupon template management", type: :request do
       preview_area = document.at_css(%([data-controller="coupon-image-preview"]))
       modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(modal_stream).to be_present
       expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(preview_area).to be_present
@@ -304,7 +304,7 @@ RSpec.describe "Coupon template management", type: :request do
       document = Nokogiri::HTML(response.body)
       modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(modal_stream).to be_present
       expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_present
@@ -328,7 +328,7 @@ RSpec.describe "Coupon template management", type: :request do
       document = Nokogiri::HTML(response.body)
       modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(modal_stream).to be_present
       expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_present
@@ -345,7 +345,7 @@ RSpec.describe "Coupon template management", type: :request do
       document = Nokogiri::HTML(response.body)
       modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(modal_stream).to be_present
       expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(document.at_css(%(input[type="hidden"][name="bucket"][value="library"]))).to be_nil
@@ -392,7 +392,7 @@ RSpec.describe "Coupon template management", type: :request do
         .and change { ActiveStorage::Blob.count }.by(0)
         .and change { ActiveStorage::Attachment.count }.by(0)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("JPEG, PNG, WebP")
     end
 
@@ -427,7 +427,7 @@ RSpec.describe "Coupon template management", type: :request do
 
       library_template.reload
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("5MB")
       expect(library_template.title).to eq("기존 라이브러리")
       expect(library_template.weight).to eq(30)
@@ -455,7 +455,7 @@ RSpec.describe "Coupon template management", type: :request do
         .and change { ActiveStorage::Blob.count }.by(0)
         .and change { ActiveStorage::Attachment.count }.by(0)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("5MB")
     end
 
@@ -486,7 +486,7 @@ RSpec.describe "Coupon template management", type: :request do
 
       personal.reload
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("JPEG, PNG, WebP")
       expect(personal.title).to eq("기존 저장소 개인")
       expect(personal.image.blob_id).to eq(existing_blob_id)
@@ -519,7 +519,7 @@ RSpec.describe "Coupon template management", type: :request do
       document = Nokogiri::HTML(response.body)
       modal_stream = document.at_css(%(turbo-stream[target="modal"]))
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(modal_stream).to be_present
       expect(modal_stream.to_html).not_to include("<turbo-frame")
       expect(response.body).to include("JPEG, PNG, WebP")

@@ -327,7 +327,7 @@ RSpec.describe 'Student PIN sessions', type: :request do
   it 'rejects an invalid PIN' do
     post_student_pin(pin: '0000')
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학생 PIN 로그인')
   end
 
@@ -335,7 +335,7 @@ RSpec.describe 'Student PIN sessions', type: :request do
     4.times do
       post_student_pin(pin: '0000')
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('교실, 학생, PIN을 확인해 주세요.')
       expect(response.body).not_to include('로그인 시도가 너무 많습니다.')
     end
@@ -346,13 +346,13 @@ RSpec.describe 'Student PIN sessions', type: :request do
 
     post_student_pin(pin: '0000')
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.')
     expect(response.body).to include(student.name)
 
     post_student_pin(pin: '1234')
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.')
     expect(response.body).to include(student.name)
     expect(controller.current_user).to be_nil
@@ -377,7 +377,7 @@ RSpec.describe 'Student PIN sessions', type: :request do
 
     4.times { post_student_pin(pin: '0000') }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('교실, 학생, PIN을 확인해 주세요.')
     expect(response.body).not_to include('로그인 시도가 너무 많습니다.')
   end
@@ -440,7 +440,7 @@ RSpec.describe 'Student PIN sessions', type: :request do
       student_pin: '1234'
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('교실, 학생, PIN을 확인해 주세요.')
     expect(controller.current_user).to be_nil
   end
@@ -468,7 +468,7 @@ RSpec.describe 'Student PIN sessions', type: :request do
       student_pin: '5678'
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   it 'renders the managed student PIN field as an empty password input with the default PIN status' do
@@ -558,7 +558,7 @@ RSpec.describe 'Student PIN sessions', type: :request do
       }
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(student.reload.student_pin_digest).to eq(original_digest)
   end
 end

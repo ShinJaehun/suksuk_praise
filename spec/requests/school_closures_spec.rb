@@ -75,7 +75,7 @@ RSpec.describe "School closure management", type: :request do
       patch school_school_closure_path(school, closure), params: { school_closure: valid_params.merge(name: "", ends_on: "2026-07-01") }
     end.not_to change { closure.reload.attributes.slice("name", "starts_on", "ends_on") }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).not_to include("translation missing")
   end
 
@@ -90,7 +90,7 @@ RSpec.describe "School closure management", type: :request do
         }
     end.not_to change(SchoolClosure, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("2026년 8월")
     expect(response.body).to include("입력 내용을 확인해 주세요.")
     expect(response.body).not_to include("translation missing")

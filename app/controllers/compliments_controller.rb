@@ -103,9 +103,9 @@ class ComplimentsController < ApplicationController
         alert: message, status: :see_other }
       f.turbo_stream do
         flash.now[:alert] = message
-        render layout: "application", status: :unprocessable_entity
+        render layout: "application", status: :unprocessable_content
       end
-      f.json { render json: { ok: false, error: e.message }, status: :unprocessable_entity }
+      f.json { render json: { ok: false, error: e.message }, status: :unprocessable_content }
     end
 
   end

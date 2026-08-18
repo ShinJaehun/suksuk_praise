@@ -101,7 +101,7 @@ RSpec.describe 'School settings', type: :request do
 
     patch school_path(school), params: { school: { color_key: 'red' } }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학교 구분 색상', 'name="school[color_key]"')
     expect(Nokogiri::HTML(response.body).at_css('p.text-rose-600')&.text).to be_present
     expect(school.reload.color_key).to eq(original_color_key)
@@ -114,7 +114,7 @@ RSpec.describe 'School settings', type: :request do
           params: { school: { name: '' } },
           headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학교 설정', '학교 이름', '학교 상태')
     expect(response.body).not_to include('turbo-stream action="replace" target="modal"')
     expect(school.reload.name).to eq('기존 학교')

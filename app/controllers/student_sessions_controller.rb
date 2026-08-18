@@ -19,7 +19,7 @@ class StudentSessionsController < ApplicationController
     attempt_limiter = student_pin_attempt_limiter(student)
     if attempt_limiter&.blocked?
       flash.now[:alert] = t('student_sessions.throttled')
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     if student&.student_pin_configured? && student.authenticate_student_pin(params[:student_pin].to_s)
@@ -36,7 +36,7 @@ class StudentSessionsController < ApplicationController
     else
       throttled = attempt_limiter&.record_failure
       flash.now[:alert] = throttled ? t('student_sessions.throttled') : t('student_sessions.invalid')
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 

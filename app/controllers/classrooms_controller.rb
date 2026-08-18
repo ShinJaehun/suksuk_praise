@@ -91,12 +91,12 @@ class ClassroomsController < ApplicationController
     if @classroom.school&.inactive?
       @classroom.errors.add(:school, t("school_status.inactive_school"))
       prepare_classroom_form
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     elsif @classroom.save
       redirect_to classroom_path(@classroom), notice: t("classrooms.create.success")
     else
       prepare_classroom_form
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 

@@ -473,7 +473,7 @@ RSpec.describe 'Compliments#create', type: :request do
              as: :json
       end.not_to change(Compliment, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json_body['ok']).to eq(false)
       expect(student.reload.points).to eq(0)
     end

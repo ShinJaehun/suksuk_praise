@@ -113,7 +113,7 @@ RSpec.describe 'Users::Sessions', type: :request do
     4.times do
       post_password_login(email: teacher.email, password: 'wrong-password')
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(I18n.t('devise.failure.invalid', authentication_keys: 'email'))
     end
   end
@@ -154,7 +154,7 @@ RSpec.describe 'Users::Sessions', type: :request do
 
     4.times { post_password_login(email: teacher.email, password: 'wrong-password') }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response).not_to have_http_status(:too_many_requests)
   end
 

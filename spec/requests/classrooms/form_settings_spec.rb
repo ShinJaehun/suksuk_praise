@@ -87,7 +87,7 @@ RSpec.describe "Classroom form settings", type: :request do
         }
       end.not_to change(Classroom, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("50")
     end
 

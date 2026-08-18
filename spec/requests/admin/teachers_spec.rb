@@ -276,7 +276,7 @@ RSpec.describe 'Admin teachers', type: :request do
     document = Nokogiri::HTML(response.body)
     avatar_section = document.at_css('[data-teacher-avatar-preview-target="avatarSection"]')
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('<option selected="selected" value="female">여자</option>')
     expect(document.at_css('input[name="user[avatar_key]"]')['value']).to eq('teacherF03')
     expect(avatar_section['hidden']).to be_nil

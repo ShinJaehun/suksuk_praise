@@ -893,7 +893,7 @@ RSpec.describe 'User messages', type: :request do
              headers: turbo_headers
       end.not_to change(UserMessage, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
       expect(response.body).to include('message_section')
     end
@@ -911,7 +911,7 @@ RSpec.describe 'User messages', type: :request do
              headers: turbo_headers
       end.not_to change(UserMessage, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
       expect(response.body).to include('reply_to_message_id')
       expect(response.body).to include('message_section')

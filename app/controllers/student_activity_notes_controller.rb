@@ -27,11 +27,11 @@ class StudentActivityNotesController < ApplicationController
     if @note.save
       respond_with_panel(t("student_activity_notes.notices.created"))
     else
-      render :new, formats: :html, status: :unprocessable_entity
+      render :new, formats: :html, status: :unprocessable_content
     end
   rescue ActiveRecord::RecordNotUnique
     @note.errors.add(:base, t("student_activity_notes.errors.duplicate"))
-    render :new, formats: :html, status: :unprocessable_entity
+    render :new, formats: :html, status: :unprocessable_content
   end
 
   def edit
@@ -46,7 +46,7 @@ class StudentActivityNotesController < ApplicationController
     if @note.update(note_params)
       respond_with_panel(t("student_activity_notes.notices.updated"))
     else
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
     end
   end
 

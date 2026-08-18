@@ -11,11 +11,11 @@ class Classrooms::SettingsController < ApplicationController
     authorize @classroom
 
     if school_change_attempt?
-      render "classrooms/edit", status: :unprocessable_entity
+      render "classrooms/edit", status: :unprocessable_content
     elsif @classroom.update(classroom_params)
       redirect_to @classroom, notice: t("classrooms.update.success")
     else
-      render "classrooms/edit", status: :unprocessable_entity
+      render "classrooms/edit", status: :unprocessable_content
     end
   end
 

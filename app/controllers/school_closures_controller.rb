@@ -18,9 +18,9 @@ class SchoolClosuresController < ApplicationController
     else
       if params[:return_to_calendar].present?
         prepare_school_workspace
-        render "schools/show", status: :unprocessable_entity
+        render "schools/show", status: :unprocessable_content
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
   end
@@ -31,7 +31,7 @@ class SchoolClosuresController < ApplicationController
     if @school_closure.update(school_closure_params)
       redirect_to school_path(@school), notice: t("school_closures.update.success")
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

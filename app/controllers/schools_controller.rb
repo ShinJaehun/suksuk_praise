@@ -43,7 +43,7 @@ class SchoolsController < ApplicationController
         status: :see_other
     else
       prepare_school_settings
-      render :edit, formats: :html, status: :unprocessable_entity
+      render :edit, formats: :html, status: :unprocessable_content
     end
   end
 

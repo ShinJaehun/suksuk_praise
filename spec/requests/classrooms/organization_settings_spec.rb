@@ -230,12 +230,12 @@ RSpec.describe 'Classroom organization settings', type: :request do
         classroom: { name: "금지된 교실", school_id: inactive_school.id, grade: 1 }
       }
     end.not_to change(Classroom, :count)
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
 
     patch classroom_path(classroom), params: {
       classroom: classroom_update_params(classroom).merge(school_id: inactive_school.id)
     }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(classroom.reload.school).to eq(school)
   end
 
@@ -304,7 +304,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       }
     end.not_to change(Classroom, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학교')
     expect(response.body).to include('name="classroom[school_id]"')
   end
@@ -318,7 +318,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       }
     end.not_to change(Classroom, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학년')
     expect(response.body).to include('name="classroom[grade]"')
   end
@@ -332,7 +332,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       }
     end.not_to change(Classroom, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학년')
   end
 
@@ -368,7 +368,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       }
     end.not_to change(Classroom, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학년')
   end
 
@@ -383,7 +383,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       }
     end.not_to change(Classroom, :count)
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('학년')
   end
 
@@ -427,7 +427,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       )
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
     expect(classroom.reload).to have_attributes(name: '기존 학급', school: original_school, grade: 2)
   end
@@ -529,7 +529,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: classroom_update_params(classroom).merge(name: '변경되면 안 됨', school_id: other_school.id, grade: 6)
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
     expect(classroom.reload).to have_attributes(name: '기존 학급', grade: 1, school: school)
   end
@@ -544,7 +544,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: classroom_update_params(classroom).merge(grade: '')
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(classroom.reload.grade).to eq(3)
     expect(response.body).to include('학년')
   end
@@ -559,7 +559,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: classroom_update_params(classroom).merge(grade: 7)
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(classroom.reload.grade).to eq(3)
     expect(response.body).to include('학년')
   end
@@ -654,7 +654,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: classroom_update_params(classroom).merge(grade: 7)
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(classroom.reload.grade).to eq(3)
     expect(response.body).to include('학년')
   end
@@ -667,7 +667,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: classroom_update_params(classroom).merge(grade: '')
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(classroom.reload.grade).to eq(3)
     expect(response.body).to include('학년')
   end
@@ -680,7 +680,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: classroom_update_params(classroom).merge(school_id: School.maximum(:id).to_i + 10_000)
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(classroom.reload.school).to eq(school)
     expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
   end
@@ -693,7 +693,7 @@ RSpec.describe 'Classroom organization settings', type: :request do
       classroom: classroom_update_params(classroom).merge(school_id: '')
     }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(classroom.reload.school).to eq(school)
     expect(response.body).to include('생성된 교실의 소속 학교는 변경할 수 없습니다.')
   end
