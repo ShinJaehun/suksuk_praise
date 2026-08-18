@@ -3,7 +3,7 @@ source "https://rubygems.org"
 ruby "3.3.1"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 7.2.3", ">= 7.2.3.2"
+gem "rails", "~> 8.0.5", ">= 8.0.5.1"
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
@@ -76,7 +76,7 @@ end
 
 gem "devise", "~> 4.9"
 gem "pundit"
-gem 'rails-i18n', '~> 7.0'
+gem 'rails-i18n', '~> 8.0.2'
 
 # pagination
 gem "pagy"
