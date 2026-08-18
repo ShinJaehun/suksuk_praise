@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe 'Users::Sessions', type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:teacher) { create(:user, :teacher, password: 'password123') }
   let(:admin) { create(:user, :admin, password: 'password123') }
   let(:student) { create(:user, :student, student_pin: '1234') }
@@ -8,6 +10,20 @@ RSpec.describe 'Users::Sessions', type: :request do
 
   before do
     create(:classroom_membership, classroom: classroom, user: student, role: 'student')
+  end
+
+  around do |example|
+    original_cache = Rails.cache
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+    example.run
+  ensure
+    Rails.cache = original_cache
+  end
+
+  def post_password_login(email:, password:, ip: '203.0.113.10')
+    post user_session_path,
+         params: { user: { email: email, password: password } },
+         headers: { 'REMOTE_ADDR' => ip }
   end
 
   it 'does not show a public sign up link on the login page' do
@@ -93,6 +109,76 @@ RSpec.describe 'Users::Sessions', type: :request do
     expect(controller.current_user).to eq(admin)
   end
 
+  it 'keeps the existing Devise failure response for the first four failures' do
+    4.times do
+      post_password_login(email: teacher.email, password: 'wrong-password')
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include(I18n.t('devise.failure.invalid', authentication_keys: 'Email'))
+    end
+  end
+
+  it 'blocks on the fifth failure and does not authenticate while blocked' do
+    4.times { post_password_login(email: teacher.email, password: 'wrong-password') }
+
+    post_password_login(email: teacher.email, password: 'wrong-password')
+
+    expect(response).to have_http_status(:too_many_requests)
+    expect(response.body).to include(I18n.t('users.sessions.throttled'))
+    expect(response.body).not_to include('wrong-password')
+    expect(controller.current_user).to be_nil
+
+    post_password_login(email: teacher.email, password: 'password123')
+
+    expect(response).to have_http_status(:too_many_requests)
+    expect(controller.current_user).to be_nil
+  end
+
+  it 'allows login after the ten-minute block expires' do
+    travel_to Time.zone.local(2026, 8, 18, 10, 0, 0) do
+      5.times { post_password_login(email: teacher.email, password: 'wrong-password') }
+    end
+
+    travel_to Time.zone.local(2026, 8, 18, 10, 10, 1) do
+      post_password_login(email: teacher.email, password: 'password123')
+    end
+
+    expect(response).to redirect_to(classrooms_path)
+    expect(controller.current_user).to eq(teacher)
+  end
+
+  it 'resets failures after a successful login before throttling' do
+    4.times { post_password_login(email: teacher.email, password: 'wrong-password') }
+    post_password_login(email: teacher.email, password: 'password123')
+    delete destroy_user_session_path
+
+    4.times { post_password_login(email: teacher.email, password: 'wrong-password') }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).not_to have_http_status(:too_many_requests)
+  end
+
+  it 'keeps attempts for different IPs and emails separate' do
+    5.times { post_password_login(email: teacher.email, password: 'wrong-password') }
+
+    post_password_login(email: teacher.email, password: 'password123', ip: '203.0.113.11')
+    expect(response).to redirect_to(classrooms_path)
+    delete destroy_user_session_path
+
+    post_password_login(email: admin.email, password: 'password123')
+    expect(response).to redirect_to(schools_path)
+  end
+
+  it 'applies the same limit to an email that does not exist' do
+    4.times { post_password_login(email: 'missing@example.com', password: 'wrong-password') }
+
+    post_password_login(email: 'missing@example.com', password: 'wrong-password')
+
+    expect(response).to have_http_status(:too_many_requests)
+    expect(response.body).to include(I18n.t('users.sessions.throttled'))
+    expect(controller.current_user).to be_nil
+  end
+
   it 'blocks a student from signing in with Devise' do
     post user_session_path, params: {
       user: {
@@ -126,10 +212,10 @@ RSpec.describe 'Users::Sessions', type: :request do
     expect(response.body).to include(student.name)
   end
 
-  it "expires an existing student session when the school becomes inactive" do
+  it 'expires an existing student session when the school becomes inactive' do
     post public_student_login_path(student_login_token: classroom.student_login_token), params: {
       student_id: student.id,
-      student_pin: "1234"
+      student_pin: '1234'
     }
     classroom.school.update!(active: false)
 

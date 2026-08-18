@@ -9,6 +9,8 @@ ko:
     throttled: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."
 
   users:
+    sessions:
+      throttled: "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."
     registrations:
       public_registration_disabled: "공개 회원가입은 제공하지 않습니다."
       account_deletion_disabled: "계정 삭제는 제공하지 않습니다."
