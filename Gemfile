@@ -3,7 +3,7 @@ source "https://rubygems.org"
 ruby "3.3.1"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.0.5", ">= 8.0.5.1"
+gem "rails", "~> 8.1.3", ">= 8.1.3.1"
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
@@ -74,7 +74,7 @@ group :test do
   gem "shoulda-matchers"
 end
 
-gem "devise", "~> 4.9"
+gem "devise", "~> 5.0", ">= 5.0.4"
 gem "pundit"
 gem 'rails-i18n', '~> 8.0.2'
 

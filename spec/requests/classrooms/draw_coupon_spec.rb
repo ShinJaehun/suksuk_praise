@@ -126,6 +126,35 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
       )
     end
 
+    it "renders an attached coupon image with a relative blob path outside a request" do
+      template.image.attach(
+        io: StringIO.new("coupon image"),
+        filename: "coupon.png",
+        content_type: "image/png"
+      )
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      sign_in teacher
+
+      post draw_coupon_classroom_path(classroom),
+        params: { basis: "manual", mode: "default", user_id: student.id },
+        headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+
+      coupon = UserCoupon.order(:id).last
+      rendered = ApplicationController.renderer.render(
+        partial: "user_coupons/list",
+        locals: {
+          coupons: [coupon],
+          user: student,
+          pending_coupon_use_requests_by_coupon_id: {},
+          viewer: student
+        }
+      )
+      image_src = Nokogiri::HTML.fragment(rendered).at_css("img")["src"]
+
+      expect(image_src).to start_with("/rails/active_storage/blobs/")
+      expect(image_src).not_to match(%r{\Ahttps?://})
+    end
+
     it "broadcasts the issued weekly king coupon list to the winning student's coupon stream" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       classroom.update!(weekly_compliment_king_enabled: true)

@@ -8,7 +8,7 @@
           <div>
             <% tpl = c.coupon_template %>
             <% if tpl.image.attached? %>
-              <%= image_tag(tpl.image, class: "h-14 w-14 rounded object-cover shrink-0") %>
+              <%= image_tag(rails_blob_path(tpl.image, only_path: true), class: "h-14 w-14 rounded object-cover shrink-0") %>
             <% elsif tpl.default_image_key.present? %>
               <%= image_tag(tpl.default_image_key, class: "h-14 w-14 rounded object-cover shrink-0") %>
             <% else %>

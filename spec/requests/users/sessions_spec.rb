@@ -114,7 +114,7 @@ RSpec.describe 'Users::Sessions', type: :request do
       post_password_login(email: teacher.email, password: 'wrong-password')
 
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(response.body).to include(I18n.t('devise.failure.invalid', authentication_keys: 'Email'))
+      expect(response.body).to include(I18n.t('devise.failure.invalid', authentication_keys: 'email'))
     end
   end
 
