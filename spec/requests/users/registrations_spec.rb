@@ -191,6 +191,34 @@ RSpec.describe "Users::Registrations", type: :request do
     end
   end
 
+  describe "DELETE /users" do
+    it "does not delete a teacher account" do
+      sign_in teacher
+
+      expect {
+        delete user_registration_path
+      }.not_to change(User, :count)
+
+      expect(User.exists?(teacher.id)).to eq(true)
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(edit_user_registration_path)
+      expect(flash[:alert]).to eq(I18n.t("users.registrations.account_deletion_disabled"))
+    end
+
+    it "does not delete an admin account" do
+      sign_in admin
+
+      expect {
+        delete user_registration_path
+      }.not_to change(User, :count)
+
+      expect(User.exists?(admin.id)).to eq(true)
+      expect(response).to have_http_status(:see_other)
+      expect(response).to redirect_to(edit_user_registration_path)
+      expect(flash[:alert]).to eq(I18n.t("users.registrations.account_deletion_disabled"))
+    end
+  end
+
   describe "GET /account/password/edit" do
     it "blocks student access" do
       sign_in student

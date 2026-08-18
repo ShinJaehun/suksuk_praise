@@ -11,4 +11,4 @@ ko:
   users:
     registrations:
       public_registration_disabled: "공개 회원가입은 제공하지 않습니다."
-
+      account_deletion_disabled: "계정 삭제는 제공하지 않습니다."

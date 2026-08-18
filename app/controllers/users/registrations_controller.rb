@@ -30,6 +30,12 @@ class Users::RegistrationsController < Devise::RegistrationsController
     end
   end
 
+  def destroy
+    redirect_to edit_user_registration_path,
+      alert: I18n.t("users.registrations.account_deletion_disabled"),
+      status: :see_other
+  end
+
   protected
 
   def update_resource(resource, params)
