@@ -191,14 +191,15 @@ end
 - `default_image_key`가 비어 있거나 실제 asset이 없으면 범용 기본 이미지를 표시한다.
 - 라이브러리 이미지는 personal 생성 시 독립 blob으로 복제하며 생성 이후 원본과 동기화하지 않는다.
 
-### Draw coupon / reveal
+### Draw coupon / animation
 
 - 칭찬왕 쿠폰 발급은 `CouponDraw::Issue`가 담당한다.
 - teacher/admin이 쿠폰을 뽑으면 서버에서는 `draw_coupon` 요청 시점에 쿠폰을 즉시 발급한다.
 - Turbo 응답에는 쿠폰 뽑기 overlay와 delayed reveal용 stream이 포함된다.
 - overlay가 열려 있는 동안 teacher/admin 화면 뒤의 쿠폰 목록, 최근 발급, KPI는 즉시 갱신하지 않는다.
 - overlay close 후 delayed reveal이 teacher/admin 화면을 갱신한다.
-- 학생 화면은 `reveal_issue` endpoint 호출 후 `student_coupons` stream으로 새 쿠폰 목록을 갱신한다.
+- 발급 transaction과 classroom lock이 끝나면 서버가 `student_coupons` stream으로 새 쿠폰 목록 갱신을 시도한다.
+- overlay 종료는 교사 화면의 deferred UI 갱신만 수행하며 별도 서버 요청을 보내지 않는다.
 
 ### 안전장치
 - `DUP_WINDOW` (1~2초) 중복 요청 방지

@@ -100,15 +100,14 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
 
       expect(response.body).to include("coupon-animation")
       expect(response.body).to include("data-coupon-animation-target=\"deferredStream\"")
-      expect(response.body).to include("data-coupon-animation-reveal-url-value=")
-      expect(response.body).to include(reveal_issued_user_coupon_path(UserCoupon.order(:id).last))
+      expect(response.body).not_to include("data-coupon-animation-reveal-url-value=")
       expect(response.body).to include(dom_id(student, :coupons))
       expect(response.body).to include(dom_id(student, :recent_issued_coupons))
       expect(top_level_update_targets).not_to include(dom_id(student, :coupons))
       expect(top_level_update_targets).not_to include(dom_id(student, :recent_issued_coupons))
     end
 
-    it "does not immediately broadcast the issued coupon list to the student's coupon stream" do
+    it "broadcasts the issued coupon list to the student's coupon stream" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
       sign_in teacher
@@ -117,10 +116,17 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
         params: { basis: "manual", mode: "default", user_id: student.id },
         headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
 
-      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :student_coupons,
+        hash_including(
+          partial: "user_coupons/list",
+          locals: hash_including(user: student, viewer: student)
+        )
+      )
     end
 
-    it "does not immediately broadcast the issued weekly king coupon list to the winning student's coupon stream" do
+    it "broadcasts the issued weekly king coupon list to the winning student's coupon stream" do
       create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
       classroom.update!(weekly_compliment_king_enabled: true)
       allow(Turbo::StreamsChannel).to receive(:broadcast_update_to)
@@ -134,7 +140,26 @@ RSpec.describe "Classrooms#draw_coupon", type: :request do
           headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
       end
 
-      expect(Turbo::StreamsChannel).not_to have_received(:broadcast_update_to)
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_update_to).with(
+        student,
+        :student_coupons,
+        hash_including(partial: "user_coupons/list")
+      )
+    end
+
+    it "keeps the issued coupon and successful response when its broadcast fails" do
+      create(:classroom_membership, user: teacher, classroom: classroom, role: "teacher")
+      allow(Turbo::StreamsChannel).to receive(:broadcast_update_to).and_raise(StandardError)
+      sign_in teacher
+
+      expect {
+        post draw_coupon_classroom_path(classroom),
+          params: { basis: "manual", mode: "default", user_id: student.id },
+          headers: { "ACCEPT" => "text/vnd.turbo-stream.html" }
+      }.to change(UserCoupon, :count).by(1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("coupon-animation")
     end
 
     it "returns a visible compliment king frame after drawing a weekly king coupon" do

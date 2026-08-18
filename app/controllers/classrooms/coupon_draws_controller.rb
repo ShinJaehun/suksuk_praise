@@ -104,6 +104,7 @@ class Classrooms::CouponDrawsController < ApplicationController
       end
     end
 
+    broadcast_issued_coupon_list(winner, winner_coupons, issued)
     load_recent_issued_coupons!
     respond_to do |format|
       format.html { redirect_to classroom_path(@classroom), notice: notice_message, status: :see_other }
@@ -189,6 +190,32 @@ class Classrooms::CouponDrawsController < ApplicationController
       .order(created_at: :desc)
       .limit(5)
       .load
+  end
+
+  def broadcast_issued_coupon_list(student, coupons, issued_coupon)
+    safely_broadcast_realtime(
+      tag: :student_coupons,
+      actor_id: current_user.id,
+      classroom_id: @classroom.id,
+      student_id: student.id,
+      coupon_id: issued_coupon.id
+    ) do
+      Turbo::StreamsChannel.broadcast_update_to(
+        student,
+        :student_coupons,
+        target: view_context.dom_id(student, :coupons),
+        partial: "user_coupons/list",
+        locals: {
+          coupons: coupons,
+          user: student,
+          viewer: student,
+          pending_coupon_use_requests_by_coupon_id: CouponUseRequest
+            .pending
+            .where(user_coupon_id: coupons.map(&:id))
+            .index_by(&:user_coupon_id)
+        }
+      )
+    end
   end
 
   def build_compliment_king_sections(enabled_periods:)

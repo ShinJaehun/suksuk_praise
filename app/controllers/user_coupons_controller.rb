@@ -88,17 +88,6 @@ class UserCouponsController < ApplicationController
 
   end
 
-  def reveal_issue
-    @coupon = UserCoupon.find(params[:id])
-    authorize @coupon, :use?
-
-    user = @coupon.user
-    coupons = issued_coupons_for(user: user, classroom_id: @coupon.classroom_id)
-    broadcast_student_coupon_list_for(user, coupons)
-
-    head :no_content
-  end
-
   private
 
   def set_user
@@ -177,32 +166,6 @@ class UserCouponsController < ApplicationController
       .where(user_id: user.id, classroom_id: classroom_id, status: "issued")
       .includes(:coupon_template)
       .order(issued_at: :desc)
-  end
-
-  def broadcast_student_coupon_list_for(student, coupons)
-    safely_broadcast_realtime(
-      tag: :student_coupons,
-      actor_id: current_user.id,
-      classroom_id: @coupon.classroom_id,
-      student_id: student.id,
-      coupon_id: @coupon.id
-    ) do
-      Turbo::StreamsChannel.broadcast_update_to(
-        student,
-        :student_coupons,
-        target: view_context.dom_id(student, :coupons),
-        partial: "user_coupons/list",
-        locals: {
-          coupons: coupons,
-          user: student,
-          viewer: student,
-          pending_coupon_use_requests_by_coupon_id: CouponUseRequest
-            .pending
-            .where(user_coupon_id: coupons.select(:id))
-            .index_by(&:user_coupon_id)
-        }
-      )
-    end
   end
 
 end
