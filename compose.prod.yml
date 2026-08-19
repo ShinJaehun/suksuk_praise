@@ -26,7 +26,7 @@ services:
       RAILS_ENV: production
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       KASI_HOLIDAY_API_KEY: ${KASI_HOLIDAY_API_KEY}
-      FORCE_SSL: ${FORCE_SSL:-false}
+      FORCE_SSL: ${FORCE_SSL:-true}
       RAILS_LOG_LEVEL: ${RAILS_LOG_LEVEL:-info}
       RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-3}
       RAILS_MIN_THREADS: ${RAILS_MIN_THREADS:-3}
@@ -38,7 +38,7 @@ services:
       SUKSUK_PRAISE_DATABASE_HOST: ${SUKSUK_PRAISE_DATABASE_HOST:-db}
       SUKSUK_PRAISE_DATABASE_PORT: ${SUKSUK_PRAISE_DATABASE_PORT:-5432}
     ports:
-      - "${PORT:-3000}:3000"
+      - "127.0.0.1:${PORT:-3000}:3000"
     command: ["bundle", "exec", "puma", "-C", "config/puma.rb"]
     volumes:
       - active_storage:/rails/storage
