@@ -1,203 +1,52 @@
 # OCI Production Deploy Runbook
 
-## 목적
-이 문서는 `suksuk_praise`를 **OCI(Oracle Cloud Infrastructure)** 에 배포하기 전에,
-로컬 Docker 검증 결과와 다음 작업 순서를 정리한 배포 메모다.
+## Production 구성
 
----
+2026-08-19 기준 운영 요청 경로는 다음과 같다.
 
-## 현재 완료된 상태
-
-- Docker 설치 완료
-- `Dockerfile` 기반 이미지 빌드 성공
-- `compose.yml`로 `web` + `db` 실행 성공
-- PostgreSQL 컨테이너 연결 성공
-- `RAILS_ENV=production` 부팅 성공
-- `SECRET_KEY_BASE` 환경변수 필요 확인
-- `config.force_ssl`을 env 기반으로 제어하도록 조정
-- 로그인 화면 렌더링 성공
-- 실제 로그인 성공
-
----
-
-## `.env` 와 `.env.example` 원칙
-
-실제 민감값은 `.env`에 둔다.
-저장소에는 값이 비어 있는 `.env.example`만 커밋한다.
-
-### `.env.example` 예시
-
-```env
-SECRET_KEY_BASE=
-SUKSUK_PRAISE_DATABASE_PASSWORD=
-FORCE_SSL=false
-```
-
-### 원칙
-
-- `.env`는 커밋하지 않는다
-- `.env.example`은 필요한 키 목록만 보여준다
-- 운영 서버에서는 별도의 실제 `.env`를 작성한다
-
----
-
-## 현재 로컬 실행 절차
-
-### 이미지/컨테이너 실행
-
-```bash
-docker compose up -d --build
-```
-
-### DB 준비
-
-```bash
-docker compose run --rm web bin/rails db:prepare
-```
-
-### 접속 확인
-
-브라우저:
 ```text
-http://localhost:3000
+Cloudflare
+→ Nginx 443
+→ 127.0.0.1:3000 Rails
 ```
 
-또는:
+- 공식 도메인은 `praise.suksukclass.kr`이다.
+- Cloudflare SSL/TLS는 Full (strict)를 사용한다.
+- Rails는 `FORCE_SSL=true`와 `config.hosts = ["praise.suksukclass.kr"]`로 실행한다.
+- Docker app port는 localhost에만 bind하며 OCI/host firewall에서 3000을 직접 공개하지 않는다.
+- Nginx는 Cloudflare의 검증된 요청에서 실제 client IP를 복원하고, 알 수 없는 HTTPS SNI는 거부한다.
+- `.env`, Cloudflare Origin private key 등 secret은 저장소에 두지 않는다.
+- 이메일 발송과 Devise password recovery는 사용하지 않는다.
+
+## 최초 DB 준비
+
+새 production DB를 처음 준비할 때만 DB와 schema를 준비하고 최초 관리자를 생성한다.
 
 ```bash
-curl -I http://localhost:3000
+docker compose -p suksuk_praise --env-file .env -f compose.prod.yml up -d db
+docker compose -p suksuk_praise --env-file .env -f compose.prod.yml run --rm web bin/rails db:prepare
+docker compose -p suksuk_praise --env-file .env -f compose.prod.yml run --rm web bin/rails app:bootstrap
+docker compose -p suksuk_praise --env-file .env -f compose.prod.yml up -d web
 ```
 
----
+`app:bootstrap`은 최초 설정 전용이며 일반 재배포에서는 실행하지 않는다.
 
-## 현재 compose 구조
+## 일반 재배포
 
-최소 구성:
+1. commit SHA 기반 immutable tag와 `latest`를 동일 이미지로 build/push한다.
+2. 현재 실행 이미지를 rollback tag로 보존한다.
+3. 새 이미지와 compose 파일을 준비하고 다음 명령으로 구성을 검증한다.
 
-- `db`: postgres:16
-- `web`: Rails production container
+   ```bash
+   docker compose -p suksuk_praise --env-file .env -f compose.prod.yml config --quiet
+   ```
 
-아직 포함하지 않은 것:
+4. 일관된 백업이 필요하면 web을 중지한다.
+5. PostgreSQL dump와 Active Storage 파일을 백업한다.
+6. DB 백업은 gzip 무결성을, 파일 백업은 tar 목록을 확인하고 각각 SHA256을 기록한다.
+7. migration이 있을 때만 새 이미지로 `bin/rails db:prepare`를 실행한다.
+8. web container를 새 이미지로 recreate한다.
+9. 실행 중인 container의 image ID가 배포 대상과 일치하는지 확인한다.
+10. HTTPS/HSTS, Host 제한, 로그인, Action Cable WebSocket과 Turbo realtime 갱신을 smoke test한다.
 
-- reverse proxy
-- HTTPS 종료
-- OCI 도메인 연결
-- object storage
-- 다른 Rails 앱 통합 운영
-
----
-
-## OCI 배포의 다음 단계
-
-다음 단계는 크게 아래 순서로 진행한다.
-
-### 1. 로컬 구성 정리
-- `.env.example` 추가
-- 배포 문서 정리
-- compose 재검증
-- `git status` 깨끗한지 확인
-
-### 2. OCI VM 준비
-- 기존 OCI VM 재사용 여부 결정
-- 공인 IP 확인
-- SSH 접속 확인
-- Docker / Compose 설치
-
-### 3. 서버에 프로젝트 배치
-- 서버에는 compose.prod.yml과 서버용 .env만 준비
-- ghcr.io 에서 이미지 pull
-- docker compose -f compose.prod.yml up -d
-- 필요 시 db:prepare 실행
-
-### 4. 외부 공개 준비
-- reverse proxy 추가
-- 도메인 연결
-- HTTPS 적용
-- 그 다음 `FORCE_SSL=true` 전환 검토
-
----
-
-## 서버용 `.env` 최소 항목
-
-예시 키 목록:
-
-```env
-SECRET_KEY_BASE=...
-SUKSUK_PRAISE_DATABASE_PASSWORD=...
-FORCE_SSL=true
-```
-
-주의:
-- 운영용 `SECRET_KEY_BASE`는 로컬과 다른 값 사용
-- 운영 DB 비밀번호는 강한 값 사용
-- HTTPS 적용 전에는 `FORCE_SSL=false`로 둘 수도 있음
-
----
-
-## 체크 포인트
-
-OCI로 넘어가기 전에 아래는 다시 확인한다.
-
-- [ ] `.env`가 git에 포함되지 않는가
-- [ ] `.env.example`이 존재하는가
-- [ ] `docker compose up -d --build`가 재현 가능한가
-- [ ] 로그인까지 정상 동작하는가
-- [ ] `compose.yml`에 민감값 하드코딩이 없는가
-
----
-
-## 참고
-
-이번 Docker 검증 과정에서 확인된 중요한 점:
-
-- `simple_form`이 production 의존성으로 명시되어야 함
-- `database.yml`은 production에서 env 기반 구성이 적절함
-- 로컬 Docker 검증 단계에서는 `force_ssl`을 env로 제어하는 편이 좋음
-
-이 문서는 OCI 실제 배포 작업의 출발점으로 사용한다.
-
----
-
-## Production 데이터베이스 준비
-
-### 최초 새 DB 설정
-
-새 production DB를 처음 준비할 때만 DB, schema, 최초 관리자와 기본 쿠폰
-라이브러리를 다음 순서로 생성한다. `app:bootstrap`은 대화형 입력이 필요하므로
-Docker Compose 명령에 `-T`를 사용하지 않는다.
-
-```bash
-docker compose \
-  -p suksuk_praise \
-  --env-file .env \
-  -f compose.prod.yml \
-  up -d db
-
-docker compose \
-  -p suksuk_praise \
-  --env-file .env \
-  -f compose.prod.yml \
-  run --rm web bin/rails db:prepare
-
-docker compose \
-  -p suksuk_praise \
-  --env-file .env \
-  -f compose.prod.yml \
-  run --rm web bin/rails app:bootstrap
-
-docker compose \
-  -p suksuk_praise \
-  --env-file .env \
-  -f compose.prod.yml \
-  up -d web
-```
-
-`app:bootstrap`은 새 production DB의 최초 관리자 설정에만 사용한다.
-관리자 계정과 그 관리자가 소유하는 기본 쿠폰 라이브러리 4개를 함께 생성한다.
-이미 관리자가 있으면 task는 아무 데이터도 변경하지 않고 정상 종료한다.
-production에서는 데모 데이터를 위한 `db:seed`를 실행할 필요가 없다.
-
-### 일반 재배포
-
-일반적인 코드 재배포에서는 `app:bootstrap`을 실행하지 않는다. 새 이미지를
-pull하고 필요한 migration을 `db:prepare`로 반영한 뒤 web 서비스를 재기동한다.
+문제 발생 시 보존한 rollback tag로 web을 recreate한다. 데이터 변경을 되돌려야 한다면 검증된 PostgreSQL 및 Active Storage 백업을 사용한다.

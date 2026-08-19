@@ -31,8 +31,7 @@ RSpec.describe 'Users::Sessions', type: :request do
 
     expect(response.body).not_to include('Sign up')
     expect(response.body).not_to include(new_user_registration_path)
-    expect(response.body).to include('Forgot your password?')
-    expect(response.body).to include(new_user_password_path)
+    expect(response.body).not_to include('Forgot your password?')
   end
 
   it 'signs a teacher in and redirects directly to classrooms index' do
