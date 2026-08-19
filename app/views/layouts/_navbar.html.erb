@@ -7,10 +7,11 @@
 <div class="h-14 w-full max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8"
      data-navigation-root="navbar">
   <div class="flex items-center gap-4">
-    <%= link_to root_path, class: "flex items-center" do %>
+    <%= link_to root_path, class: "flex items-center gap-2" do %>
       <%= image_tag "suksuk_logo.png",
             alt: t("navigation.brand"),
             class: "h-8 w-auto" %>
+      <span class="font-semibold text-slate-800"><%= t("navigation.brand") %></span>
     <% end %>
 
     <%= render "layouts/navigation/desktop",
